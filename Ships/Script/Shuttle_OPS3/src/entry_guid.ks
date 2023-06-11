@@ -26,11 +26,11 @@ mep 			//hac selection flag
 
 global entryg_constants is lexicon (
 									"aclam1", 15.0,	//deg
-									"aclam2", 0.0025,	//deg-sec/ft ??
+									"aclam2", 0.0025,	//deg-s/ft ??
 									"aclim1", 37,	//deg
-									"aclim2", 0,	//deg-sec/ft ??
+									"aclim2", 0,	//deg-s/ft ??
 									"aclim3", 7.6666667,	//deg
-									"aclim4", 0.00223333,	//deg-sec/ft
+									"aclim4", 0.00223333,	//deg-s/ft
 									"acn1", 50,	//time const for hdot feedback
 									"ak", -3.4573,	//temp control dD/dV factor
 									"ak1", -4.76,	//temp control dD/dV factor
@@ -41,31 +41,103 @@ global entryg_constants is lexicon (
 									"almn3", 0.93969,	//max l/d cmd below velmn
 									"almn4", 1.0,	//max l/d cmd above vylmax
 									"astart", 5.66,		//ft/s2 accel to enter phase 2
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
-									"", ,
+									"calpo", list(0, 19.455, -4.074, -4.2778, 16.398, 4.476, -9.9339, 40, 40, 40, 40),	//deg alpcmd constant term in ve 
+									"calp1", list(0, -0.776388e-2, 8.747711e-3, 0.8875002e-2, -0.3143109e-3, 3.1875e-3, 6.887436e-3, 0, 0, 0, 0),	//deg-s/ft 	alpcmd linear term in ve
+									"calp2", list(0, 0.2152776e-5, -7.44e-7, -0.7638891e-6, 0.2571456e-6, 0, -2.374978e-7, 0, 0, 0, 0 ),	//deg-s2/ft2 	alpcmd quadratic term in ve
+									"cddot1", 1500,	//ft/s 	cd velocity coef 
+									"cddot2", 2000,,	//ft/s 	cd velocity coef 
+									"cddot3", 0.15, ,	// 	cd velocity coef 
+									"cddot4", 0.0783,	//cd alpha coef 
+									"cddot5", -8.165e-3,	// 1/deg	cd alpha coef 
+									"cddot6", 6.833e-4,		// 1/deg2	cd alpha coef 
+									"cddot7", 7.5e-5,	//s/ft cddot coef 
+									"cddot8", 13.666e-4,	//1/deg2	cddot coef
+									"cddot9", -8.165e-3,	//1/s cddot coef
+									"cnmfs", 1.645788e-4,	//nmi/ft 	conversion from feet to nmi 
+									"crdeaf", 4,	//roll bias modulation gain
+									"ct16", list(0, 0.1354, -0.1, 0.006),	// s2/ft - nd - s2/ft	c16 coefs
+									"ct17", list(0, 1.537e-2, -5.8146e-1),	//s/ft - nd 	c17 coefs
+									"ct16mn", 0.025,	//s2/ft		min c16
+									"ct16mx", 0.35,		//s2/ft 	max c16
+									"ct17mn", 0.0025,	//s/ft 		min c17
+									"ct17mx", 0.014,	//s/ft 		max c17
+									"ct13m2", 0.00133,	//s/ft 		min c17 when ict=1
+									"cy0", -0.1309,		//rad 	constant term heading err deadband
+									"cy1", 1.0908e-4,	//rad-s/ft 	linear term heading err deadband
+									"c17mp", 0.75,		//c17 mult fact when ict=1
+									"c21", 0.06,		//1/deg c20 cont val
+									"c22", -0.001,		//1/deg c20 const value in linear term
+									"c23", 4.25e-6,		//s/ft-deg 	c20 linear term
+									"c24", 0.01,	//1/deg  c20 const value 
+									"c25", 0,		//1/deg	c20 const value in linear term 
+									"c26", 0,		//s/ft - deg 	c20 linear val 
+									"c27", 0,		//1/deg c20 const val 
+									"ddlim", 2,		//ft/s2	max drag for h feedback 
+									"ddmin", 0.15,	//ft/s 	max drag error 
+									"delv", 2300,	//ft/s phase transfer vel bias 
+									"df", 21.0,	//ft/s2 final drag in transition phase
+									"dlallm", 43,	//deg max constant
+									"dlalpm", 2,		//deg delalp lim
+									"d23c", 19.8,	//ft/s2 etg canned d23
+									"d230", 19.8,	//ft/s2 initial d23 value
+									"drddl", -1.5,	//nmi/s2/ft	minimum value of drdd
+									"dtegd", 1.92,	//s entry guidance computation interval
+									"dt2min", 0.008,	//ft/s3 min value of t2dot
+									"dtr", 0.0174532925,	//rad/deg 	degrees to radians
+									"eef4", 2.0e-6,		//ft2/s2	final ref energy level in transition
+									"etran", 6.002262e7,	//ft2/s2	energy at start of transition
+									"e1", 0.01,		//ft/s2 	min of drefp and drefp-df in transition
+									"gs", 32.174,	//ft/s2 	earth gravity
+									"gs1", 0.02,	//1/s	roll cmd smoohing fac 
+									"gs2", 0.02,	//1/s	roll cmd smoohing fac 
+									"gs3", 0.03767,	//1/s	roll cmd smoohing fac 
+									"gs4", 0.03,	//1/s	roll cmd smoohing fac 
+									"hsmin", 20500,	//ft 	min scale height 
+									"hs01", 18075,	//ft scale height term 
+									"hs02", 27000,	//ft scale height term 
+									"hs03", 45583.5,	//ft scale height term 
+									"hs11", 0.725,	//s scale height slope wrt ve  
+									"hs13", -0.9445,	//s scale height slope wrt ve  
+									"lodmin", 0.5,	//min l/d
+									"nalp", 9,	//number of alpcmd velocity segment boundaries
+									"mm304phi0", 0,	//standard preentry bank
+									"mm304alp0", 40,	//standard preentry aoa
+									"radeg", 57.29578,	//deg/rad radians to degrees
+									"rdmax", 12,	//max roll bias 
+									"rlmc1", 70,	//rlm max
+									"rlmc2", 70,	//coeff in first rlm seg 
+									"rlmc3", 0,		//deg/ft/s
+									"rlmc4", 70,		//deg
+									"rlmc5", 0,		//deg/ft/s
+									"rlmc6", 70,		//deg	rlm min
+									"rpt1", 22.4,	//nmi range bias
+									"va", 27637,	//ft/s initial vel for temp quadratic, dD/dV = 0
+									"valmod", 23000,	//ft/s modulation start flag for nonconvergence
+									"valp", list(0, 2850, 3200, 4500, 6809, 7789.4, 14500, 14500, 14500, 14500),	//ft/s alpcmd vs ve boundaries
+									"va1", 22000,	//ft/s temp control quadratic segments boundary vel
+									"va2", 27637,	//ft/s initial vel dor temo quadratic dD/dV = 0
+									"vb1", 19000,	//ft/s temp control / eq glide boundary vel 
+									"vc16", 23000,	//ft/s vel to start c16 drag error term
+									"vc20", 2500,	//ft/s c20 vel break point
+									"velmn", 8000,	//ft/s	max vel for limiting lmn by almn3
+									"verolc", 8000,	//max vel for limiting bank cmd
+									"vhs1", 12310,	//ft/s scale height vs ve boundary
+									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
+									"vnoalp", 0,	//modulation start flag
+									"vq", 5000,	//ft/s predicted end vel for const drag
+									"vrlmc", 2500,	//ft/s rlm seg switch vel
+									"vsat", 25766.2,	//ft/s local circular orbit vel 
+									"vs1", 23283.5,		//ft/s eq glide ref vel 
+									"vrdt", 23000,	//ft/s hdot feedback start vel 
+									"v_taem", 2500,	//ft/s entry-taem interface ref vel 
+									"vtran", 10500,	//ft/s nominal vel at start of transition 
+									"vylmax", 23000,	//ft/s min vel st start of alm by almn4
+									"ylmn", 0.03,	//rad yl bias used in test for lmn	
+									"ylmn2", 0.07,	//rad mon yl bias 
+									"y1", 0.3054326,	//rad max heading err deadband before first reversal
+									"y2", 0.1745329,	//rad min heading error deadband 
+									"y3", 0.3054326,	//max heading err deadband after first reversal 
+									"zk", 1	//s hdot feedback gain
 
 ).
 
