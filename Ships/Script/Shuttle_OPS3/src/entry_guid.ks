@@ -409,7 +409,7 @@ function egscaleht {
 
 function egcomn {
 
-	set entryg_internal["xlod"] to max(lod, entryg_constants["lodmin"]).
+	set entryg_internal["xlod"] to max(entryg_input["lod"], entryg_constants["lodmin"]).
 	
 	set entryg_internal["t1"] to entryg_constants["gs"] * (entryg_input["vi"]^2 / entryg_internal["vsat2"] - 1).
 	set entryg_internal["t2old"] to entryg_internal["t2"].
