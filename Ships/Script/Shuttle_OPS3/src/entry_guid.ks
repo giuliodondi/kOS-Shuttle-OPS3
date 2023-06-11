@@ -2,24 +2,43 @@
 
 
 //input variables 
-//keep these here till i figure out how to structure the flow
-alpha //aoa
-delaz 	//az error 
-drag 	//drag accel (ft/s2)
-egflg 	//mode flag 
-hls 		//alt above rwy (ft)
-lod 		//current l/d 
-rdot 	//alt rate (ft/s)
-roll	//cur bank angle 
-start 	//init flag 
-trange 	//target range (nmi)
-ve 		//earth rel velocity (ft/s)
-vi		//inertial vel (ft/s)
-xlfac 	//load factor acceleration (ft/s2)
-mm304phi		//preentry bank 
-mm304alp		//preentry aoa 
-mep 			//hac selection flag 
+global entryg_input is lexicon(
+								"alpha",,      //aoa
+								"delaz",,       //az error  
+								"drag",,        //drag accel (ft/s2) 
+								"egflg",,       //mode flag  
+								"hls",,		   //alt above rwy (ft)
+								"lod",, 		//current l/d 
+								"rdot",,        //alt rate (ft/s) 
+								"roll",,	   //cur bank angle 
+								"trange",,     //target range (nmi)
+								"ve",, 		   //earth rel velocity (ft/s)
+								"vi",,		   //inertial vel (ft/s)
+								"xlfac",,      //load factor acceleration (ft/s2)
+								"mm304ph",,    	//preentry bank 
+								"mm304al",,    	//preentry aoa 
+								"mep",, 			//hac selection flag 
+).
 
+
+
+
+//output variables 
+global entryg_output is lexicon(
+								"alpcmd",, 	//aoa cmd 	//rad
+								"rolcmd",,	//bank cmd  //rad
+								"drefp",,	//drag ref 	//ft/s2
+								"drag",,	 	//actual drag	//ft/s2
+								"rolref",,	//deg 	//roll ref
+								"islect",, 	//phase indicator 
+								"vcg",, 		//velocity start of const drag 	//ft/s 
+								"vrr",, 		//velocity first reversal //ft/s 
+								"eowd",,  	//eow //ft 
+								"eei",,		//entry eval indicator 
+								"rc176g",, 	//first roll after 0.176g	//deg
+
+
+).
 
 
 //input constants
@@ -41,12 +60,12 @@ global entryg_constants is lexicon (
 									"almn3", 0.93969,	//max l/d cmd below velmn
 									"almn4", 1.0,	//max l/d cmd above vylmax
 									"astart", 5.66,		//ft/s2 accel to enter phase 2
-									"calpo", list(0, 19.455, -4.074, -4.2778, 16.398, 4.476, -9.9339, 40, 40, 40, 40),	//deg alpcmd constant term in ve 
+									"calp0", list(0, 19.455, -4.074, -4.2778, 16.398, 4.476, -9.9339, 40, 40, 40, 40),	//deg alpcmd constant term in ve 
 									"calp1", list(0, -0.776388e-2, 8.747711e-3, 0.8875002e-2, -0.3143109e-3, 3.1875e-3, 6.887436e-3, 0, 0, 0, 0),	//deg-s/ft 	alpcmd linear term in ve
 									"calp2", list(0, 0.2152776e-5, -7.44e-7, -0.7638891e-6, 0.2571456e-6, 0, -2.374978e-7, 0, 0, 0, 0 ),	//deg-s2/ft2 	alpcmd quadratic term in ve
 									"cddot1", 1500,	//ft/s 	cd velocity coef 
-									"cddot2", 2000,,	//ft/s 	cd velocity coef 
-									"cddot3", 0.15, ,	// 	cd velocity coef 
+									"cddot2", 2000,	//ft/s 	cd velocity coef 
+									"cddot3", 0.15, 	// 	cd velocity coef 
 									"cddot4", 0.0783,	//cd alpha coef 
 									"cddot5", -8.165e-3,	// 1/deg	cd alpha coef 
 									"cddot6", 6.833e-4,		// 1/deg2	cd alpha coef 
@@ -143,144 +162,200 @@ global entryg_constants is lexicon (
 
 
 //internal variables
-global alclam is 0.	//max allowable alpha
-global aclim is 0.	//min allowable alpha 
-global acmd1 is 0.	//scheduled aoa
-global aldco is 0.	//temp variable during phase 3
-global aldref is 0.	//vertical l/d ref
-global alpcmd is 0.	//aoa cmd 
-global alpdot is 0.	//aoa dot 
-global arg is list(0,0,0,0).	//1 is cos(bank cmd), 2 is cos(unlimited bank), 3 is cos(ref bank)
-global a2 is 0.	//temp variable in computign range 
-global cag is 0.	//pseudoenergy / mass used in transition 
-global cq1 is list(0,0,0).	//degree 0 for temp control quadratic 
-global cq2 is list(0,0,0).	//degree 1 for temp control quadratic 
-global cq3 is list(0,0,0).	//degree 2 for temp control quadratic 
-global c1 is 0.	//dD/dE i ntransition
-global c16 is 0.		//d(l/d) / dD
-global c17 is 0.		//d(l/d) / dH
-global c2 is 0.	//component of ref l/d 
-global c4 is 0. 	//ref alt term 
-global c20 id 0.		//gain for dAlpha/dCd 
-global dd is 0.		//drag - drefp 
-global dds is 0.		//limited dd value
-global ddp is 0.		//ddp prev 
-global delalf is 0.	//delta alpha from schedule 
-global delalp is 0.	//commanded alpha incr.
-global dlrot is 0.	//r feedback 
-global dlim is 0.	//max drefp in transition 
-global dlzrl is 0.	//test var in bank angle compuation
-global drdd is 0.	//dRange / dD 
-global dref is list(0,0,0)	//drefp for temperature quadratic
-global drefp is 0.	//drag ref used in controller 
-global drefpt is 0.	//drefp/dref in transition 
-global drefp1 is 0.	//eq glide
-global drefp3 is 0.	//tets value for transition to 3 
-global drefp4 is 0.	//test value for transiton to phase 4 
-global drefp5 is 0.	//test value for transition to phase 5 
-global drf is 0.		//test value for transition to quadratic ref params 
-global dx is list(0,0,0).	//drefp norm 
-global dzold is 0.	//delaz prev 
-global dzsgn is 0.	//change in delaz 
-global d231 is 0.	//first updated value of d23 
-global eef is 0.		//energy over mass 
-global rdtrf is 0.	//rdot temp control
-global ialp is 0.	//alpcmd segment counter 
-global ict is 0.		//alpha mod flag 
-global islecp is 0.	//past value if islect 
-global islect is 0.	//phase counter 
-global itran is 0.	//transition init flag 
-global lmflg is 0.	//saturated roll cmd flag 
-global lmn is 0.		//max lodv value 
-global lodv os 0.	//vertical l/d 
-global lodx is 0.	//unlimited vert l/d cmd 
-global q is list(0,0,0,0).	//drefp/ve in temp control 
-global rcg is 0.		//range const drag 
-global rcg1 is 0.	//constant comp of rcg 
-global rdealf is 0.	//alpha mod roll bias 
-global rdtref is 0.	//rdot ref 
-global rdtrf1 is 0.	//rdot ref in phase 3 
-global req1 is 0.	//eq glide range x d23
-global rer1 is 0.	//trans phase range 
-global rf is list(0,0,0).	//tmp control segments ranges x d23
-global rff1 is 0.	//tmp control range 
-global rdtrf is 0.	//rdot ref corrected for cd 
-global rollc is list(0,0,0,0)	//1 is roll angle command 2 is unlimited roll command 3 is roll ref 
-global rpt is 0.	//desired range at vq 
-global r231 is 0.	//range of phase 2+3 * d23
-global start is 0.	//first pass flag  
-global t1 is 0.		//eq glide vertical lift accel
-global t2 is 0.		//constant drag level to target 
-global t2dot is 0.	//rate of t2 change -à
-global v_temp is list(0,0,0,0)	//velocity points for temp control 
-global vb2 is 0.		//vb ^ 2
-global vcg is 0.		//phase 3/4 boundary vel 
-global ve2 is 0.		//ve ^ 2 
-global vf is list(0,0,0). 	//upper vel bounds for temp control 
-global vsat2 is 0.	//vsat ^ 2
-global vtrb is 0.	//rdot feedback vel lockout 
-global vx is list(0,0,0).	//velocities where dD / dV  = 0 in temp control quadratic 
-global xlod is 0.	//limited l/d 
-global yl is 0.	//max heading eror abs val 
-global zk is 0.	//rdot feedback gain 
+global entryg_internal is lexicon(
+									"alclam", 0,   	//max allowable alpha
+									"aclim", 0,   	//min allowable alpha 
+									"acmd1", 0,   	//scheduled aoa
+									"aldco", 0,   	//temp variable during phase 3
+									"aldref", 0,   	//vertical l/d ref
+									"alpcmd", 0,   	//aoa cmd 
+									"alpdot", 0,   	//aoa dot 
+									"arg", list(0,0,0,0),   	//1", cos(bank cmd), 2", cos(unlimited bank), 3", cos(ref bank)
+									"a2", 0,   	//temp variable in computign range 
+									"cag", 0,   	//pseudoenergy / mass used in transition 
+									"cq1", list(0,0,0),   	//degree 0 for temp control quadratic 
+									"cq2", list(0,0,0),   	//degree 1 for temp control quadratic 
+									"cq3", list(0,0,0),   	//degree 2 for temp control quadratic 
+									"c1", 0,   	//dD/dE i ntransition
+									"c16", 0,   		//d(l/d) / dD
+									"c17", 0,   		//d(l/d) / dH
+									"c2", 0,   	//component of ref l/d 
+									"c4", 0,    	//ref alt term 
+									"c20", 0,   		//gain for dAlpha/dCd 
+									"czold", 0,			// ??????
+									"d23", 0,		//drag velocity profile is anchored at d23 at velocity vb
+									"dd", 0,   		//drag - drefp 
+									"dds", 0,   		//limited dd value
+									"ddp", 0,   		//ddp prev 
+									"delalf", 0,   	//delta alpha from schedule 
+									"delalp", 0,   	//commanded alpha incr,   
+									"dlrdot", 0,   	//r feedback 
+									"dlim", 0,   	//max drefp in transition 
+									"dlzrl", 0,   	//test var in bank angle compuation
+									"drdd", 0,   	//dRange / dD 
+									"dref", list(0,0,0)	//drefp for temperature quadratic
+									"drefp", 0,   	//drag ref used in controller 
+									"drefpt", 0,   	//drefp/dref in transition 
+									"drefp1", 0,   	//eq glide
+									"drefp3", 0,   	//tets value for transition to 3 
+									"drefp4", 0,   	//test value for transiton to phase 4 
+									"drefp5", 0,   	//test value for transition to phase 5 
+									"drf", 0,   		//test value for transition to quadratic ref params 
+									"dx", list(0,0,0),   	//drefp norm 
+									"dzold", 0,   	//delaz prev 
+									"dzsgn", 0,   	//change in delaz 
+									"d231", 0,   	//first updated value of d23 
+									"eef", 0,   		//energy over mass 
+									"rdtrf", 0,   	//rdot temp control
+									"hs", 0,   		//scale height
+									"ialp", 0,   	//alpcmd segment counter 
+									"ict", 0,   		//alpha mod flag 
+									"idbchg", 0, 		// ?????
+									"islecp", 0,   	//past value if islect 
+									"islect", 0,   	//phase counter 
+									"itran", 0,   	//transition init flag 
+									"ivrr", 0,		//??????	
+									"lmflg", 0,   	//saturated roll cmd flag 
+									"lmn", 0,   		//max lodv value 
+									"lodv", 0,   	//vertical l/d 
+									"lodx", 0,   	//unlimited vert l/d cmd 
+									"q", list(0,0,0,0),   	//drefp/ve in temp control 
+									"rcg", 0,   		//range const drag 
+									"rcg1", 0,   	//constant comp of rcg 
+									"rdealf", 0,   	//alpha mod roll bias 
+									"rdtref", 0,   	//rdot ref 
+									"rdtrf1", 0,   	//rdot ref in phase 3 
+									"rdtrft", 0, 	//?????
+									"req1", 0,   	//eq glide range x d23
+									"rer1", 0,   	//trans phase range 
+									"rf", list(0,0,0),   	//tmp control segments ranges x d23
+									"rff1", 0,   	//tmp control range 
+									"rdtrf", 0,   	//rdot ref corrected for cd 
+									"rk2rol", 0,   	//bank angle direction 
+									"rk2rlp", 0,   	//prev val 
+									"rollc", list(0,0,0,0)	//1", roll angle command 2", unlimited roll command 3", roll ref 
+									"rpt", 0,   	//desired range at vq 
+									"r231", 0,   	//range of phase 2+3 * d23
+									"start", FALSE,   	//first pass flag  
+									"t1", 0,   		//eq glide vertical lift accel
+									"t2", 0,   		//constant drag level to target 
+									"t2old", 0,   		
+									"t2dot", 0,   	//rate of t2 change -à
+									"v_temp", list(0,0,0,0)	//velocity points for temp control 
+									"vb2", 0,   		//vb ^ 2
+									"vcg", 0,   		//phase 3/4 boundary vel 
+									"ve2", 0,   		//ve ^ 2 
+									"vf", list(0,0,0),    	//upper vel bounds for temp control 
+									"vo", list(0,0,0),    	//????
+									"vq2", 0,   
+									"vsat2", 0,   	//vsat ^ 2
+									"vsit2", 0,   	//vs1 ^ 2
+									"vtrb", 0,   	//rdot feedback vel lockout 
+									"vx", list(0,0,0),   	//velocities where dD / dV  = 0 in temp control quadratic 
+									"xlod", 0,   	//limited l/d 
+									"yl", 0,   	//max heading eror abs val 
+									"zk", 0   	//rdot feedback gain 
+).
+
+//put it up here so it's next to the definition
+function eginit {
+	set entryg_internal["czold"] to 0.
+	set entryg_internal["ivrr"] to 0.
+	set entryg_internal["itran"] to 0.
+	set entryg_internal["islect"] to 1.
+	set entryg_internal["ict"] to 0.
+	set entryg_internal["idbchg"] to 0.		//???
+	set entryg_internal["t2"] to 0.
+	set entryg_internal["drefp"] to 0.
+	set entryg_internal["vq2"] to entryg_constants["vq"]*entryg_constants["vq"].
+	set entryg_internal["rk2rol"] to -sign(delaz).
+	set entryg_internal["dlrdot"] to 0.
+	set entryg_internal["lmflg"] to 0.
+	set entryg_internal["vtrb"] to 60000.	//ft/s
+	set entryg_internal["ddp"] to 0.
+	set entryg_internal["rk2rlp"] to rk2rol.
+	
+	//nominal transition range at vtran (nmi)
+	set entryg_internal["rpt"] to -(( entryg_constants["etran"] - entryg_constants["eef4"] )* LN(entryg_constants["df"] / entryg_constants["alfm"]) / (entryg_constants["alfm"] - entryg_constants["df"]) + (entryg_constants["vtran"]^2 - entryg_internal["vq2"]) / (2*entryg_constants["alfm"]) ) * entryg_constants["cnmfs"] + entryg_constants["rpt1"].
+	
+	set entryg_internal["vsat2"] to entryg_constants["vsat"]^2.
+	set entryg_internal["vsit2"] to entryg_constants["vs1"]^2.
+	
+	set entryg_internal["vcg"] to entryg_constants["vq"].
+	set d23 to entryg_constants["d230"].
+	set entryg_internal["dx"][1] to 1.
+	
+	set entryg_internal["vo"][1] to entryg_constants["vb1"].
+	set entryg_internal["vo"][2] to entryg_constants["va1"].
+	
+	set entryg_internal["vx"][1] to entryg_constants["va"].
+	set entryg_internal["vx"][2] to entryg_constants["va2"].
+	
+	set entryg_internal["vf"][1] to entryg_constants["va1"].
+	
+	set entryg_internal["a2"] to entryg_constants["ak1"].
+	set entryg_internal["vb2"] to entryg_constants["vb1"]^2.
+	
+	//component of constant drag phase 
+	set entryg_internal["rcg1"] to entryg_constants["cnmfs"] * ( entryg_internal["vsit2"]  - entryg_internal["vq2"]) / (2*entryg_constants["alfm"]).
+	set entryg_internal["ialp"] to entryg_constants["nalp"].
+	set entryg_internal["start"] to TRUE.
+}
 
 
-
-
-
-
-
-//flag for regular or canned reenty guidance 
-//egflg = 0 is bank modulation guidance
-//egflg = 2 is is for simulations and terminates at mach 23?
-global egflg is 0.
-
+entryg_constants[""]
 
 function egexec {
 
-	if start = 0 {
+	egscaleht().
+
+	if entryg_internal["start"] = FALSE {
 		eginit().
 	}
 	
-	egccmn().
+	egcomn().
 	
 	// preentry termination, when load fac exceeds astart
-	if (islect = 1) and (xlfac > astart) {
-		set islect to 2.
-		set dtegd to 1.92.
+	if (entryg_internal["islect"] = 1) and (entryg_input["xlfac"] > entryg_constants["astart"]) {
+		set entryg_internal["islect"] to 2.
+		set entryg_constants["dtegd"]. to 1.92.	
 		
 		// if less than v transition
-		if (ve < vtran) {
-			set islect to 5.
+		if (entryg_input["ve"] < entryg_constants["vtran"]) {
+			set entryg_internal["islect"] to 5.
 		}
+	}
+	
+	if (entryg_internal["islect"] = 2 and entryg_input["ve"] < entryg_constants["vb1"]) {
+		SET entryg_internal["islect"] To 3.
 	}
 	
 	//alternate termination if desired constant drag to target exceeds the ref. const.drag
 	// for extremely short range
-	if (islect = 2 or islect = 3) and ( t2 > alfm) {
-		set islect to 4.
+	if (entryg_internal["islect"] = 2 or entryg_internal["islect"] = 3) and ( entryg_internal["t2"] > entryg_constants["alfm"]) {
+		set entryg_internal["islect"] to 4.
 	}
 	
 	//for reentry simulation using a canned drag profile ??
-	if (egflg > 0) and (islect > 2) {
-		set islect to 2.
+	if (entryg_input["egflg"] > 0) and (entryg_internal["islect"] > 2) {
+		set entryg_internal["islect"] to 2.
 	}
 	
-	if (islect = 1) {
+	if (entryg_internal["islect"] = 1) {
 		//compute vertical l/d during preentry 
 		egpep().
-	} else if (islect = 2) {
+	} else if (entryg_internal["islect"] = 2) {
 		//reference parameters during temperature control
 		egrp().
 		egref().
-	} else if (islect = 3) {
+	} else if (entryg_internal["islect"] = 3) {
 		//reference parameters during equilibrium glide
 		egrp().
 		egref().
-	} else if (islect = 4) {
+	} else if (entryg_internal["islect"] = 4) {
 		//reference parameters during const drag
 		egref4().
-	} else if (islect = 5) {
+	} else if (entryg_internal["islect"] = 5) {
 		//reference parameters during transition
 		egtran().
 	} 
@@ -289,7 +364,7 @@ function egexec {
 	egalpcmd().
 
 	//vertical l/d after preentry
-	if (islect > 1) {
+	if (entryg_internal["islect"] > 1) {
 		eggnslct().
 		eglodvcmd().
 	}
@@ -298,66 +373,72 @@ function egexec {
 	egrolcmd().
 	
 	//transition checks 
-	if (islect = 2) {
-		if (ve < va) and (drefp < drefp3) {
-			set islect to 3.
+	if (entryg_internal["islect"] = 2) {
+		if (entryg_input["ve"] < entryg_constants["va"]) and (entryg_internal["drefp"] < entryg_internal["drefp3"]) {
+			set entryg_internal["islect"] to 3.
 		}
-	} else if (islect = 3) {
-		if (ve < (vcg + delv)) and (drefp > drefp4) {
-			set islect to 4.
+	} else if (entryg_internal["islect"] = 3) {
+		if (entryg_input["ve"] < (entryg_internal["vcg"] + entryg_constants["delv"])) and (entryg_internal["drefp"] > entryg_internal["drefp4"]) {
+			set entryg_internal["islect"] to 4.
 		}
 		
-		if (ve < (vtran + delv)) and (drefp > drefp5) and (vcg < vtran) {
-			set islect to 5.
+		if (entryg_input["ve"] < (entryg_constants["vtran"] + entryg_constants["delv"])) and (entryg_internal["drefp"] > entryg_internal["drefp5"]) and (entryg_internal["vcg"] < entryg_constants["vtran"]) {
+			set entryg_internal["islect"] to 5.
 		}
-	} else if (islect = 4) {
-		if (ve < (vtran + delv)) and (drefp > drefp5) {
+	} else if (entryg_internal["islect"] = 4) {
+		if (entryg_input["ve"] < (entryg_constants["vtran"] + entryg_constants["delv"])) and (entryg_internal["drefp"] > entryg_internal["drefp5"]) {
 		
 		}
 	}
 }
 
 
-function egscalht {
+function egscaleht {
 
-    if (ve < vhs1) {
-        set hs to hs01 + hs11 * ve.
-    } else if (ve < vhs2) {
-		set hs to hs02.
+    if (entryg_input["ve"] < entryg_constants["vhs1"]) {
+        set entryg_internal["hs"] to entryg_constants["hs01"] + entryg_constants["hs11"] * entryg_input["ve"].
+    } else if (entryg_input["ve"] < entryg_constants["vhs2"]) {
+		set entryg_internal["hs"] to entryg_constants["hs02"].
 	} else {
-		set hs to hs03 + hs13 * ve.
+		set entryg_internal["hs"] to entryg_constants["hs03"] + entryg_constants["hs13"] * entryg_input["ve"].
 	}
 
-	set hs to max(hs, hsmin).
+	set entryg_internal["hs"] to max(entryg_internal["hs"], entryg_constants["hsmin"]).
 
 }
 
-function eginit {
-	set czold to 0.
-	set ivrr to 0.
-	set itran to 0.
-	set islect to 1.
-	set ict to 0.
-	set idbchg to 0.
-	set t2 to 0.
-	set crefp to 0.
-	set vq2 to 0.
-	set rk2rol to -sign(delaz).
-	set dlrdot to 0.
-	set lmflg to 0.
-	set vtrb to 60000.
-	set ddp to 0.
-	set rk2rlp to rk2rol.
+function egcomn {
+
+	set entryg_internal["xlod"] to max(lod, entryg_constants["lodmin"]).
 	
-	//nominal transition range at vtran
-	set rpt to -(( etran - eef4 )* LN(df / alfm) / (alfm - df) + (vtran^2 - vq2) / (2*alfm) ) * cnmfs + rpt1.
+	set entryg_internal["t1"] to entryg_constants["gs"] * (entryg_input["vi"]^2 / entryg_internal["vsat2"] - 1).
+	set entryg_internal["t2old"] to entryg_internal["t2"].
 	
-	set vsat2 to vsat^2.
-	set vsit2 to vs1^2.
+	set entryg_internal["ve2"] to entryg_input["ve"]^2.
 	
-	set vcg to vq.
-	set d23 to d230.
-	set dx[0] to 1.
+	set entryg_internal["eef"] to entryg_constants["gs"] * entryg_input["hls"] + entryg_internal["ve2"] / 2.
 	
-	set v0[0]
+	set entryg_output["eowd"] to entryg_internal["eef"] / entryg_constants["gs"].
+	
+	set entryg_internal["cag"] to 2* entryg_constants["gs"]*entryg_internal["hs"] + entryg_internal["ve2"].
+	
+	if (entryg_internal["islect"] < 5) {
+		set entryg_internal["t2"] to entryg_constants["cnmfs"] * (entryg_internal["ve2"] - entryg_internal["vq2"]) / (2*( entryg_input["trange"] - entryg_internal["rpt"])).
+		set entryg_internal["t2dot"] to (entryg_internal["t2"] - entryg_internal["t2old"]) / entryg_constants["dtegd"].
+		
+		if ( entryg_input["ve"] < (entryg_constants["vtran"] + entryg_constants["delv"]) {
+			set entryg_internal["c1"] to (entryg_internal["t2"] - entryg_constants["df"]) / ( entryg_constants["etran"] - entryg_constants["eef4"]).
+			set entryg_internal["rdtrft"] to - (entryg_internal["c1"] * (entryg_constants["gs"]  * entryg_input["hls"] - entryg_constants["eef4"] ) + entryg_constants["df"] ) * 2 * entryg_input["ve"] * entryg_internal["hs"] / entryg_internal["cag"].
+			
+			set entryg_internal["drefp5"] to entryg_constants["df"] + (entryg_internal["eef"] - entryg_constants["eef4"]) * entryg_internal["c1"] + entryg_constants["gs4"] * (entryg_internal["rdtref"] - entryg_internal["rdtrft"])
+		}
+	
+	}
+	
+}
+
+function egpep {
+	set entryg_internal["lodx"] to entryg_internal["xlod"] * COS( entryg_input["mm304ph"] / entryg_constants["radeg"] ).
+	set entryg_internal["lodv"] to lodx.
+
 }
