@@ -125,8 +125,8 @@ global entryg_constants is lexicon (
 									"verolc", 8000,	//max vel for limiting bank cmd
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
-									"vnoalp", 0,	//modulation start flag//	//this is always zero somehow?
-									"vq", 5000,	//ft/s predicted end vel for const drag
+									"vnoalp", 25000,	//modulation start flag//	//took the value from the sts-1 paper
+									"vq", 10499,	//ft/s predicted end vel for const drag			//changed for consistency with vtran
 									"vrlmc", 2500,	//ft/s rlm seg switch vel
 									"vsat", 25766.2,	//ft/s local circular orbit vel 
 									"vs1", 23283.5,		//ft/s eq glide ref vel 
@@ -166,7 +166,7 @@ global entryg_internal is lexicon(
 									"c2", 0,   	//component of ref l/d 
 									"c4", 0,    	//ref alt term 
 									"c20", 0,   		//gain for dAlpha/dCd 
-									"czold", 0,			// ??????
+									//"czold", 0,			// ??????
 									"d23", 0,		//drag velocity profile is anchored at d23 at velocity vb1 - the phase 2/3 boundary
 									"dd", 0,   		//drag - drefp 
 									"dds", 0,   		//limited dd value
@@ -256,6 +256,7 @@ function egexec {
 
 	egscaleht().
 
+	//this also needs to be called at runway redesignation or if we reset guidance I guess
 	if entryg_internal["start"] = 0 {
 		set entryg_input["dtegd"] to entryg_constants["dtegd"].
 		eginit().
@@ -404,7 +405,7 @@ function eginit {
 	//might want to do a ve test if we resume entry halfway
 	set entryg_internal["islect"] to 1.
 
-	set entryg_internal["czold"] to 0.
+	//set entryg_internal["czold"] to 0.
 	set entryg_internal["ivrr"] to FALSE.
 	set entryg_internal["itran"] to FALSE.
 	set entryg_internal["ict"] to FALSE.
