@@ -94,11 +94,11 @@ global entryg_constants is lexicon (
 									"c26", 0,		//s/ft - deg 	c20 linear val 
 									"c27", 0,		//1/deg c20 const val 
 									"ddlim", 2,		//ft/s2	max drag for h feedback 
-									"ddmin", 0.15,	//ft/s 	max drag error 
+									"ddmin", 0.15,	//ft/s 	min drag error to toggle alpha mod
 									"delv", 2300,	//ft/s phase transfer vel bias 
 									"df", 21.0,	//ft/s2 final drag in transition phase
 									"dlallm", 43,	//deg max constant
-									"dlalpm", 2,		//deg delalp lim
+									"dlaplm", 2,		//deg delalp lim
 									"d23c", 19.8,	//ft/s2 etg canned d23
 									"d230", 19.8,	//ft/s2 initial d23 value
 									"drddl", -1.5,	//nmi/s2/ft	minimum value of drdd
@@ -144,7 +144,7 @@ global entryg_constants is lexicon (
 									"verolc", 8000,	//max vel for limiting bank cmd
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
-									"vnoalp", 0,	//modulation start flag
+									"vnoalp", 0,	//modulation start flag//	//this is always zero somehow?
 									"vq", 5000,	//ft/s predicted end vel for const drag
 									"vrlmc", 2500,	//ft/s rlm seg switch vel
 									"vsat", 25766.2,	//ft/s local circular orbit vel 
@@ -158,7 +158,7 @@ global entryg_constants is lexicon (
 									"y1", 0.3054326,	//rad max heading err deadband before first reversal
 									"y2", 0.1745329,	//rad min heading error deadband 
 									"y3", 0.3054326,	//max heading err deadband after first reversal 
-									"zk", 1	//s hdot feedback gain
+									"zk1", 1	//s hdot feedback gain
 
 ).
 
@@ -210,7 +210,7 @@ global entryg_internal is lexicon(
 									"hdtrf", list(0,0,0),   	//rdot ref intermediate var
 									"hs", 0,   		//scale height
 									"ialp", 0,   	//alpcmd segment counter 
-									"ict", 0,   		//alpha mod flag 
+									"ict", FALSE,   		//alpha mod flag 
 									"idbchg", 0, 		// ?????
 									"islecp", 0,   	//past value if islect 
 									"islect", 0,   	//phase counter 
@@ -402,7 +402,7 @@ function eginit {
 	set entryg_internal["czold"] to 0.
 	set entryg_internal["ivrr"] to 0.
 	set entryg_internal["itran"] to FALSE.
-	set entryg_internal["ict"] to 0.
+	set entryg_internal["ict"] to FALSE.
 	set entryg_internal["idbchg"] to 0.		//???
 	set entryg_internal["t2"] to 0.
 	set entryg_internal["drefp"] to 0.
@@ -694,13 +694,14 @@ function eggnslct {
 	
 	set entryg_internal["c16"] to midval(entryg_internal["c16"], entryg_constants["ct16mn"], entryg_constants["ct16mx"]).
 	
-	if (entryg_internal["ict"] = 1) {
+	if (entryg_internal["ict"]) {
 		set entryg_constants["ct17mn"] to entryg_constants["ct17m2"].
 	}
 	
 	set entryg_internal["c17"] to entryg_constants["ct17"][1]*entryg_input["drag"]^(entryg_constants["ct17"][2]).
 	set entryg_internal["c17"] to midval(entryg_internal["c17"], entryg_constants["ct17mn"], entryg_constants["ct17mx"]).
-	if (entryg_internal["ict"] = 1) {
+	
+	if (entryg_internal["ict"]) {
 		set entryg_internal["c17"] to entryg_constants["ct17mp"] * entryg_internal["c17"].
 	}
 }
@@ -708,5 +709,44 @@ function eggnslct {
 
 //lateral logic and vertical l/d cmd
 function eglodvcmd {
-
+	//this is a numerical equation for Cd(alpha,mach) is it not?
+	local a44 is constant:e^(-(entryg_input["ve"] - entryg_constants["cddot1"])/entryg_constants["cddot2"]).
+	local cdcal is entryg_constants["cddot4"] + entryg_internal["alpcmd"]*(entryg_constants["cddot5"] + entryg_constants["cddot6"]* entryg_internal["alpcmd"]) + entryg_constants["cddot3"] * a44.
+	local cddotc is entryg_constants["cddot7"]*(entryg_input["drag"] + entryg_constants["gs"]*entryg_input["rdot"] / entryg_input["ve"])*a44 + entryg_internal["alpdot"]*(entryg_constants["cddot8"]*entryg_internal["alpcmd"] + entryg_constants["cddot9"]).
+	set entryg_internal["c4"] to entryg_internal["hs"]*cddotc/cdcal. 
+	
+	//test for alpha modulation
+	if (entryg_input["ve"] < entryg_constants["vnoalp"]) {
+		if (entryg_input["drag"] > entryg_internal["drefp"]) or (entryg_input["ve"] < entryg_constants["valmod"]) or (entryg_internal["ict"]) {
+			set entryg_internal["ict"] to TRUE.	//bc we might end up here  even before the flag is zero
+			set entryg_internal["c20"] to midval(entryg_constants["c21"], entryg_constants["c22"] + entryg_constants["c23"]*entryg_input["ve"], entryg_constants["c24"]).
+			
+			if (entryg_input["ve"] < entryg_constants["vc20"]) {
+				set entryg_internal["c20"] to max(entryg_constants["c25"] + entryg_constants["c26"]*entryg_input["ve"], entryg_constants["c27"]).
+			}
+			
+			set entryg_internal["delalp"] to midval(cdcal*((entryg_internal["drefp"]/entryg_input["drag"] - 1)/entryg_internal["c20"], entryg_constants["dlaplm"], -entryg_constants["dlaplm"]).
+			
+			if (abs(entryg_input["drag"] - entryg_internal["drefp"]) < entryg_constants["ddmin"]) {
+				set entryg_internal["delalp"] to 0.
+			}
+		}
+	}
+	
+	if (islect = 5) {
+		set entryg_internal["t1"] to entryg_constants["gs"] * (entryg_internal["ve2"]/entryg_internal["vsat2"] - 1).
+	}
+	
+	//ANOTHER DISCREPANCY BW THE PAPERS - SIGN OF ALDREF
+	set entryg_internal["aldref"] to entryg_internal["t1"] / entryg_internal["drefp"] + (2*entryg_internal["rdtref"] + entryg_internal["c2"]*entryg_internal["hs"]) / entryg_input["ve"].
+	set entryg_internal["rdtrf"] to entryg_internal["rdtref"] + entryg_internal["c4"].
+	set entryg_internal["dd"] to entryg_input["drag"] - entryg_internal["drefp"].
+	
+	
+	if (entryg_input["ve"] < entryg_constants["vrdt"]) {
+		set entryg_internal["dds"] to midval(entryg_internal["dd"], -entryg_constants["ddlim"], entryg_constants["ddlim"]).
+		set entryg_internal["zk"] to entryg_constants["zk1"].
+	}
+	
+	
 }
