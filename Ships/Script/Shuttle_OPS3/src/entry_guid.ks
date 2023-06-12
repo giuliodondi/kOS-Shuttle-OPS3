@@ -3,6 +3,7 @@
 
 //input variables 
 global entryg_input is lexicon(
+								"dtegd",,		//iteration delta-t
 								"alpha",,      //aoa
 								"delaz",,       //az error  
 								"drag",,        //drag accel (ft/s2) 
@@ -35,6 +36,7 @@ global entryg_output is lexicon(
 								"vrr",, 		//velocity first reversal //ft/s 
 								"eowd",,  	//eow //ft 
 								"eei",,		//entry eval indicator 
+								"eg_end",,
 								"rc176g",, 	//first roll after 0.176g	//deg
 
 
@@ -133,9 +135,9 @@ global entryg_constants is lexicon (
 									"va", 27637,	//ft/s initial vel for temp quadratic, dD/dV = 0
 									"valmod", 23000,	//ft/s modulation start flag for nonconvergence
 									"valp", list(0, 2850, 3200, 4500, 6809, 7789.4, 14500, 14500, 14500, 14500),	//ft/s alpcmd vs ve boundaries
-									"va1", 22000,	//ft/s temp control quadratic segments boundary vel
-									"va2", 27637,	//ft/s initial vel dor temo quadratic dD/dV = 0
-									"vb1", 19000,	//ft/s temp control / eq glide boundary vel 
+									"va1", 22000,	//ft/s matching point bw phase 2 quadratic segments
+									"va2", 27637,	//ft/s initial vel dor temp quadratic dD/dV = 0
+									"vb1", 19000,	//ft/s phase 2/3 boundary vel 
 									"vc16", 23000,	//ft/s vel to start c16 drag error term
 									"vc20", 2500,	//ft/s c20 vel break point
 									"velmn", 8000,	//ft/s	max vel for limiting lmn by almn3
@@ -171,7 +173,7 @@ global entryg_internal is lexicon(
 									"alpcmd", 0,   	//aoa cmd 
 									"alpdot", 0,   	//aoa dot 
 									"arg", list(0,0,0,0),   	//1", cos(bank cmd), 2", cos(unlimited bank), 3", cos(ref bank)
-									"a2", 0,   	//temp variable in computign range 
+									"a", list(0,0,0),   	//temp variable in computign range 
 									"cag", 0,   	//pseudoenergy / mass used in transition 
 									"cq1", list(0,0,0),   	//degree 0 for temp control quadratic 
 									"cq2", list(0,0,0),   	//degree 1 for temp control quadratic 
@@ -183,7 +185,7 @@ global entryg_internal is lexicon(
 									"c4", 0,    	//ref alt term 
 									"c20", 0,   		//gain for dAlpha/dCd 
 									"czold", 0,			// ??????
-									"d23", 0,		//drag velocity profile is anchored at d23 at velocity vb
+									"d23", 0,		//drag velocity profile is anchored at d23 at velocity vb1 - the phase 2/3 boundary
 									"dd", 0,   		//drag - drefp 
 									"dds", 0,   		//limited dd value
 									"ddp", 0,   		//ddp prev 
@@ -204,7 +206,6 @@ global entryg_internal is lexicon(
 									"dx", list(0,0,0),   	//drefp norm 
 									"dzold", 0,   	//delaz prev 
 									"dzsgn", 0,   	//change in delaz 
-									"d231", 0,   	//first updated value of d23 
 									"eef", 0,   		//energy over mass 
 									"rdtrf", 0,   	//rdot temp control
 									"hs", 0,   		//scale height
@@ -229,14 +230,14 @@ global entryg_internal is lexicon(
 									"req1", 0,   	//eq glide range x d23
 									"rer1", 0,   	//trans phase range 
 									"rf", list(0,0,0),   	//tmp control segments ranges x d23
-									"rff1", 0,   	//tmp control range 
+									"rff1", 0,   	//tmp control predicted range 
 									"rdtrf", 0,   	//rdot ref corrected for cd 
 									"rk2rol", 0,   	//bank angle direction 
 									"rk2rlp", 0,   	//prev val 
 									"rollc", list(0,0,0,0)	//1", roll angle command 2", unlimited roll command 3", roll ref 
 									"rpt", 0,   	//desired range at vq 
 									"r231", 0,   	//range of phase 2+3 * d23
-									"start", FALSE,   	//first pass flag  
+									"start", 0,   	//first pass flag  
 									"t1", 0,   		//eq glide vertical lift accel
 									"t2", 0,   		//constant drag level to target 
 									"t2old", 0,   		
@@ -247,7 +248,7 @@ global entryg_internal is lexicon(
 									"ve2", 0,   		//ve ^ 2 
 									"vf", list(0,0,0),    	//upper vel bounds for temp control 
 									"vo", list(0,0,0),    	//????
-									"vq2", 0,   
+									"vq2", 0,   	//vq ^ 2
 									"vsat2", 0,   	//vsat ^ 2
 									"vsit2", 0,   	//vs1 ^ 2
 									"vtrb", 0,   	//rdot feedback vel lockout 
@@ -257,68 +258,28 @@ global entryg_internal is lexicon(
 									"zk", 0   	//rdot feedback gain 
 ).
 
-//put it up here so it's next to the definition
-function eginit {
-	set entryg_internal["czold"] to 0.
-	set entryg_internal["ivrr"] to 0.
-	set entryg_internal["itran"] to 0.
-	set entryg_internal["islect"] to 1.
-	set entryg_internal["ict"] to 0.
-	set entryg_internal["idbchg"] to 0.		//???
-	set entryg_internal["t2"] to 0.
-	set entryg_internal["drefp"] to 0.
-	set entryg_internal["vq2"] to entryg_constants["vq"]*entryg_constants["vq"].
-	set entryg_internal["rk2rol"] to -sign(delaz).
-	set entryg_internal["dlrdot"] to 0.
-	set entryg_internal["lmflg"] to 0.
-	set entryg_internal["vtrb"] to 60000.	//ft/s
-	set entryg_internal["ddp"] to 0.
-	set entryg_internal["rk2rlp"] to rk2rol.
-	
-	//nominal transition range at vtran (nmi)
-	set entryg_internal["rpt"] to -(( entryg_constants["etran"] - entryg_constants["eef4"] )* LN(entryg_constants["df"] / entryg_constants["alfm"]) / (entryg_constants["alfm"] - entryg_constants["df"]) + (entryg_constants["vtran"]^2 - entryg_internal["vq2"]) / (2*entryg_constants["alfm"]) ) * entryg_constants["cnmfs"] + entryg_constants["rpt1"].
-	
-	set entryg_internal["vsat2"] to entryg_constants["vsat"]^2.
-	set entryg_internal["vsit2"] to entryg_constants["vs1"]^2.
-	
-	set entryg_internal["vcg"] to entryg_constants["vq"].
-	set d23 to entryg_constants["d230"].
-	set entryg_internal["dx"][1] to 1.
-	
-	set entryg_internal["vo"][1] to entryg_constants["vb1"].
-	set entryg_internal["vo"][2] to entryg_constants["va1"].
-	
-	set entryg_internal["vx"][1] to entryg_constants["va"].
-	set entryg_internal["vx"][2] to entryg_constants["va2"].
-	
-	set entryg_internal["vf"][1] to entryg_constants["va1"].
-	
-	set entryg_internal["a2"] to entryg_constants["ak1"].
-	set entryg_internal["vb2"] to entryg_constants["vb1"]^2.
-	
-	//component of constant drag phase 
-	set entryg_internal["rcg1"] to entryg_constants["cnmfs"] * ( entryg_internal["vsit2"]  - entryg_internal["vq2"]) / (2*entryg_constants["alfm"]).
-	set entryg_internal["ialp"] to entryg_constants["nalp"].
-	set entryg_internal["start"] to TRUE.
-}
 
-
-entryg_constants[""]
+//egflg = 0,1 is normal mode, egflg=2 is canned mode for targeting (islect will never be > 2)
+//phases (islect) : 
+// 1 = preentry, 2 = temp control , 3 = eq glide , 4 = const drag , 5 = transition
 
 function egexec {
 
 	egscaleht().
 
-	if entryg_internal["start"] = FALSE {
+	if entryg_internal["start"] = 0 {
+		set entryg_input["dtegd"] to entryg_constants["dtegd"].
 		eginit().
 	}
 	
 	egcomn().
 	
+	//initial transition checks
+	//needed for mode 1 transition or 
+	
 	// preentry termination, when load fac exceeds astart
 	if (entryg_internal["islect"] = 1) and (entryg_input["xlfac"] > entryg_constants["astart"]) {
 		set entryg_internal["islect"] to 2.
-		set entryg_constants["dtegd"]. to 1.92.	
 		
 		// if less than v transition
 		if (entryg_input["ve"] < entryg_constants["vtran"]) {
@@ -326,11 +287,13 @@ function egexec {
 		}
 	}
 	
+	//alternate termination of temp control 
+	//if bank has not been matched by velocity vb1, force switch 
 	if (entryg_internal["islect"] = 2 and entryg_input["ve"] < entryg_constants["vb1"]) {
 		SET entryg_internal["islect"] To 3.
 	}
 	
-	//alternate termination if desired constant drag to target exceeds the ref. const.drag
+	//alternate termination if required constant drag to target exceeds the max desired const.drag
 	// for extremely short range
 	if (entryg_internal["islect"] = 2 or entryg_internal["islect"] = 3) and ( entryg_internal["t2"] > entryg_constants["alfm"]) {
 		set entryg_internal["islect"] to 4.
@@ -344,12 +307,8 @@ function egexec {
 	if (entryg_internal["islect"] = 1) {
 		//compute vertical l/d during preentry 
 		egpep().
-	} else if (entryg_internal["islect"] = 2) {
-		//reference parameters during temperature control
-		egrp().
-		egref().
-	} else if (entryg_internal["islect"] = 3) {
-		//reference parameters during equilibrium glide
+	} else if (entryg_internal["islect"] = 2) OR (entryg_internal["islect"] = 3) {
+		//reference parameters during temperature control and eq glide 
 		egrp().
 		egref().
 	} else if (entryg_internal["islect"] = 4) {
@@ -363,7 +322,7 @@ function egexec {
 	//aoa command
 	egalpcmd().
 
-	//vertical l/d after preentry
+	//vertical l/d after preentry	//can I move these before egalpcmd ?? probably not  
 	if (entryg_internal["islect"] > 1) {
 		eggnslct().
 		eglodvcmd().
@@ -373,26 +332,52 @@ function egexec {
 	egrolcmd().
 	
 	//transition checks 
-	if (entryg_internal["islect"] = 2) {
-		if (entryg_input["ve"] < entryg_constants["va"]) and (entryg_internal["drefp"] < entryg_internal["drefp3"]) {
-			set entryg_internal["islect"] to 3.
-		}
-	} else if (entryg_internal["islect"] = 3) {
-		if (entryg_input["ve"] < (entryg_internal["vcg"] + entryg_constants["delv"])) and (entryg_internal["drefp"] > entryg_internal["drefp4"]) {
-			set entryg_internal["islect"] to 4.
+	if (entryg_internal["islect"] > 1) {
+		if (entryg_internal["islect"] = 2) {
+			//nominal temp control termination 
+			//switch occurs when temp.control bank command matches the const glide bank, to avoid jumps
+			//controlled by variable gs2 inside drefp3
+			if (entryg_input["ve"] < entryg_constants["va"]) and (entryg_internal["drefp"] < entryg_internal["drefp3"]) {
+				set entryg_internal["islect"] to 3.
+			}
+			
+			//short range temp control termination 
+			//if required const drag is reached during temp control, skip phase 3 
+			//bank smoothing is controlled by variable gs3 inside drefp4
+			if (entryg_input["ve"] < (entryg_internal["vcg"] + entryg_constants["delv"])) and (entryg_internal["drefp"] > entryg_internal["drefp4"]) {
+				set entryg_internal["islect"] to 4.
+			}
+			
+		} else if (entryg_internal["islect"] = 3) {
+			//this now becomes the nominal phase 3 termination
+			//bank smoothing is controlled by variable gs3 inside drefp4
+			if (entryg_input["ve"] < (entryg_internal["vcg"] + entryg_constants["delv"])) and (entryg_internal["drefp"] > entryg_internal["drefp4"]) {
+				set entryg_internal["islect"] to 4.
+			}
+			
+			//very long range termination of phase 3 
+			//if the phase 3/4 velocity is less than the phase 4/5 vtran, skip phase 4
+			//bank smoothing is controlled by variable gs4 inside drefp5
+			if (entryg_input["ve"] < (entryg_constants["vcg"] + entryg_constants["delv"])) and (entryg_internal["drefp"] > entryg_internal["drefp5"]) and (entryg_internal["vcg"] < entryg_constants["vtran"]) {
+				set entryg_internal["islect"] to 5.
+			}
+		} else if (entryg_internal["islect"] = 4) {
+			//termination of phase 4 at a predetermined time before energy etran is reached 
+			if (entryg_input["ve"] < (entryg_constants["vtran"] + entryg_constants["delv"])) and (entryg_internal["drefp"] > entryg_internal["drefp5"]) {
+			
+			}
 		}
 		
-		if (entryg_input["ve"] < (entryg_constants["vtran"] + entryg_constants["delv"])) and (entryg_internal["drefp"] > entryg_internal["drefp5"]) and (entryg_internal["vcg"] < entryg_constants["vtran"]) {
-			set entryg_internal["islect"] to 5.
-		}
-	} else if (entryg_internal["islect"] = 4) {
-		if (entryg_input["ve"] < (entryg_constants["vtran"] + entryg_constants["delv"])) and (entryg_internal["drefp"] > entryg_internal["drefp5"]) {
-		
+		//entry guidance termination 
+		if (entryg_input["ve"] < entryg_constants["v_taem"]) {
+			set entryg_output["eg_end"] to TRUE.
 		}
 	}
+	
+	
 }
 
-
+//scale height for hdot reference term
 function egscaleht {
 
     if (entryg_input["ve"] < entryg_constants["vhs1"]) {
@@ -405,6 +390,55 @@ function egscaleht {
 
 	set entryg_internal["hs"] to max(entryg_internal["hs"], entryg_constants["hsmin"]).
 
+}
+
+
+function eginit {
+	
+	//might want to do a ve test if we resume entry halfway
+	set entryg_internal["islect"] to 1.
+
+	set entryg_internal["czold"] to 0.
+	set entryg_internal["ivrr"] to 0.
+	set entryg_internal["itran"] to 0.
+	set entryg_internal["ict"] to 0.
+	set entryg_internal["idbchg"] to 0.		//???
+	set entryg_internal["t2"] to 0.
+	set entryg_internal["drefp"] to 0.
+	set entryg_internal["vq2"] to entryg_constants["vq"]*entryg_constants["vq"].
+	set entryg_internal["rk2rol"] to -sign(delaz).
+	set entryg_internal["dlrdot"] to 0.
+	set entryg_internal["lmflg"] to 0.
+	set entryg_internal["vtrb"] to 60000.	//ft/s
+	set entryg_internal["ddp"] to 0.
+	set entryg_internal["rk2rlp"] to rk2rol.
+	
+	//nominal transition range at vtran (nmi)
+	//this is kept fixed for range calculations of phase 2,3,4
+	set entryg_internal["rpt"] to -(( entryg_constants["etran"] - entryg_constants["eef4"] )* LN(entryg_constants["df"] / entryg_constants["alfm"]) / (entryg_constants["alfm"] - entryg_constants["df"]) + (entryg_constants["vtran"]^2 - entryg_internal["vq2"]) / (2*entryg_constants["alfm"]) ) * entryg_constants["cnmfs"] + entryg_constants["rpt1"].
+	
+	set entryg_internal["vsat2"] to entryg_constants["vsat"]^2.
+	set entryg_internal["vsit2"] to entryg_constants["vs1"]^2.
+	
+	set entryg_internal["vcg"] to entryg_constants["vq"].
+	set entryg_internal["d23"] to entryg_constants["d230"].
+	set entryg_internal["dx"][1] to 1.
+	
+	set entryg_internal["vo"][1] to entryg_constants["vb1"].
+	set entryg_internal["vo"][2] to entryg_constants["va1"].
+	
+	set entryg_internal["vx"][1] to entryg_constants["va"].
+	set entryg_internal["vx"][2] to entryg_constants["va2"].
+	
+	set entryg_internal["vf"][1] to entryg_constants["va1"].
+	
+	set entryg_internal["a"][2] to entryg_constants["ak1"].
+	set entryg_internal["vb2"] to entryg_constants["vb1"]^2.
+	
+	//component of constant drag phase 
+	set entryg_internal["rcg1"] to entryg_constants["cnmfs"] * ( entryg_internal["vsit2"]  - entryg_internal["vq2"]) / (2*entryg_constants["alfm"]).
+	set entryg_internal["ialp"] to entryg_constants["nalp"].
+	set entryg_internal["start"] to 1.
 }
 
 function egcomn {
@@ -424,7 +458,7 @@ function egcomn {
 	
 	if (entryg_internal["islect"] < 5) {
 		set entryg_internal["t2"] to entryg_constants["cnmfs"] * (entryg_internal["ve2"] - entryg_internal["vq2"]) / (2*( entryg_input["trange"] - entryg_internal["rpt"])).
-		set entryg_internal["t2dot"] to (entryg_internal["t2"] - entryg_internal["t2old"]) / entryg_constants["dtegd"].
+		set entryg_internal["t2dot"] to (entryg_internal["t2"] - entryg_internal["t2old"]) / entryg_input["dtegd"].
 		
 		if ( entryg_input["ve"] < (entryg_constants["vtran"] + entryg_constants["delv"]) {
 			set entryg_internal["c1"] to (entryg_internal["t2"] - entryg_constants["df"]) / ( entryg_constants["etran"] - entryg_constants["eef4"]).
@@ -437,8 +471,80 @@ function egcomn {
 	
 }
 
+//vertical l/d during preentry
 function egpep {
 	set entryg_internal["lodx"] to entryg_internal["xlod"] * COS( entryg_input["mm304ph"] / entryg_constants["radeg"] ).
-	set entryg_internal["lodv"] to lodx.
+	set entryg_internal["lodv"] to entryg_internal["lodx"].
+
+}
+
+//range prediction for phase 2 and 3 
+function egrp {
+
+	local k is 1.
+	local n is 1.
+
+	if (entryg_input["ve"] > entryg_constants["va1"]) {
+		set k to 2.
+		set n to 2.
+	} else {
+		set entryg_internal["rf"][2] to 0.
+	}
+	
+	set entryg_internal["vf"][n] to entryg_input["ve"].
+	
+	if (entryg_internal["start"] = 1) {
+		set entryg_internal["start"] to 2.
+		set k to 1.
+		
+		FROM {local i is 1.} UNTIL i > 2 STEP {set i to i + 1.} DO { 
+			if (i = 2) {
+				entryg_internal["dx"][2] = entryg_internal["cq1"][1] + entryg_constants["va1"] * (entryg_internal["cq2"][1] + entryg_internal["cq3"][1] * entryg_constants["va1"]).
+			}
+			
+			// DISCREPANCY IN THE DOCS - CQ3[I] HAS A MINUS SIGN OR NOT????
+			set entryg_internal["cq3"][i] to -entryg_internal["a"][i]*entryg_internal["dx"][i] / (2*(entryg_internal["vx"][i] - entryg_internal["vo"][i])*entryg_internal["vo"][i]).
+			set entryg_internal["cq2"][i] to -2*entryg_internal["vx"][i]*entryg_internal["cq3"][i].
+			set entryg_internal["cq1"][i] to entryg_internal["dx"][i] - entryg_internal["vo"][i]*(entryg_internal["cq2"][i] + entryg_internal["cq3"][i]*entryg_internal["vo"][i]).
+		
+		}
+	}
+	
+	FROM {local i is k.} UNTIL i > n STEP {set i to i + 1.} DO { 
+	
+		if (entryg_input["ve"] < entryg_internal["vo"][i]) {
+			set entryg_internal["rf"][i] to 0.
+		} else {
+			set entryg_internal["v_temp"][1] to (8*entryg_internal["vo"][i] + entryg_internal["vf"][[i])/9.
+			set entryg_internal["v_temp"][2] to (entryg_internal["vo"][i] + entryg_internal["vf"][[i])/2.
+			set entryg_internal["v_temp"][3] to entryg_internal["vo"][i] + entryg_internal["vf"][[i] - entryg_internal["v_temp"][1].
+			
+			FROM {local j is 1.} UNTIL j > 3 STEP {set j to j + 1.} DO {  
+				set entryg_internal["q"][j] to entryg_internal["cq1"][i]/entryg_internal["v_temp"][j] + entryg_internal["cq2"][i] + entryg_internal["cq3"][i]*entryg_internal["v_temp"][j].
+			}
+			
+			set entryg_internal["rf"][i] to (27/entryg_internal["q"][1] + 44/entryg_internal["q"][2] + 27/entryg_internal["q"][3])*(entryg_internal["vf"][i] - entryg_internal["vo"][i])/98.
+			
+		}
+	}
+	
+	set entryg_internal["rff1"] to entryg_constants["cnmfs"] * (entryg_internal["rf"][1] + entryg_internal["rf"][2]).
+	
+	//calculate drag d23 at vb1 
+	if (entryg_internal["t2dot"] > entryg_constants["dt2min"]) or (entryg_input["ve"] > (entryg_internal["vcg"] + entryg_constants["delv"])) {
+		if (entryg_input["ve"] < entryg_constants["vb1"]) {
+			set entryg_internal["vb2"] to entryg_internal["ve2"].
+		}
+		
+		set entryg_internal["vcg"] to entryg_constants["vq"].
+		local d23l is entryg_constants["alfm"] * (entryg_internal["vsit2"] - entryg_internal["vb2"])/(entryg_internal["vsit2"] - entryg_internal["vq2"]).
+		
+		if (entryg_internal["d23"] > d23l) {
+			set entryg_internal["vcg"] to SQRT( entryg_internal["vsit2"] - d23l*(entryg_internal["vsit2"] - entryg_internal["vq2"])/entryg_internal["d23"]).
+		} else {
+			set entryg_internal["d23"] to d23l.
+		}
+	}
+
 
 }
