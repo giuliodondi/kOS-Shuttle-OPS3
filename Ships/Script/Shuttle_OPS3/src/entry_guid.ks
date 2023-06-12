@@ -214,7 +214,7 @@ global entryg_internal is lexicon(
 									"idbchg", 0, 		// ?????
 									"islecp", 0,   	//past value if islect 
 									"islect", 0,   	//phase counter 
-									"itran", 0,   	//transition init flag 
+									"itran", FALSE,   	//transition init flag 
 									"ivrr", 0,		//??????	
 									"lmflg", 0,   	//saturated roll cmd flag 
 									"lmn", 0,   		//max lodv value 
@@ -400,7 +400,7 @@ function eginit {
 
 	set entryg_internal["czold"] to 0.
 	set entryg_internal["ivrr"] to 0.
-	set entryg_internal["itran"] to 0.
+	set entryg_internal["itran"] to FALSE.
 	set entryg_internal["ict"] to 0.
 	set entryg_internal["idbchg"] to 0.		//???
 	set entryg_internal["t2"] to 0.
@@ -544,7 +544,47 @@ function egrp {
 		} else {
 			set entryg_internal["d23"] to d23l.
 		}
+		
+		set entryg_internal["a"][2] to entryg_constants["cnmfs"] * (entryg_internal["vsit2"] - entryg_internal["vb2"])/2.
+		
+		set entryg_internal["req1"] to entryg_internal["a"][2]*LN(entryg_constants["alfm"] / entryg_internal["d23"]).
+		set entryg_internal["rcg"] to entryg_internal["rcg1"] - entryg_internal["a"][2] / entryg_internal["d23"].
+		set entryg_internal["r231"] to entryg_internal["rff1"] + entryg_internal["req1"].
+		local r23 is entryg_input["trange"] - entryg_internal["rcg"] - entryg_internal["rpt"].
+		local d231 is entryg_internal["r231"] / entryg_internal["d23"].
+		set entryg_internal["drdd"] to -r23 / d231.
+		
+		if (d231 >= d23l) {
+			set entryg_internal["d23"] to d231 + entryg_internal["a"][2]*(1 - entryg_internal["d23"] / d231)^2/(2*r23).
+		} else {
+			set entryg_internal["d23"] to max(d231, entryg_constants["e1"]).
+		}
+		
+		if (entryg_input["egflg"] > 1) {
+			set entryg_internal["d23"] to entryg_constants["d23c"].
+		}
 	}
+
+
+}
+
+//reference params for temp control and eq glide 
+function egref {
+
+	//temp control 
+	if (ve > vb1) {
+	
+	}
+	
+	//eq glide 
+	if (ve < va) {
+	
+	}
+	
+	//test value for drefp for transition to phase 4
+	set drefp4 to 
+	
+	set itran to TRUE.
 
 
 }
