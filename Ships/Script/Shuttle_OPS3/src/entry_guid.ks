@@ -82,7 +82,7 @@ global entryg_constants is lexicon (
 									"ct16mx", 0.35,		//s2/ft 	max c16
 									"ct17mn", 0.0025,	//s/ft 		min c17
 									"ct17mx", 0.014,	//s/ft 		max c17
-									"ct13m2", 0.00133,	//s/ft 		min c17 when ict=1
+									"ct17m2", 0.00133,	//s/ft 		min c17 when ict=1
 									"cy0", -0.1309,		//rad 	constant term heading err deadband
 									"cy1", 1.0908e-4,	//rad-s/ft 	linear term heading err deadband
 									"c17mp", 0.75,		//c17 mult fact when ict=1
@@ -207,7 +207,7 @@ global entryg_internal is lexicon(
 									"dzold", 0,   	//delaz prev 
 									"dzsgn", 0,   	//change in delaz 
 									"eef", 0,   		//energy over mass 
-									"rdtrf", 0,   	//rdot temp control
+									"hdtrf", list(0,0,0),   	//rdot ref intermediate var
 									"hs", 0,   		//scale height
 									"ialp", 0,   	//alpcmd segment counter 
 									"ict", 0,   		//alpha mod flag 
@@ -220,6 +220,7 @@ global entryg_internal is lexicon(
 									"lmn", 0,   		//max lodv value 
 									"lodv", 0,   	//vertical l/d 
 									"lodx", 0,   	//unlimited vert l/d cmd 
+									"n_quad_seg", 0,		//which phase 2 quadratic segment we are in
 									"q", list(0,0,0,0),   	//drefp/ve in temp control 
 									"rcg", 0,   		//range const drag 
 									"rcg1", 0,   	//constant comp of rcg 
@@ -406,12 +407,12 @@ function eginit {
 	set entryg_internal["t2"] to 0.
 	set entryg_internal["drefp"] to 0.
 	set entryg_internal["vq2"] to entryg_constants["vq"]*entryg_constants["vq"].
-	set entryg_internal["rk2rol"] to -sign(delaz).
+	set entryg_internal["rk2rol"] to -sign(entryg_input["delaz"]).
 	set entryg_internal["dlrdot"] to 0.
 	set entryg_internal["lmflg"] to 0.
 	set entryg_internal["vtrb"] to 60000.	//ft/s
 	set entryg_internal["ddp"] to 0.
-	set entryg_internal["rk2rlp"] to rk2rol.
+	set entryg_internal["rk2rlp"] to entryg_internal["rk2rol"]. 
 	
 	//nominal transition range at vtran (nmi)
 	//this is kept fixed for range calculations of phase 2,3,4
@@ -425,14 +426,14 @@ function eginit {
 	set entryg_internal["dx"][1] to 1.
 	
 	set entryg_internal["vo"][1] to entryg_constants["vb1"].
-	set entryg_internal["vo"][2] to entryg_constants["va1"].
-	
 	set entryg_internal["vx"][1] to entryg_constants["va"].
-	set entryg_internal["vx"][2] to entryg_constants["va2"].
-	
 	set entryg_internal["vf"][1] to entryg_constants["va1"].
+	set entryg_internal["a"][1] to entryg_constants["ak"].
 	
+	set entryg_internal["vo"][2] to entryg_constants["va1"].
+	set entryg_internal["vx"][2] to entryg_constants["va2"].
 	set entryg_internal["a"][2] to entryg_constants["ak1"].
+	
 	set entryg_internal["vb2"] to entryg_constants["vb1"]^2.
 	
 	//component of constant drag phase 
@@ -478,20 +479,20 @@ function egpep {
 
 }
 
-//range prediction for phase 2 and 3 
+//range prediction for phase 2 and 3 	//d23
 function egrp {
 
 	local k is 1.
-	local n is 1.
+	set entryg_internal["n_quad_seg"] to 1.
 
 	if (entryg_input["ve"] > entryg_constants["va1"]) {
 		set k to 2.
-		set n to 2.
+		set entryg_internal["n_quad_seg"] to 2.
 	} else {
 		set entryg_internal["rf"][2] to 0.
 	}
 	
-	set entryg_internal["vf"][n] to entryg_input["ve"].
+	set entryg_internal["vf"][entryg_internal["n_quad_seg"]] to entryg_input["ve"].
 	
 	if (entryg_internal["start"] = 1) {
 		set entryg_internal["start"] to 2.
@@ -510,7 +511,7 @@ function egrp {
 		}
 	}
 	
-	FROM {local i is k.} UNTIL i > n STEP {set i to i + 1.} DO { 
+	FROM {local i is k.} UNTIL i > entryg_internal["n_quad_seg"] STEP {set i to i + 1.} DO { 
 	
 		if (entryg_input["ve"] < entryg_internal["vo"][i]) {
 			set entryg_internal["rf"][i] to 0.
@@ -572,19 +573,140 @@ function egrp {
 function egref {
 
 	//temp control 
-	if (ve > vb1) {
-	
+	if (entryg_input["ve"] > entryg_constants["vb1"]) {
+		
+		FROM {local i is 1.} UNTIL i > entryg_internal["n_quad_seg"] STEP {set i to i + 1.} DO { 
+			set entryg_internal["dref"][i] to entryg_internal["cq1"][i] + entryg_input["ve"] * (entryg_internal["cq2"][i] + entryg_internal["cq3"][i] * entryg_input["ve"] ).
+			set entryg_internal["hdtrf"][i] to -entryg_internal["hs"] * (2* entryg_internal["dref"][i] / entryg_input["ve"] - entryg_internal["cq2"][i] - 2*entryg_internal["cq3"][i]*entryg_input["ve"]).
+		}
+		
+		if (entryg_input["ve"] > entryg_constants["va1"]) {
+			set entryg_internal["drf"] to  entryg_internal["dref"][2] -  entryg_internal["dref"][1].
+			set entryg_internal["drf"] to entryg_internal["drf"]*(entryg_internal["drf"] + (entryg_internal["hdtrf"][1] - entryg_internal["hdtrf"][2])*entryg_constants["gs1"]).
+			
+			if (entryg_internal["drf"] < 0) {
+				set entryg_internal["n_quad_seg"] to 1.
+			}
+		}
+		
+		set entryg_internal["drefp"] to entryg_internal["d23"] * entryg_internal["dref"][entryg_internal["n_quad_seg"]].
+		set entryg_internal["rdtref"] to entryg_internal["d23"] * entryg_internal["hdtrf"][entryg_internal["n_quad_seg"]].
+		set entryg_internal["c2"] to entryg_internal["cq2"][entryg_internal["n_quad_seg"]] * entryg_internal["d23"].
 	}
 	
 	//eq glide 
-	if (ve < va) {
-	
+	if (entryg_input["ve"] < entryg_constants["va"]) {
+		set entryg_internal["aldco"] to (1 - entryg_internal["vb2"] / entryg_internal["vsit2"] ) / entryg_internal["d23"].
+		set entryg_internal["drefp1"] to (1 - entryg_internal["ve2"] / entryg_internal["vsit2"] ) / entryg_internal["aldco"].
+		set entryg_internal["rdtrf1"] to -2*entryg_internal["hs"]/(entryg_input["ve"] * entryg_internal["aldco"]).
+		set entryg_internal["drefp3"] to entryg_internal["drefp1"] + entryg_constants["gs2"] * (entryg_internal["rdtref"] - entryg_internal["rdtrf1"]).
+		
+		if (entryg_internal["drefp3"] > entryg_internal["drefp"]) or (entryg_input["ve"] < entryg_constants["vb1"]) {
+			set entryg_internal["drefp"] to entryg_internal["drefp1"].
+			set entryg_internal["rdtref"] to entryg_internal["rdtrf1"].
+			set entryg_internal["c2"] to 0.
+		}
 	}
 	
 	//test value for drefp for transition to phase 4
-	set drefp4 to 
+	set entryg_internal["drefp4"] to entryg_constants["gs3"] * (entryg_internal["rdtref"] + 2*entryg_internal["hs"]*entryg_internal["t2"] / entryg_input["ve"]) + entryg_internal["t2"].
 	
-	set itran to TRUE.
+	set  entryg_internal["itran"] to TRUE.
+}
 
+//reference params during constant drag
+function egref4 {
+	
+	set entryg_internal["drefp"] to entryg_internal["t2"].
+	set entryg_internal["rdtref"] to -2*entryg_internal["hs"]*entryg_internal["t2"]/entryg_input["ve"].
+	set entryg_internal["drdd"] to ( entryg_input["trange"] -  entryg_input["rpt"]) / entryg_internal["t2"].
+	set entryg_internal["c2"] to 0.
+	
+	set entryg_internal["itran"] to TRUE.
+}
+
+//reference params during transition 
+function egtran {
+
+	if (entryg_internal["itran"] = FALSE) {
+		SET entryg_internal["itran"] TO TRUE.
+		set entryg_internal["drefp"] to entryg_constants["alfm"].
+	}
+	
+	set entryg_internal["drefpt"] to entryg_internal["drefp"] - entryg_constants["df"].
+	
+	if (abs(entryg_internal["drefpt"]) < entryg_constants["e1"]) {
+		set entryg_internal["drefp"] to entryg_constants["df"] + entryg_constants["e1"]*sign(entryg_internal["drefpt"]).
+	}
+	
+	if (entryg_internal["drefp"] < entryg_constants["e1"]) {
+		set entryg_internal["drefp"] to entryg_constants["e1"].
+	}
+	
+	set entryg_internal["drefpt"] to entryg_internal["drefp"] - entryg_constants["df"].
+	set entryg_internal["c1"] to entryg_internal["drefpt"] / (entryg_internal["eef"] - entryg_constants["eef4"]).
+	set entryg_internal["rer1"] to entryg_constants["cnmfs"] * ln(entryg_internal["drefp"] / entryg_constants["df"]) / entryg_internal["c1"].
+	set entryg_internal["drdd"] to min(entryg_constants["cnmfs"] * 1/(entryg_internal["c1"] * entryg_internal["drefp"]) - entryg_internal["rer1"] / entryg_internal["drefpt"] , entryg_constants["drddl"]).
+	set entryg_internal["drefp"] to entryg_internal["drefp"] + (entryg_input["trange"] - entryg_internal["rer1"] - entryg_constants["rpt1"])/entryg_internal["drdd"].
+	set entryg_internal["dlim"] to entryg_constants["alim"] * entryg_input["drag"] / entryg_input["xlfac"].
+	
+	if (entryg_internal["drefp"] > entryg_internal["dlim"]) {
+		set entryg_internal["drefp"] to entryg_internal["dlim"].
+		set entryg_internal["c1"] to 0.
+	}
+	
+	if (entryg_internal["drefp"] < entryg_constants["e1"]) {
+		set entryg_internal["drefp"] to entryg_constants["e1"].
+	}
+	
+	set entryg_internal["rdtref"] to -entryg_internal["hs"]*entryg_input["ve"]*(2*entryg_internal["drefp"] - entryg_internal["c1"]*entryg_internal["ve2"])/entryg_internal["cag"].
+	
+	set entryg_internal["c2"] to 4*entryg_input["ve"]*entryg_internal["drefp"]*(1-(entryg_internal["ve2"]/entryg_internal["cag"])^2)/entryg_internal["cag"].
+}
+
+//aoa command 
+function egalpcmd {
+	until NOT ((entryg_input["ve"] < entryg_constants["valp"][entryg_internal["ialp"]]) and (entryg_internal["ialp"] > 0)) {
+		set entryg_internal["ialp"] to entryg_internal["ialp"] - 1.
+	}
+	
+	local j is entryg_internal["ialp"] + 1.
+	
+	set entryg_internal["alpcmd"] to entryg_constants["calp0"][j] + entryg_input["ve"] * (entryg_constants["calp1"][j] + entryg_input["ve"] * entryg_constants["calp2"][j]).
+	
+	if (islect = 1) {
+		set entryg_internal["alpcmd"] to entryg_input["mm304al"].
+	}
+	
+	set entryg_internal["alpdot"] to (entryg_internal["alpcmd"] - entryg_internal["acmd1"])/entryg_input["dtegd"].
+	set entryg_internal["acmd1"] to entryg_internal["alpcmd"].
+
+}
+
+//controller gains 
+function eggnslct {
+	
+	set entryg_internal["c16"] to entryg_constants["ct16"][1]*entryg_input["drag"]^(entryg_constants["ct16"][2]).
+	
+	if (entryg_input["ve"] < entryg_constants["vc16"]) {
+		set entryg_internal["c16"] to entryg_internal["c16"] + entryg_constants["ct16"][3]*(entryg_input["drag"] - entryg_internal["drefp"]).
+	}
+	
+	set entryg_internal["c16"] to midval(entryg_internal["c16"], entryg_constants["ct16mn"], entryg_constants["ct16mx"]).
+	
+	if (entryg_internal["ict"] = 1) {
+		set entryg_constants["ct17mn"] to entryg_constants["ct17m2"].
+	}
+	
+	set entryg_internal["c17"] to entryg_constants["ct17"][1]*entryg_input["drag"]^(entryg_constants["ct17"][2]).
+	set entryg_internal["c17"] to midval(entryg_internal["c17"], entryg_constants["ct17mn"], entryg_constants["ct17mx"]).
+	if (entryg_internal["ict"] = 1) {
+		set entryg_internal["c17"] to entryg_constants["ct17mp"] * entryg_internal["c17"].
+	}
+}
+
+
+//lateral logic and vertical l/d cmd
+function eglodvcmd {
 
 }
