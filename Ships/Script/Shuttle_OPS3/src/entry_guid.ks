@@ -253,8 +253,9 @@ global entryg_internal is lexicon(
 // 1 = preentry, 2 = temp control , 3 = eq glide , 4 = const drag , 5 = transition
 
 function egexec {
+	PARAMETER entryg_input.
 
-	egscaleht().
+	egscaleht(entryg_input).
 
 	//this also needs to be called at runway redesignation or if we reset guidance I guess
 	if entryg_internal["start"] = 0 {
@@ -262,7 +263,7 @@ function egexec {
 		eginit().
 	}
 	
-	egcomn().
+	egcomn(entryg_input).
 	
 	//initial transition checks
 	//needed for mode 1 transition or 
@@ -296,30 +297,30 @@ function egexec {
 	
 	if (entryg_internal["islect"] = 1) {
 		//compute vertical l/d during preentry 
-		egpep().
+		egpep(entryg_input).
 	} else if (entryg_internal["islect"] = 2) OR (entryg_internal["islect"] = 3) {
 		//reference parameters during temperature control and eq glide 
-		egrp().
-		egref().
+		egrp(entryg_input).
+		egref(entryg_input).
 	} else if (entryg_internal["islect"] = 4) {
 		//reference parameters during const drag
-		egref4().
+		egref4(entryg_input).
 	} else if (entryg_internal["islect"] = 5) {
 		//reference parameters during transition
-		egtran().
+		egtran(entryg_input).
 	} 
 	
 	//aoa command
-	egalpcmd().
+	egalpcmd(entryg_input).
 
 	//vertical l/d after preentry	//can I move these before egalpcmd ?? probably not  - yeah definitely can't
 	if (entryg_internal["islect"] > 1) {
-		eggnslct().
-		eglodvcmd().
+		eggnslct(entryg_input).
+		eglodvcmd(entryg_input).
 	}
 	
 	//roll command 
-	egrolcmd().
+	egrolcmd(entryg_input).
 	
 	//moved this one out of egrolcmd
 	set entryg_internal["islecp"] to entryg_internal["islect"].
@@ -386,6 +387,7 @@ function egexec {
 
 //scale height for hdot reference term
 function egscaleht {
+	PARAMETER entryg_input.
 
     if (entryg_input["ve"] < entryg_constants["vhs1"]) {
         set entryg_internal["hs"] to entryg_constants["hs01"] + entryg_constants["hs11"] * entryg_input["ve"].
@@ -401,6 +403,7 @@ function egscaleht {
 
 
 function eginit {
+	PARAMETER entryg_input.
 	
 	//might want to do a ve test if we resume entry halfway
 	set entryg_internal["islect"] to 1.
@@ -449,6 +452,7 @@ function eginit {
 }
 
 function egcomn {
+	PARAMETER entryg_input.
 
 	set entryg_internal["xlod"] to max(entryg_input["lod"], entryg_constants["lodmin"]).
 	
@@ -487,6 +491,7 @@ function egpep {
 
 //range prediction for phase 2 and 3 	//d23
 function egrp {
+	PARAMETER entryg_input.
 
 	local k is 1.
 	set entryg_internal["n_quad_seg"] to 1.
@@ -577,6 +582,7 @@ function egrp {
 
 //reference params for temp control and eq glide 
 function egref {
+	PARAMETER entryg_input.
 
 	//temp control 
 	if (entryg_input["ve"] > entryg_constants["vb1"]) {
@@ -622,6 +628,7 @@ function egref {
 
 //reference params during constant drag
 function egref4 {
+	PARAMETER entryg_input.
 	
 	set entryg_internal["drefp"] to entryg_internal["t2"].
 	set entryg_internal["rdtref"] to -2*entryg_internal["hs"]*entryg_internal["t2"]/entryg_input["ve"].
@@ -633,6 +640,7 @@ function egref4 {
 
 //reference params during transition 
 function egtran {
+	PARAMETER entryg_input.
 
 	if (entryg_internal["itran"] = FALSE) {
 		SET entryg_internal["itran"] TO TRUE.
@@ -672,6 +680,8 @@ function egtran {
 
 //aoa command 
 function egalpcmd {
+	PARAMETER entryg_input.
+	
 	until NOT ((entryg_input["ve"] < entryg_constants["valp"][entryg_internal["ialp"]]) and (entryg_internal["ialp"] > 0)) {
 		set entryg_internal["ialp"] to entryg_internal["ialp"] - 1.
 	}
@@ -691,6 +701,7 @@ function egalpcmd {
 
 //controller gains 
 function eggnslct {
+	PARAMETER entryg_input.
 	
 	set entryg_internal["c16"] to entryg_constants["ct16"][1]*entryg_input["drag"]^(entryg_constants["ct16"][2]).
 	
@@ -715,6 +726,8 @@ function eggnslct {
 
 //lateral logic and vertical l/d cmd
 function eglodvcmd {
+	PARAMETER entryg_input.
+	
 	//this is a numerical equation for Cd(alpha,mach) is it not?
 	local a44 is constant:e^(-(entryg_input["ve"] - entryg_constants["cddot1"])/entryg_constants["cddot2"]).
 	local cdcal is entryg_constants["cddot4"] + entryg_internal["alpcmd"]*(entryg_constants["cddot5"] + entryg_constants["cddot6"]* entryg_internal["alpcmd"]) + entryg_constants["cddot3"] * a44.
@@ -828,6 +841,7 @@ function eglodvcmd {
 }
 
 function egrolcmd {
+	PARAMETER entryg_input.
 
 	//record roll reversal 
 	//but does this mean that the first bank command is always in the same direction (rk2rol < 0)?
