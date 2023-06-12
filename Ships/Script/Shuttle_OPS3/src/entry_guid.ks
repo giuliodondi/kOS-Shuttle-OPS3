@@ -24,25 +24,6 @@ global entryg_input is lexicon(
 
 
 
-//output variables 
-global entryg_output is lexicon(
-								"alpcmd",, 	//aoa cmd 	//rad
-								"rolcmd",,	//bank cmd  //rad
-								"drefp",,	//drag ref 	//ft/s2
-								"drag",,	 	//actual drag	//ft/s2
-								"rolref",,	//deg 	//roll ref
-								"islect",, 	//phase indicator 
-								"vcg",, 		//velocity start of const drag 	//ft/s 
-								"vrr",, 		//velocity first reversal //ft/s 
-								"eowd",,  	//eow //ft 
-								"eei",,		//entry eval indicator 
-								"eg_end",,
-								"rc176g",, 	//first roll after 0.176g	//deg
-
-
-).
-
-
 //input constants
 
 global entryg_constants is lexicon (
@@ -150,10 +131,11 @@ global entryg_constants is lexicon (
 									"vsat", 25766.2,	//ft/s local circular orbit vel 
 									"vs1", 23283.5,		//ft/s eq glide ref vel 
 									"vrdt", 23000,	//ft/s hdot feedback start vel 
+									"vrr", 0, 		//velocity first reversal //ft/s 
 									"v_taem", 2500,	//ft/s entry-taem interface ref vel 
 									"vtran", 10500,	//ft/s nominal vel at start of transition 
-									"vylmax", 23000,	//ft/s min vel st start of alm by almn4
-									"ylmn", 0.03,	//rad yl bias used in test for lmn	
+									"vylmax", 23000,	//ft/s min vel to limit lmn by almn4
+									"ylmin", 0.03,	//rad yl bias used in test for lmn	
 									"ylmn2", 0.07,	//rad mon yl bias 
 									"y1", 0.3054326,	//rad max heading err deadband before first reversal
 									"y2", 0.1745329,	//rad min heading error deadband 
@@ -165,7 +147,7 @@ global entryg_constants is lexicon (
 
 //internal variables
 global entryg_internal is lexicon(
-									"alclam", 0,   	//max allowable alpha
+									"aclam", 0,   	//max allowable alpha
 									"aclim", 0,   	//min allowable alpha 
 									"acmd1", 0,   	//scheduled aoa
 									"aldco", 0,   	//temp variable during phase 3
@@ -207,16 +189,19 @@ global entryg_internal is lexicon(
 									"dzold", 0,   	//delaz prev 
 									"dzsgn", 0,   	//change in delaz 
 									"eef", 0,   		//energy over mass 
+									"eei", 0,		//entry eval indicator 
+									"eg_end", FALSE,		//toggles transition to taem and we stop calling this function
+									"eowd", 0, 			//energy over weight (ft)
 									"hdtrf", list(0,0,0),   	//rdot ref intermediate var
 									"hs", 0,   		//scale height
 									"ialp", 0,   	//alpcmd segment counter 
 									"ict", FALSE,   		//alpha mod flag 
-									"idbchg", 0, 		// ?????
+									"idbchg", FALSE, 		// flag to signal first roll reversal performed
 									"islecp", 0,   	//past value if islect 
 									"islect", 0,   	//phase counter 
 									"itran", FALSE,   	//transition init flag 
-									"ivrr", 0,		//??????	
-									"lmflg", 0,   	//saturated roll cmd flag 
+									"ivrr", 0,		//flag to signal recording of roll reversal velocity?	
+									"lmflg", FALSE,   	//saturated roll cmd flag 
 									"lmn", 0,   		//max lodv value 
 									"lodv", 0,   	//vertical l/d 
 									"lodx", 0,   	//unlimited vert l/d cmd 
@@ -235,7 +220,9 @@ global entryg_internal is lexicon(
 									"rdtrf", 0,   	//rdot ref corrected for cd 
 									"rk2rol", 0,   	//bank angle direction 
 									"rk2rlp", 0,   	//prev val 
-									"rollc", list(0,0,0,0)	//1", roll angle command 2", unlimited roll command 3", roll ref 
+									"rollc", list(0,0,0,0)	//1", roll angle command 2", unlimited roll command 3", roll ref //rad
+									"rolref", 0,	//deg 	//roll ref
+									"rc176g",, 	//first roll after 0.176g	//deg
 									"rpt", 0,   	//desired range at vq 
 									"r231", 0,   	//range of phase 2+3 * d23
 									"start", 0,   	//first pass flag  
@@ -250,12 +237,13 @@ global entryg_internal is lexicon(
 									"vf", list(0,0,0),    	//upper vel bounds for temp control 
 									"vo", list(0,0,0),    	//????
 									"vq2", 0,   	//vq ^ 2
+									"vrr",, 		//velocity first reversal //ft/s 
 									"vsat2", 0,   	//vsat ^ 2
 									"vsit2", 0,   	//vs1 ^ 2
 									"vtrb", 0,   	//rdot feedback vel lockout 
 									"vx", list(0,0,0),   	//velocities where dD / dV  = 0 in temp control quadratic 
 									"xlod", 0,   	//limited l/d 
-									"yl", 0,   	//max heading eror abs val 
+									"yl", 0,   	//max heading error abs val 
 									"zk", 0   	//rdot feedback gain 
 ).
 
@@ -323,7 +311,7 @@ function egexec {
 	//aoa command
 	egalpcmd().
 
-	//vertical l/d after preentry	//can I move these before egalpcmd ?? probably not  
+	//vertical l/d after preentry	//can I move these before egalpcmd ?? probably not  - yeah definitely can't
 	if (entryg_internal["islect"] > 1) {
 		eggnslct().
 		eglodvcmd().
@@ -331,6 +319,9 @@ function egexec {
 	
 	//roll command 
 	egrolcmd().
+	
+	//moved this one out of egrolcmd
+	set entryg_internal["islecp"] to entryg_internal["islect"].
 	
 	//transition checks 
 	if (entryg_internal["islect"] > 1) {
@@ -371,11 +362,25 @@ function egexec {
 		
 		//entry guidance termination 
 		if (entryg_input["ve"] < entryg_constants["v_taem"]) {
-			set entryg_output["eg_end"] to TRUE.
+			set entryg_internal["eg_end"] to TRUE.
 		}
-	}
+	} entryg_internal[""]
 	
-	
+	//i want to return a new lexicon of internal variables
+	return lexicon(
+								"alpcmd", entryg_internal["alpcmd"],
+								"rollc", entryg_internal["rollc"],	//which of the three should we use??
+								"drefp", entryg_internal["drefp"],
+								"drag", entryg_input["drag"],
+								"rolref", entryg_internal["rolref"],
+								"islect", entryg_internal["islect"],
+								"vcg", entryg_internal["vcg"],
+								"vrr", entryg_internal["vrr"],
+								"eowd", entryg_internal["eowd"],
+								"eei", entryg_internal["eei"],
+								"eg_end", entryg_internal["eg_end"],
+								"rc176g", entryg_internal["rc176g"]
+	).
 }
 
 //scale height for hdot reference term
@@ -400,16 +405,16 @@ function eginit {
 	set entryg_internal["islect"] to 1.
 
 	set entryg_internal["czold"] to 0.
-	set entryg_internal["ivrr"] to 0.
+	set entryg_internal["ivrr"] to FALSE.
 	set entryg_internal["itran"] to FALSE.
 	set entryg_internal["ict"] to FALSE.
-	set entryg_internal["idbchg"] to 0.		//???
+	set entryg_internal["idbchg"] to FALSE.
 	set entryg_internal["t2"] to 0.
 	set entryg_internal["drefp"] to 0.
 	set entryg_internal["vq2"] to entryg_constants["vq"]*entryg_constants["vq"].
 	set entryg_internal["rk2rol"] to -sign(entryg_input["delaz"]).
 	set entryg_internal["dlrdot"] to 0.
-	set entryg_internal["lmflg"] to 0.
+	set entryg_internal["lmflg"] to FALSE.
 	set entryg_internal["vtrb"] to 60000.	//ft/s
 	set entryg_internal["ddp"] to 0.
 	set entryg_internal["rk2rlp"] to entryg_internal["rk2rol"]. 
@@ -453,7 +458,7 @@ function egcomn {
 	
 	set entryg_internal["eef"] to entryg_constants["gs"] * entryg_input["hls"] + entryg_internal["ve2"] / 2.
 	
-	set entryg_output["eowd"] to entryg_internal["eef"] / entryg_constants["gs"].
+	set entryg_internal["eowd"] to entryg_internal["eef"] / entryg_constants["gs"].
 	
 	set entryg_internal["cag"] to 2* entryg_constants["gs"]*entryg_internal["hs"] + entryg_internal["ve2"].
 	
@@ -503,7 +508,7 @@ function egrp {
 				entryg_internal["dx"][2] = entryg_internal["cq1"][1] + entryg_constants["va1"] * (entryg_internal["cq2"][1] + entryg_internal["cq3"][1] * entryg_constants["va1"]).
 			}
 			
-			// DISCREPANCY IN THE DOCS - CQ3[I] HAS A MINUS SIGN OR NOT????
+			// DISCREPANCY IN THE DOCS !! - CQ3[I] HAS A MINUS SIGN OR NOT????
 			set entryg_internal["cq3"][i] to -entryg_internal["a"][i]*entryg_internal["dx"][i] / (2*(entryg_internal["vx"][i] - entryg_internal["vo"][i])*entryg_internal["vo"][i]).
 			set entryg_internal["cq2"][i] to -2*entryg_internal["vx"][i]*entryg_internal["cq3"][i].
 			set entryg_internal["cq1"][i] to entryg_internal["dx"][i] - entryg_internal["vo"][i]*(entryg_internal["cq2"][i] + entryg_internal["cq3"][i]*entryg_internal["vo"][i]).
@@ -674,7 +679,7 @@ function egalpcmd {
 	
 	set entryg_internal["alpcmd"] to entryg_constants["calp0"][j] + entryg_input["ve"] * (entryg_constants["calp1"][j] + entryg_input["ve"] * entryg_constants["calp2"][j]).
 	
-	if (islect = 1) {
+	if (entryg_internal["islect"] = 1) {
 		set entryg_internal["alpcmd"] to entryg_input["mm304al"].
 	}
 	
@@ -733,11 +738,11 @@ function eglodvcmd {
 		}
 	}
 	
-	if (islect = 5) {
+	if (entryg_internal["islect"] = 5) {
 		set entryg_internal["t1"] to entryg_constants["gs"] * (entryg_internal["ve2"]/entryg_internal["vsat2"] - 1).
 	}
 	
-	//ANOTHER DISCREPANCY BW THE PAPERS - SIGN OF ALDREF
+	//ANOTHER DISCREPANCY BW THE PAPERS !! - SIGN OF ALDREF
 	set entryg_internal["aldref"] to entryg_internal["t1"] / entryg_internal["drefp"] + (2*entryg_internal["rdtref"] + entryg_internal["c2"]*entryg_internal["hs"]) / entryg_input["ve"].
 	set entryg_internal["rdtrf"] to entryg_internal["rdtref"] + entryg_internal["c4"].
 	set entryg_internal["dd"] to entryg_input["drag"] - entryg_internal["drefp"].
@@ -746,7 +751,142 @@ function eglodvcmd {
 	if (entryg_input["ve"] < entryg_constants["vrdt"]) {
 		set entryg_internal["dds"] to midval(entryg_internal["dd"], -entryg_constants["ddlim"], entryg_constants["ddlim"]).
 		set entryg_internal["zk"] to entryg_constants["zk1"].
+		
+		if (entryg_internal["rk2rlp"] * entryg_internal["rk2rol"] < 0) {
+			set entryg_internal["vtrb"] to entryg_input["ve"] - entryg_constants["acn1"] * entryg_internal["drefp"].
+		}
+		
+		if (abs(entryg_internal["dd"]) <= abs(entryg_internal["ddp"])) or (entryg_input["ve"] > entryg_internal["vtrb"]) or (entryg_internal["lmflg"]) {
+			set entryg_internal["zk"] to 0.
+		}
+		
+		set entryg_internal["dlrdot"] to entryg_internal["dlrdot"] + entryg_internal["zk"] * entryg_internal["dds"].
+		
 	}
 	
+	set entryg_internal["ddp"] to entryg_internal["dd"].
+	set entryg_internal["rk2rlp"] to entryg_internal["rk2rol"].
+	//the main vertical l/d equation
+	set entryg_internal["lodx"] to entryg_internal["aldref"] + entryg_internal["c16"]*entryg_internal["dd"] + entryg_internal["c17"]*(entryg_internal["rdtrf"] + entryg_internal["dlrdot"] - entryg_input["rdot"]).
 	
+	set entryg_internal["lodv"] to entryg_internal["lodx"].
+	
+	//this is where we calculate delaz limits
+	set entryg_internal["yl"] to midval(entryg_constants["cy0"] + entryg_constants["cy1"]*entryg_input["ve"], entryg_constants["y1"], entryg_constants["y2"]).
+	set entryg_internal["lmn"] to entryg_constants["almn2"].
+	set entryg_internal["dzsgn"] to abs(entryg_input["delaz"]) - abs(entryg_internal["dzold"]).
+	set entryg_internal["dzold"] to entryg_input["delaz"].
+	
+	//i moved this up a few lines to keep it close to delaz limit equations
+	if (entryg_internal["rk2rol"]*entryg_internal["rk2rlp"] > 0) and (entryg_internal["idbchg"]) {
+		set entryg_internal["yl"] to entryg_constants["y3"].
+	}
+	
+	//what is vref?? 
+	if (entryg_input["ve"] > vref) and (entryg_input["drag"] > entryg_internal["drefp"] + 2) {
+		//one of the outputs, entry eval indicator
+		set entryg_internal["eei"] to 3.
+	}
+	
+	//calculate l/d limits given how close we are to the roll reversal?
+	if (dzsgn > 0) {
+		if ((entryg_internal["yl"] - ylmin) < abs(entryg_input["delaz"]))  {
+			set entryg_internal["lmn"] to entryg_constants["almn1"].
+		}
+	} else {
+		if ((entryg_internal["yl"] - ylmn2) < abs(entryg_input["delaz"])) {
+			set entryg_internal["lmn"] to entryg_constants["almn1"].
+		}
+	}
+	
+	if (entryg_input["ve"] > entryg_constants["vylmax"]) {
+		set entryg_internal["lmn"] to entryg_constants["almn4"].
+	}
+	
+	if (entryg_input["ve"] < entryg_constants["velmn"]) {
+		set entryg_internal["lmn"] to entryg_constants["almn3"].
+	}
+	
+	set entryg_internal["lmn"] to entryg_internal["xlod"]*entryg_internal["lmn"].
+	
+	
+	set entryg_internal["dlzrl"] to entryg_input["delaz"]*entryg_internal["rk2rol"].
+	
+	//apply the l/d limtis and finally calculate if we do the roll reversal
+	if (abs(entryg_internal["lodv"]) >= entryg_internal["lmn"] and entryg_internal["dlzrl"] <=0) {
+		set entryg_internal["lmflg"] to TRUE 
+		set entryg_internal["lodv"] to entryg_internal["lmn"]*sign(entryg_internal["lodv"]).
+	} else {
+		set entryg_internal["lmflg"] to FALSE.
+		set entryg_internal["lmn"] to entryg_internal["xlod"].
+		if (entryg_internal["dlzrl"] >= entryg_internal["yl"]) {
+			set entryg_internal["rk2rol"] to -entryg_internal["rk2rol"].
+			set entryg_internal["idbchg"] to TRUE.
+		}
+	}
+}
+
+function egrolcmd {
+
+	//record roll reversal 
+	//but does this mean that the first bank command is always in the same direction (rk2rol < 0)?
+	if (entryg_internal["rk2rol"] < 0) and (NOT entryg_internal["ivrr"]) {
+		set entryg_internal["vrr"] to entryg_input["ve"].
+		set entryg_internal["ivrr"] to TRUE.
+	}
+	
+	set entryg_internal["arg"][1] to entryg_internal["lodv"]/entryg_internal["xlod"].
+	set entryg_internal["arg"][2] to entryg_internal["lodx"]/entryg_internal["xlod"].
+	set entryg_internal["arg"][3] to entryg_internal["aldref"]/entryg_internal["xlod"].
+	
+	FROM {local i is 1.} UNTIL i > 3 STEP {set i to i + 1.} DO { 
+		//I think this limits the bank angle to +-90?
+		if (abs(entryg_internal["arg"][i]) >= 1) {
+			set entryg_internal["arg"][i] to sign(entryg_internal["arg"][i]*entryg_internal["xlod"]).
+		}
+		
+		//CAREFUL : KOS will give the arccos in degrees but the HAL-S manual says that all angles are supplied or delivered in radians
+		//we divide by deg2rad to transform it from rad to degrees so theoretically I should just remove the factor
+		set entryg_internal["rollc"][i] to entryg_internal["rk2rol"] * ARCCOS(entryg_internal["arg"][i]).	// / entryg_constants["dtr"].
+	}
+	
+	// here we bias roll if we are deviating from the pitch profile 
+	//and we apply the alpha modulation if needed 
+	if (entryg_internal["ict"]) {
+		set entryg_internal["delalf"] to entryg_input["alpha"] - entryg_internal["acmd1"].
+		set entryg_internal["rdealf"] to midval(entryg_constants["crdeaf"]*entryg_internal["delalf"], entryg_constants["rdmax"], -entryg_constants["rdmax"]).
+		
+		local almnxd is ARCCOS(entryg_internal["lmn"]/entryg_internal["xlod"]).	// / entryg_constants["dtr"].
+		
+		set entryg_internal["rollc"][1] to midval(abs(entryg_internal["rollc"][2]) + entryg_internal["rdealf"], almnxd, 180 - almnxd) * entryg_internal["rk2rol"].
+		
+		//calculate absolute limits for alpha modulation 
+		set entryg_internal["aclam"] to min(entryg_constants["dlallm"], entryg_constants["aclam1"] + entryg_constants["aclam2"]*entryg_input["ve"]).
+		set entryg_internal["aclim"] to min(entryg_constants["aclam1"] + entryg_constants["aclam2"]*entryg_input["ve"], entryg_constants["aclam3"] + entryg_constants["aclam4"]*entryg_input["ve"]).
+		
+		set entryg_internal["alpcmd"] to midval(entryg_internal["aclam"], entryg_input["alpha"] + entryg_internal["delalp"], entryg_internal["aclim"]).
+	}
+	
+	//calculate absolute roll angle limits
+	local rlm is 0.
+	
+	if (entryg_input["ve"] > entryg_constants["vrlmc"]) {
+		set rlm to min(entryg_constants["rlmc1"], entryg_constants["rlmc2"] + entryg_constants["rlmc3"]*entryg_input["ve"]).
+	} else {
+		set rlm to max(entryg_constants["rlmc6"], entryg_constants["rlmc4"] + entryg_constants["rlmc5"]*entryg_input["ve"]).
+	}
+	
+	if (abs(entryg_internal["rollc"][1]) > rlm) and (entryg_input["ve"]  < entryg_constants["verolc"]) {
+		set entryg_internal["rollc"][1] to rlm*sign(entryg_internal["rollc"][1]).
+	}
+	
+	//i'm skipping these since we want angles as outputs in kOS
+	//set entryg_internal["rollc"][1] to entryg_internal["rollc"][1]*entryg_constants["dtr"].
+	//set entryg_internal["alpcmd"] to entryg_internal["alpcmd"] * entryg_constants["dtr"].
+	
+	if (entryg_internal["islect"] = 2 and entryg_internal["islecp"] = 1) {
+		//save the first roll commanded when entering phase 2, again keep in it degrees
+		set entryg_internal["rc176g"] to entryg_internal["rollc"][1].	// / entryg_constants["dtr"]
+	}
+
 }
