@@ -1,5 +1,7 @@
 @LAZYGLOBAL OFF.
 
+GLOBAL mt2ft IS 3.28084.		// ft/mt
+GLOBAL km2nmi IS 0.539957.	// nmi/km
 
 //input variables 
 //global entryg_input is lexicon(
@@ -22,6 +24,45 @@
 //).
 
 
+//wrapper for the entry function, to transform the input and output units 
+//i'm assuming it's 
+
+
+FUNCTION entryg_wrapper {
+	PARAMETER entryg_input.
+
+	LOCAL entryg_output IS egexec(
+								lexicon(
+										"dtegd", entryg_input["iteration_dt"],		//iteration delta-t
+										"alpha", entryg_input["alpha"],      //aoa
+										"delaz", entryg_input["delaz"],       //az error  
+										"drag", entryg_input["drag"]*mt2ft,        //drag accel (ft/s2) 
+										"egflg", entryg_input["egflg"],       //mode flag  
+										"hls", entryg_input["hls"]*mt2ft,		   //alt above rwy (ft)
+										"lod", entryg_input["lod"], 		//current l/d 
+										"rdot", entryg_input["hdot"]*mt2ft,        //alt rate (ft/s) 
+										"roll", entryg_input["roll"],	   //cur bank angle 
+										"trange", entryg_input["tgt_range"]*km2nmi,     //target range (nmi)
+										"ve", entryg_input["ve"]*mt2ft, 		   //earth rel velocity (ft/s)
+										"vi", entryg_input["vi"]*mt2ft,		   //inertial vel (ft/s)
+										"xlfac", entryg_input["xlfac"]*mt2ft,      //load factor acceleration (ft/s2)
+										"mm304ph", entryg_input["roll0"],    	//preentry bank 
+										"mm304al", entryg_input["alpha0"]    	//preentry aoa 
+								)
+	).
+	
+	RETURN lexicon(
+								"alpha", entryg_output["alpcmd"],
+								"roll", entryg_output["rolcmd"],
+								"rollc", entryg_output["rollc"],	//for the record
+								"drag_ref", entryg_output["drefp"]/mt2ft,
+								"drag", entryg_output["drag"]/mt2ft,
+								"roll_ref", entryg_output["rolref"],
+								"phase", entryg_output["islect"],
+								"vcg", entryg_output["vcg"]/mt2ft,
+								"eg_end", entryg_output["eg_end"]
+	).
+}
 
 
 //input constants
@@ -264,7 +305,7 @@ function egexec {
 	//this also needs to be called at runway redesignation or if we reset guidance I guess
 	if entryg_internal["start"] = 0 {
 		set entryg_input["dtegd"] to entryg_constants["dtegd"].
-		eginit().
+		eginit(entryg_input).
 	}
 	
 	egcomn(entryg_input).
@@ -355,7 +396,7 @@ function egexec {
 		//very long range termination of phase 3 
 		//if the phase 3/4 velocity is less than the phase 4/5 vtran, skip phase 4
 		//bank smoothing is controlled by variable gs4 inside drefp5
-		if (entryg_input["ve"] < (entryg_constants["vcg"] + entryg_constants["delv"])) and (entryg_internal["drefp"] > entryg_internal["drefp5"]) and (entryg_internal["vcg"] < entryg_constants["vtran"]) {
+		if (entryg_input["ve"] < (entryg_internal["vcg"] + entryg_constants["delv"])) and (entryg_internal["drefp"] > entryg_internal["drefp5"]) and (entryg_internal["vcg"] < entryg_constants["vtran"]) {
 			set entryg_internal["islect"] to 5.
 		}
 	} else if (entryg_internal["islect"] = 4) {
@@ -383,7 +424,6 @@ function egexec {
 								"vcg", entryg_internal["vcg"],
 								"vrr", entryg_internal["vrr"],
 								"eowd", entryg_internal["eowd"],
-								"eei", entryg_internal["eei"],
 								"eg_end", entryg_internal["eg_end"],
 								"rc176g", entryg_internal["rc176g"]
 	).
@@ -578,7 +618,7 @@ function egrp {
 		set entryg_internal["r231"] to entryg_internal["rff1"] + entryg_internal["req1"].
 		local r23 is entryg_input["trange"] - entryg_internal["rcg"] - entryg_internal["rpt"].
 		//DISCREPANCY!!! is it divided by r23 or d23???
-		local d231 is entryg_internal["r231"] / entryg_internal["r23"].
+		local d231 is entryg_internal["r231"] / r23.
 		set entryg_internal["drdd"] to -r23 / d231.
 		
 		if (d231 >= d23l) {
@@ -737,7 +777,7 @@ function eggnslct {
 	set entryg_internal["c17"] to midval(entryg_internal["c17"], entryg_constants["ct17mn"], entryg_constants["ct17mx"]).
 	
 	if (entryg_internal["ict"]) {
-		set entryg_internal["c17"] to entryg_constants["ct17mp"] * entryg_internal["c17"].
+		set entryg_internal["c17"] to entryg_constants["c17mp"] * entryg_internal["c17"].
 	}
 }
 
@@ -874,10 +914,12 @@ function eglodvcmd {
 			
 			if (entryg_internal["rrflag"] = FALSE) {
 				SET entryg_internal["rrflag"] TO TRUE.
+				print "roll rev" at (0,30).
 			}
 			
 		} else if (entryg_internal["rrflag"]) and (ABS(entryg_input["delaz"]) < entryg_internal["yl"]) {
 			SET entryg_internal["rrflag"] TO FALSE.
+			print "           " at (0,30).
 		}
 	}
 }
@@ -921,10 +963,10 @@ function egrolcmd {
 		
 		//calculate absolute limits for alpha modulation 
 		set entryg_internal["aclam"] to min(entryg_constants["dlallm"], entryg_constants["aclam1"] + entryg_constants["aclam2"]*entryg_input["ve"]).
-		set entryg_internal["aclim"] to min(entryg_constants["aclam1"] + entryg_constants["aclam2"]*entryg_input["ve"], entryg_constants["aclam3"] + entryg_constants["aclam4"]*entryg_input["ve"]).
+		set entryg_internal["aclim"] to min(entryg_constants["aclim1"] + entryg_constants["aclim2"]*entryg_input["ve"], entryg_constants["aclim3"] + entryg_constants["aclim4"]*entryg_input["ve"]).
 		
 		//the paper says apply the modulation on top of input alpha, to me makes more sense to apply it on top of "virgin" commanded alpha
-		set entryg_internal["alpcmd"] to midval(entryg_internal["aclam"], entryg_input["acmd1"] + entryg_internal["delalp"], entryg_internal["aclim"]).
+		set entryg_internal["alpcmd"] to midval(entryg_internal["aclam"], entryg_input["alpha"] + entryg_internal["delalp"], entryg_internal["aclim"]).
 	}
 	
 	//calculate absolute roll angle limits

@@ -15,21 +15,33 @@ RUNPATH("0:/Shuttle_OPS3/src/entry_guid.ks").
 
 
 
+//GLOBAL sim_input IS LEXICON(
+//						"target", "Vandenberg",
+//						"deorbit_apoapsis", 190,
+//						"deorbit_periapsis", 10,
+//						"deorbit_inclination", -103.5,
+//						"entry_interf_eta", 150,
+//						"entry_interf_dist", 9500,
+//						"entry_interf_xrange", 1400,
+//						"entry_interf_offset", "right"
+//).
+
+
 GLOBAL sim_input IS LEXICON(
-						"target", "Vandenberg",
-						"deorbit_apoapsis", 190,
+						"target", "KSC",
+						"deorbit_apoapsis", 220,
 						"deorbit_periapsis", 10,
-						"deorbit_inclination", -103.5,
-						"entry_interf_eta", 150,
+						"deorbit_inclination", 52.5,
+						"entry_interf_eta", 130,
 						"entry_interf_dist", 9500,
-						"entry_interf_xrange", 1400,
+						"entry_interf_xrange", 1000,
 						"entry_interf_offset", "right"
 ).
 
 GLOBAL ICS IS generate_simulation_ics(sim_input).
 
 GLOBAL sim_settings IS LEXICON(
-					"deltat",5,
+					"deltat",2,
 					"integrator","rk3",
 					"log",FALSE
 	).
@@ -230,14 +242,15 @@ FUNCTION ops3_reentry_simulate {
 	
 	LOCAL next_simstate IS simstate.
 
-	LOCAL hdotp IS 0.
-	LOCAL hddot IS 0.
 	local step_c is 0.
 	
-	//canned for testing
-	//set equal to mm304 parameters?
-	LOCAL pitch_prof IS 30.
-	LOCAL roll_prof IS -60.
+	//set equal to mm304 parameters
+	LOCAL pitch_0 is entryg_constants["mm304alp0"].
+	LOCAL pitch_prof IS pitch_0.
+	
+	LOCAL roll_0 IS entryg_constants["mm304phi0"].
+	LOCAL roll_prof IS roll_0.
+	
 	
 	//putting the termination conditions here should save an if check per step
 	UNTIL (( next_simstate["altitude"]< tgtalt AND next_simstate["surfvel"]:MAG < sim_end_conditions["surfvel"] ) OR next_simstate["altitude"]>140000)  {
@@ -246,18 +259,45 @@ FUNCTION ops3_reentry_simulate {
 		SET simstate TO next_simstate.
 		
 		LOCAL hdot IS VDOT(simstate["position"]:NORMALIZED,simstate["surfvel"]).
-		SET hddot TO (hdot - hdotp)/sim_settings["deltat"].
-		SET hdotp TO hdot.
 
 		LOCAL delaz IS az_error(simstate["latlong"],tgtpos,simstate["surfvel"]).
 		
 		LOCAL tgt_range IS greatcircledist( tgtpos , simstate["latlong"] ).
 		
-		LOCAL aeroforce IS aeroforce_ld(simstate["position"], simstate["velocity"], LIST(pitch_prof,roll_prof)).
+		//should already be acceleration
+		LOCAL aeroacc IS aeroaccel_ld(simstate["position"], simstate["surfvel"], LIST(pitch_prof,roll_prof)).
 		
+		local hls is simstate["altitude"] - tgt_rwy["elevation"].
+		
+		local ve is simstate["surfvel"]:MAG.
+		local vi is simstate["velocity"]:MAG.
+		
+		LOCAL xlfac IS aeroacc["load"]:MAG.
+		local lod is aeroacc["lift"]/aeroacc["drag"].
 		
 		//call entry guidance here
+		LOCAL entryg_out is entryg_wrapper(
+									lexicon(
+											"iteration_dt", sim_settings["deltat"],
+											"alpha", pitch_prof,      
+											"delaz", delaz,      
+											"drag", aeroacc["drag"],
+											"egflg", 0,      
+											"hls", hls,		
+											"lod", lod,
+											"hdot", hdot,  
+											"roll", roll_prof,
+											"tgt_range", tgt_range,
+											"ve", ve,
+											"vi", vi,	
+											"xlfac", xlfac,
+											"roll0", roll_0,    
+											"alpha0", pitch_0
+									)
+		).
 		
+		SET pitch_prof TO entryg_out["alpha"].
+		SET roll_prof TO entryg_out["roll"].
 		
 		//log stuff to file and terminal before integrating
 		
@@ -267,8 +307,8 @@ FUNCTION ops3_reentry_simulate {
 		
 		SET loglex["step"] TO step_c.
 		SET loglex["time"] TO simstate["simtime"].
-		SET loglex["alt"] TO simstate["altitude"]/1000.
-		SET loglex["speed"] TO simstate["surfvel"]:MAG.
+		SET loglex["alt"] TO (hls)/1000.
+		SET loglex["speed"] TO vi.
 		SET loglex["hdot"] TO hdot.
 		SET loglex["lat"] TO simstate["latlong"]:LAT.
 		SET loglex["long"] TO simstate["latlong"]:LNG.
@@ -276,11 +316,27 @@ FUNCTION ops3_reentry_simulate {
 		SET loglex["pitch"] TO pitch_prof.
 		SET loglex["roll"] TO roll_prof.
 		SET loglex["az_err"] TO delaz.
-		SET loglex["l_d"] TO aeroforce["lift"] / aeroforce["drag"].
+		SET loglex["l_d"] TO lod.
 		log_data(loglex).
 		
-		print "step : " + loglex["step"] at (0,1).
+		PRINTPLACE("step : " + loglex["step"], 20,0,1).
+		PRINTPLACE("alt : " + round(hls,0), 20,0,2).
+		PRINTPLACE("ve : " + round(ve,0), 20,0,3).
+		PRINTPLACE("vi : " + round(vi,0), 20,0,4).
+		PRINTPLACE("hdot : " + round(hdot,1), 20,0,5).
+		PRINTPLACE("tgt_range : " + round(tgt_range,0), 20,0,6).
+		PRINTPLACE("delaz : " + round(delaz,2), 20,0,7).
 		
+		PRINTPLACE("xlfac : " + round(xlfac,3), 20,0,9).
+		PRINTPLACE("drag : " + round(aeroacc["drag"],3), 20,0,10).
+		PRINTPLACE("l/d : " + round(lod,3), 20,0,11).
+		PRINTPLACE("drag_ref : " + round(entryg_out["drag_ref"],3), 20,0,12).
+		
+		PRINTPLACE("pitch : " + round(pitch_prof,1), 20,0,14).
+		PRINTPLACE("roll : " + round(roll_prof,1), 20,0,15).
+		PRINTPLACE("roll_ref : " + round(entryg_out["roll_ref"],1), 20,0,16).
+		
+		PRINTPLACE("phase : " + round(entryg_out["phase"],0), 20,0,18).
 		
 		
 		
