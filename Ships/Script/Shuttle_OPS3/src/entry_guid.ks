@@ -25,7 +25,7 @@ GLOBAL km2nmi IS 0.539957.	// nmi/km
 
 
 //wrapper for the entry function, to transform the input and output units 
-//i'm assuming it's 
+
 
 
 FUNCTION entryg_wrapper {
@@ -35,7 +35,7 @@ FUNCTION entryg_wrapper {
 								lexicon(
 										"dtegd", entryg_input["iteration_dt"],		//iteration delta-t
 										"alpha", entryg_input["alpha"],      //aoa
-										"delaz", entryg_input["delaz"],       //az error  
+										"delaz", entryg_input["delaz"],       //az error
 										"drag", entryg_input["drag"]*mt2ft,        //drag accel (ft/s2) 
 										"egflg", entryg_input["egflg"],       //mode flag  
 										"hls", entryg_input["hls"]*mt2ft,		   //alt above rwy (ft)
@@ -105,8 +105,8 @@ global entryg_constants is lexicon (
 									"ct17mn", 0.0025,	//s/ft 		min c17
 									"ct17mx", 0.014,	//s/ft 		max c17
 									"ct17m2", 0.00133,	//s/ft 		min c17 when ict=1
-									"cy0", -0.1309,		//rad 	constant term heading err deadband
-									"cy1", 1.0908e-4,	//rad-s/ft 	linear term heading err deadband
+									"cy0", -7.5,		//deg 	constant term heading err deadband
+									"cy1", 0.0062498,	//deg-s/ft 	linear term heading err deadband
 									"c17mp", 0.75,		//c17 mult fact when ict=1
 									"c21", 0.06,		//1/deg c20 cont val
 									"c22", -0.001,		//1/deg c20 const value in linear term
@@ -178,11 +178,11 @@ global entryg_constants is lexicon (
 									"vtrb0", 60000,	//ft/s initial value of vtrb
 									"vtran", 10500,	//ft/s nominal vel at start of transition 
 									"vylmax", 23000,	//ft/s min vel to limit lmn by almn4
-									"ylmin", 0.03,	//rad yl bias used in test for lmn	
-									"ylmn2", 0.07,	//rad mon yl bias 
-									"y1", 0.20944,	//rad max heading err deadband before first reversal	//was 17.5 deg to rad
-									"y2", 0.1745329,	//rad min heading error deadband 
-									"y3", 0.3054326,	//max heading err deadband after first reversal 
+									"ylmin", 1.72,	//deg yl bias used in test for lmn	
+									"ylmn2", 4.01,	//deg mon yl bias 
+									"y1", 12,	//deg max heading err deadband before first reversal	//was 17.5 deg
+									"y2", 9.97,	//deg min heading error deadband 
+									"y3", 17.5,	//deg max heading err deadband after first reversal 
 									"zk1", 1	//s hdot feedback gain
 
 ).
@@ -460,7 +460,7 @@ function eginit {
 	set entryg_internal["t2"] to 0.
 	set entryg_internal["drefp"] to 0.
 	set entryg_internal["vq2"] to entryg_constants["vq"]^2.
-	set entryg_internal["rk2rol"] to -sign(entryg_input["delaz"]).
+	set entryg_internal["rk2rol"] to sign(entryg_input["delaz"]).
 	set entryg_internal["dlrdot"] to 0.
 	set entryg_internal["lmflg"] to FALSE.
 	set entryg_internal["vtrb"] to entryg_constants["vtrb0"].
@@ -688,7 +688,7 @@ function egref4 {
 	set entryg_internal["drefp"] to entryg_internal["t2"].
 	set entryg_internal["rdtref"] to -2*entryg_internal["hs"]*entryg_internal["t2"]/entryg_input["ve"].
 	//DISCREPANCY!! sign of drdd
-	set entryg_internal["drdd"] to -(entryg_input["trange"] -  entryg_input["rpt"]) / entryg_internal["t2"].
+	set entryg_internal["drdd"] to -(entryg_input["trange"] -  entryg_internal["rpt"]) / entryg_internal["t2"].
 	set entryg_internal["c2"] to 0.
 	
 	set entryg_internal["itran"] to TRUE.
@@ -896,10 +896,11 @@ function eglodvcmd {
 	
 	set entryg_internal["lmn"] to entryg_internal["xlod"]*entryg_internal["lmn"].
 	
-	set entryg_internal["dlzrl"] to entryg_input["delaz"]*entryg_internal["rk2rol"].
+	set entryg_internal["dlzrl"] to -entryg_input["delaz"]*entryg_internal["rk2rol"].
 	
 	//apply the l/d limtis and finally calculate if we do the roll reversal
-	if (abs(entryg_internal["lodv"]) >= entryg_internal["lmn"] and entryg_internal["dlzrl"] <=0) {
+	//dlzrl should first be negative as we reduce crossrange then positive
+	if (abs(entryg_internal["lodv"]) >= entryg_internal["lmn"] and entryg_internal["dlzrl"] <= 0) {
 		set entryg_internal["lmflg"] to TRUE.
 		set entryg_internal["lodv"] to entryg_internal["lmn"]*sign(entryg_internal["lodv"]).
 	} else {
@@ -907,8 +908,8 @@ function eglodvcmd {
 		set entryg_internal["lmn"] to entryg_internal["xlod"].
 		
 		//should do the roll reversal
-		//extra condition on abs(delaz) plus flag to track reversal start and end
-		if (entryg_internal["dlzrl"] >= entryg_internal["yl"]) and (ABS(entryg_input["delaz"]) >= entryg_internal["yl"]) {
+		//added condition on abs(delaz) plus flag to track reversal start and end
+		if (entryg_internal["dlzrl"] > 0) and (ABS(entryg_input["delaz"]) >= entryg_internal["yl"]) {
 			set entryg_internal["rk2rol"] to -entryg_internal["rk2rol"].
 			set entryg_internal["idbchg"] to TRUE.
 			
