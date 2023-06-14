@@ -203,18 +203,20 @@ FUNCTION ops3_reentry_simulate {
 										"speed",0,
 										"hdot",0,
 										"range",0,
+										"az_err",0,
 										"lat",0,
 										"long",0,
 										"pitch",0,
 										"roll",0,
-										"tgt_range",0,
-										"range_err",0,
-										"az_err",0,
+										"unl_roll",0,
 										"roll_ref",0,
-										"l_d",0
-
+										"l_d",0,
+										"drag",0,
+										"drag_ref",0,
+										"entry_phase",1
 
 	).
+	
 	
 	log_data(loglex,"0:/Shuttle_OPS3/LOGS/sim_log_" + sim_input["target"] + "_" + sim_input["deorbit_inclination"] + "_" + sim_input["entry_interf_xrange"] , TRUE).
 	
@@ -313,10 +315,15 @@ FUNCTION ops3_reentry_simulate {
 		SET loglex["lat"] TO simstate["latlong"]:LAT.
 		SET loglex["long"] TO simstate["latlong"]:LNG.
 		SET loglex["range"] TO tgt_range.
+		SET loglex["az_err"] TO delaz.
 		SET loglex["pitch"] TO pitch_prof.
 		SET loglex["roll"] TO roll_prof.
-		SET loglex["az_err"] TO delaz.
+		SET loglex["unl_roll"] TO entryg_out["unl_roll"].
+		SET loglex["roll_ref"] TO entryg_out["roll_ref"].
 		SET loglex["l_d"] TO lod.
+		SET loglex["entry_phase"] TO entryg_out["phase"].
+		SET loglex["drag"] TO aeroacc["drag"].
+		SET loglex["drag_ref"] TO entryg_out["drag_ref"].
 		log_data(loglex).
 		
 		PRINTPLACE("step : " + loglex["step"], 20,0,1).
@@ -337,6 +344,10 @@ FUNCTION ops3_reentry_simulate {
 		PRINTPLACE("roll_ref : " + round(entryg_out["roll_ref"],1), 20,0,16).
 		
 		PRINTPLACE("phase : " + round(entryg_out["phase"],0), 20,0,18).
+		
+		if (entryg_out["eg_end"]) {
+			print "entry guidance switched to taem" at (0, 20).
+		}
 		
 		
 		
