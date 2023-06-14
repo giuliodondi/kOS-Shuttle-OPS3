@@ -1,1 +1,0 @@
-mode    time    alt    speed    hdot    range    lat    long    pitch    roll    tgt_range    range_err    az_err    roll_ref    
