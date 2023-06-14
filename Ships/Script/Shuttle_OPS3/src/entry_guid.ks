@@ -2,24 +2,24 @@
 
 
 //input variables 
-global entryg_input is lexicon(
-								"dtegd",,		//iteration delta-t
-								"alpha",,      //aoa
-								"delaz",,       //az error  
-								"drag",,        //drag accel (ft/s2) 
-								"egflg",,       //mode flag  
-								"hls",,		   //alt above rwy (ft)
-								"lod",, 		//current l/d 
-								"rdot",,        //alt rate (ft/s) 
-								"roll",,	   //cur bank angle 
-								"trange",,     //target range (nmi)
-								"ve",, 		   //earth rel velocity (ft/s)
-								"vi",,		   //inertial vel (ft/s)
-								"xlfac",,      //load factor acceleration (ft/s2)
-								"mm304ph",,    	//preentry bank 
-								"mm304al",,    	//preentry aoa 
-								"mep",, 			//hac selection flag 
-).
+//global entryg_input is lexicon(
+//								"dtegd",,		//iteration delta-t
+//								"alpha",,      //aoa
+//								"delaz",,       //az error  
+//								"drag",,        //drag accel (ft/s2) 
+//								"egflg",,       //mode flag  
+//								"hls",,		   //alt above rwy (ft)
+//								"lod",, 		//current l/d 
+//								"rdot",,        //alt rate (ft/s) 
+//								"roll",,	   //cur bank angle 
+//								"trange",,     //target range (nmi)
+//								"ve",, 		   //earth rel velocity (ft/s)
+//								"vi",,		   //inertial vel (ft/s)
+//								"xlfac",,      //load factor acceleration (ft/s2)
+//								"mm304ph",,    	//preentry bank 
+//								"mm304al",,    	//preentry aoa 
+//								"mep",, 			//hac selection flag 
+//).
 
 
 
@@ -180,7 +180,7 @@ global entryg_internal is lexicon(
 									"dlim", 0,   	//max drefp in transition 
 									"dlzrl", 0,   	//test var in bank angle compuation
 									"drdd", 0,   	//dRange / dD 
-									"dref", list(0,0,0)	//drefp for temperature quadratic
+									"dref", list(0,0,0),	//drefp for temperature quadratic
 									"drefp", 0,   	//drag ref used in controller 
 									"drefpt", 0,   	//drefp/dref in transition 
 									"drefp1", 0,   	//eq glide
@@ -223,9 +223,9 @@ global entryg_internal is lexicon(
 									"rdtrf", 0,   	//rdot ref corrected for cd 
 									"rk2rol", 0,   	//bank angle direction 
 									"rk2rlp", 0,   	//prev val 
-									"rollc", list(0,0,0,0)	//1", roll angle command 2", unlimited roll command 3", roll ref //deg
+									"rollc", list(0,0,0,0),	//1", roll angle command 2", unlimited roll command 3", roll ref //deg
 									"rolref", 0,	//deg 	//roll ref
-									"rc176g",, 	//first roll after 0.176g	//deg
+									"rc176g", 0, 	//first roll after 0.176g	//deg
 									"rpt", 0,   	//desired range at vq 
 									"r231", 0,   	//range of phase 2+3 * d23
 									"rrflag", FALSE,		//roll reversal flag
@@ -234,14 +234,14 @@ global entryg_internal is lexicon(
 									"t2", 0,   		//constant drag level to target 
 									"t2old", 0,   		
 									"t2dot", 0,   	//rate of t2 change -à
-									"v_temp", list(0,0,0,0)	//velocity points for temp control 
+									"v_temp", list(0,0,0,0),	//velocity points for temp control 
 									"vb2", 0,   		//vb ^ 2
 									"vcg", 0,   		//phase 3/4 boundary vel 
 									"ve2", 0,   		//ve ^ 2 
 									"vf", list(0,0,0),    	//upper vel bounds for temp control 
 									"vo", list(0,0,0),    	//????
 									"vq2", 0,   	//vq ^ 2
-									"vrr",, 		//velocity first reversal //ft/s 
+									"vrr", 0, 		//velocity first reversal //ft/s 
 									"vsat2", 0,   	//vsat ^ 2
 									"vsit2", 0,   	//vs1 ^ 2
 									"vtrb", 0,   	//rdot feedback vel lockout 
@@ -432,8 +432,8 @@ function eginit {
 	//nominal transition range at vtran (nmi)
 	//this is kept fixed for range calculations of phase 2,3,4
 	//changed the sign of rpt and tmp1 from the papers
-	local tmp1 is -((entryg_constants["etran"] - entryg_constants["eef4"])* LN(entryg_constants["df"] / entryg_constants["alfm"])) / (entryg_constants["alfm"] - entryg_constants["df"]) 
-	local tmp2 is (entryg_constants["vtran"]^2 - entryg_internal["vq2"]) / (2*entryg_constants["alfm"]) 
+	local tmp1 is -((entryg_constants["etran"] - entryg_constants["eef4"])* LN(entryg_constants["df"] / entryg_constants["alfm"])) / (entryg_constants["alfm"] - entryg_constants["df"]).
+	local tmp2 is (entryg_constants["vtran"]^2 - entryg_internal["vq2"]) / (2*entryg_constants["alfm"]).
 	set entryg_internal["rpt"] to (tmp1 + tmp2) * entryg_constants["cnmfs"] + entryg_constants["rpt1"].
 	
 	set entryg_internal["vsat2"] to entryg_constants["vsat"]^2.
@@ -481,11 +481,11 @@ function egcomn {
 		set entryg_internal["t2"] to entryg_constants["cnmfs"] * (entryg_internal["ve2"] - entryg_internal["vq2"]) / (2*( entryg_input["trange"] - entryg_internal["rpt"])).
 		set entryg_internal["t2dot"] to (entryg_internal["t2"] - entryg_internal["t2old"]) / entryg_input["dtegd"].
 		
-		if ( entryg_input["ve"] < (entryg_constants["vtran"] + entryg_constants["delv"]) {
+		if (entryg_input["ve"] < (entryg_constants["vtran"] + entryg_constants["delv"])) {
 			set entryg_internal["c1"] to (entryg_internal["t2"] - entryg_constants["df"]) / ( entryg_constants["etran"] - entryg_constants["eef4"]).
 			set entryg_internal["rdtrft"] to - (entryg_internal["c1"] * (entryg_constants["gs"]  * entryg_input["hls"] - entryg_constants["eef4"]) + entryg_constants["df"]) * 2 * entryg_input["ve"] * entryg_internal["hs"] / entryg_internal["cag"].
 			
-			set entryg_internal["drefp5"] to entryg_constants["df"] + (entryg_internal["eef"] - entryg_constants["eef4"]) * entryg_internal["c1"] + entryg_constants["gs4"] * (entryg_internal["rdtref"] - entryg_internal["rdtrft"])
+			set entryg_internal["drefp5"] to entryg_constants["df"] + (entryg_internal["eef"] - entryg_constants["eef4"]) * entryg_internal["c1"] + entryg_constants["gs4"] * (entryg_internal["rdtref"] - entryg_internal["rdtrft"]).
 		}
 	
 	}
@@ -541,8 +541,8 @@ function egrp {
 		if (entryg_input["ve"] < entryg_internal["vo"][i]) {
 			set entryg_internal["rf"][i] to 0.
 		} else {
-			set entryg_internal["v_temp"][1] to (8*entryg_internal["vo"][i] + entryg_internal["vf"][[i]) / 9.
-			set entryg_internal["v_temp"][2] to (entryg_internal["vo"][i] + entryg_internal["vf"][[i]) / 2.
+			set entryg_internal["v_temp"][1] to (8*entryg_internal["vo"][i] + entryg_internal["vf"][i]) / 9.
+			set entryg_internal["v_temp"][2] to (entryg_internal["vo"][i] + entryg_internal["vf"][i]) / 2.
 			set entryg_internal["v_temp"][3] to entryg_internal["vo"][i] + entryg_internal["vf"][i] - entryg_internal["v_temp"][1].
 			
 			FROM {local j is 1.} UNTIL j > 3 STEP {set j to j + 1.} DO {  
@@ -860,7 +860,7 @@ function eglodvcmd {
 	
 	//apply the l/d limtis and finally calculate if we do the roll reversal
 	if (abs(entryg_internal["lodv"]) >= entryg_internal["lmn"] and entryg_internal["dlzrl"] <=0) {
-		set entryg_internal["lmflg"] to TRUE 
+		set entryg_internal["lmflg"] to TRUE.
 		set entryg_internal["lodv"] to entryg_internal["lmn"]*sign(entryg_internal["lodv"]).
 	} else {
 		set entryg_internal["lmflg"] to FALSE.
