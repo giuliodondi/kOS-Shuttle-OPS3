@@ -12,6 +12,8 @@ RUNPATH("0:/Shuttle_OPS3/constants").
 
 RUNPATH("0:/Shuttle_OPS3/src/entry_guid.ks").
 
+RUNPATH("0:/Shuttle_OPS3/vessel_dir").
+RUNPATH("0:/Shuttle_OPS3/VESSELS/" + vessel_dir + "/pitch_profile").
 
 
 
@@ -30,11 +32,11 @@ RUNPATH("0:/Shuttle_OPS3/src/entry_guid.ks").
 GLOBAL sim_input IS LEXICON(
 						"target", "KSC",
 						"deorbit_apoapsis", 220,
-						"deorbit_periapsis", 10,
+						"deorbit_periapsis", -10,
 						"deorbit_inclination", 52.5,
 						"entry_interf_eta", 130,
-						"entry_interf_dist", 9500,
-						"entry_interf_xrange", 1000,
+						"entry_interf_dist", 8500,
+						"entry_interf_xrange", 100,
 						"entry_interf_offset", "right"
 ).
 

@@ -54,10 +54,10 @@ FUNCTION entryg_wrapper {
 	RETURN lexicon(
 								"alpha", entryg_output["alpcmd"],
 								"roll", entryg_output["rolcmd"],
-								"rollc", entryg_output["rollc"],	//for the record
+								"unl_roll", entryg_output["unl_roll"],
+								"roll_ref", entryg_output["rolref"],
 								"drag_ref", entryg_output["drefp"]/mt2ft,
 								"drag", entryg_output["drag"]/mt2ft,
-								"roll_ref", entryg_output["rolref"],
 								"phase", entryg_output["islect"],
 								"vcg", entryg_output["vcg"]/mt2ft,
 								"eg_end", entryg_output["eg_end"]
@@ -167,7 +167,7 @@ global entryg_constants is lexicon (
 									"verolc", 8000,	//max vel for limiting bank cmd
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
-									"vnoalp", 25000,	//modulation start flag//	//took the value from the sts-1 paper
+									"vnoalp", 0,	//modulation start flag//	//took the value from the sts-1 paper
 									"vq", 10499,	//ft/s predicted end vel for const drag			//changed for consistency with vtran
 									"vrlmc", 2500,	//ft/s rlm seg switch vel
 									"vsat", 25766.2,	//ft/s local circular orbit vel 
@@ -416,10 +416,10 @@ function egexec {
 	return lexicon(
 								"alpcmd", entryg_internal["alpcmd"],
 								"rolcmd", entryg_internal["rolcmd"],
-								"rollc", entryg_internal["rollc"],	//for the record
 								"drefp", entryg_internal["drefp"],
 								"drag", entryg_input["drag"],
-								"rolref", entryg_internal["rolref"],
+								"unl_roll", entryg_internal["rollc"][2],
+								"rolref", entryg_internal["rollc"][3],
 								"islect", entryg_internal["islect"],
 								"vcg", entryg_internal["vcg"],
 								"vrr", entryg_internal["vrr"],
@@ -738,22 +738,38 @@ function egtran {
 function egalpcmd {
 	PARAMETER entryg_input.
 	
+	LOCAL out IS entryg_input["mm304al"].
+	
+	LOCAL ve_mps IS entryg_input["ve"] / mt2ft.
+	
+	IF (ve_mps >= pitchprof_segments[pitchprof_segments:LENGTH-1][0] ) {
+		SET out TO pitchprof_segments[pitchprof_segments:LENGTH-1][1].
+	} ELSE {
+		SET out TO INTPLIN(pitchprof_segments,ve_mps).
+	}
+	
+	set entryg_internal["alpcmd"] TO out.
+	
 	//simple check, guaranteed at most one decrement per pass
-	if ((entryg_input["ve"] < entryg_constants["valp"][entryg_internal["ialp"]]) and (entryg_internal["ialp"] > 0)) {
-		set entryg_internal["ialp"] to entryg_internal["ialp"] - 1.
-	}
+	//if ((entryg_input["ve"] < entryg_constants["valp"][entryg_internal["ialp"]]) and (entryg_internal["ialp"] > 0)) {
+	//	set entryg_internal["ialp"] to entryg_internal["ialp"] - 1.
+	//}
+	//
+	//local j is entryg_internal["ialp"] + 1.
+	//
+	//set entryg_internal["alpcmd"] to entryg_constants["calp0"][j] + entryg_input["ve"]*(entryg_constants["calp1"][j] + entryg_input["ve"] * entryg_constants["calp2"][j]).
+	//
+	//if (entryg_internal["islect"] = 1) {
+	//	set entryg_internal["alpcmd"] to entryg_input["mm304al"].
+	//}
+	//
 	
-	local j is entryg_internal["ialp"] + 1.
 	
-	set entryg_internal["alpcmd"] to entryg_constants["calp0"][j] + entryg_input["ve"]*(entryg_constants["calp1"][j] + entryg_input["ve"] * entryg_constants["calp2"][j]).
-	
-	if (entryg_internal["islect"] = 1) {
-		set entryg_internal["alpcmd"] to entryg_input["mm304al"].
-	}
 	
 	set entryg_internal["alpdot"] to (entryg_internal["alpcmd"] - entryg_internal["acmd1"]) / entryg_input["dtegd"].
 	//save the "virgin" commanded alpha to apply alpha mod properly
 	set entryg_internal["acmd1"] to entryg_internal["alpcmd"].
+	
 
 }
 
@@ -915,12 +931,10 @@ function eglodvcmd {
 			
 			if (entryg_internal["rrflag"] = FALSE) {
 				SET entryg_internal["rrflag"] TO TRUE.
-				print "roll rev" at (0,30).
 			}
 			
 		} else if (entryg_internal["rrflag"]) and (ABS(entryg_input["delaz"]) < entryg_internal["yl"]) {
 			SET entryg_internal["rrflag"] TO FALSE.
-			print "           " at (0,30).
 		}
 	}
 }
