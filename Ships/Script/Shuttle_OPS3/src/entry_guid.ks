@@ -248,12 +248,9 @@ global entryg_internal is lexicon(
 									"rollc", list(0,0,0,0),	//1", roll angle command 2", unlimited roll command 3", roll ref //deg
 									"rolref", 0,	//deg 	//roll ref
 									"rpt", 0,   	//desired range at vq 
-									"r231", 0,   	//range of phase 2+3 * d23
 									"rrflag", FALSE,		//roll reversal flag
 									"start", 0,   	//first pass flag  
-									"t1", 0,   		//eq glide vertical lift accel
-									"t2", 0,   		//constant drag level to target 
-									"t2old", 0,   		
+									"t2", 0,   		//constant drag level to target 	
 									"t2dot", 0,   	//rate of t2 change -à
 									"vb2", 0,   		//vb ^ 2
 									"vcg", 0,   		//phase 3/4 boundary vel 
@@ -477,8 +474,6 @@ function egcomn {
 
 	set entryg_internal["xlod"] to max(entryg_input["lod"], entryg_constants["lodmin"]).
 	
-	set entryg_internal["t2old"] to entryg_internal["t2"].
-	
 	set entryg_internal["ve2"] to entryg_input["ve"]^2.
 	
 	set entryg_internal["eef"] to entryg_constants["gs"] * entryg_input["hls"] + entryg_internal["ve2"] / 2.
@@ -488,8 +483,9 @@ function egcomn {
 	set entryg_internal["cag"] to 2* entryg_constants["gs"]*entryg_internal["hs"] + entryg_internal["ve2"].
 	
 	if (entryg_internal["islect"] < 5) {
+		local t2old is entryg_internal["t2"].
 		set entryg_internal["t2"] to entryg_constants["cnmfs"] * (entryg_internal["ve2"] - entryg_internal["vq2"]) / (2*( entryg_input["trange"] - entryg_internal["rpt"])).
-		set entryg_internal["t2dot"] to (entryg_internal["t2"] - entryg_internal["t2old"]) / entryg_input["dtegd"].
+		set entryg_internal["t2dot"] to (entryg_internal["t2"] - t2old) / entryg_input["dtegd"].
 		
 		if (entryg_input["ve"] < (entryg_constants["vtran"] + entryg_constants["delv"])) {
 			local c1 is (entryg_internal["t2"] - entryg_constants["df"]) / ( entryg_constants["etran"] - entryg_constants["eef4"]).
@@ -588,10 +584,10 @@ function egrp {
 		
 		set entryg_internal["req1"] to entryg_internal["a"][2]*LN(entryg_constants["alfm"] / entryg_internal["d23"]).
 		set entryg_internal["rcg"] to entryg_internal["rcg1"] - entryg_internal["a"][2] / entryg_internal["d23"].
-		set entryg_internal["r231"] to entryg_internal["rff1"] + entryg_internal["req1"].
+		local r231 is entryg_internal["rff1"] + entryg_internal["req1"].
 		local r23 is entryg_input["trange"] - entryg_internal["rcg"] - entryg_internal["rpt"].
 		//DISCREPANCY!!! is it divided by r23 or d23???
-		local d231 is entryg_internal["r231"] / r23.
+		local d231 is r231 / r23.
 		set entryg_internal["drdd"] to -r23 / d231.
 		
 		if (d231 >= d23l) {
