@@ -224,7 +224,6 @@ global entryg_internal is lexicon(
 									"ialp", 0,   	//alpcmd segment counter 
 									"ict", FALSE,   		//alpha mod flag 
 									"idbchg", FALSE, 		// flag to signal first roll reversal performed
-									"islecp", 0,   	//past value if islect 
 									"islect", 0,   	//phase counter 
 									"itran", FALSE,   	//transition init flag
 									"lmflg", FALSE,   	//saturated roll cmd flag 
@@ -256,7 +255,6 @@ global entryg_internal is lexicon(
 									"t2", 0,   		//constant drag level to target 
 									"t2old", 0,   		
 									"t2dot", 0,   	//rate of t2 change -à
-									"v_temp", list(0,0,0,0),	//velocity points for temp control 
 									"vb2", 0,   		//vb ^ 2
 									"vcg", 0,   		//phase 3/4 boundary vel 
 									"ve2", 0,   		//ve ^ 2 
@@ -479,8 +477,6 @@ function egcomn {
 
 	set entryg_internal["xlod"] to max(entryg_input["lod"], entryg_constants["lodmin"]).
 	
-	//changed to minus this
-	set entryg_internal["t1"] to entryg_constants["gs"] * (1 - entryg_input["vi"]^2 / entryg_internal["vsat2"]).
 	set entryg_internal["t2old"] to entryg_internal["t2"].
 	
 	set entryg_internal["ve2"] to entryg_input["ve"]^2.
@@ -555,12 +551,15 @@ function egrp {
 		if (entryg_input["ve"] < entryg_internal["vo"][i]) {
 			set entryg_internal["rf"][i] to 0.
 		} else {
-			set entryg_internal["v_temp"][1] to (8*entryg_internal["vo"][i] + entryg_internal["vf"][i]) / 9.
-			set entryg_internal["v_temp"][2] to (entryg_internal["vo"][i] + entryg_internal["vf"][i]) / 2.
-			set entryg_internal["v_temp"][3] to entryg_internal["vo"][i] + entryg_internal["vf"][i] - entryg_internal["v_temp"][1].
+			
+			local v_temp is list(0,0,0,0).	//velocity points for temp control 
+		
+			set v_temp[1] to (8*entryg_internal["vo"][i] + entryg_internal["vf"][i]) / 9.
+			set v_temp[2] to (entryg_internal["vo"][i] + entryg_internal["vf"][i]) / 2.
+			set v_temp[3] to entryg_internal["vo"][i] + entryg_internal["vf"][i] - v_temp[1].
 			
 			FROM {local j is 1.} UNTIL j > 3 STEP {set j to j + 1.} DO {  
-				set entryg_internal["q"][j] to (entryg_internal["cq1"][i]/entryg_internal["v_temp"][j]) + entryg_internal["cq2"][i] + entryg_internal["cq3"][i]*entryg_internal["v_temp"][j].
+				set entryg_internal["q"][j] to (entryg_internal["cq1"][i]/v_temp[j]) + entryg_internal["cq2"][i] + entryg_internal["cq3"][i]*v_temp[j].
 			}
 			
 			set entryg_internal["rf"][i] to (27/entryg_internal["q"][1] + 44/entryg_internal["q"][2] + 27/entryg_internal["q"][3])*(entryg_internal["vf"][i] - entryg_internal["vo"][i])/98.
@@ -792,14 +791,16 @@ function eglodvcmd {
 			
 		}
 	}
+	//changed to minus this
+	local t1 is entryg_constants["gs"] * (1 - entryg_input["vi"]^2 / entryg_internal["vsat2"]).
 	
 	if (entryg_internal["islect"] = 5) {
 		//again, changed to minus this
-		set entryg_internal["t1"] to entryg_constants["gs"] * (1 - entryg_internal["ve2"]/entryg_internal["vsat2"]).
+		set t1 to entryg_constants["gs"] * (1 - entryg_internal["ve2"]/entryg_internal["vsat2"]).
 	}
 	
 	//ANOTHER DISCREPANCY BW THE PAPERS !! - SIGN OF ALDREF
-	set entryg_internal["aldref"] to entryg_internal["t1"] / entryg_internal["drefp"] + (2*entryg_internal["rdtref"] + entryg_internal["c2"]*entryg_internal["hs"]) / entryg_input["ve"].
+	set entryg_internal["aldref"] to t1 / entryg_internal["drefp"] + (2*entryg_internal["rdtref"] + entryg_internal["c2"]*entryg_internal["hs"]) / entryg_input["ve"].
 	set entryg_internal["rdtrf"] to entryg_internal["rdtref"] + c4.
 	local dd is entryg_input["drag"] - entryg_internal["drefp"].
 	
