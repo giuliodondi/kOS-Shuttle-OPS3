@@ -36,7 +36,7 @@ FUNCTION entryg_wrapper {
 										"dtegd", entryg_input["iteration_dt"],		//iteration delta-t
 										"alpha", entryg_input["alpha"],      //aoa
 										"delaz", entryg_input["delaz"],       //az error
-										"drag", entryg_input["drag"]*mt2ft,        //drag accel (ft/s2) 
+										"drag", entryg_input["drag"],        //drag accel (ft/s2) 
 										"egflg", entryg_input["egflg"],       //mode flag  
 										"hls", entryg_input["hls"]*mt2ft,		   //alt above rwy (ft)
 										"lod", entryg_input["lod"], 		//current l/d 
@@ -45,7 +45,7 @@ FUNCTION entryg_wrapper {
 										"trange", entryg_input["tgt_range"]*km2nmi,     //target range (nmi)
 										"ve", entryg_input["ve"]*mt2ft, 		   //earth rel velocity (ft/s)
 										"vi", entryg_input["vi"]*mt2ft,		   //inertial vel (ft/s)
-										"xlfac", entryg_input["xlfac"]*mt2ft,      //load factor acceleration (ft/s2)
+										"xlfac", entryg_input["xlfac"],      //load factor acceleration (ft/s2)
 										"mm304ph", entryg_input["roll0"],    	//preentry bank 
 										"mm304al", entryg_input["alpha0"]    	//preentry aoa 
 								)
@@ -56,8 +56,9 @@ FUNCTION entryg_wrapper {
 								"roll", entryg_output["rolcmd"],
 								"unl_roll", entryg_output["unl_roll"],
 								"roll_ref", entryg_output["rolref"],
-								"drag_ref", entryg_output["drefp"]/mt2ft,
-								"drag", entryg_output["drag"]/mt2ft,
+								"drag_ref", entryg_output["drefp"],
+								"drag", entryg_output["drag"],
+								"hdot_ref", entryg_output["hdot_ref"]/mt2ft,
 								"phase", entryg_output["islect"],
 								"vcg", entryg_output["vcg"]/mt2ft,
 								"eg_end", entryg_output["eg_end"]
@@ -77,16 +78,16 @@ global entryg_constants is lexicon (
 									"acn1", 50,	//time const for hdot feedback
 									"ak", -3.4573,	//temp control dD/dV factor
 									"ak1", -4.76,	//temp control dD/dV factor
-									"alfm", 42.0,	//ft/s2 	desired const drag //was 33
+									"alfm", 33.0,	//ft/s2 	desired const drag 
 									"alim", 70.84,	//ft/s2 max accel in transition
 									"almn1", 0.7986355,	//max l/d cmd outside heading err deadband
 									"almn2", 0.9659258,	//max l/d cmd inside heading err deadband
 									"almn3", 0.93969,	//max l/d cmd below velmn
 									"almn4", 1.0,	//max l/d cmd above vylmax
-									"astart", 5.66,		//ft/s2 accel to enter phase 2
-									"calp0", list(0, 19.455, -4.074, -4.2778, 16.398, 4.476, -9.9339, 40, 40, 40, 40),	//deg alpcmd constant term in ve 
-									"calp1", list(0, -0.776388e-2, 8.747711e-3, 0.8875002e-2, -0.3143109e-3, 3.1875e-3, 6.887436e-3, 0, 0, 0, 0),	//deg-s/ft 	alpcmd linear term in ve
-									"calp2", list(0, 0.2152776e-5, -7.44e-7, -0.7638891e-6, 0.2571456e-6, 0, -2.374978e-7, 0, 0, 0, 0 ),	//deg-s2/ft2 	alpcmd quadratic term in ve
+									"astart", 0.66,		//ft/s2 accel to enter phase 2	//was 5.66
+									"calp0", list(3, 1.333333, -92.4166, 28, 433 , -18.25, -623.25, 38),	//deg alpcmd constant term in ve 
+									"calp1", list(0, 3.333333e-3, 0.0283333, 0, -0.045, 2.5e-3, 0.0575, 0),	//deg-s/ft 	alpcmd linear term in ve
+									"calp2", list(0, 0, -1.66667e-6, 0, 1.25e-6, 0, -1.25e-6, 0),	//deg-s2/ft2 	alpcmd quadratic term in ve
 									"cddot1", 1500,	//ft/s 	cd velocity coef 
 									"cddot2", 2000,	//ft/s 	cd velocity coef 
 									"cddot3", 0.15, 	// 	cd velocity coef 
@@ -97,7 +98,7 @@ global entryg_constants is lexicon (
 									"cddot8", 13.666e-4,	//1/deg2	cddot coef
 									"cddot9", -8.165e-3,	//1/s cddot coef
 									"cnmfs", 1.645788e-4,	//nmi/ft 	conversion from feet to nmi 
-									"crdeaf", 1,	//roll bias due to pitch modulation gain	//was 4
+									"crdeaf", 4,	//roll bias due to pitch modulation gain	//was 4
 									"ct16", list(0, 0.1354, -0.1, 0.006),	// s2/ft - nd - s2/ft	c16 coefs
 									"ct17", list(0, 1.537e-2, -5.8146e-1),	//s/ft - nd 	c17 coefs
 									"ct16mn", 0.025,	//s2/ft		min c16
@@ -143,7 +144,7 @@ global entryg_constants is lexicon (
 									"hs11", 0.725,	//s scale height slope wrt ve  
 									"hs13", -0.9445,	//s scale height slope wrt ve  
 									"lodmin", 0.5,	//min l/d
-									"nalp", 9,	//number of alpcmd velocity segment boundaries
+									"nalp", 7,	//number of alpcmd velocity segment boundaries
 									"mm304phi0", 0,	//standard preentry bank
 									"mm304alp0", 40,	//standard preentry aoa
 									"radeg", 57.29578,	//deg/rad radians to degrees
@@ -157,7 +158,7 @@ global entryg_constants is lexicon (
 									"rpt1", 22.4,	//nmi range bias
 									"va", 27637,	//ft/s initial vel for temp quadratic, dD/dV = 0
 									"valmod", 23000,	//ft/s modulation start flag for nonconvergence
-									"valp", list(0, 2850, 3200, 4500, 6809, 7789.4, 14500, 14500, 14500, 14500),	//ft/s alpcmd vs ve boundaries
+									"valp", list(0, 500, 7500, 8500, 18000, 19000, 22000, 23000),	//ft/s alpcmd vs ve boundaries
 									"va1", 22000,	//ft/s matching point bw phase 2 quadratic segments
 									"va2", 27637,	//ft/s initial vel dor temp quadratic dD/dV = 0
 									"vb1", 19000,	//ft/s phase 2/3 boundary vel 
@@ -167,7 +168,7 @@ global entryg_constants is lexicon (
 									"verolc", 8000,	//max vel for limiting bank cmd
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
-									"vnoalp", 25000,	//modulation start flag//	//took the value from the sts-1 paper
+									"vnoalp", 21500,	//modulation start flag//	//took the value from the sts-1 paper
 									"vq", 10499,	//ft/s predicted end vel for const drag			//changed for consistency with vtran
 									"vrlmc", 2500,	//ft/s rlm seg switch vel
 									"vsat", 25766.2,	//ft/s local circular orbit vel 
@@ -420,6 +421,7 @@ function egexec {
 								"drag", entryg_input["drag"],
 								"unl_roll", entryg_internal["rollc"][2],
 								"rolref", entryg_internal["rollc"][3],
+								"hdot_ref", entryg_internal["rdtref"],
 								"islect", entryg_internal["islect"],
 								"vcg", entryg_internal["vcg"],
 								"vrr", entryg_internal["vrr"],
@@ -550,7 +552,7 @@ function egrp {
 	set entryg_internal["n_quad_seg"] to 1.
 
 	//in the paper it is > va1, this way we use the second quadratic for the entire temp control phase?
-	if (entryg_input["ve"] > entryg_constants["va"]) {
+	if (entryg_input["ve"] > entryg_constants["va1"]) {
 		set k to 2.
 		set entryg_internal["n_quad_seg"] to 2.
 	} else {
@@ -737,39 +739,21 @@ function egtran {
 //aoa command 
 function egalpcmd {
 	PARAMETER entryg_input.
-	
-	LOCAL out IS entryg_input["mm304al"].
-	
-	LOCAL ve_mps IS entryg_input["ve"] / mt2ft.
-	
-	IF (ve_mps >= pitchprof_segments[pitchprof_segments:LENGTH-1][0] ) {
-		SET out TO pitchprof_segments[pitchprof_segments:LENGTH-1][1].
-	} ELSE {
-		SET out TO INTPLIN(pitchprof_segments,ve_mps).
+
+	//simple check, guaranteed at most one decrement per pass
+	if ((entryg_input["ve"] < entryg_constants["valp"][entryg_internal["ialp"]]) and (entryg_internal["ialp"] > 0)) {
+		set entryg_internal["ialp"] to entryg_internal["ialp"] - 1.
 	}
 	
-	set entryg_internal["alpcmd"] TO out.
+	set entryg_internal["alpcmd"] to entryg_constants["calp0"][entryg_internal["ialp"]] + entryg_input["ve"]*(entryg_constants["calp1"][entryg_internal["ialp"]] + entryg_input["ve"] * entryg_constants["calp2"][entryg_internal["ialp"]]).
 	
-	//simple check, guaranteed at most one decrement per pass
-	//if ((entryg_input["ve"] < entryg_constants["valp"][entryg_internal["ialp"]]) and (entryg_internal["ialp"] > 0)) {
-	//	set entryg_internal["ialp"] to entryg_internal["ialp"] - 1.
-	//}
-	//
-	//local j is entryg_internal["ialp"] + 1.
-	//
-	//set entryg_internal["alpcmd"] to entryg_constants["calp0"][j] + entryg_input["ve"]*(entryg_constants["calp1"][j] + entryg_input["ve"] * entryg_constants["calp2"][j]).
-	//
-	//if (entryg_internal["islect"] = 1) {
-	//	set entryg_internal["alpcmd"] to entryg_input["mm304al"].
-	//}
-	//
-	
-	
+	if (entryg_internal["islect"] = 1) {
+		set entryg_internal["alpcmd"] to entryg_input["mm304al"].
+	}
 	
 	set entryg_internal["alpdot"] to (entryg_internal["alpcmd"] - entryg_internal["acmd1"]) / entryg_input["dtegd"].
 	//save the "virgin" commanded alpha to apply alpha mod properly
 	set entryg_internal["acmd1"] to entryg_internal["alpcmd"].
-	
 
 }
 
@@ -971,14 +955,14 @@ function egrolcmd {
 	//and we apply the alpha modulation if needed 
 	//disable roll bias
 	if (entryg_internal["ict"]) {
-		set entryg_internal["delalf"] to -(entryg_input["alpha"] - entryg_internal["acmd1"]).
+		set entryg_internal["delalf"] to (entryg_input["alpha"] - entryg_internal["acmd1"]).
 		set entryg_internal["rdealf"] to midval(entryg_constants["crdeaf"]*entryg_internal["delalf"], entryg_constants["rdmax"], -entryg_constants["rdmax"]).
 		
 		//again skip conversion to degrees
-		//local almnxd is ARCCOS(entryg_internal["lmn"]/entryg_internal["xlod"]).	// / entryg_constants["dtr"].
+		local almnxd is ARCCOS(entryg_internal["lmn"]/entryg_internal["xlod"]).	// / entryg_constants["dtr"].
 		
 		//modification
-		//set entryg_internal["rollc"][1] to (abs(entryg_internal["rollc"][2]) + midval(entryg_internal["rdealf"], almnxd, -almnxd)) * entryg_internal["rk2rol"].
+		set entryg_internal["rollc"][1] to (abs(entryg_internal["rollc"][2]) + midval(entryg_internal["rdealf"], almnxd, -almnxd)) * entryg_internal["rk2rol"].
 		
 		//calculate absolute limits for alpha modulation 
 		set entryg_internal["aclam"] to min(entryg_constants["dlallm"], entryg_constants["aclam1"] + entryg_constants["aclam2"]*entryg_input["ve"]).
