@@ -77,7 +77,7 @@ global entryg_constants is lexicon (
 									"acn1", 50,	//time const for hdot feedback
 									"ak", -3.4573,	//temp control dD/dV factor
 									"ak1", -4.76,	//temp control dD/dV factor
-									"alfm", 33.0,	//ft/s2 	desired const drag 
+									"alfm", 42.0,	//ft/s2 	desired const drag //was 33
 									"alim", 70.84,	//ft/s2 max accel in transition
 									"almn1", 0.7986355,	//max l/d cmd outside heading err deadband
 									"almn2", 0.9659258,	//max l/d cmd inside heading err deadband
@@ -97,7 +97,7 @@ global entryg_constants is lexicon (
 									"cddot8", 13.666e-4,	//1/deg2	cddot coef
 									"cddot9", -8.165e-3,	//1/s cddot coef
 									"cnmfs", 1.645788e-4,	//nmi/ft 	conversion from feet to nmi 
-									"crdeaf", 4,	//roll bias modulation gain
+									"crdeaf", 1,	//roll bias due to pitch modulation gain	//was 4
 									"ct16", list(0, 0.1354, -0.1, 0.006),	// s2/ft - nd - s2/ft	c16 coefs
 									"ct17", list(0, 1.537e-2, -5.8146e-1),	//s/ft - nd 	c17 coefs
 									"ct16mn", 0.025,	//s2/ft		min c16
@@ -167,7 +167,7 @@ global entryg_constants is lexicon (
 									"verolc", 8000,	//max vel for limiting bank cmd
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
-									"vnoalp", 0,	//modulation start flag//	//took the value from the sts-1 paper
+									"vnoalp", 25000,	//modulation start flag//	//took the value from the sts-1 paper
 									"vq", 10499,	//ft/s predicted end vel for const drag			//changed for consistency with vtran
 									"vrlmc", 2500,	//ft/s rlm seg switch vel
 									"vsat", 25766.2,	//ft/s local circular orbit vel 
@@ -810,12 +810,18 @@ function eglodvcmd {
 	
 	//limit drag values based on max allowable drag alfm
 	local d1 is min(entryg_internal["drefp"], entryg_constants["alfm"]).
-	local d2 is min(entryg_internal["drefp"], entryg_input["drag"]).
+	local d2 is min(entryg_input["drag"], entryg_constants["alfm"]).
 	
 	//test for alpha modulation
 	if (entryg_input["ve"] < entryg_constants["vnoalp"]) {
-		if (entryg_input["drag"] >= entryg_internal["drefp"]) or (entryg_input["ve"] < entryg_constants["valmod"]) or (entryg_internal["ict"]) {
-			set entryg_internal["ict"] to TRUE.	//apparently once we trigger alpha mod we always keep it enabled
+		//re-working of alpha modularion logic
+		if (abs(entryg_input["drag"] - entryg_internal["drefp"]) > entryg_constants["ddmin"]) {
+			set entryg_internal["ict"] to TRUE.
+		} ELSE {
+			set entryg_internal["ict"] to FALSE.
+		}
+		
+		if (entryg_internal["ict"]) {
 			set entryg_internal["c20"] to midval(entryg_constants["c21"], entryg_constants["c22"] + entryg_constants["c23"]*entryg_input["ve"], entryg_constants["c24"]).
 			
 			if (entryg_input["ve"] < entryg_constants["vc20"]) {
@@ -825,9 +831,6 @@ function eglodvcmd {
 			//delta alpha based on max drag allowable
 			set entryg_internal["delalp"] to midval(cdcal*(d1/d2 - 1)/entryg_internal["c20"], entryg_constants["dlaplm"], -entryg_constants["dlaplm"]).
 			
-			if (abs(entryg_input["drag"] - entryg_internal["drefp"]) < entryg_constants["ddmin"]) {
-				set entryg_internal["delalp"] to 0.
-			}
 		}
 	}
 	
@@ -966,22 +969,24 @@ function egrolcmd {
 	
 	// here we bias roll if we are deviating from the pitch profile 
 	//and we apply the alpha modulation if needed 
+	//disable roll bias
 	if (entryg_internal["ict"]) {
-		set entryg_internal["delalf"] to entryg_input["alpha"] - entryg_internal["acmd1"].
+		set entryg_internal["delalf"] to -(entryg_input["alpha"] - entryg_internal["acmd1"]).
 		set entryg_internal["rdealf"] to midval(entryg_constants["crdeaf"]*entryg_internal["delalf"], entryg_constants["rdmax"], -entryg_constants["rdmax"]).
 		
 		//again skip conversion to degrees
-		local almnxd is ARCCOS(entryg_internal["lmn"]/entryg_internal["xlod"]).	// / entryg_constants["dtr"].
+		//local almnxd is ARCCOS(entryg_internal["lmn"]/entryg_internal["xlod"]).	// / entryg_constants["dtr"].
 		
 		//modification
-		set entryg_internal["rollc"][1] to (abs(entryg_internal["rollc"][2]) + midval(entryg_internal["rdealf"], almnxd, -almnxd)) * entryg_internal["rk2rol"].
+		//set entryg_internal["rollc"][1] to (abs(entryg_internal["rollc"][2]) + midval(entryg_internal["rdealf"], almnxd, -almnxd)) * entryg_internal["rk2rol"].
 		
 		//calculate absolute limits for alpha modulation 
 		set entryg_internal["aclam"] to min(entryg_constants["dlallm"], entryg_constants["aclam1"] + entryg_constants["aclam2"]*entryg_input["ve"]).
 		set entryg_internal["aclim"] to min(entryg_constants["aclim1"] + entryg_constants["aclim2"]*entryg_input["ve"], entryg_constants["aclim3"] + entryg_constants["aclim4"]*entryg_input["ve"]).
 		
 		//the paper says apply the modulation on top of input alpha, to me makes more sense to apply it on top of "virgin" commanded alpha
-		set entryg_internal["alpcmd"] to midval(entryg_internal["aclam"], entryg_input["alpha"] + entryg_internal["delalp"], entryg_internal["aclim"]).
+		//also i'm just using the top aclam alpha limit because the lower limit is incompatible with the 38/28 pitch profile 
+		set entryg_internal["alpcmd"] to min(entryg_internal["aclam"], entryg_internal["acmd1"] + entryg_internal["delalp"]).
 	}
 	
 	//calculate absolute roll angle limits

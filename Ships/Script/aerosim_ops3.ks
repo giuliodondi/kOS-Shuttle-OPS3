@@ -17,28 +17,28 @@ RUNPATH("0:/Shuttle_OPS3/VESSELS/" + vessel_dir + "/pitch_profile").
 
 
 
-//GLOBAL sim_input IS LEXICON(
-//						"target", "Vandenberg",
-//						"deorbit_apoapsis", 190,
-//						"deorbit_periapsis", 10,
-//						"deorbit_inclination", -103.5,
-//						"entry_interf_eta", 150,
-//						"entry_interf_dist", 9500,
-//						"entry_interf_xrange", 1400,
-//						"entry_interf_offset", "right"
-//).
-
-
 GLOBAL sim_input IS LEXICON(
-						"target", "KSC",
-						"deorbit_apoapsis", 220,
+						"target", "Vandenberg",
+						"deorbit_apoapsis", 190,
 						"deorbit_periapsis", -10,
-						"deorbit_inclination", 52.5,
+						"deorbit_inclination", -103,
 						"entry_interf_eta", 130,
-						"entry_interf_dist", 8500,
-						"entry_interf_xrange", 100,
+						"entry_interf_dist", 9000,
+						"entry_interf_xrange", 1400,
 						"entry_interf_offset", "right"
 ).
+
+
+//GLOBAL sim_input IS LEXICON(
+//						"target", "KSC",
+//						"deorbit_apoapsis", 220,
+//						"deorbit_periapsis", -10,
+//						"deorbit_inclination", 52.5,
+//						"entry_interf_eta", 130,
+//						"entry_interf_dist", 8500,
+//						"entry_interf_xrange", 100,
+//						"entry_interf_offset", "right"
+//).
 
 GLOBAL ICS IS generate_simulation_ics(sim_input).
 
