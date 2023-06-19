@@ -17,28 +17,28 @@ RUNPATH("0:/Shuttle_OPS3/VESSELS/" + vessel_dir + "/pitch_profile").
 
 
 
-GLOBAL sim_input IS LEXICON(
-						"target", "Vandenberg",
-						"deorbit_apoapsis", 190,
-						"deorbit_periapsis", -10,
-						"deorbit_inclination", -103,
-						"entry_interf_eta", 130,
-						"entry_interf_dist", 9000,
-						"entry_interf_xrange", 1400,
-						"entry_interf_offset", "right"
-).
-
-
 //GLOBAL sim_input IS LEXICON(
-//						"target", "KSC",
-//						"deorbit_apoapsis", 220,
-//						"deorbit_periapsis", -10,
-//						"deorbit_inclination", 52.5,
+//						"target", "Vandenberg",
+//						"deorbit_apoapsis", 190,
+//						"deorbit_periapsis", 10,
+//						"deorbit_inclination", -105,
 //						"entry_interf_eta", 130,
-//						"entry_interf_dist", 8500,
-//						"entry_interf_xrange", 100,
+//						"entry_interf_dist", 9000,
+//						"entry_interf_xrange", 1250,
 //						"entry_interf_offset", "right"
 //).
+
+
+GLOBAL sim_input IS LEXICON(
+						"target", "KSC",
+						"deorbit_apoapsis", 220,
+						"deorbit_periapsis", -10,
+						"deorbit_inclination", 52.5,
+						"entry_interf_eta", 130,
+						"entry_interf_dist", 8500,
+						"entry_interf_xrange", 00,
+						"entry_interf_offset", "right"
+).
 
 GLOBAL ICS IS generate_simulation_ics(sim_input).
 
@@ -215,6 +215,7 @@ FUNCTION ops3_reentry_simulate {
 										"l_d",0,
 										"drag",0,
 										"drag_ref",0,
+										"hdot_ref",0,
 										"entry_phase",1
 
 	).
@@ -276,7 +277,8 @@ FUNCTION ops3_reentry_simulate {
 		local ve is simstate["surfvel"]:MAG.
 		local vi is simstate["velocity"]:MAG.
 		
-		LOCAL xlfac IS aeroacc["load"]:MAG.
+		LOCAL dragft IS aeroacc["drag"]*mt2ft.
+		LOCAL xlfacft IS aeroacc["load"]:MAG*mt2ft.
 		local lod is aeroacc["lift"]/aeroacc["drag"].
 		
 		//call entry guidance here
@@ -285,7 +287,7 @@ FUNCTION ops3_reentry_simulate {
 											"iteration_dt", sim_settings["deltat"],
 											"alpha", pitch_prof,      
 											"delaz", delaz,      
-											"drag", aeroacc["drag"],
+											"drag", dragft,
 											"egflg", 0,      
 											"hls", hls,		
 											"lod", lod,
@@ -294,7 +296,7 @@ FUNCTION ops3_reentry_simulate {
 											"tgt_range", tgt_range,
 											"ve", ve,
 											"vi", vi,	
-											"xlfac", xlfac,
+											"xlfac", xlfacft,
 											"roll0", roll_0,    
 											"alpha0", pitch_0
 									)
@@ -324,8 +326,9 @@ FUNCTION ops3_reentry_simulate {
 		SET loglex["roll_ref"] TO entryg_out["roll_ref"].
 		SET loglex["l_d"] TO lod.
 		SET loglex["entry_phase"] TO entryg_out["phase"].
-		SET loglex["drag"] TO aeroacc["drag"].
+		SET loglex["drag"] TO dragft.
 		SET loglex["drag_ref"] TO entryg_out["drag_ref"].
+		SET loglex["hdot_ref"] TO entryg_out["hdot_ref"].
 		log_data(loglex).
 		
 		PRINTPLACE("step : " + loglex["step"], 20,0,1).
@@ -336,8 +339,8 @@ FUNCTION ops3_reentry_simulate {
 		PRINTPLACE("tgt_range : " + round(tgt_range,0), 20,0,6).
 		PRINTPLACE("delaz : " + round(delaz,2), 20,0,7).
 		
-		PRINTPLACE("xlfac : " + round(xlfac,3), 20,0,9).
-		PRINTPLACE("drag : " + round(aeroacc["drag"],3), 20,0,10).
+		PRINTPLACE("xlfac : " + round(xlfacft,3), 20,0,9).
+		PRINTPLACE("drag : " + round(dragft,3), 20,0,10).
 		PRINTPLACE("l/d : " + round(lod,3), 20,0,11).
 		PRINTPLACE("drag_ref : " + round(entryg_out["drag_ref"],3), 20,0,12).
 		
