@@ -1,9 +1,4 @@
-//library for all things with ferrma aerodynamics and simulating trajectories
-
-
-
-//erodynami
-
+//library for all things with ferram aerodynamics and simulating trajectories
 
 FUNCTION blank_simstate {
 	PARAMETER ICs.
