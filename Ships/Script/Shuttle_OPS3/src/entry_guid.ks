@@ -263,7 +263,6 @@ global entryg_internal is lexicon(
 									"vtrb", 0,   	//rdot feedback vel lockout 
 									"vx", list(0,0,0),   	//velocities where dD / dV  = 0 in temp control quadratic 
 									"xlod", 0,   	//limited l/d 
-									"yl", 0,   	//max heading error abs val 
 									"zk", 0   	//rdot feedback gain 
 ).
 
@@ -835,17 +834,17 @@ function eglodvcmd {
 	}
 	LOCAL delaz_lower IS entryg_constants["y2"].
 	
-	set entryg_internal["yl"] to midval(entryg_constants["cy0"] + entryg_constants["cy1"]*entryg_input["ve"], delaz_upper, delaz_lower).
+	local yl is midval(entryg_constants["cy0"] + entryg_constants["cy1"]*entryg_input["ve"], delaz_upper, delaz_lower).
 	
 	set entryg_internal["lmn"] to entryg_constants["almn2"].
 	
 	//calculate l/d limits given whether delaz is increasing or decreasing
 	if (abs(entryg_input["delaz"]) - abs(entryg_internal["dzold"]) > 0) {
-		if ((entryg_internal["yl"] - entryg_constants["ylmin"]) < abs(entryg_input["delaz"]))  {
+		if ((yl - entryg_constants["ylmin"]) < abs(entryg_input["delaz"]))  {
 			set entryg_internal["lmn"] to entryg_constants["almn1"].
 		}
 	} else {
-		if ((entryg_internal["yl"] - entryg_constants["ylmn2"]) < abs(entryg_input["delaz"])) {
+		if ((yl - entryg_constants["ylmn2"]) < abs(entryg_input["delaz"])) {
 			set entryg_internal["lmn"] to entryg_constants["almn1"].
 		}
 	}
@@ -879,7 +878,7 @@ function eglodvcmd {
 		
 		//should do the roll reversal
 		//added condition on abs(delaz) plus flag to track reversal start and end
-		if (dlzrl > 0) and (ABS(entryg_input["delaz"]) >= entryg_internal["yl"]) {
+		if (dlzrl > 0) and (ABS(entryg_input["delaz"]) >= yl) {
 			set entryg_internal["rk2rol"] to -entryg_internal["rk2rol"].
 			set entryg_internal["idbchg"] to TRUE.
 			
@@ -887,7 +886,7 @@ function eglodvcmd {
 				SET entryg_internal["rrflag"] TO TRUE.
 			}
 			
-		} else if (entryg_internal["rrflag"]) and (ABS(entryg_input["delaz"]) < entryg_internal["yl"]) {
+		} else if (entryg_internal["rrflag"]) and (ABS(entryg_input["delaz"]) < yl) {
 			SET entryg_internal["rrflag"] TO FALSE.
 		}
 	}
