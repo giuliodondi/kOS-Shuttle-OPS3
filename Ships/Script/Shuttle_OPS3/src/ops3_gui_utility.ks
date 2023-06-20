@@ -230,7 +230,7 @@ FUNCTION make_entry_traj_GUI {
 	
 	GLOBAL traj_disp_leftdatabox IS traj_disp_overlaiddata:ADDVLAYOUT().
 	SET traj_disp_leftdatabox:STYLE:ALIGN TO "left".
-	SET traj_disp_leftdatabox:STYLE:WIDTH TO 120.
+	SET traj_disp_leftdatabox:STYLE:WIDTH TO 125.
     SET traj_disp_leftdatabox:STYLE:HEIGHT TO 115.
 	set traj_disp_leftdatabox:style:margin:h to 20.
 	set traj_disp_leftdatabox:style:margin:v to 10.
@@ -248,7 +248,7 @@ FUNCTION make_entry_traj_GUI {
 	
 	GLOBAL traj_disp_rightdatabox IS traj_disp_overlaiddata:ADDVLAYOUT().
 	SET traj_disp_rightdatabox:STYLE:ALIGN TO "left".
-	SET traj_disp_rightdatabox:STYLE:WIDTH TO 120.
+	SET traj_disp_rightdatabox:STYLE:WIDTH TO 125.
     SET traj_disp_rightdatabox:STYLE:HEIGHT TO 115.
 	set traj_disp_rightdatabox:style:margin:h to 390.
 	set traj_disp_rightdatabox:style:margin:v to 90.
@@ -310,8 +310,8 @@ function update_traj_disp {
 	set trajleftdata4:text TO "D REF     " + ROUND(gui_data["drag_ref"],2).
 	set trajleftdata5:text TO "PHASE     " + ROUND(gui_data["phase"],0).
 	
-	set trajrightdata1:text TO "HDT REF     " + ROUND(gui_data["hdot_ref"],1).
-	set trajrightdata2:text TO "ALPCMD      " + ROUND(gui_data["pitch"],1).
+	set trajrightdata1:text TO "HDT REF    " + ROUND(gui_data["hdot_ref"],1).
+	set trajrightdata2:text TO "ALPCMD     " + ROUND(gui_data["pitch"],1).
 	
 	if (gui_data["pitch_mod"]) {
 		set trajrightdata3:text TO "<color=#fff600> ALP MODULN </color>".
@@ -319,8 +319,8 @@ function update_traj_disp {
 		set trajrightdata3:text TO "".
 	}
 	
-	set trajrightdata4:text TO "ROLCMD      " + ROUND(gui_data["roll"],1).
-	set trajrightdata5:text TO "ROLREF      " + ROUND(gui_data["roll_ref"],1).
+	set trajrightdata4:text TO "ROLCMD     " + ROUND(gui_data["roll"],1).
+	set trajrightdata5:text TO "ROLREF     " + ROUND(gui_data["roll_ref"],1).
 	
 	if (gui_data["roll_rev"]) {
 		set trajrightdata6:text TO "<color=#fff600>ROLL REVERSAL</color>".
