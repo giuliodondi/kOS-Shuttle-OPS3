@@ -220,8 +220,9 @@ FUNCTION make_entry_traj_GUI {
 	SET traj_disp_overlaiddata:STYLe:HEIGHT TO 1.
 	
 	GLOBAL traj_disp_mainbox IS traj_disp:ADDHLAYOUT().
+	SET traj_disp_mainbox:STYLE:ALIGN TO "Center".
 	SET traj_disp_mainbox:STYLe:WIDTH TO traj_disp:STYLE:WIDTH.
-	SET traj_disp_mainbox:STYLe:HEIGHT TO traj_disp:STYLE:HEIGHT - 30.
+	SET traj_disp_mainbox:STYLe:HEIGHT TO traj_disp:STYLE:HEIGHT - 22.
 	
 	
 	
@@ -244,8 +245,8 @@ FUNCTION make_entry_traj_GUI {
 	SET traj_disp_rightdatabox:STYLE:ALIGN TO "right".
 	SET traj_disp_rightdatabox:STYLE:WIDTH TO 100.
     SET traj_disp_rightdatabox:STYLE:HEIGHT TO 115.
-	set traj_disp_rightdatabox:style:margin:h to 380.
-	set traj_disp_rightdatabox:style:margin:v to 80.
+	set traj_disp_rightdatabox:style:margin:h to 390.
+	set traj_disp_rightdatabox:style:margin:v to 90.
 	
 	GLOBAL trajrightdata1 IS traj_disp_rightdatabox:ADDLABEL("data6 : xxxxxx").
 	GLOBAL trajrightdata2 IS traj_disp_rightdatabox:ADDLABEL("data7 : ").
@@ -256,7 +257,6 @@ FUNCTION make_entry_traj_GUI {
 	GLOBAL traj_disp_orbiter IS traj_disp_mainbox:ADDLABEL().
 	SET traj_disp_orbiter:IMAGE TO "Shuttle_OPS3/src/gui_images/orbiter_bug.png".
 	SET traj_disp_orbiter:STYLe:WIDTH TO 22.
-	SET traj_disp_orbiter:STYLe:HEIGHT TO 22.
 	
 	reset_traj_disp().
 }
@@ -311,17 +311,19 @@ function set_traj_disp_bg {
 function set_traj_disp_orbiter_bug_pos {
 	parameter bug_pos.
 	
-	local bounds_x is list(15, 505).
-	local bounds_y is list(325, 5).
+	local bug_margin is 10.
+	
+	local bounds_x is list(10, traj_disp_mainbox:STYLe:WIDTH - 32).
+	local bounds_y is list(traj_disp_mainbox:STYLe:HEIGHT - 29, 0).
 	
 	print "calc_x: " + bug_pos:X + " calc_y: " +  + bug_pos:Y  + "  " at (0, 4).
 	
-	local pos_x is (0.00217*bug_pos:X  + 0.00633)*(bounds_x[1] - bounds_x[0]) + bounds_x[0].
-	local pos_y is (1.1802326 - bug_pos:Y*0.002907)*(bounds_y[1] - bounds_y[0]) + bounds_y[0].
+	local pos_x is 1.04693*bug_pos:X  - 8.133.
+	local pos_y is 395.55 - 1.1685*bug_pos:Y.
 	
 	print "disp_x: " + pos_x + " disp_y: " + pos_y + "  " at (0, 5).
 	
-	set pos_x to clamp(pos_x, bounds_x[0], bounds_x[1] - traj_disp_orbiter:STYLE:WIDTH).
+	set pos_x to clamp(pos_x, bounds_x[0], bounds_x[1] ).
 	set pos_y to clamp(pos_y, bounds_y[0], bounds_y[1]).
 	
 	
@@ -338,22 +340,25 @@ function trax_disp_x_convert {
 	
 	local par is val * 0.539957.
 	
+	local out is 0.
+	
 	if (traj_disp_counter=1) {
 		if val > 7000 {
-            return (par^2 * -0.00005111111 + par * 0.38844444 - 228.0444444).
+            set out to (par^2 * -0.00005111111 + par * 0.38844444 - 228.0444444).
         } else {
-            return (par^2 * -0.000037792207 + par * 0.32866883 - 183.0636).
+            set out to (par^2 * -0.000037792207 + par * 0.32866883 - 183.0636).
 		}
 	} else if (traj_disp_counter=2) {
-		return (par^2 * - 0.00037578 + par * 1.0854212 -302.969942).
+		set out to (par^2 * - 0.00037578 + par * 1.0854212 -302.969942).
 	} else if (traj_disp_counter=3) {
-		return (par^2 * -0.00143805 + par * 2.4982 - 585.265).
+		set out to (par^2 * -0.00143805 + par * 2.4982 - 585.265).
 	} else if (traj_disp_counter=4) {
-		return (par^2 * -0.003597 + par * 3.49365 - 362.285714).
+		set out to (par^2 * -0.003597 + par * 3.49365 - 362.285714).
 	} else if (traj_disp_counter=5) {
-		return (par^2 * -0.015 + par * 6.425 - 204.75).
+		set out to (par^2 * -0.015 + par * 6.425 - 204.75).
 	}
-
+	
+	return out* 500/486.
 
 }
 
@@ -362,17 +367,21 @@ function trax_disp_y_convert {
 	
 	local par is val * 3.28084.
 	
+	local out is 0.
+	
 	if (traj_disp_counter=1) {
-		return (-0.03728 * par + 966.857 + 32.7).
+		set out to (-0.03728 * par + 966.857 + 32.7).
 	} else if (traj_disp_counter=2) {
-		return (-0.089333 * par + 1578.6666 + 32.7).
+		set out to (-0.089333 * par + 1578.6666 + 32.7).
 	} else if (traj_disp_counter=3) {
-		return (-0.07785 * par + 1150 + 32.7).
+		set out to (-0.07785 * par + 1150 + 32.7).
 	} else if (traj_disp_counter=4) {
-		return (-0.0593 * par + 689 + 32.7).
+		set out to (-0.0593 * par + 689 + 32.7).
 	} else if (traj_disp_counter=5) {
-		return (-0.07828 * par + 535.714 + 32.7).
+		set out to (-0.07828 * par + 535.714 + 32.7).
 	}
-
+	
+	
+	return 400 - out.
 
 }

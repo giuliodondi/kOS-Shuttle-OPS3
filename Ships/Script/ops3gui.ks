@@ -17,11 +17,13 @@ GLOBAL quit_program IS FALSE.
 //initialise touchdown points for all landing sites
 define_td_points().
 
+make_main_GUI().
+
 //ths lexicon contains all the necessary guidance objects 
 IF (DEFINED tgtrwy) {UNSET tgtrwy.}
 GLOBAL tgtrwy IS refresh_runway_lex(ldgsiteslex[select_tgt:VALUE]).
 
-make_main_GUI().
+
 
 
 make_entry_traj_GUI().
