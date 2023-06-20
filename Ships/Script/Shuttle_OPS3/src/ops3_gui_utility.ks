@@ -229,30 +229,42 @@ FUNCTION make_entry_traj_GUI {
 	
 	
 	GLOBAL traj_disp_leftdatabox IS traj_disp_overlaiddata:ADDVLAYOUT().
-	SET traj_disp_leftdatabox:STYLE:ALIGN TO "right".
-	SET traj_disp_leftdatabox:STYLE:WIDTH TO 100.
+	SET traj_disp_leftdatabox:STYLE:ALIGN TO "left".
+	SET traj_disp_leftdatabox:STYLE:WIDTH TO 120.
     SET traj_disp_leftdatabox:STYLE:HEIGHT TO 115.
 	set traj_disp_leftdatabox:style:margin:h to 20.
 	set traj_disp_leftdatabox:style:margin:v to 10.
 	
-	GLOBAL trajleftdata1 IS traj_disp_leftdatabox:ADDLABEL("data1 : xxxxxx").
-	GLOBAL trajleftdata2 IS traj_disp_leftdatabox:ADDLABEL("data2 : ").
-	GLOBAL trajleftdata3 IS traj_disp_leftdatabox:ADDLABEL("data3 : ").
-	GLOBAL trajleftdata4 IS traj_disp_leftdatabox:ADDLABEL("data4 : ").
-	GLOBAL trajleftdata5 IS traj_disp_leftdatabox:ADDLABEL("data5 : ").
+	GLOBAL trajleftdata1 IS traj_disp_leftdatabox:ADDLABEL("XLFAC xxxxxx").
+	set trajleftdata1:style:margin:v to -4.
+	GLOBAL trajleftdata2 IS traj_disp_leftdatabox:ADDLABEL("L/D   xxxxxx").
+	set trajleftdata2:style:margin:v to -4.
+	GLOBAL trajleftdata3 IS traj_disp_leftdatabox:ADDLABEL("DRAG  xxxxxx").
+	set trajleftdata3:style:margin:v to -4.
+	GLOBAL trajleftdata4 IS traj_disp_leftdatabox:ADDLABEL("D REF xxxxxx").
+	set trajleftdata4:style:margin:v to -4.
+	GLOBAL trajleftdata5 IS traj_disp_leftdatabox:ADDLABEL("PHASE xxxxxx").
+	set trajleftdata5:style:margin:v to -4.
 	
 	GLOBAL traj_disp_rightdatabox IS traj_disp_overlaiddata:ADDVLAYOUT().
-	SET traj_disp_rightdatabox:STYLE:ALIGN TO "right".
-	SET traj_disp_rightdatabox:STYLE:WIDTH TO 100.
+	SET traj_disp_rightdatabox:STYLE:ALIGN TO "left".
+	SET traj_disp_rightdatabox:STYLE:WIDTH TO 120.
     SET traj_disp_rightdatabox:STYLE:HEIGHT TO 115.
 	set traj_disp_rightdatabox:style:margin:h to 390.
 	set traj_disp_rightdatabox:style:margin:v to 90.
 	
-	GLOBAL trajrightdata1 IS traj_disp_rightdatabox:ADDLABEL("data6 : xxxxxx").
-	GLOBAL trajrightdata2 IS traj_disp_rightdatabox:ADDLABEL("data7 : ").
-	GLOBAL trajrightdata3 IS traj_disp_rightdatabox:ADDLABEL("data8 : ").
-	GLOBAL trajrightdata4 IS traj_disp_rightdatabox:ADDLABEL("data9 : ").
-	GLOBAL trajrightdata5 IS traj_disp_rightdatabox:ADDLABEL("data10 : ").
+	GLOBAL trajrightdata1 IS traj_disp_rightdatabox:ADDLABEL("HDT REF xxxxx").
+	set trajrightdata1:style:margin:v to -4.
+	GLOBAL trajrightdata2 IS traj_disp_rightdatabox:ADDLABEL("ALPCMD  xxxxx").
+	set trajrightdata2:style:margin:v to -4.
+	GLOBAL trajrightdata3 IS traj_disp_rightdatabox:ADDLABEL(" ALP MODULN ").
+	set trajrightdata3:style:margin:v to -4.
+	GLOBAL trajrightdata4 IS traj_disp_rightdatabox:ADDLABEL("ROLCMD  xxxxx").
+	set trajrightdata4:style:margin:v to -4.
+	GLOBAL trajrightdata5 IS traj_disp_rightdatabox:ADDLABEL("ROLREF  xxxxx").
+	set trajrightdata5:style:margin:v to -4.
+	GLOBAL trajrightdata6 IS traj_disp_rightdatabox:ADDLABEL("ROLL REVERSAL").
+	set trajrightdata6:style:margin:v to -4.
 	
 	GLOBAL traj_disp_orbiter IS traj_disp_mainbox:ADDLABEL().
 	SET traj_disp_orbiter:IMAGE TO "Shuttle_OPS3/src/gui_images/orbiter_bug.png".
@@ -267,8 +279,10 @@ function reset_traj_disp {
 }
 
 function update_traj_disp {
-	parameter rng_.
-	parameter vel_.
+	parameter gui_data.
+
+	local vel_ is gui_data["vi"].
+	local rng_ is gui_data["range"].
 
 	//check if we shoudl update entry traj counter 
 	if (traj_disp_counter = 1 and vel_ <= 5350) {
@@ -289,6 +303,30 @@ function update_traj_disp {
 	}
 
 	set_traj_disp_orbiter_bug_pos(v(trax_disp_x_convert(rng_),trax_disp_y_convert(vel_), 0)).
+	
+	set trajleftdata1:text TO "XLFAC     " + ROUND(gui_data["xlfac"],2).
+	set trajleftdata2:text TO "L/D          " + ROUND(gui_data["lod"],2).
+	set trajleftdata3:text TO "DRAG      " + ROUND(gui_data["drag"],2).
+	set trajleftdata4:text TO "D REF     " + ROUND(gui_data["drag_ref"],2).
+	set trajleftdata5:text TO "PHASE     " + ROUND(gui_data["phase"],0).
+	
+	set trajrightdata1:text TO "HDT REF     " + ROUND(gui_data["hdot_ref"],1).
+	set trajrightdata2:text TO "ALPCMD      " + ROUND(gui_data["pitch"],1).
+	
+	if (gui_data["pitch_mod"]) {
+		set trajrightdata3:text TO "<color=#fff600> ALP MODULN </color>".
+	} else {
+		set trajrightdata3:text TO "".
+	}
+	
+	set trajrightdata4:text TO "ROLCMD      " + ROUND(gui_data["roll"],1).
+	set trajrightdata5:text TO "ROLREF      " + ROUND(gui_data["roll_ref"],1).
+	
+	if (gui_data["roll_rev"]) {
+		set trajrightdata6:text TO "<color=#fff600>ROLL REVERSAL</color>".
+	} else {
+		set trajrightdata6:text TO "".
+	}
 
 }
 
@@ -316,19 +354,17 @@ function set_traj_disp_orbiter_bug_pos {
 	local bounds_x is list(10, traj_disp_mainbox:STYLe:WIDTH - 32).
 	local bounds_y is list(traj_disp_mainbox:STYLe:HEIGHT - 29, 0).
 	
-	print "calc_x: " + bug_pos:X + " calc_y: " +  + bug_pos:Y  + "  " at (0, 4).
+	//print "calc_x: " + bug_pos:X + " calc_y: " +  + bug_pos:Y  + "  " at (0, 4).
 	
 	local pos_x is 1.04693*bug_pos:X  - 8.133.
 	local pos_y is 395.55 - 1.1685*bug_pos:Y.
 	
-	print "disp_x: " + pos_x + " disp_y: " + pos_y + "  " at (0, 5).
+	//print "disp_x: " + pos_x + " disp_y: " + pos_y + "  " at (0, 5).
 	
 	set pos_x to clamp(pos_x, bounds_x[0], bounds_x[1] ).
 	set pos_y to clamp(pos_y, bounds_y[0], bounds_y[1]).
 	
-	
-	
-	print "disp_x: " + pos_x + " disp_y: " + pos_y + "  " at (0, 6).
+	//print "disp_x: " + pos_x + " disp_y: " + pos_y + "  " at (0, 6).
 	
 	SET traj_disp_orbiter:STYLE:margin:v to pos_y.
 	SET traj_disp_orbiter:STYLE:margin:h to pos_x.

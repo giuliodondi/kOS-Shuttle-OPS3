@@ -43,8 +43,22 @@ until false {
 	local rng_ is sample_data[sample_data_count][1].
 	local vel_ is sample_data[sample_data_count][0].
 	
-
-	update_traj_disp(rng_, vel_).
+	local gui_data is lexicon(
+							"range",rng_,
+							"ve",vel_,
+							"xlfac",30.5,
+							"lod",1.5,
+							"drag",22,
+							"drag_ref",20,
+							"phase",5,
+							"hdot_ref",-75,
+							"pitch",40.2,
+							"roll",55.3,
+							"roll_ref",45.5,
+							"pitch_mod",true,
+							"roll_rev",true
+	).
+	update_traj_disp(gui_data).
 	
 	print sample_data_count at (0, 1).
 	print "rng: " + rng_ + " vel: " + vel_ at (0, 2).

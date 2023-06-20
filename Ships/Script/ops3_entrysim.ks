@@ -9,11 +9,26 @@ RUNPATH("0:/Libraries/aerosim_library").
 RUNPATH("0:/Shuttle_OPS3/landing_sites").
 RUNPATH("0:/Shuttle_OPS3/constants").
 
+RUNPATH("0:/Shuttle_OPS3/src/ops3_gui_utility.ks").
+RUNPATH("0:/Shuttle_OPS3/src/ops3_apch_utility.ks").
 
 RUNPATH("0:/Shuttle_OPS3/src/entry_guid.ks").
 
 RUNPATH("0:/Shuttle_OPS3/vessel_dir").
 RUNPATH("0:/Shuttle_OPS3/VESSELS/" + vessel_dir + "/pitch_profile").
+
+GLOBAL quit_program IS FALSE.
+
+//initialise touchdown points for all landing sites
+define_td_points().
+
+make_main_GUI().
+
+//ths lexicon contains all the necessary guidance objects 
+IF (DEFINED tgtrwy) {UNSET tgtrwy.}
+GLOBAL tgtrwy IS refresh_runway_lex(ldgsiteslex[select_tgt:VALUE]).
+
+make_entry_traj_GUI().
 
 
 
@@ -51,9 +66,9 @@ GLOBAL sim_settings IS LEXICON(
 
 IF NOT (DEFINED sim_end_conditions) {
 	GLOBAL sim_end_conditions IS LEXICON(
-							"altitude",30000,
-							"surfvel",900,
-							"range_bias",-70
+							"altitude",20000,
+							"surfvel",500,
+							"range_bias",0
 	).
 }
 
@@ -350,8 +365,31 @@ FUNCTION ops3_reentry_simulate {
 		
 		PRINTPLACE("phase : " + round(entryg_out["phase"],0), 20,0,18).
 		
+		local gui_data is lexicon(
+								"range",tgt_range,
+								"vi",vi,
+								"xlfac",xlfacft,
+								"lod",lod,
+								"drag",dragft,
+								"drag_ref",entryg_out["drag_ref"],
+								"phase",entryg_out["phase"],
+								"hdot_ref",entryg_out["hdot_ref"],
+								"pitch",pitch_prof,
+								"roll",roll_prof,
+								"roll_ref",entryg_out["roll_ref"],
+								"pitch_mod",entryg_out["pitch_mod"],
+								"roll_rev",entryg_out["roll_rev"]
+		).
+		update_traj_disp(gui_data).
+		
 		if (entryg_out["eg_end"]) {
 			print "entry guidance switched to taem" at (0, 20).
+			BREAK.
+		}
+		
+		if (quit_program) {
+			print "entry guidance aborted" at (0, 20).
+			BREAK.
 		}
 		
 		
@@ -406,3 +444,7 @@ FUNCTION az_error {
 
 
 ops3_reentry_simulate().
+
+
+
+close_all_GUIs().

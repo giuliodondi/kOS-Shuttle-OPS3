@@ -60,6 +60,8 @@ FUNCTION entryg_wrapper {
 								"drag", entryg_output["drag"],
 								"hdot_ref", entryg_output["hdot_ref"]/mt2ft,
 								"phase", entryg_output["islect"],
+								"roll_rev", entryg_output["rrflag"],
+								"pitch_mod", entryg_output["ict"],
 								"vcg", entryg_output["vcg"]/mt2ft,
 								"eg_end", entryg_output["eg_end"]
 	).
@@ -393,6 +395,8 @@ function egexec {
 								"rolref", entryg_internal["rollc"][3],
 								"hdot_ref", entryg_internal["rdtrf"],
 								"islect", entryg_internal["islect"],
+								"rrflag", entryg_internal["rrflag"],
+								"ict", entryg_internal["ict"],
 								"vcg", entryg_internal["vcg"],
 								"eowd", entryg_internal["eowd"],
 								"eg_end", entryg_internal["eg_end"]
