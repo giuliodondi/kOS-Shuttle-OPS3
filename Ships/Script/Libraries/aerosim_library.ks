@@ -34,6 +34,23 @@ FUNCTION current_simstate {
 }
 
 
+FUNCTION clone_simstate {
+	PARAMETER simstate.
+	
+	RETURN 	LEXICON(
+		"simtime",simstate["simtime"],
+		"position",simstate["position"],
+		"velocity",simstate["velocity"],
+		"surfvel",simstate["surfvel"],
+		"altitude",simstate["altitude"],
+		"latlong",simstate["latlong"],
+		"aero",LEXICON()
+	
+	).
+
+
+}
+
 
 
 DEclare Function accel {

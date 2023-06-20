@@ -219,7 +219,7 @@ FUNCTION make_entry_traj_GUI {
 	SET traj_disp_overlaiddata:STYLe:WIDTH TO traj_disp:STYLE:WIDTH.
 	SET traj_disp_overlaiddata:STYLe:HEIGHT TO 1.
 	
-	GLOBAL traj_disp_mainbox IS traj_disp:ADDHLAYOUT().
+	GLOBAL traj_disp_mainbox IS traj_disp:ADDVLAYOUT().
 	SET traj_disp_mainbox:STYLE:ALIGN TO "Center".
 	SET traj_disp_mainbox:STYLe:WIDTH TO traj_disp:STYLE:WIDTH.
 	SET traj_disp_mainbox:STYLe:HEIGHT TO traj_disp:STYLE:HEIGHT - 22.
@@ -266,9 +266,29 @@ FUNCTION make_entry_traj_GUI {
 	GLOBAL trajrightdata6 IS traj_disp_rightdatabox:ADDLABEL("ROLL REVERSAL").
 	set trajrightdata6:style:margin:v to -4.
 	
-	GLOBAL traj_disp_orbiter IS traj_disp_mainbox:ADDLABEL().
+	GLOBAL traj_disp_orbiter_box IS traj_disp_mainbox:ADDVLAYOUT().
+	SET traj_disp_orbiter_box:STYLE:ALIGN TO "Center".
+	SET traj_disp_orbiter_box:STYLe:WIDTH TO 1.
+	SET traj_disp_orbiter_box:STYLe:HEIGHT TO 1.
+	
+	GLOBAL traj_disp_orbiter IS traj_disp_orbiter_box:ADDLABEL().
 	SET traj_disp_orbiter:IMAGE TO "Shuttle_OPS3/src/gui_images/orbiter_bug.png".
 	SET traj_disp_orbiter:STYLe:WIDTH TO 22.
+	
+	GLOBAL traj_disp_pred_box IS traj_disp_mainbox:ADDVLAYOUT().
+	SET traj_disp_pred_box:STYLE:ALIGN TO "Center".
+	SET traj_disp_pred_box:STYLe:WIDTH TO 1.
+	SET traj_disp_pred_box:STYLe:HEIGHT TO 1.
+	
+	GLOBAL traj_disp_pred_bug_ IS traj_disp_pred_box:ADDLABEL().
+	SET traj_disp_pred_bug_:IMAGE TO "Shuttle_OPS3/src/gui_images/traj_pred_bug.png".
+	SET traj_disp_pred_bug_:STYLe:WIDTH TO 8.
+	
+	//GLOBAL traj_disp_trail IS traj_disp_mainbox:ADDLABEL().
+	//SET traj_disp_trail:IMAGE TO "Shuttle_OPS3/src/gui_images/traj_trail_bug.png".
+	//SET traj_disp_trail:STYLe:WIDTH TO 10.
+	//SET traj_disp_trail:STYLE:margin:v to 10.
+	//SET traj_disp_trail:STYLE:margin:h to 10.
 	
 	reset_traj_disp().
 }
@@ -302,7 +322,13 @@ function update_traj_disp {
 		reset_traj_disp().
 	}
 
-	set_traj_disp_orbiter_bug_pos(v(trax_disp_x_convert(rng_),trax_disp_y_convert(vel_), 0)).
+	local orbiter_bug_pos is set_traj_disp_pos(v(trax_disp_x_convert(gui_data["range"]),trax_disp_y_convert(gui_data["vi"]), 0)).
+	SET traj_disp_orbiter:STYLE:margin:v to orbiter_bug_pos[1].
+	SET traj_disp_orbiter:STYLE:margin:h to orbiter_bug_pos[0].
+	
+	local orbiter_pred_pos is set_traj_disp_pos(v(trax_disp_x_convert(gui_data["range_pred"]),trax_disp_y_convert(gui_data["vi_pred"]), 0)).
+	SET traj_disp_pred_bug_:STYLE:margin:v to orbiter_pred_pos[1].
+	SET traj_disp_pred_bug_:STYLE:margin:h to orbiter_pred_pos[0].
 	
 	set trajleftdata1:text TO "XLFAC     " + ROUND(gui_data["xlfac"],2).
 	set trajleftdata2:text TO "L/D          " + ROUND(gui_data["lod"],2).
@@ -346,7 +372,7 @@ function set_traj_disp_bg {
 }
 
 //rescale 
-function set_traj_disp_orbiter_bug_pos {
+function set_traj_disp_pos {
 	parameter bug_pos.
 	
 	local bug_margin is 10.
@@ -366,9 +392,7 @@ function set_traj_disp_orbiter_bug_pos {
 	
 	//print "disp_x: " + pos_x + " disp_y: " + pos_y + "  " at (0, 6).
 	
-	SET traj_disp_orbiter:STYLE:margin:v to pos_y.
-	SET traj_disp_orbiter:STYLE:margin:h to pos_x.
-
+	return list(pos_x,pos_y).
 }
 
 function trax_disp_x_convert {

@@ -51,7 +51,7 @@ GLOBAL sim_input IS LEXICON(
 						"deorbit_inclination", 52.5,
 						"entry_interf_eta", 130,
 						"entry_interf_dist", 8500,
-						"entry_interf_xrange", 00,
+						"entry_interf_xrange", 1600,
 						"entry_interf_offset", "right"
 ).
 
@@ -354,20 +354,22 @@ FUNCTION ops3_reentry_simulate {
 		PRINTPLACE("tgt_range : " + round(tgt_range,0), 20,0,6).
 		PRINTPLACE("delaz : " + round(delaz,2), 20,0,7).
 		
-		PRINTPLACE("xlfac : " + round(xlfacft,3), 20,0,9).
-		PRINTPLACE("drag : " + round(dragft,3), 20,0,10).
-		PRINTPLACE("l/d : " + round(lod,3), 20,0,11).
-		PRINTPLACE("drag_ref : " + round(entryg_out["drag_ref"],3), 20,0,12).
-		
-		PRINTPLACE("pitch : " + round(pitch_prof,1), 20,0,14).
-		PRINTPLACE("roll : " + round(roll_prof,1), 20,0,15).
-		PRINTPLACE("roll_ref : " + round(entryg_out["roll_ref"],1), 20,0,16).
-		
-		PRINTPLACE("phase : " + round(entryg_out["phase"],0), 20,0,18).
+		//predict 30 seconds into the future, 2 steps
+		//keep roll and pitch fixed 
+		LOCAL pred_simstate IS clone_simstate(simstate).
+		FROM {local k is 1.} UNTIL k > 2 STEP {set k to k + 1.} DO { 
+			SET pred_simstate TO sim_settings["integrator"]:CALL(15,pred_simstate,LIST(pitch_prof,roll_prof)).
+		}	
+		SET pred_simstate["latlong"] TO shift_pos(pred_simstate["position"],pred_simstate["simtime"]).
+		LOCAL pred_tgt_range IS greatcircledist( tgtpos , pred_simstate["latlong"] ).
+		LOCAL pred_vi IS pred_simstate["velocity"]:MAG.
 		
 		local gui_data is lexicon(
+								"iter", step_c,
 								"range",tgt_range,
 								"vi",vi,
+								"range_pred",pred_tgt_range,
+								"vi_pred",pred_vi,
 								"xlfac",xlfacft,
 								"lod",lod,
 								"drag",dragft,
@@ -439,7 +441,6 @@ FUNCTION az_error {
 	).
 
 }
-
 
 
 
