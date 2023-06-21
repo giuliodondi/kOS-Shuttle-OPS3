@@ -115,7 +115,7 @@ global entryg_constants is lexicon (
 									"c22", -0.001,		//1/deg c20 const value in linear term
 									"c23", 4.25e-6,		//s/ft-deg 	c20 linear term
 									"c24", 0.01,	//1/deg  c20 const value 
-									"c25", 0,		//1/deg	c20 const value in linear term 
+									"c25", 0.01,		//1/deg	c20 const value in linear term 
 									"c26", 0,		//s/ft - deg 	c20 linear val 
 									"c27", 0,		//1/deg c20 const val 
 									"ddlim", 2,		//ft/s2	max drag for h feedback 
@@ -170,8 +170,7 @@ global entryg_constants is lexicon (
 									"verolc", 8000,	//max vel for limiting bank cmd
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
-									"vstartalp", 21500,	//pch mod start velocity//	//took the value from the sts-1 paper
-									"vstopalp", 8000,	//pch mod stop velocity//
+									"vnoalp", 21500,	//pch mod start velocity//	//took the value from the sts-1 paper
 									"vq", 10499,	//ft/s predicted end vel for const drag			//changed for consistency with vtran
 									"vrlmc", 2500,	//ft/s rlm seg switch vel
 									"vsat", 25766.2,	//ft/s local circular orbit vel 
@@ -771,7 +770,7 @@ function eglodvcmd {
 	local d2 is min(entryg_input["drag"], entryg_constants["alfm"]).
 	
 	//test for alpha modulation
-	if (entryg_input["ve"] < entryg_constants["vstartalp"] AND entryg_input["ve"] > entryg_constants["vstopalp"] ) {
+	if (entryg_input["ve"] < entryg_constants["vnoalp"]) {
 		//re-working of alpha modularion logic
 		if (abs(entryg_input["drag"] - entryg_internal["drefp"]) > entryg_constants["ddmin"]) {
 			set entryg_internal["ict"] to TRUE.
@@ -790,8 +789,6 @@ function eglodvcmd {
 			set entryg_internal["delalp"] to midval(cdcal*(d1/d2 - 1)/c20, entryg_constants["dlaplm"], -entryg_constants["dlaplm"]).
 			
 		}
-	} ELSE {
-		set entryg_internal["ict"] to FALSE.
 	}
 	
 	//changed to minus this
