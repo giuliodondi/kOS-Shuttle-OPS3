@@ -326,7 +326,7 @@ function update_traj_disp {
 	SET traj_disp_orbiter:STYLE:margin:v to orbiter_bug_pos[1].
 	SET traj_disp_orbiter:STYLE:margin:h to orbiter_bug_pos[0].
 	
-	local orbiter_pred_pos is set_traj_disp_pos(v(trax_disp_x_convert(gui_data["range_pred"]),trax_disp_y_convert(gui_data["vi_pred"]), 0)).
+	local orbiter_pred_pos is set_traj_disp_pos(v(trax_disp_x_convert(gui_data["range_pred"]),trax_disp_y_convert(gui_data["vi_pred"]), 0), 7).
 	SET traj_disp_pred_bug_:STYLE:margin:v to orbiter_pred_pos[1].
 	SET traj_disp_pred_bug_:STYLE:margin:h to orbiter_pred_pos[0].
 	
@@ -374,6 +374,7 @@ function set_traj_disp_bg {
 //rescale 
 function set_traj_disp_pos {
 	parameter bug_pos.
+	parameter bias is 0.
 	
 	local bug_margin is 10.
 	
@@ -382,8 +383,8 @@ function set_traj_disp_pos {
 	
 	//print "calc_x: " + bug_pos:X + " calc_y: " +  + bug_pos:Y  + "  " at (0, 4).
 	
-	local pos_x is 1.04693*bug_pos:X  - 8.133.
-	local pos_y is 395.55 - 1.1685*bug_pos:Y.
+	local pos_x is 1.04693*bug_pos:X  - 8.133 + bias.
+	local pos_y is 395.55 - 1.1685*bug_pos:Y + bias.
 	
 	//print "disp_x: " + pos_x + " disp_y: " + pos_y + "  " at (0, 5).
 	

@@ -86,7 +86,7 @@ global entryg_constants is lexicon (
 									"almn2", 0.9659258,	//max l/d cmd inside heading err deadband
 									"almn3", 0.93969,	//max l/d cmd below velmn
 									"almn4", 1.0,	//max l/d cmd above vylmax
-									"astart", 0.66,		//ft/s2 accel to enter phase 2	//was 5.66
+									"astart", 3,		//ft/s2 accel to enter phase 2	//was 5.66
 									"calp0", list(3, 1.333333, -92.4166, 28, 433 , -18.25, -623.25, 38),	//deg alpcmd constant term in ve 
 									"calp1", list(0, 3.333333e-3, 0.0283333, 0, -0.045, 2.5e-3, 0.0575, 0),	//deg-s/ft 	alpcmd linear term in ve
 									"calp2", list(0, 0, -1.66667e-6, 0, 1.25e-6, 0, -1.25e-6, 0),	//deg-s2/ft2 	alpcmd quadratic term in ve
@@ -768,11 +768,12 @@ function eglodvcmd {
 	//limit drag values based on max allowable drag alfm
 	local d1 is min(entryg_internal["drefp"], entryg_constants["alfm"]).
 	local d2 is min(entryg_input["drag"], entryg_constants["alfm"]).
+	local dd is d2 - d1.
 	
 	//test for alpha modulation
 	if (entryg_input["ve"] < entryg_constants["vnoalp"]) {
 		//re-working of alpha modularion logic
-		if (abs(entryg_input["drag"] - entryg_internal["drefp"]) > entryg_constants["ddmin"]) {
+		if (abs(dd) > entryg_constants["ddmin"]) {
 			set entryg_internal["ict"] to TRUE.
 		} ELSE {
 			set entryg_internal["ict"] to FALSE.
@@ -802,7 +803,6 @@ function eglodvcmd {
 	//ANOTHER DISCREPANCY BW THE PAPERS !! - SIGN OF ALDREF
 	set entryg_internal["aldref"] to t1 / entryg_internal["drefp"] + (2*entryg_internal["rdtref"] + entryg_internal["c2"]*entryg_internal["hs"]) / entryg_input["ve"].
 	set entryg_internal["rdtrf"] to entryg_internal["rdtref"] + c4.
-	local dd is d2 - d1.
 	
 	//hdot feedback
 	if (entryg_input["ve"] < entryg_constants["vrdt"]) {
