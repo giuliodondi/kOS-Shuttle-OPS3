@@ -802,7 +802,7 @@ function eglodvcmd {
 	//ANOTHER DISCREPANCY BW THE PAPERS !! - SIGN OF ALDREF
 	set entryg_internal["aldref"] to t1 / entryg_internal["drefp"] + (2*entryg_internal["rdtref"] + entryg_internal["c2"]*entryg_internal["hs"]) / entryg_input["ve"].
 	set entryg_internal["rdtrf"] to entryg_internal["rdtref"] + c4.
-	local dd is entryg_input["drag"] - entryg_internal["drefp"].
+	local dd is d2 - d1.
 	
 	//hdot feedback
 	if (entryg_input["ve"] < entryg_constants["vrdt"]) {
@@ -828,7 +828,7 @@ function eglodvcmd {
 	
 	//delta drag correction corrected for max drag alfm 
 	//the main vertical l/d equation
-	set entryg_internal["lodx"] to entryg_internal["aldref"] + entryg_internal["c16"]*(d2 - d1) + entryg_internal["c17"]*(entryg_internal["rdtrf"] + entryg_internal["dlrdot"] - entryg_input["rdot"]).
+	set entryg_internal["lodx"] to entryg_internal["aldref"] + entryg_internal["c16"]*dd + entryg_internal["c17"]*(entryg_internal["rdtrf"] + entryg_internal["dlrdot"] - entryg_input["rdot"]).
 	set entryg_internal["lodv"] to entryg_internal["lodx"].
 	
 	//this is where we calculate delaz limits
