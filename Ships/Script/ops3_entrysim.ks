@@ -9,6 +9,7 @@ RUNPATH("0:/Libraries/aerosim_library").
 RUNPATH("0:/Shuttle_OPS3/landing_sites").
 RUNPATH("0:/Shuttle_OPS3/constants").
 
+RUNPATH("0:/Shuttle_OPS3/src/ops3_entry_utility.ks").
 RUNPATH("0:/Shuttle_OPS3/src/ops3_gui_utility.ks").
 RUNPATH("0:/Shuttle_OPS3/src/ops3_apch_utility.ks").
 
@@ -34,25 +35,24 @@ make_entry_traj_GUI().
 
 //GLOBAL sim_input IS LEXICON(
 //						"target", "Vandenberg",
-//						"deorbit_apoapsis", 190,
-//						"deorbit_periapsis", 10,
+//						"deorbit_apoapsis", 200,
+//						"deorbit_periapsis",0,
 //						"deorbit_inclination", -105,
-//						"entry_interf_eta", 130,
-//						"entry_interf_dist", 9000,
-//						"entry_interf_xrange", 1250,
+//						"entry_interf_eta", 0,
+//						"entry_interf_dist", 0,
+//						"entry_interf_xrange", 1400,
 //						"entry_interf_offset", "right"
 //).
 
-
 GLOBAL sim_input IS LEXICON(
-						"target", "KSC",
-						"deorbit_apoapsis", 220,
-						"deorbit_periapsis", -10,
+						"target", "Edwards",
+						"deorbit_apoapsis", 450,
+						"deorbit_periapsis",0,
 						"deorbit_inclination", 52.5,
-						"entry_interf_eta", 130,
-						"entry_interf_dist", 8500,
+						"entry_interf_eta", 0,
+						"entry_interf_dist", 0,
 						"entry_interf_xrange", 1600,
-						"entry_interf_offset", "right"
+						"entry_interf_offset", "left"
 ).
 
 GLOBAL ICS IS generate_simulation_ics(sim_input).
@@ -71,6 +71,15 @@ IF NOT (DEFINED sim_end_conditions) {
 							"range_bias",0
 	).
 }
+
+
+
+ops3_reentry_simulate().
+
+
+
+close_all_GUIs().
+
 
 
 //given the deorbit and entry interface parameters, generates the simulation initial conditions
@@ -119,7 +128,12 @@ FUNCTION generate_simulation_ics {
 		WAIT 0.
 	}
 	
-	LOCAL d IS dist2degrees(sim_input["entry_interf_dist"]).
+	local ei_calc is deorbit_ei_calc(sim_input["deorbit_apoapsis"], constants["interfalt"]/1000).
+	
+	
+	
+	
+	LOCAL d IS dist2degrees(ei_calc["ei_range"]).
 	
 	LOCAL y IS get_c_ab(d, x).
 	
@@ -136,20 +150,20 @@ FUNCTION generate_simulation_ics {
 
 
 	print "x " + x + " d " + d + " y " + y at (0,8).
-	print "dist " + greatcircledist( ei_vec , tgt_vec ) at (0,9).
 	
 	//conditions at entry interface
 	
 	
-	LOCAL ei_vel IS orbit_velocity_altitude(sim_input["deorbit_apoapsis"], sim_input["deorbit_periapsis"], constants["interfalt"]).
-	LOCAL ei_fpa IS orbit_gamma_altitude(sim_input["deorbit_apoapsis"], sim_input["deorbit_periapsis"], constants["interfalt"]).
+	LOCAL ei_vel IS ei_calc["ei_vel"].
+	LOCAL ei_fpa IS ei_calc["ei_fpa"].
 	
-	print "vel " + ei_vel + " gamma " + ei_fpa at (0,10).
+	print "ap " + ei_calc["ap"] + " pe " + ei_calc["pe"] + " range " + ei_calc["ei_range"] at (0,9).
+	print "vel " + ei_calc["ei_vel"] + " gamma " + ei_calc["ei_fpa"] at (0,10).
 	
 	//now get velocity vector at the entry interface
 	LOCAL ei_vel_vec IS VCRs(ei_vec, norm_vec):NORMALIZED.
 	
-	SET ei_vel_vec TO rodrigues(ei_vel_vec, norm_vec, ei_fpa):NORMALIZED * ei_vel.
+	SET ei_vel_vec TO rodrigues(ei_vel_vec, norm_vec, ei_calc["ei_fpa"]):NORMALIZED * ei_calc["ei_vel"].
 
 	RETURN 	LEXICON(
 					 "position",ei_vec,
@@ -157,50 +171,6 @@ FUNCTION generate_simulation_ics {
 	).
 }
 
-
-FUNCTION orbit_velocity_altitude {
-	PARAMETER ap.
-	PARAMETER pe.
-	PARAMETER h.
-	
-	LOCAL sma IS (ap*1000 + pe*1000 + 2*BODY:RADIUS)/2.
-	
-	LOCAL rad IS h + BODY:RADIUS.
-	
-	RETURN SQRT( BODY:MU * ( 2/rad - 1/sma  ) ).
-
-}
-
-FUNCTION orbit_eta_altitude {
-	PARAMETER ap.
-	PARAMETER pe.
-	PARAMETER h.
-	
-	LOCAL sma IS (ap*1000 + pe*1000 + 2*BODY:RADIUS)/2.
-	LOCAL ecc IS (ap*1000 - pe*1000) / (ap*1000 + pe*1000 + 2*BODY:RADIUS).
-	
-	LOCAL rad IS h + BODY:RADIUS.
-	
-	LOCAL eta_ IS (sma * (1 - ecc^2) / rad - 1) / ecc.
-	
-	RETURN ARCCOS(eta_).
-}
-
-FUNCTION orbit_gamma_altitude {
-	PARAMETER ap.
-	PARAMETER pe.
-	PARAMETER h.
-
-	LOCAL sma IS (ap*1000 + pe*1000 + 2*BODY:RADIUS)/2.
-	LOCAL ecc IS (ap*1000 - pe*1000) / (ap*1000 + pe*1000 + 2*BODY:RADIUS).
-	
-	LOCAL eta_ IS orbit_eta_altitude(ap, pe, h).
-	
-	LOCAL gamma IS ecc * SIN(eta_) / (1 + ecc * COS(eta_) ).
-	
-	//assumed downwards
-	RETURN -ARCTAN(gamma).
-}
 
 
 FUNCTION ops3_reentry_simulate {
@@ -236,7 +206,7 @@ FUNCTION ops3_reentry_simulate {
 	).
 	
 	
-	log_data(loglex,"0:/Shuttle_OPS3/LOGS/sim_log_" + sim_input["target"] + "_" + sim_input["deorbit_inclination"] + "_" + sim_input["entry_interf_xrange"] , TRUE).
+	log_data(loglex,"0:/Shuttle_OPS3/LOGS/sim_log_" + sim_input["target"], TRUE).
 	
 	//define the delegate to the integrator function, saves an if check per integration step
 	IF sim_settings["integrator"]= "rk2" {
@@ -407,45 +377,3 @@ FUNCTION ops3_reentry_simulate {
 
 }
 
-
-
-
-//new approach, hopefully more robust
-//simply calculate the angle between velocity vector and vector pointing to the target
-FUNCTION az_error {
-	PARAMETEr pos.
-	PARAMETER tgt_pos.
-	PARAMETER surfv.
-	
-	IF pos:ISTYPE("geocoordinates") {
-		SET pos TO pos2vec(pos).
-	}
-	IF tgt_pos:ISTYPE("geocoordinates") {
-		SET tgt_pos TO pos2vec(tgt_pos).
-	}
-
-		
-	//vector normal to vehicle vel and in the same plane as vehicle pos
-	//defines the "plane of velocity"
-	LOCAL n1 IS VXCL(surfv,pos):NORMALIZED.
-	
-	//vector pointing from vehicle pos to target, projected "in the plane of velocity"
-	LOCAL dr IS VXCL(n1,tgt_pos - pos):NORMALIZED.
-	
-	//clamp to -180 +180 range
-	RETURN signed_angle(
-		surfv:NORMALIZED,
-		dr,
-		n1,
-		0
-	).
-
-}
-
-
-
-ops3_reentry_simulate().
-
-
-
-close_all_GUIs().
