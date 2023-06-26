@@ -1,26 +1,197 @@
+@LAZYGLOBAL OFF.
+
 GLOBAL guitextgreen IS RGB(20/255,255/255,21/255).
+GLOBAL guitextred IS RGB(255/255,21/255,20/255).
 global trajbgblack IS RGB(5/255,8/255,8/255).
 
-GLOBAL main_gui_width IS 550.
-GLOBAL main_gui_height IS 510.
+GLOBAL guitextgreenhex IS "14ff15".
+GLOBAL guitextredhex IS "ff1514".
 
-FUNCTION make_main_GUI {
-	
 
+						//DEORBIT GUI FUNCTIONS 
+						
+GLOBAL main_deorb_gui_width IS 300.
+GLOBAL main_deorb_gui_height IS 320.
+
+GLOBAL deorbit_target_selected IS FALSE.
+
+FUNCTION make_global_deorbit_GUI {
 	//create the GUI.
-	GLOBAL main_gui is gui(main_gui_width,main_gui_height).
-	SET main_gui:X TO 200.
-	SET main_gui:Y TO 670.
-	SET main_gui:STYLe:WIDTH TO main_gui_width.
-	SET main_gui:STYLe:HEIGHT TO main_gui_height.
-	SET main_gui:STYLE:ALIGN TO "center".
-	SET main_gui:STYLE:HSTRETCH  TO TRUE.
+	GLOBAL main_deorbit_gui is gui(main_deorb_gui_width,main_deorb_gui_height).
+	SET main_deorbit_gui:X TO 200.
+	SET main_deorbit_gui:Y TO 670.
+	SET main_deorbit_gui:STYLe:WIDTH TO main_deorb_gui_width.
+	SET main_deorbit_gui:STYLe:HEIGHT TO main_deorb_gui_height.
+	SET main_deorbit_gui:STYLE:ALIGN TO "center".
+	SET main_deorbit_gui:STYLE:HSTRETCH TO TRUE.
 
-	set main_gui:skin:LABEL:TEXTCOLOR to guitextgreen.
+	set main_deorbit_gui:skin:LABEL:TEXTCOLOR to guitextgreen.
 
 
 	// Add widgets to the GUI
-	GLOBAL title_box is main_gui:addhbox().
+	GLOBAL title_box is main_deorbit_gui:addhbox().
+	set title_box:style:height to 60. 
+	set title_box:style:margin:top to 0.
+
+
+	GLOBAL text0 IS title_box:ADDLABEL("<b><size=20>SPACE SHUTTLE OPS3 DEORBIT PLANNER</size></b>").
+	SET text0:STYLE:ALIGN TO "center".
+
+
+	
+	GLOBAL quitb IS  title_box:ADDBUTTON("X").
+	set quitb:style:margin:h to 7.
+	set quitb:style:margin:v to 7.
+	set quitb:style:width to 20.
+	set quitb:style:height to 20.
+	function quitcheck {
+	  SET quit_program TO TRUE.
+	}
+	SET quitb:ONCLICK TO quitcheck@.
+
+
+	main_deorbit_gui:addspacing(7).
+
+
+
+	//top popup menus,
+	//tgt selection, rwy selection, hac placement
+	GLOBAL popup_box IS main_deorbit_gui:ADDVLAYOUT().
+	SET popup_box:STYLE:WIDTH TO 200.	
+	SET popup_box:STYLE:margin:h TO 50.	
+
+	GLOBAL select_tgtbox IS popup_box:ADDHLAYOUT().
+	GLOBAL tgt_label IS select_tgtbox:ADDLABEL("<size=15>Target : </size>").
+	GLOBAL select_tgt IS select_tgtbox:addpopupmenu().
+	SET select_tgt:STYLE:WIDTH TO 100.
+	SET select_tgt:STYLE:HEIGHT TO 25.
+	SET select_tgt:STYLE:ALIGN TO "center".
+	FOR site IN ldgsiteslex:KEYS {
+		select_tgt:addoption(site).
+	}		
+	SET select_tgt:ONCHANGE to { 
+		PARAMETER lex_key.	
+		SET tgtrwy TO ldgsiteslex[lex_key].		
+		SET reset_entry_flag TO TRUE.
+		SET deorbit_target_selected TO TRUE.
+	}.
+
+
+	GLOBAL all_box IS main_deorbit_gui:ADDVLAYOUT().
+	SET all_box:STYLE:WIDTH TO main_deorb_gui_width.
+	SET all_box:STYLE:HEIGHT TO 180.
+	
+	GLOBAL entry_interface_textlabel IS all_box:ADDLABEL("<b>ENTRY INTERFACE DATA</b>").	
+	SET entry_interface_textlabel:STYLE:ALIGN TO "center".
+	set entry_interface_textlabel:style:margin:v to 5.
+	
+	GLOBAL entry_interface_databox IS all_box:ADDVBOX().
+	SET entry_interface_databox:STYLE:ALIGN TO "center".
+	SET entry_interface_databox:STYLE:WIDTH TO 230.
+    SET entry_interface_databox:STYLE:HEIGHT TO 170.
+	set entry_interface_databox:style:margin:h to 28.
+	set entry_interface_databox:style:margin:v to 0.
+	
+	GLOBAL textEI1 IS entry_interface_databox:ADDLABEL("").
+	set textEI1:style:margin:v to -4.
+	SET textEI1:STYLE:ALIGN TO "center".
+	GLOBAL textEI2 IS entry_interface_databox:ADDLABEL("").
+	set textEI2:style:margin:v to -4.
+	SET textEI2:STYLE:ALIGN TO "center".
+	GLOBAL textEI3 IS entry_interface_databox:ADDLABEL("").
+	set textEI3:style:margin:v to -4.
+	SET textEI3:STYLE:ALIGN TO "center".
+	GLOBAL textEI4 IS entry_interface_databox:ADDLABEL("").
+	set textEI4:style:margin:v to -4.
+	SET textEI4:STYLE:ALIGN TO "center".
+	GLOBAL textEI5 IS entry_interface_databox:ADDLABEL("").
+	set textEI5:style:margin:v to -4.
+	SET textEI5:STYLE:ALIGN TO "center".
+	GLOBAL textEI6 IS entry_interface_databox:ADDLABEL("").
+	set textEI6:style:margin:v to -4.
+	SET textEI6:STYLE:ALIGN TO "center".
+	GLOBAL textEI7 IS entry_interface_databox:ADDLABEL("").
+	set textEI7:style:margin:v to -4.
+	SET textEI7:STYLE:ALIGN TO "center".
+	GLOBAL textEI8 IS entry_interface_databox:ADDLABEL("").
+	set textEI8:style:margin:v to -4.
+	SET textEI8:STYLE:ALIGN TO "center".
+	
+	
+	
+	
+
+
+	main_deorbit_gui:SHOW().
+}
+
+FUNCTION update_deorbit_GUI {
+	PARAMETER interf_t.
+	PARAMETER ei_data.
+	PARAMETER ei_ref_data.
+	
+	SET textEI1:text TO "  Time to EI  : " + sectotime(interf_t).
+	SET textEI2:text TO "  Delaz at EI : " + ROUND(ei_data["ei_delaz"],1) + " °".
+	
+	SET textEI3:text TO "Ref FPA at EI : " + round(ei_ref_data["ei_fpa"], 2) + " °".
+	LOCAL text4_str IS "    FPA at EI : " + round(ei_data["ei_fpa"], 2) + " °".
+	
+	LOCAL text4_color IS guitextredhex.
+	if (ABS(ei_ref_data["ei_fpa"] - ei_data["ei_fpa"]) < 0.02) {
+		SET text4_color TO guitextgreenhex.
+	}
+	
+	SET textEI4:text TO "<color=#" + text4_color + ">" + text4_str + "</color>".
+	
+	SET textEI5:text TO "Ref Vel at EI : " + round(ei_ref_data["ei_vel"], 1) + " m/s".
+	LOCAL text6_str IS "    Vel at EI : " + round(ei_data["ei_vel"], 1) + " m/s".
+	
+	LOCAL text6_color IS guitextredhex.
+	if (ABS(ei_ref_data["ei_vel"] - ei_data["ei_vel"]) < 5) {
+		SET text6_color TO guitextgreenhex.
+	}
+	
+	SET textEI6:text TO "<color=#" + text6_color + ">" + text6_str + "</color>".
+	
+	SET textEI7:text TO "Ref Rng at EI : "+ round(ei_ref_data["ei_range"], 0) + " km".
+	LOCAL text8_str IS "    Rng at EI : " + round(ei_data["ei_range"], 0) + " km".
+	
+	LOCAL text8_color IS guitextredhex.
+	if (ABS(ei_ref_data["ei_range"] - ei_data["ei_range"]) < 50) {
+		SET text8_color TO guitextgreenhex.
+	}
+	
+	SET textEI8:text TO "<color=#" + text8_color + ">" + text8_str + "</color>".
+
+
+}
+
+
+
+
+						//GLOBAL ENTRY GUI FUNCTIONS
+
+
+GLOBAL main_entry_gui_width IS 550.
+GLOBAL main_entry_gui_height IS 510.
+
+FUNCTION make_main_entry_gui {
+	
+
+	//create the GUI.
+	GLOBAL main_entry_gui is gui(main_entry_gui_width,main_entry_gui_height).
+	SET main_entry_gui:X TO 200.
+	SET main_entry_gui:Y TO 670.
+	SET main_entry_gui:STYLe:WIDTH TO main_entry_gui_width.
+	SET main_entry_gui:STYLe:HEIGHT TO main_entry_gui_height.
+	SET main_entry_gui:STYLE:ALIGN TO "center".
+	SET main_entry_gui:STYLE:HSTRETCH  TO TRUE.
+
+	set main_entry_gui:skin:LABEL:TEXTCOLOR to guitextgreen.
+
+
+	// Add widgets to the GUI
+	GLOBAL title_box is main_entry_gui:addhbox().
 	set title_box:style:height to 35. 
 	set title_box:style:margin:top to 0.
 
@@ -38,11 +209,11 @@ FUNCTION make_main_GUI {
 		PARAMETER pressed.
 		
 		IF pressed {
-			main_gui:SHOWONLY(title_box).
-			SET main_gui:STYLe:HEIGHT TO 50.
+			main_entry_gui:SHOWONLY(title_box).
+			SET main_entry_gui:STYLe:HEIGHT TO 50.
 		} ELSE {
-			SET main_gui:STYLe:HEIGHT TO main_gui_height.
-			for w in main_gui:WIDGETS {
+			SET main_entry_gui:STYLe:HEIGHT TO main_entry_gui_height.
+			for w in main_entry_gui:WIDGETS {
 				w:SHOW().
 			}
 		}
@@ -61,11 +232,11 @@ FUNCTION make_main_GUI {
 	SET quitb:ONCLICK TO quitcheck@.
 
 	
-	main_gui:addspacing(7).
+	main_entry_gui:addspacing(7).
 
 	//top popup menus,
 	//tgt selection, rwy selection, hac placement
-	GLOBAL popup_box IS main_gui:ADDHLAYOUT().
+	GLOBAL popup_box IS main_entry_gui:ADDHLAYOUT().
 	SET popup_box:STYLE:ALIGN TO "center".	
 
 	GLOBAL select_tgtbox IS popup_box:ADDHLAYOUT().
@@ -149,7 +320,7 @@ FUNCTION make_main_GUI {
 	//}.	
 	
 	
-	GLOBAL toggles_box IS main_gui:ADDHLAYOUT().
+	GLOBAL toggles_box IS main_entry_gui:ADDHLAYOUT().
 	SET toggles_box:STYLE:WIDTH TO 300.
 	toggles_box:addspacing(55).	
 	SET toggles_box:STYLE:ALIGN TO "center".
@@ -167,12 +338,12 @@ FUNCTION make_main_GUI {
 	GLOBAL arbkb IS  toggles_box:ADDCHECKBOX("Auto Airbk",false).
 
 
-	main_gui:SHOW().
+	main_entry_gui:SHOW().
 }
 
 
 FUNCTION close_global_GUI {
-	main_gui:HIDE().
+	main_entry_gui:HIDE().
 	IF (DEFINED(hud_gui)) {
 		hud_gui:HIDE.
 		hud_gui:DISPOSE.
@@ -192,21 +363,21 @@ FUNCTION make_entry_traj_GUI {
 	GLOBAL traj_disp_counter IS 1.				   
 	GLOBAL traj_disp_counter_p IS traj_disp_counter.				   
 	
-	GLOBAL traj_disp IS main_gui:addvlayout().
-	SET traj_disp:STYLE:WIDTH TO main_gui_width - 22.
+	GLOBAL traj_disp IS main_entry_gui:addvlayout().
+	SET traj_disp:STYLE:WIDTH TO main_entry_gui_width - 22.
 	SET traj_disp:STYLE:HEIGHT TO 380.
 	SET traj_disp:STYLE:ALIGN TO "center".
 	
 	set traj_disp:style:BG to "Shuttle_OPS3/src/gui_images/entry_traj_bg.png".
 	
-	set main_gui:skin:horizontalslider:BG to "Shuttle_OPS3/src/gui_images/brakeslider.png".
-	set main_gui:skin:horizontalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/hslider_thumb.png".
-	set main_gui:skin:horizontalsliderthumb:HEIGHT to 17.
-	set main_gui:skin:horizontalsliderthumb:WIDTH to 20.
-	set main_gui:skin:verticalslider:BG to "Shuttle_OPS3/src/gui_images/vspdslider2.png".
-	set main_gui:skin:verticalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/vslider_thumb.png".
-	set main_gui:skin:verticalsliderthumb:HEIGHT to 20.
-	set main_gui:skin:verticalsliderthumb:WIDTH to 17.
+	set main_entry_gui:skin:horizontalslider:BG to "Shuttle_OPS3/src/gui_images/brakeslider.png".
+	set main_entry_gui:skin:horizontalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/hslider_thumb.png".
+	set main_entry_gui:skin:horizontalsliderthumb:HEIGHT to 17.
+	set main_entry_gui:skin:horizontalsliderthumb:WIDTH to 20.
+	set main_entry_gui:skin:verticalslider:BG to "Shuttle_OPS3/src/gui_images/vspdslider2.png".
+	set main_entry_gui:skin:verticalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/vslider_thumb.png".
+	set main_entry_gui:skin:verticalsliderthumb:HEIGHT to 20.
+	set main_entry_gui:skin:verticalsliderthumb:WIDTH to 17.
 	
 	GLOBAL traj_disp_titlebox IS traj_disp:ADDHLAYOUT().
 	SET traj_disp_titlebox:STYLe:WIDTH TO traj_disp:STYLE:WIDTH.

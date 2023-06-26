@@ -1,6 +1,7 @@
 clearscreen.
 close_all_GUIs().
 
+make_global_deorbit_GUI().
 
 
 FUNCTION ops3_deorbit_predict{
@@ -21,10 +22,13 @@ FUNCTION ops3_deorbit_predict{
 
 	//calculate reference circular orbit apoapsis and optimal ei parameters
 	LOCAL ref_ap IS (cur_ap + cur_pe)/2.
-	Local ei_calc is deorbit_ei_calc(ref_ap, constants["interfalt"]/1000).
+	Local ei_ref_data is deorbit_ei_calc(ref_ap, constants["interfalt"]/1000).
 
 	LOCAL ei_radius IS (constants["interfalt"] + SHIP:BODY:RADIUS).
 
+	UNTIL (deorbit_target_selected) {
+		print "Please select a deorbit target" AT (0,1).
+	}
 
 	UNTIL FALSE {
 
@@ -109,17 +113,29 @@ FUNCTION ops3_deorbit_predict{
 		
 		//transform the entry interface to coordinates and
 		//rotate it backwards by the time to entry,
-		LOCAL ei_posvec IS pos2vec(shift_pos(shipvec,time2EI)):NORMALIZED*ei_radius.
+		LOCAL ei_pos IS shift_pos(shipvec,time2EI).
+		LOCAL ei_posvec IS pos2vec(ei_pos):NORMALIZED*ei_radius.
 
 		//find flight-path angle at entry interface
 		LOCAL entry_fpa IS -orbit_alt_fpa(ei_radius, entry_orb_sma, entry_orb_ecc).
 		LOCAL entry_vel IS orbit_alt_vel(ei_radius, entry_orb_sma).
 		
+		LOCAL normvec_rot IS pos2vec(shift_pos(normvec,time2EI)):NORMALIZED.
+		LOCAL entry_vel_vec IS VCRS(normvec_rot,ei_posvec):NORMALIZED*entry_vel.
+		SET entry_vel_vec TO rodrigues(entry_vel_vec,-normvec_rot,entry_fpa).
+		
 		LOCAL tgt_range IS downrangedist(tgtrwy["position"], ei_posvec).
 		
-		print "ei range: " + round(tgt_range, 0) + " opt range : " + round(ei_calc["ei_range"], 0) + "   " at (1,5).
-		print "ei vel: " + round(entry_vel, 1) + " opt vel : " + round(ei_calc["ei_vel"], 1) + "   "  at (1,6).
-		print "ei fpa: " + round(entry_fpa, 2) + " opt fpa : " + round(ei_calc["ei_fpa"], 2) + "   "  at (1,6).
+		LOCAL ei_delaz IS az_error(ei_pos,tgtrwy["position"],entry_vel_vec).
+		
+		local ei_data is lexicon(
+						"ei_vel",entry_vel,
+						"ei_fpa",entry_fpa,
+						"ei_range",tgt_range,
+						"ei_delaz", ei_delaz
+		).
+		
+		update_deorbit_GUI(time2EI, ei_data, ei_ref_data).
 		
 		clearvecdraws().
 		arrow_body(ei_posvec,"ei_posvec").
@@ -133,6 +149,8 @@ FUNCTION ops3_deorbit_predict{
 
 	clearvecdraws().
 	clearscreen.
+	
+	close_all_GUIs().
 
 }
 
