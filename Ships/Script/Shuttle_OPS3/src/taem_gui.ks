@@ -122,3 +122,47 @@ global taemg_constants is lexicon (
 
 
 ).
+
+
+global taemg_internal is lexicon(
+
+
+
+
+
+
+).
+
+
+
+function tgexec {
+	PARAMETER taemg_input.
+	
+	if (irest=1) {
+		tginit(taemg_input).
+	}
+	
+	tgxhac(taemg_input).
+	
+	gtp(taemg_input).
+	
+	tgcomp(taemg_input).
+	
+	tgtran(taemg_input).
+	
+	tgnzc(taemg_input).
+	
+	tgsbc(taemg_input).
+	
+	tgphic(taemg_input).
+	
+	set iphase to 1.
+	set isr 
+	
+	
+	
+	
+
+
+
+}
