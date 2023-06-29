@@ -6,25 +6,50 @@ GLOBAL g0 IS 9.80665.
 
 
 
-//measures current total engine thrust an isp, as well as theoretical max engine thrust at this altitude
+//measures current total engine thrust vector and isp of running engines
 
-FUNCTION get_thrust_isp {
-
-
-	LOCAL thr is 0.
-	LOCAL iisspp IS 0.		   
+FUNCTION get_current_thrust_isp {
+	
+	LOCAL thrvec IS v(0,0,0).
+	LOCAL thr IS 0.
+	LOCAL isp_ IS 0.
 	
 	list ENGINES in all_eng.
 	FOR e IN all_eng {
 		IF e:ISTYPE("engine") {
 			IF e:IGNITION {
-				SET thr TO thr + (e:AVAILABLETHRUST * 1000).
-				SET iisspp TO iisspp + e:vacuumisp*(e:AVAILABLETHRUST * 1000).								
+				LOCAL e_thr IS (e:THRUST * 1000).
+				SET thr TO thr + e_thr.
+				SET isp_ TO isp_ + e:vacuumisp*e_thr.
+				set thrvec to thrvec -e:POSITION:NORMALIZED*e_thr.
 			}
 		}
 	}	
 	
-	RETURN LIST(thr,iisspp).
+	RETURN LIST(thrvec, isp_).
+}
+
+
+//measures theoretical max engine thrust and isp at this altitude
+FUNCTION get_max_thrust_isp{
+
+	LOCAL thrvec IS v(0,0,0).
+	LOCAL thr IS 0.
+	LOCAL isp_ IS 0.
+	
+	list ENGINES in all_eng.
+	FOR e IN all_eng {
+		IF e:ISTYPE("engine") {
+			IF e:IGNITION {
+				LOCAL e_thr IS (e:AVAILABLETHRUST * 1000).
+				SET thr TO thr + e_thr.
+				SET isp_ TO isp_ + e:vacuumisp*e_thr.
+				set thrvec to thrvec -e:POSITION:NORMALIZED*e_thr.
+			}
+		}
+	}	
+	
+	RETURN LIST(thrvec, isp_).
 }
 
 //time to burn at constant thrust given engines
@@ -32,9 +57,9 @@ FUNCTION burnDT {
 	PARAMETER dV.
 	
 	
-	LOCAL out IS get_thrust_isp().
+	LOCAL out IS get_max_thrust_isp().
 	LOCAL iisp IS out[1].
-	LOCAL thr IS out[0].
+	LOCAL thr IS out[0]:MAG.
 	
 	LOCAL vex IS g0*iisp.
 	
@@ -106,11 +131,11 @@ FUNCTION aimAndRoll {
 	
 	LOCAL outdir IS LOOKDIRUP(steerVec + thrustCorr, topVec).
 
-	clearvecdraws().
-	arrow_ship(topVec,"topVec").
-	arrow_ship(aimVec,"aimVec").
-	arrow_ship(steerVec,"steerVec").
-	arrow_ship(thrustCorr,"thrustCorr").
+	//clearvecdraws().
+	//arrow_ship(topVec,"topVec").
+	//arrow_ship(aimVec,"aimVec").
+	//arrow_ship(steerVec,"steerVec").
+	//arrow_ship(thrustCorr,"thrustCorr").
 
 	RETURN outdir.
 }
