@@ -353,7 +353,6 @@ function orbit_alt_fpa {
 	RETURN ARCTAN(gamma).
 }	
 
-
 //calculates alttude at given eta
 //altitude will be measured from the body centre
 FUNCTION orbit_eta_alt {
@@ -362,6 +361,11 @@ FUNCTION orbit_eta_alt {
 	parameter ecc.
 	
 	return sma*(1 - ecc^2)/(1 + ecc*COS(eta_)).
+<<<<<<< HEAD
+=======
+
+}
+>>>>>>> 5fc0ba6 (library update)
 
 }
 

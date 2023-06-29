@@ -115,6 +115,15 @@ FUNCTION aimAndRoll {
 	RETURN outdir.
 }
 
+//converts between absolute throttle value (percentage of max thrust)
+//and throttle percentage relative to the range min-max which KSP uses
+FUNCTION throtteValueConverter {
+	PARAMETER abs_throt.
+	PARAMETER minthrot IS 0.
+
+	RETURN CLAMP((abs_throt - minthrot)/(1 - minthrot),0.005,1).
+}
+
 //given current vehicle fore vector, computes where the thrust is pointing
 FUNCTION thrust_vec {
 	RETURN SHIP:FACING:VECTOR:NORMALIZED - thrustrot(SHIP:FACING:FOREVECTOR,SHIP:FACING:TOPVECTOR).
