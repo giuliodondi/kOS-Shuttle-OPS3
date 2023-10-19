@@ -41,12 +41,12 @@ FUNCTION deorbit_ei_calc {
 	
 		set iter_count to iter_count + 1.
 		
-		LOCAL sma IS (ap*1000 + pe_guess*1000 + 2*BODY:RADIUS)/2.
-		LOCAL ecc IS (ap*1000 - pe_guess*1000) / (ap*1000 + pe_guess*1000 + 2*BODY:RADIUS).
+		LOCAL sma IS orbit_appe_sma(ap, pe_guess).
+		LOCAL ecc IS orbit_appe_ecc(ap, pe_guess).
 		
 		set ei_calc["ei_eta"] to orbit_alt_eta(ei_h, sma, ecc).
 		set ei_calc["ei_vel"] to orbit_alt_vel(ei_h, sma).
-		set ei_calc["ei_fpa"] to -orbit_alt_fpa(ei_h, sma, ecc).
+		set ei_calc["ei_fpa"] to -orbit_eta_fpa(ei_calc["ei_eta"], sma, ecc).
 		
 		local steep_fpa is shuttle_steep_ei_fpa(ei_calc["ei_vel"]).
 		
@@ -61,40 +61,6 @@ FUNCTION deorbit_ei_calc {
 	return ei_calc.
 }
 
-
-//guidance
-
-//new approach, hopefully more robust
-//simply calculate the angle between velocity vector and vector pointing to the target
-FUNCTION az_error {
-	PARAMETEr pos.
-	PARAMETER tgt_pos.
-	PARAMETER surfv.
-	
-	IF pos:ISTYPE("geocoordinates") {
-		SET pos TO pos2vec(pos).
-	}
-	IF tgt_pos:ISTYPE("geocoordinates") {
-		SET tgt_pos TO pos2vec(tgt_pos).
-	}
-
-		
-	//vector normal to vehicle vel and in the same plane as vehicle pos
-	//defines the "plane of velocity"
-	LOCAL n1 IS VXCL(surfv,pos):NORMALIZED.
-	
-	//vector pointing from vehicle pos to target, projected "in the plane of velocity"
-	LOCAL dr IS VXCL(n1,tgt_pos - pos):NORMALIZED.
-	
-	//clamp to -180 +180 range
-	RETURN signed_angle(
-		surfv:NORMALIZED,
-		dr,
-		n1,
-		0
-	).
-
-}
 
 
 

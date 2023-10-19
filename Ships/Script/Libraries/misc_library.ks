@@ -113,26 +113,28 @@ FUNCTION arrow {
       lab,
       scl,
       TRUE,
-      wdh
+      wdh/scl
     ).
 
 }
 
-//draw a vector  with label, by default its centered on the body and scaled to 2 times its length
+//draw a vector  with label, by default its centered on the body and scaled to 2.2x radius
 FUNCTION arrow_body {
 	PARAMETER vec.
 	PARAMETER lab.
-	PARAMETER scl IS 2.
+	PARAMETER scl IS 2.2.
 	PARAMETER wdh IS 0.5.
+	
+	LOCAL v_ IS vec:NORMALIZED*BODY:RADIUS.
 	
 	VECDRAW(
       SHIP:ORBIT:BODY:POSITION,
-      vec,
+      v_,
       RGB(1,0,0),
       lab,
       scl,
       TRUE,
-      wdh
+      wdh/scl
     ).
 
 }
@@ -155,28 +157,26 @@ FUNCTION arrow_ship {
 }
 
 
-//draw a vector centered on geolocation for target redesignation
-//scales with distance from ship for visibility
+//draw a vector centered on geolocation
 FUNCTION pos_arrow {
 	PARAMETER pos.
-	PARAMETEr stringlabel.
+	PARAMETER lab.
+	PARAMETER len IS 5000.
+	PARAMETER wdh IS 3.
 	
 	LOCAL start IS pos:POSITION.
 	LOCAL end IS (pos:POSITION - SHIP:ORBIT:BODY:POSITION).
 	
 	VECDRAW(
       start,//{return start.},
-      end:NORMALIZED*5000,//{return end.},
+      end:NORMALIZED*len,//{return end.},
       RGB(1,0,0),
-      stringlabel,
+      lab,
       1,
       TRUE,
-      3
+      wdh
     ).
-
 }
-
-
 
 //converts the universal clock in seconds
 FUNCTION utc_time_seconds {
@@ -197,34 +197,167 @@ FUNCTION local_time_seconds {
 
 
 //converts a time value into a hours,minutes,seconds string
+//declare function sectotime {
+//	parameter t.
+//	parameter space is " ".
+//	
+//	local string is "".
+//	if t<0 {
+//		set t to ABS(t).
+//		set string to string + "-".
+//	}
+//	if t<60 {
+//		set string to string + FLOOR(t) + space + "s".	
+//	}
+//	else {
+//		local minutes is FLOOR(t/60).
+//		if minutes<60 {
+//			local sec is FLOOR(t - minutes*60).
+//			set string to string + minutes + space + "m " + sec + space + "s".
+//		}
+//		else {
+//			local sec is FLOOR(t - minutes*60).	
+//			local hr is FLOOR(minutes/60).
+//			set minutes to minutes - hr*60.
+//			set string to string + hr + space + "h " + minutes + space + "m " + sec + space + "s".
+//		}
+//	}
+//	return string.
+//}
+
 declare function sectotime {
 	parameter t.
 	parameter space is " ".
 	
-	local string is "".
-	if t<0 {
-		set t to ABS(t).
-		set string to string + "-".
+	local t_local is t.
+	
+	local days is 0.
+	local hours is 0.
+	local mins is 0.
+	local secs is 0.
+	local sign_str is " ".
+	
+	if t_local<0 {
+		set sign_str to "-". 
+		set t_local to ABS(t_local).
 	}
-	if t<60 {
-		set string to string + FLOOR(t) + space + "s".	
+	
+	if (t_local > 86400) {
+		set days to floor(t_local/86400).
+		set t_local to t_local - 86400*days.
 	}
-	else {
-		local minutes is FLOOR(t/60).
-		if minutes<60 {
-			local sec is FLOOR(t - minutes*60).
-			set string to string + minutes + space + "m " + sec + space + "s".
-		}
-		else {
-			local sec is FLOOR(t - minutes*60).	
-			local hr is FLOOR(minutes/60).
-			set minutes to minutes - hr*60.
-			set string to string + hr + space + "h " + minutes + space + "m " + sec + space + "s".
-		}
+	
+	if (t_local > 3600) {
+		set hours to floor(t_local/3600).
+		set t_local to t_local - 3600*hours.
 	}
-	return string.
+	
+	if (t_local > 60) {
+		set mins to floor(t_local/60).
+		set t_local to t_local - 60*mins.
+	}
+	
+	set secs to floor(t_local).
+	
+	local day_str is "".
+	local hour_str is "".
+	local min_str is "".
+	local sec_str is "".
+	
+	if (days>0) {
+		set day_str to days + "d" + space.
+	}
+	
+	if (hours>0) {
+		set hour_str to hours + "h" + space.
+	}
+	
+	if (mins>0) {
+		set min_str to mins + "m" + space.
+	}
+	
+	set sec_str to secs + "s" + space.
+	
+	return sign_str + day_str + hour_str + min_str + sec_str.
+	
 }
 
+//converts a time value into a hours,minutes,seconds string with colon separators
+//full format prints zeros in every place
+declare function sectotime_simple {
+	parameter t.
+	parameter full_format is false.
+	
+	local t_local is t.
+	
+	local days is 0.
+	local hours is 0.
+	local mins is 0.
+	local secs is 0.
+	local sign_str is " ".
+	
+	if t_local<0 {
+		set sign_str to "-". 
+		set t_local to ABS(t_local).
+	}
+	
+	if (t_local > 86400) {
+		set days to floor(t_local/86400).
+		set t_local to t_local - 86400*days.
+	}
+	
+	if (t_local > 3600) {
+		set hours to floor(t_local/3600).
+		set t_local to t_local - 3600*hours.
+	}
+	
+	if (t_local > 60) {
+		set mins to floor(t_local/60).
+		set t_local to t_local - 60*mins.
+	}
+	
+	set secs to floor(t_local).
+	
+	
+	
+	local day_str is "".
+	local hour_str is "".
+	local min_str is "".
+	local sec_str is "".
+	
+	if (full_format OR days>0) {
+		set day_str to days + ":".
+		
+		if (days < 10) {
+			set day_str to "0" + day_str.
+		}
+	}
+	
+	if (full_format OR hours>0) {
+		set hour_str to hours + ":".
+		
+		if (hours < 10) {
+			set hour_str to "0" + hour_str.
+		}
+	}
+	
+	if (full_format OR mins>0) {
+		set min_str to mins + ":".
+		
+		if (mins < 10) {
+			set min_str to "0" + min_str.
+		}
+	}
+	
+	set sec_str to secs.
+	
+	if (secs < 10) {
+			set sec_str to "0" + sec_str.
+		}
+	
+	return sign_str + day_str + hour_str + min_str + sec_str.
+	
+}
 
 
 //select a random element from a list
@@ -291,6 +424,8 @@ FUNCTION average_value_factory {
 
 	local this is lexicon().
 	
+	local latest IS 0.
+	
 	this:add(
 			"numvalues", avgcount
 	).
@@ -309,6 +444,7 @@ FUNCTION average_value_factory {
 	
 	this:add("update", {
 		parameter newval.
+		set this["latest_value"] to newval.
 		this:list:push(newval).
 	}
 	).
@@ -329,6 +465,8 @@ FUNCTION average_value_factory {
 		return avg/len.
 	}
 	).
+	
+	this:add("latest_value", 0).
 
 	return this.
 }
@@ -375,7 +513,7 @@ FUNCTION warp_controller {
 	
 	LOCAL new_warp IS cur_warp.
 	
-	IF time_span > (3600 + final_wait) or time_span < 0 {
+	IF time_span > (3600 + final_wait) {
 		set new_warp to 4.
 	}
 	ELSE IF time_span > (400 + final_wait) {

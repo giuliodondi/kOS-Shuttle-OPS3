@@ -4,7 +4,184 @@ GLOBAL g0 IS 9.80665.
 
 //		vehicle performance functions
 
+// stg parameters needs to be compatible with the upfg vehicle struct 
 
+//calculates burn time for a constant thrust stage 
+FUNCTION const_f_t {
+	PARAMETER stg.
+
+	LOCAL red_flow IS stg["engines"]["flow"] * stg["throttle"].
+	RETURN stg["m_burn"]/red_flow.	
+}
+
+
+//calculates when the g limit will be violated and the vehicle mass at that moment
+//returns (0,0) if the g-lim is never reached
+FUNCTION glim_t_m {
+	PARAMETER stg.
+	local out is LIST(0,0).
+	
+	local mbreak is stg["engines"]["thrust"] * stg["Throttle"]/(stg["glim"]*g0).
+	IF mbreak > stg["m_final"]  {
+		SET out[1] TO mbreak.
+		SET out[0] TO (stg["m_initial"] - mbreak)/(stg["engines"]["flow"] * stg["Throttle"]).
+	}
+	
+	RETURN out.
+}
+
+//given a constant g stage calculates the burn time until the lower throttle limit will be reached and the vehicle mass at that moment
+FUNCTION const_G_t_m {
+	PARAMETER stg.
+	local out is LIST(0,0).
+	
+	//calculate mass of the vehicle at throttle violation 
+	LOCAL mviol IS stg["engines"]["thrust"] * stg["minThrottle"]/( stg["glim"] * g0 ).
+	
+	//initialise final mass to stage final mass
+	LOCAL m_final IS stg["m_final"].
+	
+	IF mviol > m_final  {
+		SET out[1] TO mviol.
+		SET m_final TO mviol.
+	}
+	
+	local red_isp is stg["engines"]["isp"]/stg["glim"].
+		
+	//calculate burn time until we reach the final mass 
+	SET out[0] TO red_isp * LN( stg["m_initial"]/m_final ).
+		
+	RETURN out.
+}
+
+
+//calculates new stage burn time  as a sum of constant g burn time
+//and constant t burn time at minimum throttle
+FUNCTION glim_stg_time {
+	PARAMETER stg_lex.
+	
+	local glim is stg_lex["glim"].
+	LOCAL tt Is 0.
+	
+	//compute burn time until  we deplete the stage.	
+	
+	LOCAL maxtime IS (stg_lex["engines"]["isp"]/glim) * LN(1 + stg_lex["m_burn"]/stg_lex["m_final"] ).
+
+	//compute burn time until  we reach minimum throttle.	
+	LOCAL limtime IS - stg_lex["engines"]["isp"]/glim * LN(stg_lex["minThrottle"]).
+	LOCAL constThrustTime IS 0.
+	IF limtime < maxtime {
+		//	First we calculate mass of the fuel burned until violation
+		LOCAL burnedFuel IS stg_lex["m_initial"]*(1 - CONSTANT:E^(-glim*limtime/stg_lex["engines"]["isp"])).
+		//	Then, time it will take to burn the rest on constant minimum throttle
+		SET constThrustTime TO (stg_lex["m_burn"] - burnedFuel  )/(stg_lex["minThrottle"]*stg_lex["engines"]["flow"]).
+		SET tt TO limtime + constThrustTime.
+	}
+	ELSE {
+		SET tt TO maxtime.
+	}
+	SET stg_lex["throt_mult"] TO glim*g0/stg_lex["engines"]["thrust"].
+	
+	RETURN tt.								
+}
+
+
+FUNCTION get_stg_tanks_res {
+
+	//climb the part tree upwards until we find the part with all the resources
+	FUNCTION parts_tree {
+		parameter part0.
+		parameter partlist.
+		parameter resnameslist.
+	
+		LOCAL parentpart IS part0.
+		local breakflag IS FALSE.
+		UNTIL FALSE {
+		
+			LOCAL partresnames IS LIST().
+			FOR partres IN parentpart:RESOURCES {
+				partresnames:ADD(partres:NAME).
+			}
+			
+			LOCAL foundres IS TRUE.
+			FOR resname IN resnameslist {
+				SET foundres TO (foundres AND partresnames:CONTAINS(resname)).
+			}
+			
+			IF foundres OR parentpart=CORE:PART OR parentpart=SHIP:ROOTPART { 
+				BREAK.
+			}
+			
+			SET parentpart TO parentpart:PARENT.
+		}
+		
+		IF NOT partlist:CONTAINS(parentpart) {
+			partlist:ADD( parentpart ).
+		}
+		
+		return partlist.
+	}
+
+
+	PARAMETER stg.
+	
+	local reslex is LEXICON().
+	local tanklist IS LIST().
+	
+	list ENGINES in all_eng.
+	FOR e IN all_eng {
+		IF e:ISTYPE("engine") {
+			IF e:IGNITION {
+				
+				LOCAL eng_res IS e:consumedresources:VALUES.
+				LOCAL eng_res_names IS LIST().
+			
+				FOR res IN eng_res {
+					eng_res_names:ADD(res:name).
+					IF NOT reslex:HASKEY(res:name) {
+						reslex:ADD(res:name, res).
+					}
+				}
+				
+				SET tanklist TO parts_tree(e:PARENT,tanklist,eng_res_names).
+			}
+		}
+	}
+	
+	stg:ADD("resources", reslex).
+	
+	//ignore fuel ducts if already found parts
+	IF tanklist:LENGTH=0 {
+		LOCAL duct_list IS SHIP:PARTSDUBBED("fuelLine").
+		FOR d IN duct_list {
+			SET tanklist TO parts_tree(d:PARENT,tanklist,reslex:KEYS).
+		}
+	}
+	stg:ADD("tankparts", tanklist).	
+	
+}
+
+FUNCTION get_prop_mass {
+	PARAMETER stg.
+	
+	local tanklist is stg["tankparts"].
+	local reslex is stg["resources"].
+	local prop_mass IS 0.
+	
+	FOR tk IN tanklist {
+		FOR tkres In tk:RESOURCES {
+			FOR res IN reslex:VALUES {
+				IF tkres:NAME = res:NAME {
+					set prop_mass TO prop_mass + tkres:amount * res:DENSITY.
+				}
+		
+			}
+		}
+	}
+	
+	set prop_mass to prop_mass*1000.
+    RETURN prop_mass.
+}
 
 //measures current total engine thrust vector and isp of running engines
 
@@ -20,11 +197,17 @@ FUNCTION get_current_thrust_isp {
 			IF e:IGNITION {
 				LOCAL e_thr IS (e:THRUST * 1000).
 				SET thr TO thr + e_thr.
-				SET isp_ TO isp_ + e:vacuumisp*e_thr.
+				SET isp_ TO isp_ + e:ISP*e_thr.
 				set thrvec to thrvec -e:POSITION:NORMALIZED*e_thr.
 			}
 		}
 	}	
+	
+	if (thr=0) {
+		SET isp_ TO 0.
+	} ELSE {
+		SET isp_ TO isp_/thr.
+	}
 	
 	RETURN LIST(thrvec, isp_).
 }
@@ -41,18 +224,24 @@ FUNCTION get_max_thrust_isp{
 	FOR e IN all_eng {
 		IF e:ISTYPE("engine") {
 			IF e:IGNITION {
-				LOCAL e_thr IS (e:AVAILABLETHRUST * 1000).
+				LOCAL e_thr IS (e:MAXTHRUSTAT(0) * 1000).
 				SET thr TO thr + e_thr.
-				SET isp_ TO isp_ + e:vacuumisp*e_thr.
+				SET isp_ TO isp_ + e:ISPAT(0)*e_thr.
 				set thrvec to thrvec -e:POSITION:NORMALIZED*e_thr.
 			}
 		}
 	}	
 	
+	if (thr=0) {
+		SET isp_ TO 0.
+	} ELSE {
+		SET isp_ TO isp_/thr.
+	}
+	
 	RETURN LIST(thrvec, isp_).
 }
 
-//time to burn at constant thrust given engines
+//time to burn at constant thrust given active engines
 FUNCTION burnDT {
 	PARAMETER dV.
 	

@@ -37,6 +37,19 @@ FUNCTION surfacevel {
 	RETURN orbvel -  vcrs(BODY:angularvel, pos).
 }
 
+//converts position and velocity into vertical speed
+FUNCTION hdot {
+	PARAMETER vel.
+	PARAMETER pos.
+
+	RETURN VDOT(pos:NORMALIZED,vel).
+}
+
+
+//get gravitational acceleration
+FUNCTION bodygravacc {
+	RETURN BODY:MU/(BODY:RADIUS^2).
+}
 
 
 
@@ -98,6 +111,54 @@ FUNCTION shift_pos {
 	RETURN vec2pos(out).
 
 
+}
+
+
+//given current position, target position, and current vleocity, calculate the azimuth error
+//simply calculate the angle between velocity vector and vector pointing to the target
+FUNCTION az_error {
+	PARAMETEr pos.
+	PARAMETER tgt_pos.
+	PARAMETER surfv.
+	
+	IF pos:ISTYPE("geocoordinates") {
+		SET pos TO pos2vec(pos).
+	}
+	IF tgt_pos:ISTYPE("geocoordinates") {
+		SET tgt_pos TO pos2vec(tgt_pos).
+	}
+
+		
+	//vector normal to vehicle vel and in the same plane as vehicle pos
+	//defines the "plane of velocity"
+	LOCAL n1 IS VXCL(surfv,pos):NORMALIZED.
+	
+	//vector pointing from vehicle pos to target, projected "in the plane of velocity"
+	LOCAL dr IS VXCL(n1,tgt_pos - pos):NORMALIZED.
+	
+	//clamp to -180 +180 range
+	RETURN signed_angle(
+		surfv:NORMALIZED,
+		dr,
+		n1,
+		0
+	).
+}
+
+// converts azimuth error into distance error given distance, using spherical trig
+FUNCTION cross_error {
+	PARAMETEr pos.
+	PARAMETER tgt_pos.
+	PARAMETER surfv.
+	PARAMETER  _range. //this is the c side
+	
+	//this is the B spherical angle
+	LOCAL az_err IS az_error(pos,tgt_pos,surfv).
+	
+	LOCAL p2 IS 180/((SHIP:ORBIT:BODY:RADIUS/1000)*CONSTANT:PI).
+	
+	RETURN get_b_cBB(_range*p2,az_err)/p2.
+	
 }
 
 
@@ -263,6 +324,22 @@ FUNCTION get_orbit_azimuth {
 
 //ORBITAL MECHANICS FUNCTIONS
 
+// compute sma given ap and pe in kilometres
+FUNCTION orbit_appe_sma {
+	PARAMETER ap_.
+	PARAMETER pe_.
+	
+	return (ap_*1000 + pe_*1000 + 2*BODY:RADIUS)/2.
+}
+
+// compute eccentricity given ap and pe in kilometers
+FUNCTION orbit_appe_ecc {
+	PARAMETER ap_.
+	PARAMETER pe_.
+	
+	RETURN (ap_*1000 - pe_*1000) / (ap_*1000 + pe_*1000 + 2*BODY:RADIUS).
+
+}
 
 //computes time taken from periapsis to given true anomaly
 //for differences of true anomalies call twice and subtract times
@@ -333,19 +410,20 @@ function orbit_alt_eta {
 	parameter sma.
 	parameter ecc.
 	
+	IF (ecc = 0) {
+		RETURN 0.
+	}
+	
 	LOCAL eta_ IS (sma * (1 - ecc^2) / h - 1) / ecc.
 	
-	RETURN ARCCOS(eta_).
+	RETURN ARCCOS(limitarg(eta_)).
 }
 	
-//calculates fpa at altitude
-//altitude must be measured from the body centre
-function orbit_alt_fpa {
-	parameter h.
+//calculates fpa at given eta
+function orbit_eta_fpa {
+	parameter eta_.
 	parameter sma.
 	parameter ecc.
-	
-	LOCAL eta_ IS orbit_alt_eta(h, sma, ecc).
 	
 	LOCAL gamma IS ecc * SIN(eta_) / (1 + ecc * COS(eta_) ).
 	
@@ -363,6 +441,7 @@ FUNCTION orbit_eta_alt {
 	return sma*(1 - ecc^2)/(1 + ecc*COS(eta_)).
 
 }
+
 
 
 //VEHICLE-SPECIFIC FUNCTIONS
@@ -496,3 +575,157 @@ function compass_for {
 	
 }
 
+
+
+
+// TARGETING FUNCTIONS
+
+FUNCTION targetLANvec {
+	PARAMETER tgtLAN.
+	
+	return rodrigues(SOLARPRIMEVECTOR, V(0,1,0), - tgtLAN).
+}
+
+FUNCTION targetPerivec {
+	PARAMETER tgtIncl.
+	PARAMETER tgtLAN.
+	PARAMETER tgtPeriarg.
+	
+	LOCAL lanvec IS targetLANvec(tgtLAN).
+	LOCAL normvec IS targetNormal(tgtIncl, tgtLAN).
+	
+	RETURN rodrigues(lanvec, normvec, -tgtPeriarg).
+
+}
+
+//orbital plane vector given inclination and lan 
+FUNCTION targetNormal {
+	PARAMETER tgtIncl.
+	PARAMETER tgtLAN.
+	
+	//LOCAL highPoint IS rodrigues(SOLARPRIMEVECTOR, V(0,1,0), 90 - tgtLAN).
+	//LOCAL rotAxis IS V(-highPoint:Z, highPoint:Y, highPoint:X).
+	//RETURN rodrigues(highPoint, rotAxis, 90-tgtIncl):NORMALIZED.
+	
+	LOCAL lanvec IS targetLANvec(tgtLAN).
+	
+	return rodrigues(V(0,1,0), lanvec, -tgtIncl).
+}
+
+//	Ascending node vector of the orbit passing right over the launch site
+FUNCTION node_vector_overhead {
+	PARAMETER tgtIncl.
+	PARAMETER southerly.
+	
+	LOCAL shiplngvec IS VXCL(V(0,1,0), -SHIP:ORBIT:BODY:POSITION):NORMALIZED.
+	
+	LOCAL retro IS (tgtIncl >= 90).
+	IF retro {
+		SET tgtIncl TO 180 - tgtIncl.
+	}
+	
+	LOCAL dlng IS get_a_bBB(SHIP:GEOPOSITION:LAT, tgtIncl).
+	
+	IF (southerly) {
+		SET dlng TO fixangle(180-dlng).
+	}
+	
+	IF (retro) {
+		SET dlng TO fixangle(360-dlng).
+	}
+	
+	return rodrigues(shiplngvec, V(0,1,0), dlng).
+}
+
+//calculates the lan of an orbit overhead a certain time in the future
+FUNCTION LAN_orbit_overhead {
+	PARAMETER tgtIncl.
+	PARAMETER southerly.
+	PARAMETER time_for.
+
+	LOCAL currentNode IS node_vector_overhead(tgtIncl, southerly).
+	
+	//arrow_body(SOLARPRIMEVECTOR, "prime").
+	//arrow_body(currentNode, "currentNode").
+	
+	LOCAL currentLan IS signed_angle(currentNode, SOLARPRIMEVECTOR, V(0,1,0), 1).
+	
+	RETURN currentLan + time_for * 360 / SHIP:ORBIT:BODY:ROTATIONPERIOD.
+	 
+}
+
+//	Time to next launch opportunity in given direction
+FUNCTION orbitInterceptTime {
+	PARAMETER tgtIncl.
+	PARAMETER tgtLAN.
+	PARAMETER southerly.
+	
+	//	lan vector of the orbit overhead right now
+	LOCAL nodevec_now IS node_vector_overhead(tgtIncl, southerly).
+	
+	//lan vector of the target orbit 
+	LOCAL nodevec_tgt IS targetLANvec(tgtLAN).
+	
+	//arrow_body(nodevec_now, "now").
+	//arrow_body(nodevec_tgt, "tgt").
+	
+	LOCAL dlan IS signed_angle(nodevec_tgt, nodevec_now, V(0,1,0), 1).
+	
+	RETURN dlan * SHIP:ORBIT:BODY:ROTATIONPERIOD / 360.
+
+}
+
+//	Launch azimuth to a given orbit
+FUNCTION launchAzimuth {
+	PARAMETER tgtIncl.
+	PARAMETER tgtVel.
+	PARAMETER southerly.
+	PARAMETER override_az_limits IS FALSE.
+
+	//	Expects global variables "target_orbit" as lexicons
+	LOCAL shippos IS SHIP:GEOPOSITION.
+	LOCAL shiplat IS shippos:LAT.
+	
+	LOCAL Binertial IS get_orbit_azimuth(tgtIncl, shiplat, southerly).
+	
+	//get launch azimuth angle wrt due east=0
+	LOCAL Vbody IS (2*CONSTANT:PI*SHIP:BODY:RADIUS/SHIP:BODY:ROTATIONPERIOD)*COS(shiplat).
+	LOCAL VrotX IS tgtVel*SIN(Binertial)-Vbody.
+	LOCAL VrotY IS tgtVel*COS(Binertial).
+	LOCAL azimuth IS ARCTAN2(VrotY, VrotX).
+	
+	//azimuth is the angle wrt the due east direction
+	//transform it into an azimuth wrt the north direction
+	//this will subtract from 90° if it's a positive angle, due north, and add to 90° if it's due south. wrap around 360°
+	LOCAL azimuth IS fixangle(90 - azimuth).
+	
+	IF (NOT override_az_limits) {
+		//implement range azimuth limitation
+		//if the launchsite is within 50km of a known site
+		//apply its range restrictions
+		LOCAL site_azrange IS LEXICON(
+							"KSC",LEXICON(
+									"position",LATLNG(28.61938,-80.70092),
+									"min_az",35,
+									"max_az",120
+							),
+							"Vandenberg",LEXICON(
+									"position",LATLNG(34.67974,-120.53102),
+									"min_az",147,
+									"max_az",220
+							)
+		
+		).
+		
+		FOR s IN site_azrange:VALUES{
+			LOCAL sitepos IS s["position"].
+			
+			IF downrangedist(sitepos,shippos) < 50 {
+				SET azimuth TO CLAMP(azimuth, s["min_az"], s["max_az"]).
+				BREAK.
+			}
+		}
+	}
+	
+	RETURN azimuth.
+}
