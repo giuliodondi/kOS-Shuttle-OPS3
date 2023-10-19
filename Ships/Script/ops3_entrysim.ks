@@ -23,7 +23,7 @@ GLOBAL quit_program IS FALSE.
 //initialise touchdown points for all landing sites
 define_td_points().
 
-make_main_GUI().
+make_main_entry_gui().
 
 //ths lexicon contains all the necessary guidance objects 
 IF (DEFINED tgtrwy) {UNSET tgtrwy.}
