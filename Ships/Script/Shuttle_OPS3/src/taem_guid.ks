@@ -17,11 +17,19 @@ mach
 qbar 	//psf dynamic pressure
 cosphi 	//cosine of roll 
 secth 	//secant of pitch 
-weight 	//lb-mass mass 
+weight 	//slugs mass 
 tas 		//ft/s true airspeed
+ydot		//fps y-component of velocity in runway coords 
 gamma 	//deg earth relative fpa  
 gi_change 	//flag indicating desired glideslope 
-mep 			//flag indicating left handed hac 
+rturn		//ft hac radius 
+psha			//deg hac turn angle 
+ovhd  		// ovhd/straight-in flag , it's a 2-elem list, one for each value of rwid 
+orahac		//automatic downmode inhibit flag , it's a 2-elem list, one for each value of rwid 
+ysgn		//r/l cone indicator (i.e. left/right hac ??)
+rwid		//runway id flag  (	1 for primary, 2 for secondary)
+vtogl	//fps velocity to toggle ovhd/stri hac status (to simulate manual hac toggle, initlaised to zero)
+
 
 
 //outputs 
@@ -34,11 +42,13 @@ emep 	//ft energy/weight at which the mep is selected
 eow 		//ft energy/weight
 es 		//ft energy/weight at which the s-turn is initiated 
 rpred 	//ft predicted range to threshold 
-phase 	//phase counter 
+iphase 	//phase counter 
 tg_end 	//termination flag 
 eas_cmd 	//kn equivalent airspeed commanded 
 herror 	//ft altitude error
 qbarf 	//psf filtered dynamic press 
+ohalrt	//taem automatic downmode flag 
+mep 		//min entry point flag 
 
 
 
@@ -154,17 +164,188 @@ global taemg_constants is lexicon (
 									"yerrlm", 120,				//deg limit on yerrc 
 									"y_error", 1000,			//ft xrange err bound 
 									"y_range1", 0.18,			//xrange coeff 
-									"y_range2", 800			//ft xrange coeff 
+									"y_range2", 800,			//ft xrange coeff 
+									
+									//i think the following constants were added once OTT was implemented
+									"dr4", 2000,			//ft range from hac for phase 3
+									"hmep", LISt(0, 6000, 6000),	//ft mep altitude
+									"demxsb", 10000,			//ft max eow error for speedbrakes out 		
+									"dhoh1", 0.11,			//alt ref dev/spiral slope
+									"dhoh2", 35705,			//ft alt ref dev/spiral range bias
+									"dhoh3", 6000,			//ft alt ref dev/spiral max shift of altitude
+									"eqlowu", 85000,			//ft upper eow of region for OVHD that qhat qbmxnz is lowered
+									"eshfmx", 20000,			//ft max shift of en target at hac 
+									"phils", -300,			//deg constant used to calculated philimit
+									"pewrr", 0.52,			//partial of en with respect to range at r2max 
+									"pqbwrr", 0.006,			//psf / ft partial of qbar with respect to range with constraints of e=en and mach = phim 
+									"pshars", 270,				//deg  psha reset value 
+									"psrf", 90,				//deg max psha for adjusting rf 
+									"psohal", 200, 			//deg min psha to issue ohalrt 
+									"psohqb", 0, 			//deg min psha for which qbmxnz is lowered 
+									"psstrn", 200			//deg max psha for s-turn 
+									"qbref2", LISt(0, 185, 185),		//psf qbref at r2max 
+									"qbmsl1", -0.0288355,			//psf/slug slope of mxqbwt with mach 
+									"qbmsl2", -0.00570829,			//psf/slug slope of mxqbwt with mach 
+									"qbwt1", -0.0233521,			//psf/slug constant for computing qbll
+									"qbwt2", -0.01902763,			//psf/slug constant for computing qbll
+									"qbwt3", -0.03113613,			//psf/slug constant for computing qbll
+									"qmach1", 0.89,				//mach breakpoint for mxqbwt 
+									"qmach2", 1.15,				//mach breakpoint for mxqbwt
+									"rfmn", 5000,				//ft min hac spiral radius on final 
+									"rfmx", 14000,				//ft max hac spiral radius on final 
+									"rf0", 14000,				//ft initial hac spiral radius on final 
+									"dnzcdl", 0.1,				//g/sec nzc rate lim 
+									"drfk", -3,					//rf adjust gain (-0.8/tan 15°)
+									"dsblls", 650,				//deg constant for dsbcll
+									"dsbuls", -336,				//deg constant for dsbcul
+									"emohc1", LISt(0, -3894, -3894), 		//ft constant eow used ot compute emnoh
+									"emohc2", LISt(0, 0.51464, 0.51464), 		//slope of emnoh with range 
+									"enbias", 0, 					//ft eow bias for s-turn off 
+									"eqlowl", 60000,			//ft lower eow of region for ovhd that wbmxnz is lowered 
+									"rmoh", 273500,				//ft min rpred to issue ohalrt 
+									"r1", 0, 			//ft/deg linear coeff of hac spiral 
+									"r2", 0.093, 			//ft/deg quadratic coeff of hac spiral 
+									"r2max", 115000,			//ft max range on hac to be subsonic with nominal qbar 
+									"philm4", 60, 				//deg bank lim for large bank command 
+									"philmc", 100, 				//deg bank lim for large bank command 
+									"qbmxs1", -400,				//psf slope of qbmxnz with mach < qbm1 
+									"hmin3", 7000				//min altitude for prefinal
+).
+
+
+//internal variables
+global taemg_internal is lexicon(
+								"dnzc", 0, 
+								"dnzcl", 0, 
+								"dnzll", 0,
+								"dnzul", 0,
+								"dsbi", 0,	//integral component of delta speedbrake cmd
+								"iphase", 0,	//phase counter 
+								"ireset", FALSE,
+								"isr",,
+								"mep", FALSE,	//minimum entry point flag
+								"ohalrt", FALSE,		//one-time flag for  automatic downmoding to straight-in hac
+								"ovhd", TRUE,		//overhead flag 
+								"qbarf", 0,	//filtered dynamic press
+								"qbd",,
+								"philm",,	//
+								"rf",,
+								"rf0",,
+								"rwid",0,
+								"rwid0", 0,
+								"tg_end", FALSE,
+
+
+).
+
+taemg_constants[""]
+taemg_input[""]
+
+SET taemg_internal[""] TO 
+
+res180 -> unfixangle
+
+function tgexec {
+	PARAMETER taemg_input.
+
+	if (taemg_internal["ireset"] = TRUE OR taemg_internal["rwid"] <> taemg_internal["rwid0"]) {
+		tginit(taemg_input).
+	}
+	
+	tgxhac(taemg_input).
+	
+	gtp(taemg_input).
+	
+	tgcomp(taemg_input).
+	
+	tgtran(taemg_input).
+	
+	tgnzc(taemg_input).
+
+	tgsbc(taemg_input).
+	
+	tgphic(taemg_input).
+
+	//i want to return a new lexicon of internal variables
+	return lexicon(
+	
+	).
+
+}
+
+FUNCTION tginit {
+	PARAMETER taemg_input.
+	
+	IF (taemg_internal["ireset"] = TRUE) {
+		SET taemg_internal["rwid0"] TO taemg_internal["rwid"].
+	}
+	
+	SET taemg_internal["iphase"] TO 1.	
+	
+	SET taemg_internal["isr"] TO taemg_constants["rftc"] / taemg_constants["dtg"].
+	
+	SET taemg_internal["rf"] TO taemg_internal["rf0"].
+	
+	SET taemg_internal["mep"] TO FALSE.
+	
+	SET taemg_internal["ohalrt"] TO FALSE.
+	
+	SET taemg_internal["dsbi"] TO FALSE.
+	
+	SET taemg_internal["philm"] TO taemg_constants["philm1"].
+	
+	
+	SET taemg_internal["dnzul"] TO taemg_constants["dnzuc1"]. 
+	SET taemg_internal["dnzll"] TO taemg_constants["dnzuc1"]. 
+	
+	SET taemg_internal["qbarf"] TO taemg_input["qbar"].
+	
+	SET taemg_input["qbd"] TO 0.
+	
+	SET taemg_input["tg_end"] TO FALSE.
+	
+	SET taemg_internal["ireset"] TO FALSE.
+
+}
 									
 									
+FUNCTION tgxhac {
+	PARAMETER taemg_input.	
+	
+	
+
+}	
 									
+	
+FUNCTION gtp {
+	PARAMETER taemg_input.	
+
+}	
+
+FUNCTION tgcomp {
+	PARAMETER taemg_input.	
+
+}	
+
+FUNCTION tgtran {
+	PARAMETER taemg_input.	
+
+}		
+	
+FUNCTION tgnzc {
+	PARAMETER taemg_input.	
+
+}		
 									
-									
-									
-									
-									
-									
-									
+FUNCTION tgsbc {
+	PARAMETER taemg_input.	
+
+}	
+								
+FUNCTION tgphic {
+	PARAMETER taemg_input.	
+
+}								
 									
 									
 									
