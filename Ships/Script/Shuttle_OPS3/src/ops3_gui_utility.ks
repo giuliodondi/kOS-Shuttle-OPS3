@@ -269,55 +269,58 @@ FUNCTION make_main_entry_gui {
 	
 	
 
-	GLOBAL select_sidebox IS popup_box:ADDHLAYOUT().
-	SET select_sidebox:STYLE:WIDTH TO 175.
-	//SET select_sidebox:STYLE:ALIGN TO "right".
-	GLOBAL select_side_text IS select_sidebox:ADDLABEL("<size=15>HAC Position : </size>").
-	GLOBAL select_side IS select_sidebox:addpopupmenu().
-	SET select_side:STYLE:WIDTH TO 60.
-	SET select_side:STYLE:HEIGHT TO 25.
-	SET select_side:STYLE:ALIGN TO "center".
-	select_side:addoption("Right" ).
-	select_side:addoption("Left" ).
+	GLOBAL select_apchbox IS popup_box:ADDHLAYOUT().
+	SET select_apchbox:STYLE:WIDTH TO 175.
+	//SET select_apchbox:STYLE:ALIGN TO "right".
+	GLOBAL select_apch_text IS select_apchbox:ADDLABEL("<size=15>Apch mode : </size>").
+	GLOBAL select_apch IS select_apchbox:addpopupmenu().
+	SET select_apch:STYLE:WIDTH TO 60.
+	SET select_apch:STYLE:HEIGHT TO 25.
+	SET select_apch:STYLE:ALIGN TO "center".
+	select_apch:addoption("Overhead").
+	select_apch:addoption("Straight").
 	
-	//SET select_side:ONCHANGE to { 
-	//	PARAMETER side.	
-	//	SET tgtrwy["hac_side"] TO side.
-	//	define_hac(SHIP:GEOPOSITION,tgtrwy,vehicle_params).
-	//}.
-	//SET select_rwy:ONCHANGE to { 
-	//	PARAMETER rwy.	
-	//	
-	//	LOCAL newsite IS ldgsiteslex[select_tgt:VALUE].
-	//	
-	//	SET tgtrwy["heading"] TO newsite["rwys"][rwy]["heading"].
-	//	SET tgtrwy["td_pt"] TO newsite["rwys"][rwy]["td_pt"].
-	//	
-	//	select_opposite_hac().
-	//	
-	//	define_hac(SHIP:GEOPOSITION,tgtrwy,vehicle_params).
-	//}.
-	//SET select_tgt:ONCHANGE to {
-	//	PARAMETER lex_key.
-	//	
-	//	LOCAL newsite IS ldgsiteslex[lex_key].
-	//	
-	//	SET tgtrwy TO refresh_runway_lex(newsite).
-	//	
-	//	select_rwy:CLEAR.
-	//	FOR rwy IN newsite["rwys"]:KEYS {
-	//		select_rwy:addoption(rwy).
-	//	}	
-	//	
-	//	select_random_rwy().
-	//	
-	//	SET tgtrwy["heading"] TO newsite["rwys"][select_rwy:VALUE]["heading"].
-	//	SET tgtrwy["td_pt"] TO newsite["rwys"][select_rwy:VALUE]["td_pt"].
-	//	SET tgtrwy["hac_side"] TO select_side:VALUE.
-	//	define_hac(SHIP:GEOPOSITION,tgtrwy,vehicle_params).
-	//	
-	//	reset_hud_bg_brightness().
-	//}.	
+	SET select_apch:ONCHANGE to { 
+		PARAMETER mode_.	
+		SET tgtrwy["overhead"] TO is_apch_overhead().
+	}.
+	
+	SET select_rwy:ONCHANGE to { 
+		PARAMETER rwy.	
+		
+		LOCAL newsite IS ldgsiteslex[select_tgt:VALUE].
+		
+		reset_overhead_apch().
+		
+		SET tgtrwy["heading"] TO newsite["rwys"][rwy]["heading"].
+		SET tgtrwy["td_pt"] TO newsite["rwys"][rwy]["td_pt"].
+		SET tgtrwy["end_pt"] TO newsite["rwys"][rwy]["end_pt"].
+		SET tgtrwy["overhead"] TO is_apch_overhead().
+	}.
+	
+	SET select_tgt:ONCHANGE to {
+		PARAMETER lex_key.
+		
+		LOCAL newsite IS ldgsiteslex[lex_key].
+		
+		SET tgtrwy TO refresh_runway_lex(newsite).
+		
+		select_rwy:CLEAR.
+		FOR rwy IN newsite["rwys"]:KEYS {
+			select_rwy:addoption(rwy).
+		}	
+		
+		select_random_rwy().
+		
+		reset_overhead_apch().
+		
+		SET tgtrwy["heading"] TO newsite["rwys"][rwy]["heading"].
+		SET tgtrwy["td_pt"] TO newsite["rwys"][rwy]["td_pt"].
+		SET tgtrwy["end_pt"] TO newsite["rwys"][rwy]["end_pt"].
+		SET tgtrwy["overhead"] TO is_apch_overhead().
+
+		reset_hud_bg_brightness().
+	}.	
 	
 	
 	GLOBAL toggles_box IS main_entry_gui:ADDHLAYOUT().
@@ -341,6 +344,18 @@ FUNCTION make_main_entry_gui {
 	main_entry_gui:SHOW().
 }
 
+FUNCTION reset_overhead_apch {
+	SET select_apch:INDEX TO 0.
+}
+
+FUNCTION is_apch_overhead {
+	
+	IF (select_apch:VALUE = "Overhead") {
+		RETURN TRUE.
+	} ELSe IF (select_apch:VALUE = "Straight") {
+		RETURN FALSE.
+	}
+}
 
 FUNCTION close_global_GUI {
 	main_entry_gui:HIDE().

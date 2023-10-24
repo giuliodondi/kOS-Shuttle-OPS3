@@ -9,10 +9,12 @@ FUNCTION define_td_points {
 	FUNCTION add_runway_tdpt {
 		PARAMETER site.
 		PARAMETER bng.
-		PARAMETER dist.
+		PARAMETER end_dist.
+		PARAMETER td_dist.
 
 		LOCAL rwy_lexicon IS LEXICON(
 											"heading",0,
+											"end_pt",LATLNG(0,0)
 											"td_pt",LATLNG(0,0)
 								).
 								
@@ -21,7 +23,8 @@ FUNCTION define_td_points {
 		
 		local rwy_number IS "" + ROUND(bng/10,0).
 		SET rwy_lexicon["heading"] TO bng.
-		SET rwy_lexicon["td_pt"] TO new_position(pos,dist,fixangle(bng - 180)).
+		SET rwy_lexicon["end_pt"] TO new_position(pos,end_dist,fixangle(bng - 180)).
+		SET rwy_lexicon["td_pt"] TO new_position(pos,td_dist,fixangle(bng - 180)).
 		
 		
 		site["rwys"]:ADD(rwy_number,rwy_lexicon).
@@ -33,23 +36,23 @@ FUNCTION define_td_points {
 		LOCAL site IS ldgsiteslex[ldgsiteslex:KEYS[k]].
 	
 	
-		LOCAL dist IS site["length"].
+		LOCAL end_dist IS site["length"].
 		LOCAL head IS site["heading"].
 		
 		site:ADD("rwys",LEXICON()).
 		
 		//convert in kilometres
-		SET dist TO dist/1000.
+		SET end_dist TO end_dist/1000.
 		
 		//multiply by a hard-coded value identifying the touchdown marks from the 
 		//runway halfway point
-		SET dist TO dist*0.39.
+		SET td_dist TO end_dist*0.39.
 		
-		SET site TO add_runway_tdpt(site,head,dist).
+		SET site TO add_runway_tdpt(site,head,end_dist,td_dist).
 		
 		//now get the touchdown point for the opposite side of the runway
 		SET head TO fixangle(head + 180).
-		SET site TO add_runway_tdpt(site,head,dist).
+		SET site TO add_runway_tdpt(site,head,end_dist,td_dist).
 		
 		SET ldgsiteslex[ldgsiteslex:KEYS[k]] TO site.
 
@@ -68,17 +71,13 @@ FUNCTION refresh_runway_lex {
 							"elevation",tgtsite["elevation"],
 							"heading",tgtsite["heading"],
 							"length",tgtsite["length"],
+							"end_pt",LATLNG(0,0),
 							"td_pt",LATLNG(0,0),
 							"glideslope",0,
-							"hac_side","left",	//placeholder choice
+							"overhead",TRUE,	//default choice
 							"aiming_pt",LATLNG(0,0),
 							"acq_guid_pt",LATLNG(0,0),
 							"hac",LATLNG(0,0),
-							"hac_entry",LATLNG(0,0),
-							"hac_entry_angle",0,
-							"hac_exit",LATLNG(0,0),
-							"hac_angle",0,
-							"upvec",V(0,0,0)
 
 	).
 }

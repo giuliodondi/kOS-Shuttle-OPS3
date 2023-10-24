@@ -4,51 +4,64 @@ GLOBAL mt2ft IS 3.28084.		// ft/mt
 GLOBAL km2nmi IS 0.539957.	// nmi/km
 
 //input variables
-h		//ft height above rwy
-hdot		//ft/s vert speed
-x		//ft x component on runway coord
-y		//ft y component on runway coord
-surfv 		//ft/s earth relative velocity mag 			//was v
-surfv_h		//ft/s earth relative velocity horizintal component 				//was vh
-xdot 	//ft/s component along x direction of earth velocity in runway coord
-ydot 	//ft/s component along y direction of earth velocity in runway coord
-psd 		//deg course wrt runway centerline 
-mach 
-qbar 	//psf dynamic pressure
-cosphi 	//cosine of roll 
-secth 	//secant of pitch 
-weight 	//slugs mass 
-tas 		//ft/s true airspeed
-ydot		//fps y-component of velocity in runway coords 
-gamma 	//deg earth relative fpa  
-gi_change 	//flag indicating desired glideslope based on headwind (ignore it)
-rturn		//ft hac radius 
-psha			//deg hac turn angle 
-ovhd  		// ovhd/straight-in flag , it's a 2-elem list, one for each value of rwid 
-orahac		//automatic downmode inhibit flag , it's a 2-elem list, one for each value of rwid 
-rwid		//runway id flag  (	1 for primary, 2 for secondary)
-vtogl	//fps velocity to toggle ovhd/stri hac status (to simulate manual hac toggle, initlaised to zero)
+//		h		//ft height above rwy
+//		hdot		//ft/s vert speed
+//		x		//ft x component on runway coord
+//		y		//ft y component on runway coord
+//		surfv 		//ft/s earth relative velocity mag 			//was v
+//		surfv_h		//ft/s earth relative velocity horizintal component 				//was vh
+//		xdot 	//ft/s component along x direction of earth velocity in runway coord
+//		ydot 	//ft/s component along y direction of earth velocity in runway coord
+//		psd 		//deg course wrt runway centerline 
+//		mach 
+//		qbar 	//psf dynamic pressure
+//		cosphi 	//cosine of roll 
+//		secth 	//secant of pitch 
+//		weight 	//slugs mass 
+//		tas 		//ft/s true airspeed
+//		ydot		//fps y-component of velocity in runway coords 
+//		gamma 	//deg earth relative fpa  
+//		gi_change 	//flag indicating desired glideslope based on headwind (ignore it)
+//		rturn		//ft hac radius 
+//		psha			//deg hac turn angle 
+//		ovhd  		// ovhd/straight-in flag , it's a 2-elem list, one for each value of rwid 
+//		orahac		//automatic downmode inhibit flag , it's a 2-elem list, one for each value of rwid 
+//		rwid		//runway id flag  (	1 for primary, 2 for secondary)
+//		vtogl	//fps velocity to toggle ovhd/stri hac status (to simulate manual hac toggle, initlaised to zero)
 
 
 
 //outputs 
-nzc 	//g-units normal load factor increment from equilibrium
-phic_at 	//deg commanded roll 
-delrng 	//ft range error from altitude profile 
-dpsac 	//deg heading error to the hac tangent 
-dsbc_at 	//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
-emep 	//ft energy/weight at which the mep is selected 
-eow 		//ft energy/weight
-es 		//ft energy/weight at which the s-turn is initiated 
-rpred 	//ft predicted range to threshold 
-iphase 	//phase counter 
-tg_end 	//termination flag 
-eas_cmd 	//kn equivalent airspeed commanded 
-herror 	//ft altitude error
-qbarf 	//psf filtered dynamic press 
-ohalrt	//taem automatic downmode flag 
-mep 		//min entry point flag 
+//		nzc 	//g-units normal load factor increment from equilibrium
+//		phic_at 	//deg commanded roll 
+//		delrng 	//ft range error from altitude profile 
+//		dpsac 	//deg heading error to the hac tangent 
+//		dsbc_at 	//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
+//		emep 	//ft energy/weight at which the mep is selected 
+//		eow 		//ft energy/weight
+//		es 		//ft energy/weight at which the s-turn is initiated 
+//		rpred 	//ft predicted range to threshold 
+//		iphase 	//phase counter 
+//		tg_end 	//termination flag 
+//		eas_cmd 	//kn equivalent airspeed commanded 
+//		herror 	//ft altitude error
+//		qbarf 	//psf filtered dynamic press 
+//		ohalrt	//taem automatic downmode flag 
+//		mep 		//min entry point flag 
 
+
+FUNCTION taemg_wrapper {
+	PARAMETER taemg_input.
+	
+	LOCAL taemg_output IS tgexec(
+	
+	
+	).
+
+	RETURN LEXICON(
+	
+	).
+}
 
 
 //input constants 
@@ -262,12 +275,7 @@ global taemg_internal is lexicon(
 
 ).
 
-taemg_constants[""]
-taemg_input[""]
-
-SET taemg_internal[""] TO 
-
-res180 -> unfixangle
+//res180 -> unfixangle
 
 //phases (iphase):
 // 0= s-turn,	1=hac acq,	2=hac turn (hdg),	3=pre-final 
