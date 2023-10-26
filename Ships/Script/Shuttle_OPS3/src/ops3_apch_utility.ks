@@ -14,7 +14,7 @@ FUNCTION define_td_points {
 
 		LOCAL rwy_lexicon IS LEXICON(
 											"heading",0,
-											"end_pt",LATLNG(0,0)
+											"end_pt",LATLNG(0,0),
 											"td_pt",LATLNG(0,0)
 								).
 								
@@ -77,8 +77,7 @@ FUNCTION refresh_runway_lex {
 							"overhead",TRUE,	//default choice
 							"aiming_pt",LATLNG(0,0),
 							"acq_guid_pt",LATLNG(0,0),
-							"hac",LATLNG(0,0),
-
+							"hac",LATLNG(0,0)
 	).
 }
 

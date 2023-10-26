@@ -238,6 +238,8 @@ FUNCTION make_main_entry_gui {
 	//tgt selection, rwy selection, hac placement
 	GLOBAL popup_box IS main_entry_gui:ADDHLAYOUT().
 	SET popup_box:STYLE:ALIGN TO "center".	
+	
+	popup_box:addspacing(10).
 
 	GLOBAL select_tgtbox IS popup_box:ADDHLAYOUT().
 	SET select_tgtbox:STYLE:WIDTH TO 175.
@@ -250,7 +252,7 @@ FUNCTION make_main_entry_gui {
 		select_tgt:addoption(site).
 	}		
 		
-	popup_box:addspacing(20).
+	popup_box:addspacing(10).
 
 
 	GLOBAL select_rwybox IS popup_box:ADDHLAYOUT().
@@ -265,16 +267,16 @@ FUNCTION make_main_entry_gui {
 		select_rwy:addoption(rwy).
 	}	
 	
-	popup_box:addspacing(20).
+	popup_box:addspacing(10).
 	
 	
 
 	GLOBAL select_apchbox IS popup_box:ADDHLAYOUT().
-	SET select_apchbox:STYLE:WIDTH TO 175.
+	SET select_apchbox:STYLE:WIDTH TO 195.
 	//SET select_apchbox:STYLE:ALIGN TO "right".
 	GLOBAL select_apch_text IS select_apchbox:ADDLABEL("<size=15>Apch mode : </size>").
 	GLOBAL select_apch IS select_apchbox:addpopupmenu().
-	SET select_apch:STYLE:WIDTH TO 60.
+	SET select_apch:STYLE:WIDTH TO 90.
 	SET select_apch:STYLE:HEIGHT TO 25.
 	SET select_apch:STYLE:ALIGN TO "center".
 	select_apch:addoption("Overhead").
@@ -342,6 +344,16 @@ FUNCTION make_main_entry_gui {
 
 
 	main_entry_gui:SHOW().
+}
+
+//sets the runway choice between the availle options to a random one
+//to simulate daily wind conditions & introduce variability
+FUNCTION select_random_rwy {
+	LOCAL rwynum IS select_rwy:OPTIONS:LENGTH.
+	SET select_rwy:INDEX TO FLOOR(rwynum*RANDOM()).
+	
+	reset_overhead_apch().
+	WAIT 0.
 }
 
 FUNCTION reset_overhead_apch {
