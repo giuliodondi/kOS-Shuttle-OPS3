@@ -23,7 +23,7 @@ GLOBAL km2nmi IS 0.539957.	// nmi/km
 //		gamma 	//deg earth relative fpa  
 //		gi_change 	//flag indicating desired glideslope based on headwind (ignore it)
 //		rturn		//ft hac radius 
-//		psha			//deg hac turn angle 
+//
 //		ovhd  		// ovhd/straight-in flag , it's a 2-elem list, one for each value of rwid 
 //		orahac		//automatic downmode inhibit flag , it's a 2-elem list, one for each value of rwid 
 //		rwid		//runway id flag  (	1 for primary, 2 for secondary)
@@ -90,7 +90,7 @@ global taemg_constants is lexicon (
 									"dsbnom", 65,		//deg nominal spdbk deflection
 									"dshply", 4000,		//ft delta range value in shplyk  	//deprecated
 									"dtg", 0.96,		//s taem guid cycle interval
-									"dtr", 0.0174533 		//rad/deg deg2rad
+									"dtr", 0.0174533, 		//rad/deg deg2rad
 									"edelc1", 1,			//emax calc constant 
 									"edelc2", 1,			//emax calc constant 
 									"edelnz", list(0, 4000, 4000),			// -/ft/ft eow delta from nominal energy line slope for s-turn
@@ -195,7 +195,7 @@ global taemg_constants is lexicon (
 									"psrf", 90,				//deg max psha for adjusting rf 
 									"psohal", 200, 			//deg min psha to issue ohalrt 
 									"psohqb", 0, 			//deg min psha for which qbmxnz is lowered 
-									"psstrn", 200			//deg max psha for s-turn 
+									"psstrn", 200,			//deg max psha for s-turn 
 									"qbref2", LISt(0, 185, 185),		//psf qbref at r2max 
 									"qbmsl1", -0.0288355,			//psf/slug slope of mxqbwt with mach 
 									"qbmsl2", -0.00570829,			//psf/slug slope of mxqbwt with mach 
@@ -228,43 +228,44 @@ global taemg_constants is lexicon (
 
 //internal variables
 global taemg_internal is lexicon(
-								"delrng",,	//ft range error from altitude profile 
+								"delrng", 0,	//ft range error from altitude profile 
 								"dnzc", 0, 
 								"dnzcl", 0, 
 								"dnzll", 0,
 								"dnzul", 0,
 								"dpsac", 0,		//deg heading error to the hac tangent 
-								"dsbc_at",,		//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
+								"dsbc_at", 0,		//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
 								"dsbi", 0,	//integral component of delta speedbrake cmd
 								"eas_cmd", 0, 		//kn equivalent airspeed commanded 
 								"emep", 0,		//ft energy/weight at which the mep is selected 
-								"eow",,			//ft energy/weight
+								"eow", 0,			//ft energy/weight
 								"es", 0, 		//ft energy/weight at which the s-turn is initiated 
 								"herror", 0, 		//ft altitude error
 								"igi", 1,			//glideslope selector from input, based on headwind (we'll ignore it then)
 								"igs", 1,			//glideslope selector based on weight 
 								"iphase", 0,	//phase counter 
 								"ireset", FALSE,
-								"isr",,
+								"isr", 0,
 								"mep", FALSE,	//minimum entry point flag
 								"nzc", 0, 	//g-units normal load factor increment from equilibrium
 								"ohalrt", FALSE,		//one-time flag for  automatic downmoding to straight-in hac
 								"ovhd", TRUE,		//overhead flag 
-								"phic_at",,	//deg commanded roll
+								"phic_at", 0,	//deg commanded roll
 								"philm", 0,	//
+								"psha", 0, 			//deg hac turn angle 		//moved from inputs
 								"qbarf", 0,		//psf filtered dynamic press 
-								"qbd", ,
+								"qbd", 0,
 								"rpred", 0, 		//ft predicted range to threshold 
 								"rpred3", 0, 		//phase 3 transition dist
-								"rf",,
-								"rf0",,
+								"rturn", 0,			//hac radius right now
+								"rf", 0,		//spiral hac radius on final
 								"rwid0", 0,
 								"tg_end", FALSE,		//termination flag 
 								"xali", 0,			// x coord of apch/land interface
 								"xftc", 0,			//x coord where we should arrive on the final apch plane (and place the hac origin)
 								"xhac", 0,			//x coord of hac centre
 								"xmep", 0,			//x coord of minimum entry point
-								"ysgn", 1,		//r/l cone indicator (i.e. left/right hac ??)		//moved from inputs
+								"ysgn", 1		//r/l cone indicator (i.e. left/right hac ??)		//moved from inputs
 
 								 	
 									
@@ -337,6 +338,7 @@ FUNCTION tginit {
 	SET taemg_internal["isr"] TO taemg_constants["rftc"] / taemg_constants["dtg"].
 	
 	SET taemg_internal["rf"] TO taemg_internal["rf0"].
+	SET taemg_internal["rturn"] TO taemg_internal["rf"].	//i added this bc I don't see rturn being initialised anywhere
 	
 	SET taemg_internal["mep"] TO FALSE.
 	
@@ -382,13 +384,13 @@ FUNCTION tgxhac {
 			SET taemg_internal["ysgn"] TO - 1.
 		}
 		
-		SET taemg_input["psha"] TO taemg_constants["pshars"] .
+		SET taemg_internal["psha"] TO taemg_constants["pshars"] .
 		
 		SET taemg_input["vtogl"] TO 0.		//to disable further toggling
 	}
 	
 	IF (taemg_input["rwid"] <> taemg_internal["rwid0"]) {
-		SET taemg_input["psha"] TO taemg_constants["pshars"] .
+		SET taemg_internal["psha"] TO taemg_constants["pshars"] .
 		
 		if (taemg_internal["ovhd"][taemg_input["rwid"]]) {
 			SET taemg_internal["ysgn"] TO - 1.
@@ -399,7 +401,7 @@ FUNCTION tgxhac {
 	
 	IF (taemg_internal["ohalrt"] AND (NOT taemg_input["orahac"][taemg_input["rwid"]]) AND taemg_internal["ovhd"][taemg_input["rwid"]]) {
 		SET taemg_internal["ovhd"][taemg_input["rwid"]] TO FALSE.
-		SET taemg_input["psha"] TO taemg_constants["pshars"] .
+		SET taemg_internal["psha"] TO taemg_constants["pshars"] .
 	}
 	
 	IF (NOT taemg_internal["ovhd"][taemg_input["rwid"]]) AND (taemg_internal["iphase"] < 2) {
@@ -438,6 +440,69 @@ FUNCTION tgxhac {
 FUNCTION gtp {
 	PARAMETER taemg_input.	
 
+	//the x-distancebetween current pos and the hac position
+	LOCAL xcir IS taemg_internal["xhac"] - taemg_input["x"].
+	
+	LOCAL signy IS SIGN(taemg_input["y"]).
+	
+	//if pre-final and very close
+	IF (taemg_internal["iphase"] = 3) AND (xcir < taemg_constants["dr4"]) {
+		set taemg_internal["rpred"] TO SQRT(taemg_input["x"]^2 + taemg_input["y"]^2).
+		RETURN.
+	}
+	//ELSE
+	
+	local ycir IS taemg_internal["ysgn"] * taemg_internal["rf"] - taemg_input["y"].
+		
+	//euclidean distance from orbiter to hac centre in runway coords
+	local rcir is SQRT(xcir^2 + ycir^2).
+	
+	//distance to the tangency point
+	LOCAL rtan IS 0.
+	IF (rcir > taemg_internal["rturn"]) {
+		SET rtan TO SQRT(rcir^2 - taemg_internal["rturn"]^2).
+	}
+	
+	//heading to hac centre 
+	local psc is ARCTAN2(ycir, xcir).
+	
+	//heading to hac tangency pt 
+	local pst IS psc.
+	if (rtan > 0) {
+		set pst to pst - taemg_internal["ysgn"] * ARCTAN2(taemg_internal["rturn"] / rtan).
+	}
+	
+	set pst to res180(pst).
+	
+	set taemg_internal["dpsac"] to res180(pst - taemg_input["psd"]).
+	
+	//calculate hac turn angle 
+	local pshan is -pst * taemg_internal["ysgn"].
+	if ((taemg_internal["psha"] > pshars + 1) or (pshan < -1) or (taemg_internal["ysgn"] <> signy)) and (taemg_internal["psha"] > 90) {
+		set pshan to pshan + 360.
+	}
+	
+	SET taemg_internal["psha"] TO pshan.
+	SET taemg_internal["rturn"] tO taemg_internal["rf"] + (taemg_constants["r1"] + taemg_constants["r2"] * taemg_internal["psha"]) * taemg_internal["psha"].
+	
+	//analytical range to go around the hac
+	local rpred2 IS (taemg_internal["rf"] + (0.5 * taemg_constants["r1"] + 0.333333 * taemg_constants["r2"] * taemg_internal["psha"]) * taemg_internal["psha"]) * taemg_internal["psha"] * taemg_constants["dtr"] - taemg_internal["xhac"].
+
+	//if s-turn or acq build the hac acquisition turn circle based on velocity and average bank angle as a function of mach
+	IF (taemg_internal["iphase"] < 2) {
+		local phavg is midval(taemg_constants["phavgc"] - taemg_constants["phavgs"] * taemg_input["mach"], taemg_constants["phavgll"], taemg_constants["phavgul"]).
+		local rtac is taemg_input["surfv"] * taemg_input["surfv_h"] / (taemg_constants["g"] * TAN(phavg)).
+		local arcac is rtac * ABS(dpsac) * taemg_constants["dtr"].
+		
+		local a_ IS rtac * (1 - COS(dpsac)).
+		local b_ IS rtan - rtac * ABS(SIN(dpsac)).
+		local rc IS SQRT(a_^2 + b_^2).
+		
+		SET rtan tO arcac + rc.
+	}
+	
+	set taemg_internal["rpred"] TO  rpred2 + rtan.
+
 }	
 
 FUNCTION tgcomp {
@@ -466,27 +531,3 @@ FUNCTION tgphic {
 }								
 									
 									
-									
-									
-									
-									
-									
-									
-									
-									
-									
-									
-									
-									
-									
-									
-									
-									
-									
-									
-									
-							
-
-
-
-).
