@@ -81,8 +81,49 @@ FUNCTION refresh_runway_lex {
 	).
 }
 
-//simple wrapper to convert an altitude in metres to altitude above the landing site
-FUNCTION runway_alt {
-	PARAMETER altt.
+//simple wrapper to convert the position radius to altitude above the landing site in metres
+FUNCTION pos_rwy_alt {
+	PARAMETER cur_pos.
+	PARAMETER rwy.
+	
+	LOCAL altt IS cur_pos:MAG - BODY:RADIUS.
+	
 	RETURN altt - tgtrwy["elevation"].
+}
+
+//convert several ksp quantities in the runway-relative frame for taem
+FUNCTION get_runway_rel_state {
+	PARAMETER cur_pos.
+	PARAMETER cur_surfv.
+	PARAMETER rwy.
+	
+	LOCAL rwy_heading IS rwy["heading"].
+	LOCAL rwy_ship_bng IS bearingg(cur_pos, rwy["end_pt"]).
+	LOCAL ship_heading IS compass_for(cur_surfv,cur_pos).
+	
+	LOCAL ship_rwy_dist_mt IS greatcircledist(rwy["end_pt"],cur_pos) * 1000.
+	
+	LOCAL pos_rwy_rel_angle IS unfixangle( rwy_ship_bng - rwy_heading).
+	LOCAL vel_rwy_rel_angle IS unfixangle( ship_heading - rwy_heading).
+	
+	LOCAL cur_h IS pos_rwy_alt(cur_pos, rwy).
+	
+	LOCAL cur_surfv_h_vec IS VXCL(cur_pos, cur_surfv).
+	LOCAL cur_hdot_vec IS VXCL(cur_surfv_h_vec, cur_surfv).
+	
+	LOCAL cur_surfv_h IS cur_surfv_h_vec:MAG.
+	LOCAL cur_hdot IS cur_hdot_vec:MAG.
+	
+	return LEXICON(
+			"x", ship_rwy_dist_mt*COS(pos_rwy_rel_angle),
+			"y", ship_rwy_dist_mt*SIN(pos_rwy_rel_angle),
+			"h", cur_h,
+			"xdot", cur_surfv_h*COS(ship_rwy_vel_rel_angle),
+			"ydot", cur_surfv_h*SIN(ship_rwy_vel_rel_angle),
+			"hdot", cur_hdot,
+			"surfv", cur_surfv:MAG,
+			"surfv_h", cur_surfv_h,
+			"fpa", ARCSIN(cur_hdot, cur_surfv:MAG),
+			"rwy_rel_crs", vel_rwy_rel_angle
+	).
 }

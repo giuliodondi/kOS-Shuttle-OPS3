@@ -2,6 +2,11 @@
 
 GLOBAL mt2ft IS 3.28084.		// ft/mt
 GLOBAL km2nmi IS 0.539957.	// nmi/km
+GLOBAL atm2pa IS 101325.		// atm/pascal
+GLOBAL newton2lb IS 0.224809.	//	N/lb
+GLOBAL kg2slug IS 14.59390.		// kg/slug
+GLOBAL kg2lb IS 0.45359237.		// kg/lb
+GLOBAL pa2psf IS newton2lb / (mt2ft^2).		//pascal/psf
 
 //input variables
 //		h		//ft height above rwy
@@ -19,11 +24,9 @@ GLOBAL km2nmi IS 0.539957.	// nmi/km
 //		secth 	//secant of pitch 
 //		weight 	//slugs mass 
 //		tas 		//ft/s true airspeed
-//		ydot		//fps y-component of velocity in runway coords 
 //		gamma 	//deg earth relative fpa  
+
 //		gi_change 	//flag indicating desired glideslope based on headwind (ignore it)
-//		rturn		//ft hac radius 
-//
 //		ovhd  		// ovhd/straight-in flag , it's a 2-elem list, one for each value of rwid 
 //		orahac		//automatic downmode inhibit flag , it's a 2-elem list, one for each value of rwid 
 //		rwid		//runway id flag  (	1 for primary, 2 for secondary)
@@ -492,10 +495,10 @@ FUNCTION gtp {
 	IF (taemg_internal["iphase"] < 2) {
 		local phavg is midval(taemg_constants["phavgc"] - taemg_constants["phavgs"] * taemg_input["mach"], taemg_constants["phavgll"], taemg_constants["phavgul"]).
 		local rtac is taemg_input["surfv"] * taemg_input["surfv_h"] / (taemg_constants["g"] * TAN(phavg)).
-		local arcac is rtac * ABS(dpsac) * taemg_constants["dtr"].
+		local arcac is rtac * ABS(taemg_internal["dpsac"]) * taemg_constants["dtr"].
 		
-		local a_ IS rtac * (1 - COS(dpsac)).
-		local b_ IS rtan - rtac * ABS(SIN(dpsac)).
+		local a_ IS rtac * (1 - COS(taemg_internal["dpsac"])).
+		local b_ IS rtan - rtac * ABS(SIN(taemg_internal["dpsac"])).
 		local rc IS SQRT(a_^2 + b_^2).
 		
 		SET rtan tO arcac + rc.
