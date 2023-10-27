@@ -275,7 +275,23 @@ global taemg_internal is lexicon(
 
 ).
 
-//res180 -> unfixangle
+//this is unfixangle
+function res180 {
+	parameter ang.
+	
+	local out is angle.
+	
+	until (out <= 180) {
+		set out to out - 360.
+	}
+	
+	until (out > -180) {
+		set out to out + 360.
+	}
+	
+	return out.
+
+}
 
 //phases (iphase):
 // 0= s-turn,	1=hac acq,	2=hac turn (hdg),	3=pre-final 
