@@ -36,7 +36,7 @@ FUNCTION define_td_points {
 		LOCAL site IS ldgsiteslex[ldgsiteslex:KEYS[k]].
 	
 	
-		LOCAL end_dist IS site["length"].
+		LOCAL end_dist IS site["length"]/2.
 		LOCAL head IS site["heading"].
 		
 		site:ADD("rwys",LEXICON()).
@@ -46,7 +46,7 @@ FUNCTION define_td_points {
 		
 		//multiply by a hard-coded value identifying the touchdown marks from the 
 		//runway halfway point
-		SET td_dist TO end_dist*0.39.
+		SET td_dist TO end_dist*0.8.
 		
 		SET site TO add_runway_tdpt(site,head,end_dist,td_dist).
 		
@@ -109,21 +109,22 @@ FUNCTION get_runway_rel_state {
 	LOCAL cur_h IS pos_rwy_alt(cur_pos, rwy).
 	
 	LOCAL cur_surfv_h_vec IS VXCL(cur_pos, cur_surfv).
-	LOCAL cur_hdot_vec IS VXCL(cur_surfv_h_vec, cur_surfv).
+	//LOCAL cur_hdot_vec IS VXCL(cur_surfv_h_vec, cur_surfv).
 	
 	LOCAL cur_surfv_h IS cur_surfv_h_vec:MAG.
-	LOCAL cur_hdot IS cur_hdot_vec:MAG.
+	LOCAL cur_hdot IS VDOT(cur_surfv, cur_pos:NORMALIZED).
 	
 	return LEXICON(
 			"x", ship_rwy_dist_mt*COS(pos_rwy_rel_angle),
 			"y", ship_rwy_dist_mt*SIN(pos_rwy_rel_angle),
 			"h", cur_h,
-			"xdot", cur_surfv_h*COS(ship_rwy_vel_rel_angle),
-			"ydot", cur_surfv_h*SIN(ship_rwy_vel_rel_angle),
+			"xdot", cur_surfv_h*COS(vel_rwy_rel_angle),
+			"ydot", cur_surfv_h*SIN(vel_rwy_rel_angle),
 			"hdot", cur_hdot,
 			"surfv", cur_surfv:MAG,
 			"surfv_h", cur_surfv_h,
-			"fpa", ARCSIN(cur_hdot, cur_surfv:MAG),
-			"rwy_rel_crs", vel_rwy_rel_angle
+			"fpa", ARCTAN2(cur_hdot, cur_surfv_h),
+			"rwy_rel_crs", vel_rwy_rel_angle,
+			"rwy_dist", ship_rwy_dist_mt
 	).
 }

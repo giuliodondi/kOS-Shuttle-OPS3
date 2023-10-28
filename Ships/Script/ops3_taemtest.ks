@@ -59,8 +59,15 @@ FUNCTION ops3_taem_test {
 			break.
 		}
 	
-	
 		
+		LOCAL rwystate IS get_runway_rel_state(
+			-SHIP:ORBIT:BODY:POSITION,
+			SHIP:VELOCITY:SURFACE,
+			tgtrwy
+		).
+		
+		
+		print rwystate.
 		
 		pos_arrow(tgtrwy["position"],"runwaypos", 5000, 0.1).
 		pos_arrow(tgtrwy["td_pt"],"td_pt", 5000, 0.1).
