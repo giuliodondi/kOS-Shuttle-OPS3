@@ -125,8 +125,8 @@ global taemg_constants is lexicon (
 									"gy", 0.07,			//deg/ft gain on y in computing pfl roll angle cmd 
 									"gydot", 0.7,		//deg/fps gain on ydot on computing pfl roll angle cmd 
 									"h_error", 1000,		//ft altitude error bound	//deprecated
-									"h_ref1", 10000,			//ft alt ref 
-									"h_ref2", 5000,			//ft alt ref 
+									"h_ref1", 10000,			//ft alt for check to transition to a/l
+									"h_ref2", 5000,			//ft alt to force transition to a/l
 									"hali", LIST(0, 10018, 10018),		//ft altitude at a/l steep gs at MEP
 									"hdreqg", 0.1,				//hdreq computation gain 
 									"hftc", LIST(0, 12018, 12018),		//ft altitude of a/l steep gs at nominal entry pt
@@ -439,7 +439,7 @@ FUNCTION tgxhac {
 	
 }	
 									
-	
+//ground-track predictor
 FUNCTION gtp {
 	PARAMETER taemg_input.	
 
@@ -481,11 +481,12 @@ FUNCTION gtp {
 	
 	//calculate hac turn angle 
 	local pshan is -pst * taemg_internal["ysgn"].
-	if ((taemg_internal["psha"] > pshars + 1) or (pshan < -1) or (taemg_internal["ysgn"] <> signy)) and (taemg_internal["psha"] > 90) {
+	if ((taemg_internal["psha"] > taemg_constants["pshars"] + 1) or (pshan < -1) or (taemg_internal["ysgn"] <> signy)) and (taemg_internal["psha"] > 90) {
 		set pshan to pshan + 360.
 	}
-	
 	SET taemg_internal["psha"] TO pshan.
+	
+	//hac radius
 	SET taemg_internal["rturn"] tO taemg_internal["rf"] + (taemg_constants["r1"] + taemg_constants["r2"] * taemg_internal["psha"]) * taemg_internal["psha"].
 	
 	//analytical range to go around the hac
@@ -508,19 +509,162 @@ FUNCTION gtp {
 
 }	
 
+//reference params, dyn press and spiral adjust function 
 FUNCTION tgcomp {
 	PARAMETER taemg_input.	
+	
+	//range to the a/l transition point
+	set drpred to rpred + xhali.
+	set eow to h + v^2 / 2g.
+	
+	if (drpred < eow_spt[igs]) {
+		set iel to 2.
+	} else {
+		set iel to 1.
+	}
+	
+	set en to en_c1[igs][iel] + drpred * en_c2[igs][iel] - midval(en_c2[igs][1]*(rpred2 - r2max), 0, eshfmx).
+	
+	
+	if (drpred > pbrc[igs]) {
+		//linear altitude profile at long range
+		set href to pbhc[igs] + pbgc[igs] * (drpred - pbrc[igs]).
+	} else {
+		//close-in linear profile with outer glideslope
+		set href to hali[igs] - tggs[igs] * drpred.
+		//add the cubic profile for mid-ranges
+		if (depred > 0) {
+			set href to href + drpred^2*(cubic_c3[igs] + drpred *cubic_c4[igs]).
+		}
+	}
+	
+	// linear profiles for qbref
+	if (drpred > pbrcq[igs]) {
+		set qbref to midval( qbrll[igs] + qbc1[igs] * (drpred - pbrcq[igs]), qbrll[igs], qbrml[igs]).
+	} else {
+		set qbref to midval( qbrul[igs] + qbc2[igs] * drpred, qbrll[igs], qbrul[igs]).
+	}
+	
+	//hac spiral adjustment
+	//adjust the final hac radius rf if the hac angle is large enough and if the altitude is too low
+	if (iphase = 2) and (psha > psrf) {
+		set hrefoh to href  - midval( dhoh1 * (drpred - dhoh2), 0, dhoh3).
+		set drf to drfk * (hrefoh - h)/(psha * dtr).
+		set rf to midval(rf + drf, rfmin, rfmax).
+	}
+	
+	set herror to href - h.
+	
+	if (drpred > pbrc[igs]) {
+		set dhdrrf to -pbgc[igs].
+	} else {
+		set dhdrrf to - midval( -tggs[igs] + drpred * (2*cubic_c3[igs] + 3*cubic_c4[igs] * drpred), pbgc[igs], -tggs[igs]).
+	}
+	
+	//rate of change of filtered dyn press 
+	set qbard to midval( cqg * (qbar - qbarf), -qbardl, qbardl).
+	//update filtered dyn press 
+	set qbarf to qbarf + qbard * dtg.
+	set qbd to cdeqd * qbd + cqdg *qbard;
+	//error on qbar 
+	set qberr to qbref - qbarf.
+	//cmd eas 
+	set eas_cmd to 17.1865 + sqrt(qbref).
 
 }	
 
+//transition logic bw phases 
 FUNCTION tgtran {
 	PARAMETER taemg_input.	
+	
+	//transition to a/l 
+	if (iphase = 3) {
+		if ((abs(herror) < (h * del_h1 - del_h2))
+			and (abs(y) < (h * y_range1 - y_range2)) 
+			and (abs(gamma - gamsgs[igs]) < (h * gamma_coef1 - gamma_coef2))
+			and (abs(qberr) < qb_error2)
+			and (h < h_ref1))
+			or (h < h_ref2) {
+				set tg_end to TRUE.
+			}
+		return.
+	}
+	
+	//transition to pre-final based on distance or altitude if on a low energy profile
+	if (rpred < rpred3) or (h < hmin3) {
+		set iphase to 3.
+		set phid to phic.
+		set philim to philm3.
+		set dnzul to dnzuc2.
+		set dnzll to dnzlc2
+		return.
+	}
+	
+	//transition from s-turn to acq when below an energy band
+	if (iphase = 0) and (eow < es + enbias) {		//renamed en to es 
+		set iphase to 1.
+		set philim to philm1.
+		return.
+	} else if (iphase = 1) {
+		//check if we can still do an s-turn  to avoid geometry problems
+		if ((psha < psstrn) and (drpred > rminst[igs])) {
+			set es to es1[igs] + drpred * edrs[igs].
+			//if above energy, transition to s-turn 
+			if (eow > es) {
+				set iphase to 0.
+				set philim to philm0.
+				//direction of s-turn 
+				set s to -ysgn.
+				set spsi to s * psd.
+				
+				if (spsi < 0) and (psha < 90) {
+					set s to -s.
+				}
+			}
+		}
+		
+		//I think these two belong outside the s-turn block
+		//suggest downmoding to straight-in
+		if (eow < emoh) and (psha > psohal) and (rpred > rmoh) {
+			set ohalrt to TRUE.
+		}
+		
+		//transition to hac heading when close to the hac radius 
+		if (rcir < p2trnc1 * rturn) {
+			SET iphase to 2.
+			set philm to philm2.
+		}
+		
+		//suggest downmoding to MEP 
+		set emep to emep_c1[igs][iel] + drpred * emep_c2[igs][iel].
+		set emoh to emohc1[igs] + emohc2[igs] * drpred.
+		if (eow < emep) and (mep = FALSE) {
+			set mep to TRUE.
+		}
+		
+	} else if (iphase = 2) {
+		return.
+	}
+	
+	
 
 }		
 	
 FUNCTION tgnzc {
 	PARAMETER taemg_input.	
-
+	
+	set gdh to midval(gdhc - gdhs * h, gdhll, gdhul).
+	set hdref to vh * dhdrrf.
+	set hderr to hdref - hdot.
+	set dnzc to dnzcg * gdh * (hderr + hdreqg * gdh * herror).
+	
+	if (mach < qmach2) {
+		set mxqbwt to midval(qbwt1 + qbmsl1 * (mach - qmach1), qbwt2, qbwt1).
+	} else {
+		set mxqbwt to midval(qbwt2 + qbmsl2 * (mach - qmach2), qbwt2, qbwt3).
+	}
+	
+	set qbll to mxqbwt
 }		
 									
 FUNCTION tgsbc {
