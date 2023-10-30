@@ -237,13 +237,16 @@ global taemg_internal is lexicon(
 								"dnzll", 0,
 								"dnzul", 0,
 								"dpsac", 0,		//deg heading error to the hac tangent 
+								"drpred", 0,	//ft range to go to a/l transition
 								"dsbc_at", 0,		//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
 								"dsbi", 0,	//integral component of delta speedbrake cmd
 								"eas_cmd", 0, 		//kn equivalent airspeed commanded 
 								"emep", 0,		//ft energy/weight at which the mep is selected 
 								"eow", 0,			//ft energy/weight
+								"en", 			//energy reference
 								"es", 0, 		//ft energy/weight at which the s-turn is initiated 
 								"herror", 0, 		//ft altitude error
+								"iel", 0,			//energy reference profile selector flag
 								"igi", 1,			//glideslope selector from input, based on headwind (we'll ignore it then)
 								"igs", 1,			//glideslope selector based on weight 
 								"iphase", 0,	//phase counter 
@@ -258,19 +261,22 @@ global taemg_internal is lexicon(
 								"psha", 0, 			//deg hac turn angle 		//moved from inputs
 								"qbarf", 0,		//psf filtered dynamic press 
 								"qbd", 0,
-								"rpred", 0, 		//ft predicted range to threshold 
-								"rpred3", 0, 		//phase 3 transition dist
+								"rpred", 0, 		//ft predicted total range to threshold 
+								"rpred2", 0,		//ft predicted range final + hac turn
+								"rpred3", 0, 		//ft predicted range to final for prefinal transition
 								"rturn", 0,			//hac radius right now
 								"rf", 0,		//spiral hac radius on final
 								"rwid0", 0,
 								"tg_end", FALSE,		//termination flag 
-								"xali", 0,			// x coord of apch/land interface
-								"xftc", 0,			//x coord where we should arrive on the final apch plane (and place the hac origin)
-								"xhac", 0,			//x coord of hac centre
-								"xmep", 0,			//x coord of minimum entry point
+								"xali", 0,			// x coord of apch/land interface	(is negative)
+								"xftc", 0,			//x coord where we should arrive on the final apch plane (and place the hac origin) (is negative)
+								"xhac", 0,			//x coord of hac centre		(is negative)
+								"xmep", 0,			//x coord of minimum entry point	(is negative)
 								"ysgn", 1		//r/l cone indicator (i.e. left/right hac ??)		//moved from inputs
 
-								 	
+								"xcir", 0,		//ft hac centre x-coord
+								"ycir", 0,		//ft hac centre y-coord
+								"rcir", 0,		//ft ship-hac distance
 									
 								 								
 								
@@ -444,30 +450,30 @@ FUNCTION gtp {
 	PARAMETER taemg_input.	
 
 	//the x-distancebetween current pos and the hac position
-	LOCAL xcir IS taemg_internal["xhac"] - taemg_input["x"].
+	LOCAL taemg_internal["xcir"] IS taemg_internal["xhac"] - taemg_input["x"].
 	
 	LOCAL signy IS SIGN(taemg_input["y"]).
 	
 	//if pre-final and very close
-	IF (taemg_internal["iphase"] = 3) AND (xcir < taemg_constants["dr4"]) {
+	IF (taemg_internal["iphase"] = 3) AND (taemg_internal["xcir"] < taemg_constants["dr4"]) {
 		set taemg_internal["rpred"] TO SQRT(taemg_input["x"]^2 + taemg_input["y"]^2).
 		RETURN.
 	}
 	//ELSE
 	
-	local ycir IS taemg_internal["ysgn"] * taemg_internal["rf"] - taemg_input["y"].
+	local taemg_internal["ycir"] IS taemg_internal["ysgn"] * taemg_internal["rf"] - taemg_input["y"].
 		
 	//euclidean distance from orbiter to hac centre in runway coords
-	local rcir is SQRT(xcir^2 + ycir^2).
+	local taemg_internal["rcir"] is SQRT(taemg_internal["xcir"]^2 + taemg_internal["ycir"]^2).
 	
 	//distance to the tangency point
 	LOCAL rtan IS 0.
-	IF (rcir > taemg_internal["rturn"]) {
-		SET rtan TO SQRT(rcir^2 - taemg_internal["rturn"]^2).
+	IF (taemg_internal["rcir"] > taemg_internal["rturn"]) {
+		SET rtan TO SQRT(taemg_internal["rcir"]^2 - taemg_internal["rturn"]^2).
 	}
 	
 	//heading to hac centre 
-	local psc is ARCTAN2(ycir, xcir).
+	local psc is ARCTAN2(taemg_internal["ycir"], taemg_internal["xcir"]).
 	
 	//heading to hac tangency pt 
 	local pst IS psc.
@@ -489,8 +495,8 @@ FUNCTION gtp {
 	//hac radius
 	SET taemg_internal["rturn"] tO taemg_internal["rf"] + (taemg_constants["r1"] + taemg_constants["r2"] * taemg_internal["psha"]) * taemg_internal["psha"].
 	
-	//analytical range to go around the hac
-	local rpred2 IS (taemg_internal["rf"] + (0.5 * taemg_constants["r1"] + 0.333333 * taemg_constants["r2"] * taemg_internal["psha"]) * taemg_internal["psha"]) * taemg_internal["psha"] * taemg_constants["dtr"] - taemg_internal["xhac"].
+	//analytical range to go including hac turn
+	set taemg_internal["rpred2"] to - taemg_internal["xhac"] + (taemg_internal["rf"] + (0.5 * taemg_constants["r1"] + 0.333333 * taemg_constants["r2"] * taemg_internal["psha"]) * taemg_internal["psha"]) * taemg_internal["psha"] * taemg_constants["dtr"].
 
 	//if s-turn or acq build the hac acquisition turn circle based on velocity and average bank angle as a function of mach
 	IF (taemg_internal["iphase"] < 2) {
@@ -505,7 +511,7 @@ FUNCTION gtp {
 		SET rtan tO arcac + rc.
 	}
 	
-	set taemg_internal["rpred"] TO  rpred2 + rtan.
+	set taemg_internal["rpred"] TO  taemg_internal["rpred2"] + rtan.
 
 }	
 
@@ -514,51 +520,51 @@ FUNCTION tgcomp {
 	PARAMETER taemg_input.	
 	
 	//range to the a/l transition point
-	set drpred to rpred + xhali.
-	set eow to h + v^2 / 2g.
+	set taemg_internal["drpred"] to taemg_internal["rpred"] + taemg_internal["xali"].
+	set taemg_internal["eow"] to taemg_input["h"] + taemg_input["surfv"]^2 / (2 * taemg_constants["g"]).
 	
-	if (drpred < eow_spt[igs]) {
-		set iel to 2.
+	if (taemg_internal["drpred"] < taemg_constants["eow_spt"][taemg_internal["igs"]]) {
+		set taemg_internal["iel"] to 2.
 	} else {
-		set iel to 1.
+		set taemg_internal["iel"] to 1.
 	}
 	
-	set en to en_c1[igs][iel] + drpred * en_c2[igs][iel] - midval(en_c2[igs][1]*(rpred2 - r2max), 0, eshfmx).
+	set taemg_internal["en"] to taemg_constants["en_c1"][taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["en_c2"][taemg_internal["igs"]][taemg_internal["iel"]] - midval(taemg_constants["en_c2"][taemg_internal["igs"]][1]*(rpred2 - r2max), 0, eshfmx).
 	
 	
-	if (drpred > pbrc[igs]) {
+	if (taemg_internal["drpred"] > pbrc[taemg_internal["igs"]]) {
 		//linear altitude profile at long range
-		set href to pbhc[igs] + pbgc[igs] * (drpred - pbrc[igs]).
+		set href to pbhc[taemg_internal["igs"]] + pbgc[taemg_internal["igs"]] * (taemg_internal["drpred"] - pbrc[taemg_internal["igs"]]).
 	} else {
 		//close-in linear profile with outer glideslope
-		set href to hali[igs] - tggs[igs] * drpred.
+		set href to hali[taemg_internal["igs"]] - tggs[taemg_internal["igs"]] * taemg_internal["drpred"].
 		//add the cubic profile for mid-ranges
 		if (depred > 0) {
-			set href to href + drpred^2*(cubic_c3[igs] + drpred *cubic_c4[igs]).
+			set href to href + taemg_internal["drpred"]^2*(cubic_c3[taemg_internal["igs"]] + taemg_internal["drpred"] *cubic_c4[taemg_internal["igs"]]).
 		}
 	}
 	
 	// linear profiles for qbref
-	if (drpred > pbrcq[igs]) {
-		set qbref to midval( qbrll[igs] + qbc1[igs] * (drpred - pbrcq[igs]), qbrll[igs], qbrml[igs]).
+	if (taemg_internal["drpred"] > pbrcq[taemg_internal["igs"]]) {
+		set qbref to midval( qbrll[taemg_internal["igs"]] + qbc1[taemg_internal["igs"]] * (taemg_internal["drpred"] - pbrcq[taemg_internal["igs"]]), qbrll[taemg_internal["igs"]], qbrml[taemg_internal["igs"]]).
 	} else {
-		set qbref to midval( qbrul[igs] + qbc2[igs] * drpred, qbrll[igs], qbrul[igs]).
+		set qbref to midval( qbrul[taemg_internal["igs"]] + qbc2[taemg_internal["igs"]] * taemg_internal["drpred"], qbrll[taemg_internal["igs"]], qbrul[taemg_internal["igs"]]).
 	}
 	
 	//hac spiral adjustment
 	//adjust the final hac radius rf if the hac angle is large enough and if the altitude is too low
 	if (iphase = 2) and (psha > psrf) {
-		set hrefoh to href  - midval( dhoh1 * (drpred - dhoh2), 0, dhoh3).
+		set hrefoh to href  - midval( dhoh1 * (taemg_internal["drpred"] - dhoh2), 0, dhoh3).
 		set drf to drfk * (hrefoh - h)/(psha * dtr).
 		set rf to midval(rf + drf, rfmin, rfmax).
 	}
 	
 	set herror to href - h.
 	
-	if (drpred > pbrc[igs]) {
-		set dhdrrf to -pbgc[igs].
+	if (taemg_internal["drpred"] > pbrc[taemg_internal["igs"]]) {
+		set dhdrrf to -pbgc[taemg_internal["igs"]].
 	} else {
-		set dhdrrf to - midval( -tggs[igs] + drpred * (2*cubic_c3[igs] + 3*cubic_c4[igs] * drpred), pbgc[igs], -tggs[igs]).
+		set dhdrrf to - midval( -tggs[taemg_internal["igs"]] + taemg_internal["drpred"] * (2*cubic_c3[taemg_internal["igs"]] + 3*cubic_c4[taemg_internal["igs"]] * taemg_internal["drpred"]), pbgc[taemg_internal["igs"]], -tggs[taemg_internal["igs"]]).
 	}
 	
 	//rate of change of filtered dyn press 
@@ -581,7 +587,7 @@ FUNCTION tgtran {
 	if (iphase = 3) {
 		if ((abs(herror) < (h * del_h1 - del_h2))
 			and (abs(y) < (h * y_range1 - y_range2)) 
-			and (abs(gamma - gamsgs[igs]) < (h * gamma_coef1 - gamma_coef2))
+			and (abs(gamma - gamsgs[taemg_internal["igs"]]) < (h * gamma_coef1 - gamma_coef2))
 			and (abs(qberr) < qb_error2)
 			and (h < h_ref1))
 			or (h < h_ref2) {
@@ -591,7 +597,7 @@ FUNCTION tgtran {
 	}
 	
 	//transition to pre-final based on distance or altitude if on a low energy profile
-	if (rpred < rpred3) or (h < hmin3) {
+	if (rpred < taemg_internal["rpred3"]) or (h < hmin3) {
 		set iphase to 3.
 		set phid to phic.
 		set philim to philm3.
@@ -601,16 +607,16 @@ FUNCTION tgtran {
 	}
 	
 	//transition from s-turn to acq when below an energy band
-	if (iphase = 0) and (eow < es + enbias) {		//renamed en to es 
+	if (iphase = 0) and (taemg_internal["eow"] < taemg_internal["en"] + enbias) {
 		set iphase to 1.
 		set philim to philm1.
 		return.
 	} else if (iphase = 1) {
 		//check if we can still do an s-turn  to avoid geometry problems
-		if ((psha < psstrn) and (drpred > rminst[igs])) {
-			set es to es1[igs] + drpred * edrs[igs].
+		if ((psha < psstrn) and (taemg_internal["drpred"] > rminst[taemg_internal["igs"]])) {
+			set es to es1[taemg_internal["igs"]] + taemg_internal["drpred"] * edrs[taemg_internal["igs"]].
 			//if above energy, transition to s-turn 
-			if (eow > es) {
+			if (taemg_internal["eow"] > es) {
 				set iphase to 0.
 				set philim to philm0.
 				//direction of s-turn 
@@ -625,20 +631,20 @@ FUNCTION tgtran {
 		
 		//I think these two belong outside the s-turn block
 		//suggest downmoding to straight-in
-		if (eow < emoh) and (psha > psohal) and (rpred > rmoh) {
+		if (taemg_internal["eow"] < emoh) and (psha > psohal) and (rpred > rmoh) {
 			set ohalrt to TRUE.
 		}
 		
 		//transition to hac heading when close to the hac radius 
-		if (rcir < p2trnc1 * rturn) {
+		if (taemg_internal["rcir"] < p2trnc1 * rturn) {
 			SET iphase to 2.
 			set philm to philm2.
 		}
 		
 		//suggest downmoding to MEP 
-		set emep to emep_c1[igs][iel] + drpred * emep_c2[igs][iel].
-		set emoh to emohc1[igs] + emohc2[igs] * drpred.
-		if (eow < emep) and (mep = FALSE) {
+		set emep to emep_c1[taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * emep_c2[taemg_internal["igs"]][taemg_internal["iel"]].
+		set emoh to emohc1[taemg_internal["igs"]] + emohc2[taemg_internal["igs"]] * taemg_internal["drpred"].
+		if (taemg_internal["eow"] < emep) and (mep = FALSE) {
 			set mep to TRUE.
 		}
 		
@@ -675,8 +681,8 @@ FUNCTION tgnzc {
 		set qbmxnz to midval( qbmx2 + qbmxs1 * (mach - qbm1), qbmx2, qbmx1).
 	}
 	
-	if (eqlowl < eow) and (eow < eqlowu) and (psha > psohqb) {
-		set qbmxnz to midval(qbref2[igs] - pqbwrr * (rpred2 - r2max) + (eow - en) / pewrr, qbmnnz, qbmxnz).
+	if (eqlowl < taemg_internal["eow"]) and (taemg_internal["eow"] < eqlowu) and (psha > psohqb) {
+		set qbmxnz to midval(qbref2[taemg_internal["igs"]] - pqbwrr * (rpred2 - r2max) + (taemg_internal["eow"] - en) / pewrr, qbmnnz, qbmxnz).
 	}
 	
 	set qbnzul to - (qbg1 * (qbmnnz - qbarf) - qbd) * qbg2.
@@ -685,10 +691,10 @@ FUNCTION tgnzc {
 	if (iphase = 3) {
 		set nzc to midval(dnzc, qbnzll, qbnzul).
 	} else {
-		set emax to en + edelnz[igs] * midval( drpred / del_r_emax[igs] , edelc1, edelc2).
-		set emin to en - edelnz[igs].
-		set eownzul to (geul * gdh * (emax - eow) + hderr) * gehdul * gdh.
-		set eownzll to (gell * gdh * (emin - eow) + hderr) * gehdll * gdh.
+		set emax to taemg_internal["en"] + edelnz[taemg_internal["igs"]] * midval( taemg_internal["drpred"] / del_r_emax[taemg_internal["igs"]] , edelc1, edelc2).
+		set emin to taemg_internal["en"] - edelnz[taemg_internal["igs"]].
+		set eownzul to (geul * gdh * (emax - taemg_internal["eow"]) + hderr) * gehdul * gdh.
+		set eownzll to (gell * gdh * (emin - taemg_internal["eow"]) + hderr) * gehdll * gdh.
 		
 		//cascade of filters
 		set dnzcl to midval(dnzc, eoqnzll, eownzul).
@@ -720,7 +726,7 @@ FUNCTION tgsbc {
 		
 		set dsbc to dsbnom - dsbe - dsbi.
 		
-		if ((en - eow) > demxsb) {
+		if ((taemg_internal["en"] - taemg_internal["eow"]) > demxsb) {
 			set dsbc to 0.
 		}
 	}
@@ -739,7 +745,7 @@ FUNCTION tgphic {
 	} else if (iphase = 1) {
 		set phic to gphi * dpsac.
 	} else if (iphase = 2) {
-		set rerrc to rcir - rturn.
+		set rerrc to taemg_internal["rcir"] - rturn.
 		
 		if (rerrc > rerrlm) {
 			if (philimit > philm1) {
@@ -748,8 +754,8 @@ FUNCTION tgphic {
 			
 			set phi to gphi * dpsac.
 		} else {
-			set rdot to -(xcir * xdot + ycir * ydot ) /rcir.
-			set phip2c to (vh^2 - rdot^2) * rtd / (g * rturn).
+			set rdot to -(taemg_internal["xcir"] * xdot + taemg_internal["ycir"] * ydot ) /taemg_internal["rcir"].
+			set phip2c to (vh^2 - rdot^2) * rtd / (taemg_constants["g"] * rturn).
 			
 			set rdotrf to -vh * (r1 + 2 * r2 * psha) * rtd / rturn.
 			
