@@ -347,7 +347,7 @@ FUNCTION tginit {
 	
 	SET taemg_internal["ohalrt"] TO FALSE.
 	
-	SET taemg_internal["dsbi"] TO FALSE.
+	SET taemg_internal["dsbi"] TO 0.
 	
 	SET taemg_internal["philm"] TO taemg_constants["philm1"].
 	
@@ -650,6 +650,7 @@ FUNCTION tgtran {
 
 }		
 	
+//calculate nz command 
 FUNCTION tgnzc {
 	PARAMETER taemg_input.	
 	
@@ -664,17 +665,115 @@ FUNCTION tgnzc {
 		set mxqbwt to midval(qbwt2 + qbmsl2 * (mach - qmach2), qbwt2, qbwt3).
 	}
 	
-	set qbll to mxqbwt
+	set qbll to mxqbwt + weight.
+	
+	set qbmnnz to qbll / max( cosphi, cpmin).
+	
+	if (mach > qbm1) {
+		set qbmxnz to midval( qbmx2 + qbmxs2 * (mach - qbm2), qbmx2, qbmx3).
+	} else {
+		set qbmxnz to midval( qbmx2 + qbmxs1 * (mach - qbm1), qbmx2, qbmx1).
+	}
+	
+	if (eqlowl < eow) and (eow < eqlowu) and (psha > psohqb) {
+		set qbmxnz to midval(qbref2[igs] - pqbwrr * (rpred2 - r2max) + (eow - en) / pewrr, qbmnnz, qbmxnz).
+	}
+	
+	set qbnzul to - (qbg1 * (qbmnnz - qbarf) - qbd) * qbg2.
+	set qbnzll to - (qbg1 * (qbmxnz - qbarf) - qbd) * qbg2.
+	
+	if (iphase = 3) {
+		set nzc to midval(dnzc, qbnzll, qbnzul).
+	} else {
+		set emax to en + edelnz[igs] * midval( drpred / del_r_emax[igs] , edelc1, edelc2).
+		set emin to en - edelnz[igs].
+		set eownzul to (geul * gdh * (emax - eow) + hderr) * gehdul * gdh.
+		set eownzll to (gell * gdh * (emin - eow) + hderr) * gehdll * gdh.
+		
+		//cascade of filters
+		set dnzcl to midval(dnzc, eoqnzll, eownzul).
+		set dnzcl to mival(dnzcl, qbnzll, qbnzul).
+		set dnzcd to midval((dnzcl - nzc) * cqg, -dnzcdl, dnzcdl).
+		set nzc to nzc + dnzcd * dtg.
+	}
 }		
 									
 FUNCTION tgsbc {
 	PARAMETER taemg_input.	
+	
+	if (mach > dsbcm) {
+		set dsbc_at to dsbsup.
+		return.
+	}
+	
+	set dsbcll to midval(dsbsup + dsblls * (mach - dsbcm), 0, dsbsup).
+	set dsbcul to midval(dsbsup + dsbuls * (mach - dsbcm), dsbsup, dsblim).
+	
+	if (iphase = 0) {
+		set dsbc to dsblim.
+	} else {
+		set dsbe to gsbe * qberr.
+		
+		if (dsbc > dsbcll) and (dsbc < dsbcul) {
+			set dsbi to midval(dsbi + gsbi * qberr * dtg, -dsbil, dsbil).
+		}
+		
+		set dsbc to dsbnom - dsbe - dsbi.
+		
+		if ((en - eow) > demxsb) {
+			set dsbc to 0.
+		}
+	}
+	
+	set dsbc_at to midval(dsbc, dsbcll, dsbcul).
 
 }	
 								
 FUNCTION tgphic {
 	PARAMETER taemg_input.	
 
+	set philimit to midval(philmsup + phils * (mach - phim), philmsup, philim).
+	
+	if (iphase = 0) {
+		set phic to s * philimit.
+	} else if (iphase = 1) {
+		set phic to gphi * dpsac.
+	} else if (iphase = 2) {
+		set rerrc to rcir - rturn.
+		
+		if (rerrc > rerrlm) {
+			if (philimit > philm1) {
+				set philimit to philm1.
+			}
+			
+			set phi to gphi * dpsac.
+		} else {
+			set rdot to -(xcir * xdot + ycir * ydot ) /rcir.
+			set phip2c to (vh^2 - rdot^2) * rtd / (g * rturn).
+			
+			set rdotrf to -vh * (r1 + 2 * r2 * psha) * rtd / rturn.
+			
+			set phic to ysgn * MAX(phip2c + gr * rerrc + grdot * (rdot - rdotrf), 0).
+		}
+		
+	} else if (iphase = 3) {
+		set yerrc to midval ( -gy * y, -yerrlm, yerrlm).
+		set phic to yerrc - gydot * ydot.
+		
+		if (abs(phic) > philmc) {
+			set philimit to philm4.
+		}
+		
+		if (isr > 0) {
+			set dphi to (phic - phi0) / isr.
+			set isr to isr - 1.
+			set phic to phi0 + dphi.
+			set phi0 to phic.
+		}
+	
+	}
+	
+	set phic_at to midval ( phic, -philimit, philimit).
 }								
 									
 									
