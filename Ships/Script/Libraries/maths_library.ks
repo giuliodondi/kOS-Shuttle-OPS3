@@ -83,19 +83,39 @@ FUNCTION wraparound {
 }
 
 //prevents angles from being either negative or greater than 360.
+//now works for angles of any size
 FUNCTION fixangle {
 	parameter angle.
-	if angle <0 {set angle to angle + 360. }
-	else if angle >=360 {set angle to angle - 360. }	
-	RETURN angle.
+	
+	local out is angle.
+	
+	until (out < 360) {
+		set out to out - 360.
+	}
+	
+	until (out >= 0) {
+		set out to out + 360.
+	}
+	
+	return out.
 }
 
 //prevents angles from being less than -180 or greater than 180
+//now works for angles of any size
 FUNCTION unfixangle {
 	parameter angle.
-	IF angle <= -180{set angle to angle + 360.}
-	ELSE IF angle>180 {set angle to angle - 360.}
-	RETURN angle.
+	
+	local out is angle.
+	
+	until (out <= 180) {
+		set out to out - 360.
+	}
+	
+	until (out > -180) {
+		set out to out + 360.
+	}
+	
+	return out.
 }
 
 
