@@ -26,11 +26,11 @@ GLOBAL pa2psf IS newton2lb / (mt2ft^2).		//pascal/psf
 //		tas 		//ft/s true airspeed
 //		gamma 	//deg earth relative fpa  
 
-//		gi_change 	//flag indicating desired glideslope based on headwind (ignore it)
-//		ovhd  		// ovhd/straight-in flag , it's a 2-elem list, one for each value of rwid 
-//		orahac		//automatic downmode inhibit flag , it's a 2-elem list, one for each value of rwid 
+//		gi_change 	//flag indicating desired glideslope based on headwind 		//deprecated
+//		ovhd  		// ovhd/straight-in flag , it's a 2-elem list, one for each value of rwid 			//changed into a simple flag
+//		orahac		//automatic downmode inhibit flag , it's a 2-elem list, one for each value of rwid 		//deprecated
 //		rwid		//runway id flag  (	1 for primary, 2 for secondary)
-//		vtogl	//fps velocity to toggle ovhd/stri hac status (to simulate manual hac toggle, initlaised to zero)
+//		vtogl	//fps velocity to toggle ovhd/stri hac status (to simulate automatically a change of hac halfway through)		//deprecated
 
 
 
@@ -250,15 +250,15 @@ global taemg_internal is lexicon(
 								"hdref", 0,			//ft/s hdot reference
 								"href", 0,			//ft ref altitude
 								"iel", 0,			//energy reference profile selector flag
-								"igi", 1,			//glideslope selector from input, based on headwind (we'll ignore it then)
+								"igi", 1,			//glideslope selector from input, based on headwind 	//deprecated
 								"igs", 1,			//glideslope selector based on weight 
 								"iphase", 0,	//phase counter 
-								"ireset", FALSE,
+								"ireset", TRUE,		//initially true
 								"isr", 0,		// pre-final roll fader
 								"mep", FALSE,	//minimum entry point flag
 								"nzc", 0, 	//g-units normal load factor increment from equilibrium
 								"ohalrt", FALSE,		//one-time flag for  automatic downmoding to straight-in hac
-								"ovhd", TRUE,		//overhead flag 
+								"ovhd0", TRUE,		//i introduced this to keep track of changes from overhead to straight-in
 								//"phi0", 0,		//previous value of phic
 								"phic", 0, 			//unlimited roll cmd
 								"phic_at", 0,	//deg commanded roll
@@ -273,7 +273,7 @@ global taemg_internal is lexicon(
 								"rpred3", 0, 		//ft predicted range to final for prefinal transition
 								"rturn", 0,			//hac radius right now
 								"rf", 0,		//spiral hac radius on final
-								"rwid0", 0,
+								"rwid0", 0,		//store the runway selection
 								"tg_end", FALSE,		//termination flag 
 								"xali", 0,			// x coord of apch/land interface	(is negative)
 								"xftc", 0,			//x coord where we should arrive on the final apch plane (and place the hac origin) (is negative)
@@ -300,7 +300,7 @@ global taemg_internal is lexicon(
 function tgexec {
 	PARAMETER taemg_input.
 
-	if (taemg_internal["ireset"] = TRUE OR taemg_input["rwid"] <> taemg_internal["rwid0"]) {
+	if (taemg_internal["ireset"] = TRUE) OR (taemg_input["rwid"] <> taemg_internal["rwid0"]) OR (taemg_input["ovhd"]<>taemg_internal["ovhd0"]) {
 		tginit(taemg_input).
 	}
 	
@@ -331,6 +331,7 @@ FUNCTION tginit {
 	
 	IF (taemg_internal["ireset"] = TRUE) {
 		SET taemg_internal["rwid0"] TO taemg_input["rwid"].
+		SET taemg_internal["ovhd0"] TO taemg_input["ovhd"].
 	}
 	
 	SET taemg_internal["iphase"] TO 1.	
@@ -339,6 +340,9 @@ FUNCTION tginit {
 	
 	SET taemg_internal["rf"] TO taemg_internal["rf0"].
 	SET taemg_internal["rturn"] TO taemg_internal["rf"].	//i added this bc I don't see rturn being initialised anywhere	- or should it be initialised to zero??
+	
+	//moved up from tgxhac bc we want to do this at every reset
+	SET taemg_internal["psha"] TO taemg_constants["pshars"] .
 	
 	SET taemg_internal["mep"] TO FALSE.
 	
@@ -350,11 +354,19 @@ FUNCTION tginit {
 	
 	
 	SET taemg_internal["dnzul"] TO taemg_constants["dnzuc1"]. 
-	SET taemg_internal["dnzll"] TO taemg_constants["dnzuc1"]. 
+	SET taemg_internal["dnzll"] TO taemg_constants["dnzlc1"]. 
 	
 	SET taemg_internal["qbarf"] TO taemg_input["qbar"].
 	
 	SET taemg_internal["qbd"] TO 0.
+	
+	//moved up from tgxhac bc there's no reason to do this repeatedly
+	if (taemg_input["weight"] > taemg_constants["wt_gs1"]) {
+		set taemg_internal["igs"] to 2.
+	} else {
+		set taemg_internal["igs"] to 1.
+	}
+	
 	
 	SET taemg_input["tg_end"] TO FALSE.
 	
@@ -368,63 +380,45 @@ FUNCTION tginit {
 // +y is to the right of the runway looking in the +x direction 
 // ysgn = +1 is a right turn around a hac placed on the positive y side
 									
-// these will need to be re-implemented with runway selection logic 
-// thoughts:
+// these will need to be re-implemented with runway selection logic in mind
+// notes:
 //	- get rid of the rwid stuff altogether and force runway selection, but can we do it without messing shit up?
-//  - i'd like maybe to have a gui message suggesting runway change 
-//	- i don't really understand how the ysgn is assigned
+//		- just store the runway id to detect a change, the only thing that depends on it is the overhead flag which we give as input
+//  - i'd like maybe to have a gui message suggesting runway change  
+//		- we can do it with the 'ohalrt' flag
+//	- i don't really understand how the ysgn is assigned 
+//		- I overhauled the logic based on the sign of the y coord
 FUNCTION tgxhac {
 	PARAMETER taemg_input.	
 	
-	if (taemg_input["surfv"] <= taemg_input["vtogl"]) {
-		if (taemg_internal["ovhd"][taemg_input["rwid"]]) {
-			SET taemg_internal["ovhd"][taemg_input["rwid"]] TO FALSE.
+	//got rid of the vtogl block
+	
+	//got rid of the runway re-initialisation code which we moved up
+	
+	//SET taemg_internal["rwid0"] TO taemg_input["rwid"].
+	
+	//got rid of the automatic straight-in downmode (if I want ot do it I'll do it outside the guidance exec)
+	
+	//refactored this block based on the taem paper
+	//determine ysgn of the hac turn, but don't change it if we're beyond phase 1
+	IF (taemg_internal["iphase"] < 2) {
+		
+		if (taemg_input["ovhd"]) {
+			//for the overhead turn we'll turn around the hac on the opposite side of the runway to our own
+			//the ysgn is +1 if the hac is on the +y side so we set the sign to the opposite sign of the current y coord 
+			SET taemg_internal["ysgn"] TO - SIGN(taemg_input["y"]). 
 		} else {
-			SET taemg_internal["ovhd"][taemg_input["rwid"]] TO TRUE.
-			SET taemg_internal["ysgn"] TO - 1.
+			//else it's on our same side
+			SET taemg_internal["ysgn"] TO SIGN(taemg_input["y"]). 
 		}
 		
-		SET taemg_internal["psha"] TO taemg_constants["pshars"] .
-		
-		SET taemg_input["vtogl"] TO 0.		//to disable further toggling
 	}
 	
-	IF (taemg_input["rwid"] <> taemg_internal["rwid0"]) {
-		SET taemg_internal["psha"] TO taemg_constants["pshars"] .
-		
-		if (taemg_internal["ovhd"][taemg_input["rwid"]]) {
-			SET taemg_internal["ysgn"] TO - 1.
-		}
-	}
 	
-	SET taemg_internal["rwid0"] TO taemg_input["rwid"].
-	
-	IF (taemg_internal["ohalrt"] AND (NOT taemg_input["orahac"][taemg_input["rwid"]]) AND taemg_internal["ovhd"][taemg_input["rwid"]]) {
-		SET taemg_internal["ovhd"][taemg_input["rwid"]] TO FALSE.
-		SET taemg_internal["psha"] TO taemg_constants["pshars"] .
-	}
-	
-	IF (NOT taemg_internal["ovhd"][taemg_input["rwid"]]) AND (taemg_internal["iphase"] < 2) {
-		//change turn sign to straight-in but only before hac acquisition
-		SET taemg_internal["ysgn"] TO 1.
-	}
-	
-	if (taemg_input["weight"] > taemg_constants["wt_gs1"]) {
-		set taemg_internal["igs"] to 2.
-	} else {
-		set taemg_internal["igs"] to 1.
-	}
-	
-	if (taemg_input["gi_change"]) {
-		set taemg_internal["igi"] to 2. 
-	} ELSE {
-		set taemg_internal["igs"] to 1.
-	}
-	
-	set taemg_internal["xftc"] to taemg_constants["xa"][taemg_internal["igi"]] + taemg_constants["hftc"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
-	set taemg_internal["xali"] to taemg_constants["xa"][taemg_internal["igi"]] + taemg_constants["hali"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
+	set taemg_internal["xftc"] to taemg_constants["xa"][1] + taemg_constants["hftc"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
+	set taemg_internal["xali"] to taemg_constants["xa"][1] + taemg_constants["hali"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
 
-	set taemg_internal["xmep"] to taemg_constants["xa"][taemg_internal["igi"]] + taemg_constants["hmep"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
+	set taemg_internal["xmep"] to taemg_constants["xa"][1] + taemg_constants["hmep"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
 	
 	if (taemg_internal["mep"]) {
 		set taemg_internal["xhac"] TO taemg_internal["xmep"].
@@ -780,6 +774,7 @@ FUNCTION tgphic {
 		if (rerrc > taemg_constants["rerrlm"]) {
 			//if we're far outside the hac
 			//hac bank proportional to heading error
+			//apparently done to limit oscillations
 			if (philimit > taemg_constants["philm1"]) {
 				set philimit to taemg_constants["philm1"].
 			}
