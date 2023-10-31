@@ -215,6 +215,45 @@ declare function aeroforce {
 }
 
 
+//wrapper that converts everything to acceleration
+function cur_aeroaccel_ld {
+	
+	LOCAL aeroforce_out IS cur_aeroforce_ld().
+	
+	RETURN LEXICON(
+						"load",aeroforce_out["load"]/(ship:mass),
+						"lift",aeroforce_out["lift"]/(ship:mass),
+						"drag",aeroforce_out["drag"]/(ship:mass)
+						).
+
+}
+
+//samples aeroforce for the vessel right now 
+declare function cur_aeroforce_ld {
+
+	LOCAL out IS LEXICON(
+						"load",v(0,0,0),
+						"lift",0,
+						"drag",0
+						).
+
+	//vector is already in the current ship_raw frame 
+	LOCAL totalforce IS ADDONS:FAR:AEROFORCE().
+	
+	
+	SET out["load"] TO totalforce.
+	//compute lift asnd drag components
+	
+	LOCAL airspeedaoa IS SHIP:VELOCITY:SURFACE:NORMALIZED.
+	LOCAL vesseltop IS SHIP:FACING:TOPVECTOR:NORMALIZED.
+	
+	SET out["drag"] TO -VDOT(totalforce,airspeedaoa).
+	SET out["lift"] TO VDOT(VXCL(airspeedaoa,totalforce),vesseltop).
+	
+	return out.
+
+}
+
 
 DECLARE FUNCTION rk2 {
 	PARAMETER dt.
