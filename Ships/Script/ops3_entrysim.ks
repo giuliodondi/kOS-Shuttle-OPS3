@@ -352,7 +352,7 @@ FUNCTION ops3_reentry_simulate {
 								"pitch_mod",entryg_out["pitch_mod"],
 								"roll_rev",entryg_out["roll_rev"]
 		).
-		update_traj_disp(gui_data).
+		update_entry_traj_disp(gui_data).
 		
 		if (entryg_out["eg_end"]) {
 			print "entry guidance switched to taem" at (0, 20).

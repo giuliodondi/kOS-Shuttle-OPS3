@@ -387,8 +387,8 @@ FUNCTION close_all_GUIs{
 
 FUNCTION make_entry_traj_GUI {
 
-	GLOBAL traj_disp_counter IS 1.				   
-	GLOBAL traj_disp_counter_p IS traj_disp_counter.				   
+	GLOBAL entry_traj_disp_counter IS 1.				   
+	GLOBAL entry_traj_disp_counter_p IS entry_traj_disp_counter.				   
 	
 	GLOBAL traj_disp IS main_entry_gui:addvlayout().
 	SET traj_disp:STYLE:WIDTH TO main_entry_gui_width - 22.
@@ -488,43 +488,43 @@ FUNCTION make_entry_traj_GUI {
 	//SET traj_disp_trail:STYLE:margin:v to 10.
 	//SET traj_disp_trail:STYLE:margin:h to 10.
 	
-	reset_traj_disp().
+	reset_entry_traj_disp().
 }
 
-function reset_traj_disp {
-	set_traj_disp_title().
-	set_traj_disp_bg().
+function reset_entry_traj_disp {
+	set_entry_traj_disp_title().
+	set_entry_traj_disp_bg().
 }
 
-function update_traj_disp {
+function update_entry_traj_disp {
 	parameter gui_data.
 
 	local vel_ is gui_data["vi"].
 	local rng_ is gui_data["range"].
 
 	//check if we shoudl update entry traj counter 
-	if (traj_disp_counter = 1 and vel_ <= 5350) {
-		increment_traj_disp_counter().
-	} else if (traj_disp_counter = 2 and vel_ <= 4350) {
-		increment_traj_disp_counter().
-	} else if (traj_disp_counter = 3 and vel_ <= 3400) {
-		increment_traj_disp_counter().
-	} else if (traj_disp_counter = 4 and vel_ <= 1950) {
-		increment_traj_disp_counter().
-	} else if (traj_disp_counter = 5 and vel_ <= 500) {
-		increment_traj_disp_counter().
+	if (entry_traj_disp_counter = 1 and vel_ <= 5350) {
+		increment_entry_entry_traj_disp_counter().
+	} else if (entry_traj_disp_counter = 2 and vel_ <= 4350) {
+		increment_entry_entry_traj_disp_counter().
+	} else if (entry_traj_disp_counter = 3 and vel_ <= 3400) {
+		increment_entry_entry_traj_disp_counter().
+	} else if (entry_traj_disp_counter = 4 and vel_ <= 1950) {
+		increment_entry_entry_traj_disp_counter().
+	} else if (entry_traj_disp_counter = 5 and vel_ <= 500) {
+		increment_entry_entry_traj_disp_counter().
 	}
 	
-	if (traj_disp_counter_p <> traj_disp_counter) {
-		set traj_disp_counter_p to traj_disp_counter.
-		reset_traj_disp().
+	if (entry_traj_disp_counter_p <> entry_traj_disp_counter) {
+		set entry_traj_disp_counter_p to entry_traj_disp_counter.
+		reset_entry_traj_disp().
 	}
 
-	local orbiter_bug_pos is set_traj_disp_pos(v(trax_disp_x_convert(gui_data["range"]),trax_disp_y_convert(gui_data["vi"]), 0)).
+	local orbiter_bug_pos is set_entry_traj_disp_bg(v(entry_traj_disp_x_convert(gui_data["range"]),entry_traj_disp_y_convert(gui_data["vi"]), 0)).
 	SET traj_disp_orbiter:STYLE:margin:v to orbiter_bug_pos[1].
 	SET traj_disp_orbiter:STYLE:margin:h to orbiter_bug_pos[0].
 	
-	local orbiter_pred_pos is set_traj_disp_pos(v(trax_disp_x_convert(gui_data["range_pred"]),trax_disp_y_convert(gui_data["vi_pred"]), 0), 7).
+	local orbiter_pred_pos is set_entry_traj_disp_bg(v(entry_traj_disp_x_convert(gui_data["range_pred"]),entry_traj_disp_y_convert(gui_data["vi_pred"]), 0), 7).
 	SET traj_disp_pred_bug_:STYLE:margin:v to orbiter_pred_pos[1].
 	SET traj_disp_pred_bug_:STYLE:margin:h to orbiter_pred_pos[0].
 	
@@ -554,23 +554,23 @@ function update_traj_disp {
 
 }
 
-function increment_traj_disp_counter {
-	set traj_disp_counter to traj_disp_counter + 1.
+function increment_entry_entry_traj_disp_counter {
+	set entry_traj_disp_counter to entry_traj_disp_counter + 1.
 }
 
-function set_traj_disp_title {
+function set_entry_traj_disp_title {
 	local text_ht is traj_disp_titlebox:style:height*0.75.
 	
-	set traj_disp_title:text to "<b><size=" + text_ht + ">ENTRY TRAJ " + traj_disp_counter + "</size></b>".
+	set traj_disp_title:text to "<b><size=" + text_ht + ">ENTRY TRAJ " + entry_traj_disp_counter + "</size></b>".
 }
 
 
-function set_traj_disp_bg {
-	set traj_disp_mainbox:style:BG to "Shuttle_OPS3/src/gui_images/traj" + traj_disp_counter + "_bg.png".
+function set_entry_traj_disp_bg {
+	set traj_disp_mainbox:style:BG to "Shuttle_OPS3/src/gui_images/traj" + entry_traj_disp_counter + "_bg.png".
 }
 
 //rescale 
-function set_traj_disp_pos {
+function set_entry_traj_disp_bg {
 	parameter bug_pos.
 	parameter bias is 0.
 	
@@ -594,26 +594,26 @@ function set_traj_disp_pos {
 	return list(pos_x,pos_y).
 }
 
-function trax_disp_x_convert {
+function entry_traj_disp_x_convert {
 	parameter val.
 	
 	local par is val * 0.539957.
 	
 	local out is 0.
 	
-	if (traj_disp_counter=1) {
+	if (entry_traj_disp_counter=1) {
 		if val > 7000 {
             set out to (par^2 * -0.00005111111 + par * 0.38844444 - 228.0444444).
         } else {
             set out to (par^2 * -0.000037792207 + par * 0.32866883 - 183.0636).
 		}
-	} else if (traj_disp_counter=2) {
+	} else if (entry_traj_disp_counter=2) {
 		set out to (par^2 * - 0.00037578 + par * 1.0854212 -302.969942).
-	} else if (traj_disp_counter=3) {
+	} else if (entry_traj_disp_counter=3) {
 		set out to (par^2 * -0.00143805 + par * 2.4982 - 585.265).
-	} else if (traj_disp_counter=4) {
+	} else if (entry_traj_disp_counter=4) {
 		set out to (par^2 * -0.003597 + par * 3.49365 - 362.285714).
-	} else if (traj_disp_counter=5) {
+	} else if (entry_traj_disp_counter=5) {
 		set out to (par^2 * -0.015 + par * 6.425 - 204.75).
 	}
 	
@@ -621,22 +621,22 @@ function trax_disp_x_convert {
 
 }
 
-function trax_disp_y_convert {
+function entry_traj_disp_y_convert {
 	parameter val.
 	
 	local par is val * 3.28084.
 	
 	local out is 0.
 	
-	if (traj_disp_counter=1) {
+	if (entry_traj_disp_counter=1) {
 		set out to (-0.03728 * par + 966.857 + 32.7).
-	} else if (traj_disp_counter=2) {
+	} else if (entry_traj_disp_counter=2) {
 		set out to (-0.089333 * par + 1578.6666 + 32.7).
-	} else if (traj_disp_counter=3) {
+	} else if (entry_traj_disp_counter=3) {
 		set out to (-0.07785 * par + 1150 + 32.7).
-	} else if (traj_disp_counter=4) {
+	} else if (entry_traj_disp_counter=4) {
 		set out to (-0.0593 * par + 689 + 32.7).
-	} else if (traj_disp_counter=5) {
+	} else if (entry_traj_disp_counter=5) {
 		set out to (-0.07828 * par + 535.714 + 32.7).
 	}
 	
