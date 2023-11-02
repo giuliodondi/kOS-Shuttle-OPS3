@@ -39,7 +39,7 @@ GLOBAL input_samples IS LEXICON(
 													"deorbit_apoapsis", 280,
 													"deorbit_periapsis", 0,
 													"deorbit_inclination", 40,
-													"entry_interf_dist", 8000,
+													"entry_interf_dist", 7000,
 													"entry_interf_xrange", 300,
 													"entry_interf_offset", "right"
 							),
@@ -64,7 +64,7 @@ GLOBAL input_samples IS LEXICON(
 ).
 
 
-GLOBAL sim_input IS input_samples["tal"].
+GLOBAL sim_input IS input_samples["edwards"].
 
 GLOBAL ICS IS generate_simulation_ics(sim_input).
 
@@ -334,23 +334,12 @@ FUNCTION ops3_reentry_simulate {
 		PRINTPLACE("hdot : " + round(hdot,1), 20,0,5).
 		PRINTPLACE("tgt_range : " + round(tgt_range,0), 20,0,6).
 		PRINTPLACE("delaz : " + round(delaz,2), 20,0,7).
-		
-		//predict 30 seconds into the future, 2 steps
-		//keep roll and pitch fixed 
-		LOCAL pred_simstate IS clone_simstate(simstate).
-		FROM {local k is 1.} UNTIL k > 2 STEP {set k to k + 1.} DO { 
-			SET pred_simstate TO sim_settings["integrator"]:CALL(15,pred_simstate,LIST(pitch_prof,roll_prof)).
-		}	
-		SET pred_simstate["latlong"] TO shift_pos(pred_simstate["position"],pred_simstate["simtime"]).
-		LOCAL pred_tgt_range IS greatcircledist( tgtpos , pred_simstate["latlong"] ).
-		LOCAL pred_vi IS pred_simstate["velocity"]:MAG.
+
 		
 		local gui_data is lexicon(
 								"iter", step_c,
 								"range",tgt_range,
 								"vi",vi,
-								"range_pred",pred_tgt_range,
-								"vi_pred",pred_vi,
 								"xlfac",xlfacft,
 								"lod",lod,
 								"drag",dragft,

@@ -448,12 +448,12 @@ FUNCTION make_entry_traj_GUI {
 	SET traj_disp_rightdatabox:STYLE:ALIGN TO "left".
 	SET traj_disp_rightdatabox:STYLE:WIDTH TO 125.
     SET traj_disp_rightdatabox:STYLE:HEIGHT TO 115.
-	set traj_disp_rightdatabox:style:margin:h to 390.
+	set traj_disp_rightdatabox:style:margin:h to 400.
 	set traj_disp_rightdatabox:style:margin:v to 90.
 	
 	GLOBAL trajrightdata1 IS traj_disp_rightdatabox:ADDLABEL("HDT REF xxxxx").
 	set trajrightdata1:style:margin:v to -4.
-	GLOBAL trajrightdata2 IS traj_disp_rightdatabox:ADDLABEL("ALPCMD  xxxxx").
+	GLOBAL trajrightdata2 IS traj_disp_rightdatabox:ADDLABEL("ALPCMD xxxxx").
 	set trajrightdata2:style:margin:v to -4.
 	GLOBAL trajrightdata3 IS traj_disp_rightdatabox:ADDLABEL(" ALP MODULN ").
 	set trajrightdata3:style:margin:v to -4.
@@ -500,18 +500,15 @@ function update_entry_traj_disp {
 	parameter gui_data.
 
 	local vel_ is gui_data["vi"].
-	local rng_ is gui_data["range"].
 
 	//check if we shoudl update entry traj counter 
-	if (entry_traj_disp_counter = 1 and vel_ <= 5350) {
+	if (entry_traj_disp_counter = 1 and vel_ <= 5500) {
 		increment_entry_entry_traj_disp_counter().
-	} else if (entry_traj_disp_counter = 2 and vel_ <= 4350) {
+	} else if (entry_traj_disp_counter = 2 and vel_ <= 4330) {
 		increment_entry_entry_traj_disp_counter().
 	} else if (entry_traj_disp_counter = 3 and vel_ <= 3400) {
 		increment_entry_entry_traj_disp_counter().
 	} else if (entry_traj_disp_counter = 4 and vel_ <= 1950) {
-		increment_entry_entry_traj_disp_counter().
-	} else if (entry_traj_disp_counter = 5 and vel_ <= 500) {
 		increment_entry_entry_traj_disp_counter().
 	}
 	
@@ -520,13 +517,17 @@ function update_entry_traj_disp {
 		reset_entry_traj_disp().
 	}
 
-	local orbiter_bug_pos is set_entry_traj_disp_bug(v(entry_traj_disp_x_convert(gui_data["range"]),entry_traj_disp_y_convert(gui_data["vi"]), 0)).
+	local orbiter_bug_pos is set_entry_traj_disp_bug(v(entry_traj_disp_x_convert(gui_data["vi"], gui_data["drag"]),entry_traj_disp_y_convert(gui_data["vi"]), 0)).
 	SET traj_disp_orbiter:STYLE:margin:v to orbiter_bug_pos[1].
 	SET traj_disp_orbiter:STYLE:margin:h to orbiter_bug_pos[0].
 	
-	local orbiter_pred_pos is set_entry_traj_disp_bug(v(entry_traj_disp_x_convert(gui_data["range_pred"]),entry_traj_disp_y_convert(gui_data["vi_pred"]), 0), 7).
-	SET traj_disp_pred_bug_:STYLE:margin:v to orbiter_pred_pos[1].
-	SET traj_disp_pred_bug_:STYLE:margin:h to orbiter_pred_pos[0].
+	LOCAL drag_err_delta IS 0.
+	IF (gui_data["phase"] > 1) {
+		SET drag_err_delta TO 40 * (gui_data["drag_ref"]/gui_data["drag"] - 1).
+	}
+	
+	SET traj_disp_pred_bug_:STYLE:margin:v to orbiter_bug_pos[1] + 10.
+	SET traj_disp_pred_bug_:STYLE:margin:h to orbiter_bug_pos[0] - drag_err_delta + 5.
 	
 	set trajleftdata1:text TO "XLFAC     " + ROUND(gui_data["xlfac"],2).
 	set trajleftdata2:text TO "L/D          " + ROUND(gui_data["lod"],2).
@@ -535,7 +536,7 @@ function update_entry_traj_disp {
 	set trajleftdata5:text TO "PHASE     " + ROUND(gui_data["phase"],0).
 	
 	set trajrightdata1:text TO "HDT REF    " + ROUND(gui_data["hdot_ref"],1).
-	set trajrightdata2:text TO "ALPCMD     " + ROUND(gui_data["pitch"],1).
+	set trajrightdata2:text TO "ALPCMD    " + ROUND(gui_data["pitch"],1).
 	
 	if (gui_data["pitch_mod"]) {
 		set trajrightdata3:text TO "<color=#fff600> ALP MODULN </color>".
@@ -595,49 +596,76 @@ function set_entry_traj_disp_bug {
 }
 
 function entry_traj_disp_x_convert {
-	parameter val.
-	
-	local par is val * 0.539957.
+	parameter vel.
+	parameter drag.
 	
 	local out is 0.
 	
+	LOCAL drag2 IS drag * drag.
+	LOCAL vel2 IS vel * vel.
+	
 	if (entry_traj_disp_counter=1) {
-		if val > 7000 {
-            set out to (par^2 * -0.00005111111 + par * 0.38844444 - 228.0444444).
-        } else {
-            set out to (par^2 * -0.000037792207 + par * 0.32866883 - 183.0636).
-		}
+		LOCAL vel3 IS vel2 * vel.
+		LOCAL drag3 IS drag2 * drag.
+		set out to  1221.8492768869419 
+					+ 0.06539042505511539 * vel 
+					- 211.8206040700076 * drag 
+					- 3.665448458782899e-05 * vel2 
+					+ 0.023576901393660615 * vel * drag 
+					+ 6.12823555795536 * drag2 
+					+ 2.833349485587e-09 * vel3 
+					- 9.179574484665027e-07 * vel2 * drag 
+					- 0.00026682724201671166 * vel * drag2 
+					- 0.06810957054774618 * drag3.
 	} else if (entry_traj_disp_counter=2) {
-		set out to (par^2 * - 0.00037578 + par * 1.0854212 -302.969942).
+		set out to - 38.0268152009462 
+					+ 0.09906578419425373 * vel 
+					- 12.707084859116666 * drag
+					+ 1.3305326295037778e-06 * vel2
+					+ 0.0011766877774739082 * vel * drag
+					- 0.014838331795402771 * drag2.
 	} else if (entry_traj_disp_counter=3) {
-		set out to (par^2 * -0.00143805 + par * 2.4982 - 585.265).
+		set out to - 531.1596833649385 
+					+ 0.2369508010818678 * vel
+					- 0.7771572651359938 * drag
+					- 2.1586890749936138e-07 * vel2
+					+ 0.00021100580946806138 * vel * drag
+					- 0.1132059499998106 * drag2.
 	} else if (entry_traj_disp_counter=4) {
-		set out to (par^2 * -0.003597 + par * 3.49365 - 362.285714).
+		set out to - 748.4063596835092 
+					+ 0.7408869827508833 * vel
+					- 13.833348494044804 * drag
+					- 8.626522934807035e-05 * vel2
+					+ 2.9372518671475292e-05 * vel * drag
+					+ 0.10761028181794845 * drag2.
 	} else if (entry_traj_disp_counter=5) {
-		set out to (par^2 * -0.015 + par * 6.425 - 204.75).
+		set out to - 776.3651212085673
+					+ 1.0608120994108508 * vel
+					- 0.0012408627622487007 * drag
+					- 0.000190689080882267 * vel2
+					- 0.0018267317853930109 * vel * drag
+					- 0.062043138111733405 * drag2.
 	}
 	
-	return out* 500/486.
+	return out.
 
 }
 
 function entry_traj_disp_y_convert {
-	parameter val.
-	
-	local par is val * 3.28084.
+	parameter vel.
 	
 	local out is 0.
 	
 	if (entry_traj_disp_counter=1) {
-		set out to (-0.03728 * par + 966.857 + 32.7).
+		set out to (-0.1187007912 * vel + 966.857 + 32.7).
 	} else if (entry_traj_disp_counter=2) {
-		set out to (-0.089333 * par + 1578.6666 + 32.7).
+		set out to (-0.23731299972 * vel + 1342.6666 + 32.7).
 	} else if (entry_traj_disp_counter=3) {
-		set out to (-0.07785 * par + 1150 + 32.7).
+		set out to (-0.255413394 * vel + 1170 + 32.7).
 	} else if (entry_traj_disp_counter=4) {
-		set out to (-0.0593 * par + 689 + 32.7).
+		set out to (-0.171587932 * vel + 639 + 32.7).
 	} else if (entry_traj_disp_counter=5) {
-		set out to (-0.07828 * par + 535.714 + 32.7).
+		set out to (-0.2568241552 * vel + 565.714 + 32.7).
 	}
 	
 	
