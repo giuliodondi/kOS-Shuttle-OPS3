@@ -520,11 +520,11 @@ function update_entry_traj_disp {
 		reset_entry_traj_disp().
 	}
 
-	local orbiter_bug_pos is set_entry_traj_disp_bg(v(entry_traj_disp_x_convert(gui_data["range"]),entry_traj_disp_y_convert(gui_data["vi"]), 0)).
+	local orbiter_bug_pos is set_entry_traj_disp_bug(v(entry_traj_disp_x_convert(gui_data["range"]),entry_traj_disp_y_convert(gui_data["vi"]), 0)).
 	SET traj_disp_orbiter:STYLE:margin:v to orbiter_bug_pos[1].
 	SET traj_disp_orbiter:STYLE:margin:h to orbiter_bug_pos[0].
 	
-	local orbiter_pred_pos is set_entry_traj_disp_bg(v(entry_traj_disp_x_convert(gui_data["range_pred"]),entry_traj_disp_y_convert(gui_data["vi_pred"]), 0), 7).
+	local orbiter_pred_pos is set_entry_traj_disp_bug(v(entry_traj_disp_x_convert(gui_data["range_pred"]),entry_traj_disp_y_convert(gui_data["vi_pred"]), 0), 7).
 	SET traj_disp_pred_bug_:STYLE:margin:v to orbiter_pred_pos[1].
 	SET traj_disp_pred_bug_:STYLE:margin:h to orbiter_pred_pos[0].
 	
@@ -570,7 +570,7 @@ function set_entry_traj_disp_bg {
 }
 
 //rescale 
-function set_entry_traj_disp_bg {
+function set_entry_traj_disp_bug {
 	parameter bug_pos.
 	parameter bias is 0.
 	

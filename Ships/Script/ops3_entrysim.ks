@@ -33,27 +33,38 @@ make_entry_traj_GUI().
 
 
 
-//GLOBAL sim_input IS LEXICON(
-//						"target", "Vandenberg",
-//						"deorbit_apoapsis", 200,
-//						"deorbit_periapsis",0,
-//						"deorbit_inclination", -105,
-//						"entry_interf_eta", 0,
-//						"entry_interf_dist", 0,
-//						"entry_interf_xrange", 1400,
-//						"entry_interf_offset", "right"
-//).
-
-GLOBAL sim_input IS LEXICON(
-						"target", "Edwards",
-						"deorbit_apoapsis", 450,
-						"deorbit_periapsis",0,
-						"deorbit_inclination", 52.5,
-						"entry_interf_eta", 0,
-						"entry_interf_dist", 0,
-						"entry_interf_xrange", 1600,
-						"entry_interf_offset", "left"
+GLOBAL input_samples IS LEXICON(
+							"edwards", LEXICON(
+													"target", "Edwards",
+													"deorbit_apoapsis", 280,
+													"deorbit_periapsis", 0,
+													"deorbit_inclination", 40,
+													"entry_interf_dist", 8000,
+													"entry_interf_xrange", 300,
+													"entry_interf_offset", "right"
+							),
+							"3a", LEXICON(
+													"target", "Vandenberg",
+													"deorbit_apoapsis", 190,
+													"deorbit_periapsis", 30,
+													"deorbit_inclination", -104,
+													"entry_interf_dist", 8500,
+													"entry_interf_xrange", 1400,
+													"entry_interf_offset", "right"
+							),
+							"tal", LEXICON(
+													"target", "Istres",
+													"deorbit_apoapsis", 121,
+													"deorbit_periapsis", -1100,
+													"deorbit_inclination", 40,
+													"entry_interf_dist", 5000,
+													"entry_interf_xrange", 800,
+													"entry_interf_offset", "right"
+							)
 ).
+
+
+GLOBAL sim_input IS input_samples["tal"].
 
 GLOBAL ICS IS generate_simulation_ics(sim_input).
 
