@@ -111,11 +111,11 @@ global entryg_constants is lexicon (
 									"cy0", -7.5,		//deg 	constant term heading err deadband
 									"cy1", 0.0062498,	//deg-s/ft 	linear term heading err deadband
 									"c17mp", 0.75,		//c17 mult fact when ict=1
-									"c21", 0.06,		//1/deg c20 cont val
-									"c22", -0.001,		//1/deg c20 const value in linear term
-									"c23", 4.25e-6,		//s/ft-deg 	c20 linear term
-									"c24", 0.01,	//1/deg  c20 const value 
-									"c25", 0.01,		//1/deg	c20 const value in linear term 
+									"c21", 2 * 0.06,		//1/deg c20 cont val
+									"c22", 2 * -0.001,		//1/deg c20 const value in linear term
+									"c23", 2 * 4.25e-6,		//s/ft-deg 	c20 linear term
+									"c24", 2 * 0.01,	//1/deg  c20 const value 
+									"c25", 2 * 0.01,		//1/deg	c20 const value in linear term 		//altered to make alp moduln less violent
 									"c26", 0,		//s/ft - deg 	c20 linear val 
 									"c27", 0,		//1/deg c20 const val 
 									"ddlim", 2,		//ft/s2	max drag for h feedback 
