@@ -522,13 +522,12 @@ function update_entry_traj_disp {
 	SET traj_disp_orbiter:STYLE:margin:h to orbiter_bug_pos[0].
 	
 	LOCAL drag_err_delta IS 0.
-	local drag_err_bug_pos is orbiter_bug_pos.
 	IF (gui_data["phase"] > 1) {
-		local drag_err_bug_pos is set_entry_drag_error_bug(v(entry_traj_disp_x_convert(gui_data["vi"], gui_data["drag_ref"]),entry_traj_disp_y_convert(gui_data["vi"]), 0), 10).
+		SET drag_err_delta TO 40 * (gui_data["drag_ref"]/gui_data["drag"] - 1).
 	}
 	
-	SET traj_disp_pred_bug_:STYLE:margin:v to drag_err_bug_pos[1].
-	SET traj_disp_pred_bug_:STYLE:margin:h to drag_err_bug_pos[0].
+	SET traj_disp_pred_bug_:STYLE:margin:v to orbiter_bug_pos[1] + 10.
+	SET traj_disp_pred_bug_:STYLE:margin:h to orbiter_bug_pos[0] - drag_err_delta + 5.
 	
 	
 	
@@ -601,8 +600,8 @@ function set_entry_drag_error_bug {
 	parameter bug_pos.
 	parameter bias is 0.
 	
-	local bounds_x is list(10, traj_disp_mainbox:STYLe:WIDTH - 32).
-	local bounds_y is list(traj_disp_mainbox:STYLe:HEIGHT - 29, 0).
+	local bounds_x is list(10, traj_disp_mainbox:STYLe:WIDTH - 5).
+	local bounds_y is list(traj_disp_mainbox:STYLe:HEIGHT - 5, 0).
 	
 	local pos_x is 1.04693*bug_pos:X  - 8.133.
 	local pos_y is 395.55 - 1.1685*bug_pos:Y + bias.
@@ -623,16 +622,16 @@ function entry_traj_disp_x_convert {
 	if (entry_traj_disp_counter=1) {
 		LOCAL vel3 IS vel2 * vel.
 		LOCAL drag3 IS drag2 * drag.
-		set out to  1221.8492768869419 
-					+ 0.06539042505511539 * vel 
-					- 211.8206040700076 * drag 
-					- 3.665448458782899e-05 * vel2 
-					+ 0.023576901393660615 * vel * drag 
-					+ 6.12823555795536 * drag2 
-					+ 2.833349485587e-09 * vel3 
-					- 9.179574484665027e-07 * vel2 * drag 
-					- 0.00026682724201671166 * vel * drag2 
-					- 0.06810957054774618 * drag3.
+		set out to  555.3926783243992 
+					+ 0.137078652046288 * vel 
+					- 94.72561947028342 * drag
+					- 3.344538192253144e-05 * vel2
+					+ 0.00906907118021625 * vel * drag
+					+ 1.8200934250524303 * drag2
+					+ 2.3076131838717373e-09 * vel3
+					- 3.512244427130015e-07 * vel2 * drag
+					- 5.082702175883116e-05 * vel * drag2
+					- 0.014714191410748175 * drag3.
 	} else if (entry_traj_disp_counter=2) {
 		set out to - 38.0268152009462 
 					+ 0.09906578419425373 * vel 
