@@ -87,9 +87,16 @@ global entryg_constants is lexicon (
 									"almn3", 0.93969,	//max l/d cmd below velmn
 									"almn4", 1.0,	//max l/d cmd above vylmax
 									"astart", 3,		//ft/s2 accel to enter phase 2	//was 5.66
-									"calp0", list(3, 1.333333, -92.4166, 28, 433 , -18.25, -623.25, 38),	//deg alpcmd constant term in ve 
-									"calp1", list(0, 3.333333e-3, 0.0283333, 0, -0.045, 2.5e-3, 0.0575, 0),	//deg-s/ft 	alpcmd linear term in ve
-									"calp2", list(0, 0, -1.66667e-6, 0, 1.25e-6, 0, -1.25e-6, 0),	//deg-s2/ft2 	alpcmd quadratic term in ve
+									
+									//"valp", list(0, 500, 7500, 8500, 18000, 19000, 22000, 23000),	//ft/s alpcmd vs ve boundaries 	//38-28 profile
+									//"calp0", list(3, 1.333333, -92.4166, 28, 433 , -18.25, -623.25, 38),	//deg alpcmd constant term in ve 	//38-28 profile
+									//"calp1", list(0, 3.333333e-3, 0.0283333, 0, -0.045, 2.5e-3, 0.0575, 0),	//deg-s/ft 	alpcmd linear term in ve 	//38-28 profile
+									//"calp2", list(0, 0, -1.66667e-6, 0, 1.25e-6, 0, -1.25e-6, 0),	//deg-s2/ft2 	alpcmd quadratic term in ve 	//38-28 profile
+									
+									"valp", list(0, 500, 7500, 8500, 16000, 17000, 20000, 21000),	//ft/s alpcmd vs ve boundaries 	//38-28 profile
+									"calp0", list(5, 3.3, -74.7625, 30, 350 , -11.25, -511.25, 40),	//deg alpcmd constant term in ve 	//40-30 profile
+									"calp1", list(0, 3.3e-3, 0.0240833, 0, -0.04, 2.5e-3, 0.0525, 0),	//deg-s/ft 	alpcmd linear term in ve 	//40-30 profile
+									"calp2", list(0, 0, -1.38333e-6, 0, 1.25e-6, 0, -1.25e-6, 0),	//deg-s2/ft2 	alpcmd quadratic term in ve 	//40-30 profile
 									"cddot1", 1500,	//ft/s 	cd velocity coef 
 									"cddot2", 2000,	//ft/s 	cd velocity coef 
 									"cddot3", 0.15, 	// 	cd velocity coef 
@@ -119,7 +126,7 @@ global entryg_constants is lexicon (
 									"c26", 0,		//s/ft - deg 	c20 linear val 
 									"c27", 0,		//1/deg c20 const val 
 									"ddlim", 2,		//ft/s2	max drag for h feedback 
-									"ddmin", 0.15,	//ft/s 	min drag error to toggle alpha mod
+									"ddmin", 0.05,	//ft/s 	min drag error to toggle alpha mod
 									"delv", 2300,	//ft/s phase transfer vel bias 
 									"df", 21.0,	//ft/s2 final drag in transition phase
 									"dlallm", 43,	//deg max constant
@@ -160,7 +167,6 @@ global entryg_constants is lexicon (
 									"rpt1", 22.4,	//nmi range bias
 									"va", 27637,	//ft/s initial vel for temp quadratic, dD/dV = 0
 									"valmod", 23000,	//ft/s modulation start flag for nonconvergence
-									"valp", list(0, 500, 7500, 8500, 18000, 19000, 22000, 23000),	//ft/s alpcmd vs ve boundaries
 									"va1", 22000,	//ft/s matching point bw phase 2 quadratic segments
 									"va2", 27637,	//ft/s initial vel dor temp quadratic dD/dV = 0
 									"vb1", 19000,	//ft/s phase 2/3 boundary vel 
@@ -170,7 +176,7 @@ global entryg_constants is lexicon (
 									"verolc", 8000,	//max vel for limiting bank cmd
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
-									"vnoalp", 21500,	//pch mod start velocity//	//took the value from the sts-1 paper
+									"vnoalp", 20500,	//pch mod start velocity//	//took the value from the sts-1 paper
 									"vq", 10499,	//ft/s predicted end vel for const drag			//changed for consistency with vtran
 									"vrlmc", 2500,	//ft/s rlm seg switch vel
 									"vsat", 25766.2,	//ft/s local circular orbit vel 
@@ -773,11 +779,7 @@ function eglodvcmd {
 	//test for alpha modulation
 	if (entryg_input["ve"] < entryg_constants["vnoalp"]) {
 		//re-working of alpha modularion logic
-		if (abs(dd) > entryg_constants["ddmin"]) {
-			set entryg_internal["ict"] to TRUE.
-		} ELSE {
-			set entryg_internal["ict"] to FALSE.
-		}
+		set entryg_internal["ict"] to (abs(dd) > entryg_constants["ddmin"]).
 		
 		if (entryg_internal["ict"]) {
 			local c20 is midval(entryg_constants["c21"], entryg_constants["c22"] + entryg_constants["c23"]*entryg_input["ve"], entryg_constants["c24"]).
