@@ -522,12 +522,15 @@ function update_entry_traj_disp {
 	SET traj_disp_orbiter:STYLE:margin:h to orbiter_bug_pos[0].
 	
 	LOCAL drag_err_delta IS 0.
+	local drag_err_bug_pos is orbiter_bug_pos.
 	IF (gui_data["phase"] > 1) {
-		SET drag_err_delta TO 40 * (gui_data["drag_ref"]/gui_data["drag"] - 1).
+		local drag_err_bug_pos is set_entry_drag_error_bug(v(entry_traj_disp_x_convert(gui_data["vi"], gui_data["drag_ref"]),entry_traj_disp_y_convert(gui_data["vi"]), 0), 10).
 	}
 	
-	SET traj_disp_pred_bug_:STYLE:margin:v to orbiter_bug_pos[1] + 10.
-	SET traj_disp_pred_bug_:STYLE:margin:h to orbiter_bug_pos[0] - drag_err_delta + 5.
+	SET traj_disp_pred_bug_:STYLE:margin:v to drag_err_bug_pos[1].
+	SET traj_disp_pred_bug_:STYLE:margin:h to drag_err_bug_pos[0].
+	
+	
 	
 	set trajleftdata1:text TO "XLFAC     " + ROUND(gui_data["xlfac"],2).
 	set trajleftdata2:text TO "L/D          " + ROUND(gui_data["lod"],2).
@@ -573,7 +576,6 @@ function set_entry_traj_disp_bg {
 //rescale 
 function set_entry_traj_disp_bug {
 	parameter bug_pos.
-	parameter bias is 0.
 	
 	local bug_margin is 10.
 	
@@ -582,8 +584,8 @@ function set_entry_traj_disp_bug {
 	
 	//print "calc_x: " + bug_pos:X + " calc_y: " +  + bug_pos:Y  + "  " at (0, 4).
 	
-	local pos_x is 1.04693*bug_pos:X  - 8.133 + bias.
-	local pos_y is 395.55 - 1.1685*bug_pos:Y + bias.
+	local pos_x is 1.04693*bug_pos:X  - 8.133.
+	local pos_y is 395.55 - 1.1685*bug_pos:Y.
 	
 	//print "disp_x: " + pos_x + " disp_y: " + pos_y + "  " at (0, 5).
 	
@@ -593,6 +595,20 @@ function set_entry_traj_disp_bug {
 	//print "disp_x: " + pos_x + " disp_y: " + pos_y + "  " at (0, 6).
 	
 	return list(pos_x,pos_y).
+}
+
+function set_entry_drag_error_bug {
+	parameter bug_pos.
+	parameter bias is 0.
+	
+	local bounds_x is list(10, traj_disp_mainbox:STYLe:WIDTH - 32).
+	local bounds_y is list(traj_disp_mainbox:STYLe:HEIGHT - 29, 0).
+	
+	local pos_x is 1.04693*bug_pos:X  - 8.133.
+	local pos_y is 395.55 - 1.1685*bug_pos:Y + bias.
+	
+	set pos_x to clamp(pos_x, bounds_x[0], bounds_x[1] ).
+	set pos_y to clamp(pos_y, bounds_y[0], bounds_y[1]).
 }
 
 function entry_traj_disp_x_convert {

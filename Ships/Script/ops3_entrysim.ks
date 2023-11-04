@@ -31,42 +31,8 @@ GLOBAL tgtrwy IS refresh_runway_lex(ldgsiteslex[select_tgt:VALUE]).
 
 make_entry_traj_GUI().
 
-
-
-GLOBAL input_samples IS LEXICON(
-							"edwards", LEXICON(
-													"target", "Edwards",
-													"deorbit_apoapsis", 280,
-													"deorbit_periapsis", 0,
-													"deorbit_inclination", 40,
-													"entry_interf_dist", 7000,
-													"entry_interf_xrange", 300,
-													"entry_interf_offset", "right"
-							),
-							"3a", LEXICON(
-													"target", "Vandenberg",
-													"deorbit_apoapsis", 190,
-													"deorbit_periapsis", 30,
-													"deorbit_inclination", -104,
-													"entry_interf_dist", 8500,
-													"entry_interf_xrange", 1400,
-													"entry_interf_offset", "right"
-							),
-							"tal", LEXICON(
-													"target", "Istres",
-													"deorbit_apoapsis", 121,
-													"deorbit_periapsis", -1100,
-													"deorbit_inclination", 40,
-													"entry_interf_dist", 5000,
-													"entry_interf_xrange", 800,
-													"entry_interf_offset", "right"
-							)
-).
-
-
-GLOBAL sim_input IS input_samples["edwards"].
-
-GLOBAL ICS IS generate_simulation_ics(sim_input).
+gLOBAL sim_input_target IS "".
+GLOBAL ICS IS generate_simulation_ics("tal").
 
 GLOBAL sim_settings IS LEXICON(
 					"deltat",2,
@@ -92,10 +58,57 @@ ops3_reentry_simulate().
 close_all_GUIs().
 
 
+FUNCTION generate_simulation_ics {
+	PARAMETER name_.
+	
+	LOCAL ics_lex IS LEXICON().
+	local standard is TRUE.
+	
+	if (name_ = "edwards") {
+		SET ics_lex to LEXICON(
+													"target", "Edwards",
+													"deorbit_apoapsis", 280,
+													"deorbit_periapsis", 0,
+													"deorbit_inclination", 40,
+													"entry_interf_dist", 7000,
+													"entry_interf_xrange", 300,
+													"entry_interf_offset", "right"
+							).
+		set standard to TRUE.
+	} else if (name_ = "3a") {
+		SET ics_lex to LEXICON(
+													"target", "Vandenberg",
+													"deorbit_apoapsis", 190,
+													"deorbit_periapsis", 30,
+													"deorbit_inclination", -104,
+													"entry_interf_dist", 8500,
+													"entry_interf_xrange", 1400,
+													"entry_interf_offset", "right"
+							).
+		set standard to TRUE.
+	} else if (name_ = "tal") {
+		SET ics_lex to LEXICON(
+													"target", "Istres",
+													"deorbit_apoapsis", 115,
+													"deorbit_periapsis", -1700,
+													"deorbit_inclination", 52,
+													"entry_interf_dist", 5000,
+													"entry_interf_xrange", 600,
+													"entry_interf_offset", "left"
+							).
+		set standard to FALSE.
+	}
+	
+	SET sim_input_target TO ics_lex["target"].
+
+	return calculate_simulation_ics(ics_lex, standard).
+}
+
 
 //given the deorbit and entry interface parameters, generates the simulation initial conditions
-FUNCTION generate_simulation_ics {
+FUNCTION calculate_simulation_ics {
 	PARAMETER sim_input.
+	PARAMETER standard.
 	
 	LOCAL tgt_pos IS ldgsiteslex[sim_input["target"]]["position"].
 	
@@ -139,47 +152,91 @@ FUNCTION generate_simulation_ics {
 		WAIT 0.
 	}
 	
-	local ei_calc is deorbit_ei_calc(sim_input["deorbit_apoapsis"], constants["interfalt"]/1000).
-	
-	
-	
-	
-	LOCAL d IS dist2degrees(ei_calc["ei_range"]).
-	
-	LOCAL y IS get_c_ab(d, x).
-	
-	LOCAL ei_vec IS rodrigues(tgt_vec_proj, norm_vec, y).
-	
-	//scale by entry interface altitude
-	LOCAL h IS BODy:RADIUS + constants["interfalt"].
-	SET ei_vec TO ei_vec:NORMALIZED * h.
-	
-	clearvecdraws().
-	arrow_body(tgt_vec,"tgt_vec").
-	arrow_body(norm_vec,"norm_vec").
-	arrow_body(ei_vec,"ei_vec").
+	if (standard) {
+		local ei_calc is deorbit_ei_calc(sim_input["deorbit_apoapsis"], constants["interfalt"]/1000).
 
 
-	print "x " + x + " d " + d + " y " + y at (0,8).
-	
-	//conditions at entry interface
-	
-	
-	LOCAL ei_vel IS ei_calc["ei_vel"].
-	LOCAL ei_fpa IS ei_calc["ei_fpa"].
-	
-	print "ap " + ei_calc["ap"] + " pe " + ei_calc["pe"] + " range " + ei_calc["ei_range"] at (0,9).
-	print "vel " + ei_calc["ei_vel"] + " gamma " + ei_calc["ei_fpa"] at (0,10).
-	
-	//now get velocity vector at the entry interface
-	LOCAL ei_vel_vec IS VCRs(ei_vec, norm_vec):NORMALIZED.
-	
-	SET ei_vel_vec TO rodrigues(ei_vel_vec, norm_vec, ei_calc["ei_fpa"]):NORMALIZED * ei_calc["ei_vel"].
 
-	RETURN 	LEXICON(
-					 "position",ei_vec,
-	                 "velocity",ei_vel_vec
-	).
+
+		LOCAL d IS dist2degrees(ei_calc["ei_range"]).
+
+		LOCAL y IS get_c_ab(d, x).
+
+		LOCAL ei_vec IS rodrigues(tgt_vec_proj, norm_vec, y).
+
+		//scale by entry interface altitude
+		LOCAL h IS BODy:RADIUS + constants["interfalt"].
+		SET ei_vec TO ei_vec:NORMALIZED * h.
+
+		clearvecdraws().
+		arrow_body(tgt_vec,"tgt_vec").
+		arrow_body(norm_vec,"norm_vec").
+		arrow_body(ei_vec,"ei_vec").
+
+
+		print "x " + x + " d " + d + " y " + y at (0,8).
+
+		//conditions at entry interface
+
+
+		LOCAL ei_vel IS ei_calc["ei_vel"].
+		LOCAL ei_fpa IS ei_calc["ei_fpa"].
+
+		print "ap " + ei_calc["ap"] + " pe " + ei_calc["pe"] + " range " + ei_calc["ei_range"] at (0,9).
+		print "vel " + ei_calc["ei_vel"] + " gamma " + ei_calc["ei_fpa"] at (0,10).
+
+		//now get velocity vector at the entry interface
+		LOCAL ei_vel_vec IS VCRs(ei_vec, norm_vec):NORMALIZED.
+
+		SET ei_vel_vec TO rodrigues(ei_vel_vec, norm_vec, ei_calc["ei_fpa"]):NORMALIZED * ei_calc["ei_vel"].
+
+		RETURN 	LEXICON(
+						 "position",ei_vec,
+						 "velocity",ei_vel_vec
+		).
+	} else {
+		LOCAL d IS dist2degrees(sim_input["entry_interf_dist"]).
+	
+		LOCAL y IS get_c_ab(d, x).
+		
+		LOCAL ei_vec IS rodrigues(tgt_vec_proj, norm_vec, y).
+		
+		//scale by entry interface altitude
+		LOCAL h IS BODy:RADIUS + constants["interfalt"].
+		SET ei_vec TO ei_vec:NORMALIZED * h.
+		
+		clearvecdraws().
+		arrow_body(tgt_vec,"tgt_vec").
+		arrow_body(norm_vec,"norm_vec").
+		arrow_body(ei_vec,"ei_vec").
+
+
+		print "x " + x + " d " + d + " y " + y at (0,8).
+		print "dist " + greatcircledist( ei_vec , tgt_vec ) at (0,9).
+		
+		//conditions at entry interface
+		
+		LOCAL ei_sma IS orbit_appe_sma(sim_input["deorbit_apoapsis"], sim_input["deorbit_periapsis"]).
+		LOCAL ei_ecc IS orbit_appe_ecc(sim_input["deorbit_apoapsis"], sim_input["deorbit_periapsis"]).
+		
+		print "sma " + ei_sma + " ecc " + ei_ecc at (0,10).
+		
+		LOCAL ei_vel IS orbit_alt_vel(constants["interfalt"] + BODY:RADIUS, ei_sma).
+		LOCAL ei_eta IS 180 + orbit_alt_eta(constants["interfalt"] + BODY:RADIUS, ei_sma, ei_ecc).
+		LOCAL ei_fpa IS orbit_eta_fpa(ei_eta, ei_sma, ei_ecc).
+		
+		print "vel " + ei_vel + " eta " + ei_eta + " gamma " + ei_fpa at (0,11).
+		
+		//now get velocity vector at the entry interface
+		LOCAL ei_vel_vec IS VCRs(ei_vec, norm_vec):NORMALIZED.
+		
+		SET ei_vel_vec TO rodrigues(ei_vel_vec, norm_vec, ei_fpa):NORMALIZED * ei_vel.
+
+		RETURN 	LEXICON(
+						 "position",ei_vec,
+						 "velocity",ei_vel_vec
+		).
+	}
 }
 
 
@@ -191,7 +248,7 @@ FUNCTION ops3_reentry_simulate {
 
 	
 	
-	LOCAL tgt_rwy IS ldgsiteslex[sim_input["target"]].
+	LOCAL tgt_rwy IS ldgsiteslex[sim_input_target].
 		
 	//Initialise log lexicon 
 	GLOBAL loglex IS LEXICON(
@@ -217,7 +274,7 @@ FUNCTION ops3_reentry_simulate {
 	).
 	
 	
-	log_data(loglex,"0:/Shuttle_OPS3/LOGS/sim_log_" + sim_input["target"], TRUE).
+	log_data(loglex,"0:/Shuttle_OPS3/LOGS/sim_log_" + sim_input_target, TRUE).
 	
 	//define the delegate to the integrator function, saves an if check per integration step
 	IF sim_settings["integrator"]= "rk2" {

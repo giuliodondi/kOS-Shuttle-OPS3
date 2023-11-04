@@ -954,8 +954,10 @@ function egrolcmd {
 	//use the 2xdelaz logic from the manual 
 	//do not roll more than 120°
 	//do not clamp during preentry (want to keep roll at 0° ideally)
-	if (entryg_internal["islect"] > 1) {
-		set entryg_internal["rolcmd"] to entryg_internal["rk2rol"] * CLAMP(ABS(entryg_internal["rollc"][1]), 2*ABS(entryg_input["delaz"]), 120).
-	}
-
+	//UPDATE: delaz clamping is not good for TAL, so disable it 
+	//if (entryg_internal["islect"] > 1) {
+	//	set entryg_internal["rolcmd"] to entryg_internal["rk2rol"] * CLAMP(ABS(entryg_internal["rollc"][1]), 2*ABS(entryg_input["delaz"]), 120).
+	//}
+	
+	set entryg_internal["rolcmd"] to entryg_internal["rk2rol"] * CLAMP(ABS(entryg_internal["rollc"][1]), 0, 120).
 }
