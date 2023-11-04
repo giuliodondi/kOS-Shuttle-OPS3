@@ -47,7 +47,8 @@ FUNCTION entryg_wrapper {
 										"vi", entryg_input["vi"]*mt2ft,		   //inertial vel (ft/s)
 										"xlfac", entryg_input["xlfac"],      //load factor acceleration (ft/s2)
 										"mm304ph", entryg_input["roll0"],    	//preentry bank 
-										"mm304al", entryg_input["alpha0"]    	//preentry aoa 
+										"mm304al", entryg_input["alpha0"],    	//preentry aoa ,
+										"ital", entryg_input["ital"]				//is tal abort flag
 								)
 	).
 	
@@ -109,7 +110,7 @@ global entryg_constants is lexicon (
 									"cnmfs", 1.645788e-4,	//nmi/ft 	conversion from feet to nmi 
 									"crdeaf", 4,	//roll bias due to pitch modulation gain	//was 4
 									"ct16", list(0, 0.1354, -0.1, 0.006),	// s2/ft - nd - s2/ft	c16 coefs
-									"ct17", list(0, 1.537e-2, -5.8146e-1),	//s/ft - nd 	c17 coefs
+									"ct17", list(0, 2*1.537e-2, -5.8146e-1),	//s/ft - nd 	c17 coefs
 									"ct16mn", 0.025,	//s2/ft		min c16
 									"ct16mx", 0.35,		//s2/ft 	max c16
 									"ct17mn", 0.0025,	//s/ft 		min c17
@@ -118,11 +119,11 @@ global entryg_constants is lexicon (
 									"cy0", -7.5,		//deg 	constant term heading err deadband
 									"cy1", 0.0062498,	//deg-s/ft 	linear term heading err deadband
 									"c17mp", 0.75,		//c17 mult fact when ict=1
-									"c21", 2 * 0.06,		//1/deg c20 cont val
-									"c22", 2 * -0.001,		//1/deg c20 const value in linear term
-									"c23", 2 * 4.25e-6,		//s/ft-deg 	c20 linear term
-									"c24", 2 * 0.01,	//1/deg  c20 const value 
-									"c25", 2 * 0.01,		//1/deg	c20 const value in linear term 		//altered to make alp moduln less violent
+									"c21", 1 * 0.06,		//1/deg c20 cont val
+									"c22", 1 * -0.001,		//1/deg c20 const value in linear term
+									"c23", 1 * 4.25e-6,		//s/ft-deg 	c20 linear term
+									"c24", 1 * 0.01,	//1/deg  c20 const value 
+									"c25", 1 * 0.01,		//1/deg	c20 const value in linear term 		//altered to make alp moduln less violent
 									"c26", 0,		//s/ft - deg 	c20 linear val 
 									"c27", 0,		//1/deg c20 const val 
 									"ddlim", 2,		//ft/s2	max drag for h feedback 
@@ -475,6 +476,15 @@ function eginit {
 	//component of constant drag phase 
 	set entryg_internal["rcg1"] to entryg_constants["cnmfs"] * (entryg_internal["vsit2"]  - entryg_internal["vq2"]) / (2*entryg_constants["alfm"]).
 	set entryg_internal["ialp"] to entryg_constants["nalp"].
+	
+	//in case of a tal abort 
+	IF (entryg_input["ital"]) {
+		set entryg_constants["vc16"] to 0.
+		set entryg_constants["vnoalp"] to 17000.
+		set entryg_constants["vrdt"] to 0.
+		set entryg_constants["vylmax"] to 0.
+	}
+	
 	set entryg_internal["start"] to 1.
 }
 
@@ -862,8 +872,6 @@ function eglodvcmd {
 	//added a check?
 	if (entryg_input["ve"] > entryg_constants["vylmax"]) {
 		set entryg_internal["lmn"] to entryg_constants["almn4"].
-	} else {
-		set entryg_internal["rk2rol"] to sign(entryg_input["roll"]).
 	}
 	
 	if (entryg_input["ve"] < entryg_constants["velmn"]) {

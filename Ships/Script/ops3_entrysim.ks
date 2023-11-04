@@ -32,6 +32,7 @@ GLOBAL tgtrwy IS refresh_runway_lex(ldgsiteslex[select_tgt:VALUE]).
 make_entry_traj_GUI().
 
 gLOBAL sim_input_target IS "".
+gLOBAL tal_abort IS FALSE.
 GLOBAL ICS IS generate_simulation_ics("tal").
 
 GLOBAL sim_settings IS LEXICON(
@@ -97,6 +98,7 @@ FUNCTION generate_simulation_ics {
 													"entry_interf_offset", "left"
 							).
 		set standard to FALSE.
+		set tal_abort to TRUE.
 	}
 	
 	SET sim_input_target TO ics_lex["target"].
@@ -351,12 +353,15 @@ FUNCTION ops3_reentry_simulate {
 											"vi", vi,	
 											"xlfac", xlfacft,
 											"roll0", roll_0,    
-											"alpha0", pitch_0
+											"alpha0", pitch_0,
+											"ital", tal_abort
 									)
 		).
 		
 		SET pitch_prof TO entryg_out["alpha"].
-		SET roll_prof TO entryg_out["roll"].
+		//simulate roll lag
+		LOCAL del_rol IS entryg_out["roll"] - roll_prof.
+		SET roll_prof TO roll_prof + SIGN(del_rol)* MIN(20, ABS(del_rol)).
 		
 		//log stuff to file and terminal before integrating
 		
