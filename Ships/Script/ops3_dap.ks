@@ -17,6 +17,7 @@ ON (AG9) {
 		UNLOCK STEERING.
 	} ELSe {
 		SET engaged TO TRUE.
+		dap:reset_nz_css().
 		LOCK STEERING TO steerdir.
 	}
 	PRESERVE.
@@ -26,6 +27,10 @@ clearscreen.
 
 until false{
 	//clearscreen.
+	
+	IF (SHIP:STATUS = "LANDEd") {
+		UNLOCK STEERING.
+	}
 	
 	dap:update_nz().
 	

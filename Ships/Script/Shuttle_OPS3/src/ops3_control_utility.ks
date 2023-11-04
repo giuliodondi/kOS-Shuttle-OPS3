@@ -54,9 +54,8 @@ FUNCTION dap_controller_factory{
 	
 	this:add("tgt_nz", 0).
 	
-	SET this:tgt_nz TO this:nz.
 	
-	this:add("nz_pitch_pid", PIDLOOP(3.8,0,0.8)).
+	this:add("nz_pitch_pid", PIDLOOP(1.4,0,0.1)).
 	
 	SET this:nz_pitch_pid:SETPOINT TO 0.
 	
@@ -69,6 +68,19 @@ FUNCTION dap_controller_factory{
 	this:add("steer_yaw",0).
 	this:add("steer_roll",0).
 	
+	this:add("reset_steering_angles", {
+		set this:steer_pitch to this:prog_pitch.
+		set this:steer_roll to this:prog_roll.
+		set this:steer_yaw to 0.
+	}).
+	
+	this:add("reset_nz_css", {
+		SET this:tgt_nz TO this:nz.
+		this:reset_steering_angles().
+	}).
+	
+	
+
 	//by default do not rotate in yaw, to enforce zero sideslip
 	this:add("create_prog_steering_dir",{
 		PARAMETER pch.
@@ -111,8 +123,8 @@ FUNCTION dap_controller_factory{
 		this:update_nz().
 		
 		//gains suitable for manoeivrable steerign in atmosphere
-		LOCAL rollgain IS 6.
-		LOCAL nzgain IS 0.04.
+		LOCAL rollgain IS 0.7.
+		LOCAL nzgain IS 0.06.
 		LOCAL yawgain IS 2.
 		
 		//required for continuous pilot input across several funcion calls
@@ -128,8 +140,8 @@ FUNCTION dap_controller_factory{
 		SET this:steer_pitch TO this:steer_pitch + this:update_nz_pid().
 		
 		//apply the deltas to the current angles so the inputs will tend to "ndge" the nose around and then leave it where it is when the controls are released
-		SET this:steer_roll TO this:prog_roll + deltaroll.
-		SET this:steer_yaw TO 0 + deltayaw.
+		SET this:steer_roll TO this:steer_roll + deltaroll.
+		SET this:steer_yaw TO this:prog_yaw*0.3 + deltayaw.
 		
 		SET this:steering_dir TO this:create_prog_steering_dir(
 			this:steer_pitch,
