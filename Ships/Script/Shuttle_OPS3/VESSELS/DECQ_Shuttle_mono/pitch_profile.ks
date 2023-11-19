@@ -9,7 +9,7 @@
 
 GLOBAL pitchprof_segments IS LIST(
 							LIST(250,3),
-							LIST(2100,28),
+							LIST(2400,28),
 							LIST(5400,28),
 							LIST(6400,38)
 							).
