@@ -12,6 +12,8 @@ FUNCTION dap_controller_factory{
 
 	this:add("enabled", TRUE).
 	
+	this:add("mode", "atmo_css").
+	
 	this:add("steering_dir", SHIP:FACINg).
 	
 	this:add("reset_steering",{
@@ -55,7 +57,7 @@ FUNCTION dap_controller_factory{
 	this:add("tgt_nz", 0).
 	
 	
-	this:add("nz_pitch_pid", PIDLOOP(1.4,0,0.1)).
+	this:add("nz_pitch_pid", PIDLOOP(1.8,0,0.1)).
 	
 	SET this:nz_pitch_pid:SETPOINT TO 0.
 	
@@ -116,6 +118,14 @@ FUNCTION dap_controller_factory{
 		RETURN LOOKDIRUP(aimv, upvec).
 	}).
 	
+	this:add("update", {
+		IF (this:mode = "atmo_css") {
+			return this:atmo_css().
+		} ELSe IF (this:mode = "atmo_nz_css") {
+			return this:atmo_nz_css().
+		}
+	}).
+	
 	this:add("atmo_nz_css", {
 	
 		this:update_time().
@@ -123,8 +133,8 @@ FUNCTION dap_controller_factory{
 		this:update_nz().
 		
 		//gains suitable for manoeivrable steerign in atmosphere
-		LOCAL rollgain IS 0.7.
-		LOCAL nzgain IS 0.06.
+		LOCAL rollgain IS 0.8.
+		LOCAL nzgain IS 0.018.
 		LOCAL yawgain IS 2.
 		
 		//required for continuous pilot input across several funcion calls
@@ -141,7 +151,7 @@ FUNCTION dap_controller_factory{
 		
 		//apply the deltas to the current angles so the inputs will tend to "ndge" the nose around and then leave it where it is when the controls are released
 		SET this:steer_roll TO this:steer_roll + deltaroll.
-		SET this:steer_yaw TO this:prog_yaw*0.3 + deltayaw.
+		SET this:steer_yaw TO this:prog_yaw*0.2 + deltayaw.
 		
 		SET this:steering_dir TO this:create_prog_steering_dir(
 			this:steer_pitch,
@@ -159,8 +169,8 @@ FUNCTION dap_controller_factory{
 		this:update_prog_angles().
 		
 		//gains suitable for manoeivrable steerign in atmosphere
-		LOCAL rollgain IS 6.
-		LOCAL pitchgain IS 2.
+		LOCAL rollgain IS 2.
+		LOCAL pitchgain IS 0.8.
 		LOCAL yawgain IS 2.
 		
 		//required for continuous pilot input across several funcion calls
@@ -171,10 +181,9 @@ FUNCTION dap_controller_factory{
 		LOCAL deltapitch IS time_gain * pitchgain * (SHIP:CONTROL:PILOTPITCH - SHIP:CONTROL:PILOTPITCHTRIM).
 		LOCAL deltayaw IS time_gain * yawgain * (SHIP:CONTROL:PILOTYAW - SHIP:CONTROL:PILOTYAWTRIM).
 		
-		//apply the deltas to the current angles so the inputs will tend to "ndge" the nose around and then leave it where it is when the controls are released
-		SET this:steer_pitch TO this:prog_pitch + deltapitch.
-		SET this:steer_roll TO this:prog_roll + deltaroll.
-		SET this:steer_yaw TO this:prog_yaw*0.3 + deltayaw.
+		SET this:steer_pitch TO this:steer_pitch + deltapitch.
+		SET this:steer_roll TO this:steer_roll + deltaroll.
+		SET this:steer_yaw TO this:prog_yaw*0.2 + deltayaw.
 		
 		SET this:steering_dir TO this:create_prog_steering_dir(
 			this:steer_pitch,
@@ -239,6 +248,9 @@ FUNCTION dap_controller_factory{
 	this:add("print_debug",{
 		PARAMETER line.
 		
+		
+		print "mode : " + this:mode + "    " at (0,line).
+		
 		print "loop dt : " + round(this:iteration_dt(),3) + "    " at (0,line + 1).
 		
 		print "prog pitch : " + round(this:prog_pitch,3) + "    " at (0,line + 2).
@@ -292,7 +304,7 @@ FUNCTION reset_pids {
 FUNCTION speed_control {
 	PARAMETER auto_flag.
 	PARAMETER aerosurfaces_control.
-	PARAMETER mode.
+	PARAMETER mode_.
 	
 	LOCAL previous_val IS aerosurfaces_control["spdbk_defl"].
 	
@@ -301,43 +313,7 @@ FUNCTION speed_control {
 	//automatic speedbrake control
 	If auto_flag {
 
-		//above 3000 m/s the autobrake is disabled
-		IF SHIP:VELOCITy:SURFACE:MAG<3000 {
-			LOCAL tgtspeed IS 0.
-			LOCAL delta_spd IS 0.
-			LOCAL airspd IS SHIP:VELOCITy:SURFACE:MAG.
-			
-			IF (mode=1 OR mode=2) {
-				LOCAL tgt_rng IS greatcircledist(tgtrwy["position"], SHIP:GEOPOSITION).
-				SET tgtspeed TO MAX(250,51.48*tgt_rng^(0.6)).
-				SET delta_spd TO airspd - tgtspeed.
-			}
-			ELSE {
-				IF mode=3 {
-					SET delta_spd TO airspd - 220.
-				}
-				ELSE IF mode=4 {
-					SET delta_spd TO airspd - 185.
-				}
-				ELSE IF mode=5 {
-					SET delta_spd TO airspd - 150.
-				}
-				ELSE IF (mode=6 OR mode = 7) {
-					SET delta_spd TO airspd - 130.
-				}
-				ELSE IF mode=8 {
-					SET delta_spd TO airspd.
-						
-					IF airspd < 65 {
-						BRAKES ON.
-					}
-				}
-			}
-			
-			LOCAL delta_spdbk IS CLAMP(BRAKESPID:UPDATE(TIME:SECONDS,delta_spd), -2, 2).
-			
-			SET newval TO newval + delta_spdbk.
-		}
+		//to be reworked
 		
 	}
 	ELSE {
