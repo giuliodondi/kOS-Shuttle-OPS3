@@ -6,7 +6,8 @@ GLOBAL atm2pa IS 101325.		// atm/pascal
 GLOBAL newton2lb IS 0.224809.	//	N/lb
 GLOBAL kg2slug IS 14.59390.		// kg/slug
 GLOBAL kg2lb IS 0.45359237.		// kg/lb
-GLOBAL pa2psf IS newton2lb / (mt2ft^2).		//pascal/psf
+GLOBAL pa2psf IS newton2lb / (mt2ft^2).		//pascal/psf	
+GLOBAL mps2kt IS 1.94384.			//m/s / knots
 
 //input variables
 //		h		//ft height above rwy
@@ -21,9 +22,9 @@ GLOBAL pa2psf IS newton2lb / (mt2ft^2).		//pascal/psf
 //		mach 
 //		qbar 	//psf dynamic pressure
 //		cosphi 	//cosine of roll 
-//		secth 	//secant of pitch 
+//		secth 	//secant of pitch 			//not used???
 //		weight 	//slugs mass 
-//		tas 		//ft/s true airspeed
+//		tas 		//ft/s true airspeed		//deprecated, used in dap and true airspeed estimator, don't need those
 //		gamma 	//deg earth relative fpa  
 
 //		gi_change 	//flag indicating desired glideslope based on headwind 		//deprecated
@@ -37,7 +38,7 @@ GLOBAL pa2psf IS newton2lb / (mt2ft^2).		//pascal/psf
 //outputs 
 //		nzc 	//g-units normal load factor increment from equilibrium
 //		phic_at 	//deg commanded roll 
-//		delrng 	//ft range error from altitude profile 
+//		delrng 	//ft range error from altitude profile 			//calculated as herror / dhdrrf but the calculation is not in the flowcharts nor the level-c???
 //		dpsac 	//deg heading error to the hac tangent 
 //		dsbc_at 	//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
 //		emep 	//ft energy/weight at which the mep is selected 
@@ -55,13 +56,45 @@ GLOBAL pa2psf IS newton2lb / (mt2ft^2).		//pascal/psf
 
 FUNCTION taemg_wrapper {
 	PARAMETER taemg_input.
-	
+
 	LOCAL taemg_output IS tgexec(
-	
-	
+								LEXICON(
+										"h", taemg_input["h"] * mt2ft,		//ft height above rwy
+										"hdot", taemg_input["hdot"] * mt2ft,	//ft/s vert speed
+										"x", taemg_input["x"] * mt2ft,		//ft x component on runway coord
+										"y", taemg_input["y"] * mt2ft,		//ft y component on runway coord
+										"surfv", taemg_input["surfv"] * mt2ft, 		//ft/s earth relative velocity mag 			//was v
+										"surfv_h", taemg_input["surfv_h"] * mt2ft,		//ft/s earth relative velocity horizintal component 				//was vh
+										"xdot", taemg_input["xdot"] * mt2ft, 	//ft/s component along x direction of earth velocity in runway coord
+										"ydot", taemg_input["ydot"] * mt2ft, 	//ft/s component along y direction of earth velocity in runway coord
+										"psd", taemg_input["psd"], 		//deg course wrt runway centerline 
+										"mach", taemg_input["mach"], 
+										"qbar", taemg_input["qbar"] * atm2pa * pa2psf, 	//psf dynamic pressure
+										"cosphi", taemg_input["phi"], 	//cosine of roll 
+										"weight", taemg_input["m"] * kg2slug, 	//slugs mass 
+										"gamma", taemg_input["gamma"], 	//deg earth relative fpa  
+										"ovhd", taemg_input["ovhd"],  		// ovhd/straight-in flag , it's a 2-elem list, one for each value of rwid 			//changed into a simple flag
+										"rwid", taemg_input["rwid"]		//runway id flag  (only needed to detect a runway change, the runway number is fine)
+								)
 	).
 
+	//dsbc_at needs to be transformed to a 0-1 variable based on max deflection (halved)
 	RETURN LEXICON(
+					"nzc", taemg_output["nzc"], 	//g-units normal load factor increment from equilibrium
+					"phic_at", taemg_output["phic_at"], 	//deg commanded roll 
+					"dpsac", taemg_output["dpsac"], 	//deg heading error to the hac tangent 
+					"dsbc_at", taemg_output["dsbc_at"] / taemg_constants["dsblim"], 	//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
+					"emep", taemg_output["emep"] / mt2ft, 	//ft energy/weight at which the mep is selected 
+					"eow", taemg_output["eow"] / mt2ft, 		//ft energy/weight
+					"es", taemg_output["es"] / mt2ft, 		//ft energy/weight at which the s-turn is initiated 
+					"rpred", taemg_output["rpred"] / mt2ft,	//ft predicted range to threshold 
+					"iphase", taemg_output["iphase"], 	//phase counter 
+					"tg_end", taemg_output["tg_end"], 	//termination flag 
+					"eas_cmd", taemg_output["eas_cmd"] / mps2kt, 	//kn equivalent airspeed commanded  (not useful)
+					"herror", taemg_output["herror"] / mt2ft, 	//ft altitude error
+					"qbarf", taemg_output["qbarf"] / (atm2pa * pa2psf), 	//psf filtered dynamic press 
+					"ohalrt", taemg_output["ohalrt"],	//taem automatic downmode flag 
+					"mep", taemg_output["mep"] 		//min entry point flag 
 	
 	).
 }
@@ -319,8 +352,22 @@ function tgexec {
 	tgphic(taemg_input).
 
 	//i want to return a new lexicon of internal variables
-	//dsbc_at needs to be transformed to a 0-1 variable based on max deflection (halved)
-	return lexicon(
+	RETURN LEXICON(
+					"nzc", taemg_internal["nzc"],
+					"phic_at", taemg_internal["phic_at"],
+					"dpsac", taemg_internal["dpsac"],
+					"dsbc_at", taemg_internal["dsbc_at"],
+					"emep", taemg_internal["emep"],
+					"eow", taemg_internal["eow"], 
+					"es", taemg_internal["es"],
+					"rpred", taemg_internal["rpred"],
+					"iphase", taemg_internal["iphase"],
+					"tg_end", taemg_internal["tg_end"],
+					"eas_cmd", taemg_internal["eas_cmd"],
+					"herror", taemg_internal["herror"],
+					"qbarf", taemg_internal["qbarf"],
+					"ohalrt", taemg_internal["ohalrt"],	
+					"mep", taemg_internal["mep"]
 	
 	).
 
@@ -624,9 +671,9 @@ FUNCTION tgtran {
 		
 		//this is equation block 46
 		//suggest downmoding to MEP 
-		local emep is taemg_constants["emep_c1"][taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["emep_c2"][taemg_internal["igs"]][taemg_internal["iel"]].
-		if (taemg_internal["eow"] < emep) and (mep = FALSE) {
-			set mep to TRUE.
+		SET taemg_internal["emep"] TO taemg_constants["emep_c1"][taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["emep_c2"][taemg_internal["igs"]][taemg_internal["iel"]].
+		if (taemg_internal["eow"] < taemg_internal["emep"]) and (NOT taemg_internal["mep"]) {
+			set taemg_internal["mep"] to TRUE.
 		}
 		
 		//these two blocks look like they're inside equation block 45 in the case eow > es but it doesn't make sense
