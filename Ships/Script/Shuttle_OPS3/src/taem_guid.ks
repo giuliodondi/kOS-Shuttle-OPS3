@@ -260,7 +260,7 @@ global taemg_constants is lexicon (
 									"philmc", 100, 				//deg bank lim for large bank command 
 									"qbmxs1", -400,				//psf slope of qbmxnz with mach < qbm1 
 									"hmin3", 7000,				//min altitude for prefinal
-									"nztotallim", 2,				// my addition from the taem paper
+									"nztotallim", 2.2				// my addition from the taem paper
 ).
 
 
@@ -278,7 +278,7 @@ global taemg_internal is lexicon(
 								"eas_cmd", 0, 		//kn equivalent airspeed commanded 
 								"emep", 0,		//ft energy/weight at which the mep is selected 
 								"eow", 0,			//ft energy/weight
-								"en", 			//energy reference
+								"en", 0,			//energy reference
 								"es", 0, 		//ft energy/weight at which the s-turn is initiated 
 								"hderr", 0, 		//ft hdot error
 								"herror", 0, 		//ft altitude error
@@ -315,17 +315,12 @@ global taemg_internal is lexicon(
 								"xftc", 0,			//x coord where we should arrive on the final apch plane (and place the hac origin) (is negative)
 								"xhac", 0,			//x coord of hac centre		(is negative)
 								"xmep", 0,			//x coord of minimum entry point	(is negative)
-								"ysgn", 1		//r/l cone indicator (i.e. left/right hac ??)		//moved from inputs
+								"ysgn", 1,		//r/l cone indicator (i.e. left/right hac ??)		//moved from inputs
 								"ysturn", 0,	//sign of s-turn		//renamed from s
 
 								"xcir", 0,		//ft hac centre x-coord
 								"ycir", 0,		//ft hac centre y-coord
-								"rcir", 0,		//ft ship-hac distance
-									
-								 								
-								
-								
-
+								"rcir", 0		//ft ship-hac distance
 
 ).
 
@@ -485,7 +480,7 @@ FUNCTION gtp {
 	PARAMETER taemg_input.	
 
 	//the x-distancebetween current pos and the hac position
-	LOCAL taemg_internal["xcir"] IS taemg_internal["xhac"] - taemg_input["x"].
+	SET taemg_internal["xcir"] TO taemg_internal["xhac"] - taemg_input["x"].
 	
 	LOCAL signy IS SIGN(taemg_input["y"]).
 	
@@ -496,10 +491,10 @@ FUNCTION gtp {
 	}
 	//ELSE
 	
-	local taemg_internal["ycir"] IS taemg_internal["ysgn"] * taemg_internal["rf"] - taemg_input["y"].
+	set taemg_internal["ycir"] to taemg_internal["ysgn"] * taemg_internal["rf"] - taemg_input["y"].
 		
 	//euclidean distance from orbiter to hac centre in runway coords
-	local taemg_internal["rcir"] is SQRT(taemg_internal["xcir"]^2 + taemg_internal["ycir"]^2).
+	set taemg_internal["rcir"] to SQRT(taemg_internal["xcir"]^2 + taemg_internal["ycir"]^2).
 	
 	//distance to the tangency point
 	LOCAL rtan IS 0.
@@ -611,7 +606,7 @@ FUNCTION tgcomp {
 	local qbard is midval( taemg_constants["cqg"] * (taemg_input["qbar"] - taemg_internal["qbarf"]), -taemg_constants["qbardl"], taemg_constants["qbardl"]).
 	//update filtered dyn press 
 	set taemg_internal["qbarf"] to taemg_internal["qbarf"] + qbard * taemg_constants["dtg"].
-	set taemg_internal["qbd"] to taemg_constants["cdeqd"] * taemg_internal["qbd"] + taemg_constants["cqdg"] * qbard;
+	set taemg_internal["qbd"] to taemg_constants["cdeqd"] * taemg_internal["qbd"] + taemg_constants["cqdg"] * qbard.
 	//error on qbar 
 	set taemg_internal["qberr"] to taemg_internal["qbref"] - taemg_internal["qbarf"].
 	//cmd eas 
@@ -643,7 +638,7 @@ FUNCTION tgtran {
 		//set taemg_internal["phi0"] to taemg_internal["phic"].
 		set taemg_internal["philim"] to taemg_constants["philm3"].
 		set taemg_internal["dnzul"] to taemg_constants["dnzuc2"].
-		set taemg_internal["dnzll"] to taemg_constants["dnzlc2"]
+		set taemg_internal["dnzll"] to taemg_constants["dnzlc2"].
 		return.
 	}
 	
@@ -847,7 +842,7 @@ FUNCTION tgphic {
 		
 	} else if (taemg_internal["iphase"] = 3) {
 		//prefinal bank proportional to lateral (y coord) deviation and rate relative to the centreline
-		local yerrc in midval ( -taemg_constants["gy"] * taemg_input["y"], -taemg_constants["yerrlm"], taemg_constants["yerrlm"]).
+		local yerrc is midval ( -taemg_constants["gy"] * taemg_input["y"], -taemg_constants["yerrlm"], taemg_constants["yerrlm"]).
 		set taemg_internal["phic"] to yerrc - taemg_constants["gydot"] * taemg_input["ydot"].
 		
 		if (abs(taemg_internal["phic"]) > taemg_constants["philmc"]) {
