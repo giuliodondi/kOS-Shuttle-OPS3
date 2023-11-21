@@ -64,9 +64,12 @@ FUNCTION define_td_points {
 
 //refresh the runway lexicon upon changing runway.
 FUNCTION refresh_runway_lex {
-	PARAMETER tgtsite.
+	PARAMETER tgt_rwy_number.
+	
+	local tgtsite is ldgsiteslex[tgt_rwy_number].
 
 	RETURN LEXICON(
+							"number",tgt_rwy_number,
 							"position",tgtsite["position"],
 							"elevation",tgtsite["elevation"],
 							"heading",tgtsite["heading"],
@@ -125,7 +128,12 @@ FUNCTION get_runway_rel_state {
 			"surfv_h", cur_surfv_h,
 			"fpa", ARCTAN2(cur_hdot, cur_surfv_h),
 			"rwy_rel_crs", vel_rwy_rel_angle,
-			"rwy_dist", ship_rwy_dist_mt
+			"rwy_dist", ship_rwy_dist_mt,
+			"phi", get_roll_lvlh(),
+			"theta", get_pitch_lvlh(),
+			"mass", SHIP:MASS,
+			"qbar", SHIP:Q,
+			"mach", ADDONS:FAR:MACH
 	).
 }
 
@@ -133,8 +141,7 @@ FUNCTION get_runway_rel_state {
 FUNCTION get_vehicle_state {
 
 	RETURN LEXICON(
-					"phi", get_roll_lvlh(),
-					"theta", get_pitch_lvlh()
+					
 	).
 
 }

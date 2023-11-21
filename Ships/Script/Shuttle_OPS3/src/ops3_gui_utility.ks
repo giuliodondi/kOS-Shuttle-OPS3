@@ -294,6 +294,7 @@ FUNCTION make_main_entry_gui {
 		
 		reset_overhead_apch().
 		
+		SET tgtrwy["number"] TO rwy.
 		SET tgtrwy["heading"] TO newsite["rwys"][rwy]["heading"].
 		SET tgtrwy["td_pt"] TO newsite["rwys"][rwy]["td_pt"].
 		SET tgtrwy["end_pt"] TO newsite["rwys"][rwy]["end_pt"].

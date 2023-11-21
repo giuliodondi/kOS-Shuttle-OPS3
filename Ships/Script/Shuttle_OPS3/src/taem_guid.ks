@@ -81,7 +81,7 @@ FUNCTION taemg_wrapper {
 
 	//dsbc_at needs to be transformed to a 0-1 variable based on max deflection (halved)
 	RETURN LEXICON(
-					"nzc", taemg_output["nzc"], 	//g-units normal load factor increment from equilibrium
+					"nztotal", taemg_output["nztotal"], 	//g-units normal load factor
 					"phic_at", taemg_output["phic_at"], 	//deg commanded roll 
 					"dpsac", taemg_output["dpsac"], 	//deg heading error to the hac tangent 
 					"dsbc_at", taemg_output["dsbc_at"] / taemg_constants["dsblim"], 	//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
@@ -352,6 +352,7 @@ function tgexec {
 	//i want to return a new lexicon of internal variables
 	RETURN LEXICON(
 					"nzc", taemg_internal["nzc"],
+					"nztotal", taemg_internal["nztotal"],
 					"phic_at", taemg_internal["phic_at"],
 					"dpsac", taemg_internal["dpsac"],
 					"dsbc_at", taemg_internal["dsbc_at"],
@@ -383,7 +384,7 @@ FUNCTION tginit {
 	
 	SET taemg_internal["isr"] TO taemg_constants["rftc"] / taemg_constants["dtg"].
 	
-	SET taemg_internal["rf"] TO taemg_internal["rf0"].
+	SET taemg_internal["rf"] TO taemg_constants["rf0"].
 	SET taemg_internal["rturn"] TO taemg_internal["rf"].	//i added this bc I don't see rturn being initialised anywhere	- or should it be initialised to zero??
 	
 	//moved up from tgxhac bc we want to do this at every reset
@@ -508,7 +509,7 @@ FUNCTION gtp {
 	//heading to hac tangency pt 
 	local pst IS psc.
 	if (rtan > 0) {
-		set pst to pst - taemg_internal["ysgn"] * ARCTAN2(taemg_internal["rturn"] / rtan).
+		set pst to pst - taemg_internal["ysgn"] * ARCTAN2(taemg_internal["rturn"], rtan).
 	}
 	
 	set pst to unfixangle(pst).
@@ -576,9 +577,9 @@ FUNCTION tgcomp {
 	
 	// linear profiles for qbref
 	if (taemg_internal["drpred"] > taemg_constants["pbrcq"][taemg_internal["igs"]]) {
-		set taemg_internal["qbref"] to midval( taemg_constants["qbrll"][taemg_internal["igs"]] + qbc1[taemg_internal["igs"]] * (taemg_internal["drpred"] - taemg_constants["pbrcq"][taemg_internal["igs"]]), taemg_constants["qbrll"][taemg_internal["igs"]], taemg_constants["qbrml"][taemg_internal["igs"]]).
+		set taemg_internal["qbref"] to midval( taemg_constants["qbrll"][taemg_internal["igs"]] + taemg_constants["qbc1"][taemg_internal["igs"]] * (taemg_internal["drpred"] - taemg_constants["pbrcq"][taemg_internal["igs"]]), taemg_constants["qbrll"][taemg_internal["igs"]], taemg_constants["qbrml"][taemg_internal["igs"]]).
 	} else {
-		set taemg_internal["qbref"] to midval( taemg_constants["qbrul"][taemg_internal["igs"]] + qbc2[taemg_internal["igs"]] * taemg_internal["drpred"], taemg_constants["qbrll"][taemg_internal["igs"]], taemg_constants["qbrul"][taemg_internal["igs"]]).
+		set taemg_internal["qbref"] to midval( taemg_constants["qbrul"][taemg_internal["igs"]] + taemg_constants["qbc2"][taemg_internal["igs"]] * taemg_internal["drpred"], taemg_constants["qbrll"][taemg_internal["igs"]], taemg_constants["qbrul"][taemg_internal["igs"]]).
 	}
 	
 	//hac spiral adjustment
@@ -744,14 +745,14 @@ FUNCTION tgnzc {
 		//eow limits
 		local emax is taemg_internal["en"] + taemg_constants["edelnz"][taemg_internal["igs"]] * midval( taemg_internal["drpred"] / taemg_constants["del_r_emax"][taemg_internal["igs"]] , taemg_constants["edelc1"], taemg_constants["edelc2"]).
 		local emin is taemg_internal["en"] - taemg_constants["edelnz"][taemg_internal["igs"]].
-		set eownzul to (taemg_constants["geul"] * gdh * (emax - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdul"] * gdh.
-		set eownzll to (taemg_constants["gell"] * gdh * (emin - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdll"] * gdh.
+		local eownzul is (taemg_constants["geul"] * gdh * (emax - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdul"] * gdh.
+		local eownzll is (taemg_constants["gell"] * gdh * (emin - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdll"] * gdh.
 		
 		//cascade of filters
 		//limit by eow
 		set taemg_internal["dnzcl"] to midval(dnzc, eownzll, eownzul).
 		//limit by qbar
-		set taemg_internal["dnzcl"] to mival(taemg_internal["dnzcl"], qbnzll, qbnzul).
+		set taemg_internal["dnzcl"] to midval(taemg_internal["dnzcl"], qbnzll, qbnzul).
 		
 		//calculate commanded nz
 		local dnzcd is midval((taemg_internal["dnzcl"] - taemg_internal["nzc"]) * taemg_constants["cqg"], -taemg_constants["dnzcdl"], taemg_constants["dnzcdl"]).
