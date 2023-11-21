@@ -169,6 +169,7 @@ FUNCTION update_deorbit_GUI {
 
 
 
+
 						//GLOBAL ENTRY GUI FUNCTIONS
 
 
@@ -686,5 +687,197 @@ function entry_traj_disp_y_convert {
 	
 	
 	return 400 - out.
+
+}
+
+
+
+
+
+//			HUD stuff
+
+
+FUNCTION make_hud_gui {
+	IF (DEFINED hud_gui AND hud_gui:visible) {
+		RETURN.
+	}
+
+	GLOBAL hud_gui is gui(430,320).
+	SET hud_gui:X TO 700.
+	SET hud_gui:Y TO 150.
+	SET hud_gui:STYLe:WIDTH TO 450.
+	SET hud_gui:STYLe:HEIGHT TO 320.
+	reset_hud_bg_brightness().
+	SET hud_gui:skin:LABEL:TEXTCOLOR to guitextgreen.
+	hud_gui:SHOW.
+
+
+	set hud_gui:skin:horizontalslider:BG to "Shuttle_entrysim/src/gui_images/brakeslider.png".
+	set hud_gui:skin:horizontalsliderthumb:BG to "Shuttle_entrysim/src/gui_images/hslider_thumb.png".
+	set hud_gui:skin:horizontalsliderthumb:HEIGHT to 17.
+	set hud_gui:skin:horizontalsliderthumb:WIDTH to 20.
+	set hud_gui:skin:verticalslider:BG to "Shuttle_entrysim/src/gui_images/vspdslider2.png".
+	set hud_gui:skin:verticalsliderthumb:BG to "Shuttle_entrysim/src/gui_images/vslider_thumb.png".
+	set hud_gui:skin:verticalsliderthumb:HEIGHT to 20.
+	set hud_gui:skin:verticalsliderthumb:WIDTH to 17.
+
+
+	GLOBAL hud IS hud_gui:ADDVLAYOUT().
+
+	GLOBAL hdg IS hud:ADDVLAYOUT().
+	SET hdg:STYLE:ALIGN TO "Center".
+	SET hdg:STYLe:HEIGHT TO 20.
+
+	GLOBAL hdg_box IS hdg:ADDVLAYOUT().
+	SET hdg_box:STYLe:WIDTH TO 60.
+	SET hdg_box:STYLe:HEIGHT TO 20.
+	SET hdg_box:STYLE:MARGIN:left TO 165.
+	GLOBAL hdg_text IS hdg_box:ADDLABEL("").
+	SET hdg_text:STYLE:ALIGN TO "Center".
+	
+	GLOBAL overlaiddata IS hud:ADDVLAYOUT().
+	SET overlaiddata:STYLE:ALIGN TO "Center".
+	SET overlaiddata:STYLe:WIDTH TO 360.
+	SET overlaiddata:STYLe:HEIGHT TO 1.
+	
+	GLOBAL spdaltbox IS overlaiddata:ADDHLAYOUT().
+	SET spdaltbox:STYLe:WIDTH TO 360.
+	SET spdaltbox:STYLe:HEIGHT TO 30.
+	
+	GLOBAL spdbox IS spdaltbox:ADDHLAYOUT().
+	SET spdbox:STYLe:WIDTH TO 70.
+	SET spdbox:STYLe:HEIGHT TO 30.
+	SET spdbox:STYLe:MARGIN:left TO 20.
+	SET spdbox:STYLe:MARGIN:top TO 87.
+	GLOBAL spd_text IS spdbox:ADDLABEL("<size=18>M26.5</size>").
+	SET spd_text:STYLE:ALIGN TO "Right".
+	
+	
+	GLOBAL altbox IS spdaltbox:ADDHLAYOUT().
+	SET altbox:STYLe:WIDTH TO 70.
+	SET altbox:STYLe:HEIGHT TO 30.
+	SET altbox:STYLe:MARGIN:left TO 230.
+	SET altbox:STYLe:MARGIN:top TO 87.
+	GLOBAL alt_text IS altbox:ADDLABEL("<size=18>100.5</size>").
+	SET alt_text:STYLE:ALIGN TO "Left".
+	
+	
+	
+	
+	
+	GLOBAL hudrll IS overlaiddata:ADDVLAYOUT().
+	SET hudrll:STYLe:WIDTH TO 20.
+	SET hudrll:STYLe:HEIGHT TO 20.
+	SET hudrll:STYLE:MARGIN:left TO 176.
+	SET hudrll:STYLE:MARGIN:top TO 49.
+	GLOBAL hudrll_text IS hudrll:ADDLABEL("rll").
+	SET hudrll_text:STYLe:WIDTH TO 30.
+	SET hudrll_text:STYLE:ALIGN TO "Center".
+	
+	GLOBAL hudpch IS overlaiddata:ADDVLAYOUT().
+	SET hudpch:STYLe:WIDTH TO 20.
+	SET hudpch:STYLe:HEIGHT TO 20.
+	SET hudpch:STYLE:MARGIN:top TO 4.
+	SET hudpch:STYLE:MARGIN:left TO 213.
+	GLOBAL hudpch_text IS hudpch:ADDLABEL("pch").
+	SET hudpch_text:STYLe:WIDTH TO 30.
+	SET hudpch_text:STYLE:ALIGN TO "Left".
+
+
+	GLOBAL hud_nz IS overlaiddata:ADDHLAYOUT().
+	SET hud_nz:STYLe:WIDTH TO 70.
+	SET hud_nz:STYLe:HEIGHT TO 30.
+	SET hud_nz:STYLE:MARGIN:top TO 13.
+	SET hud_nz:STYLE:MARGIN:left TO 75.
+	GLOBAL nz_text IS hud_nz:ADDLABEL("").
+	SET nz_text:STYLe:WIDTH TO 100.
+	SET nz_text:STYLE:ALIGN TO "Right".
+
+	GLOBAL hud_main IS hud:ADDHLAYOUT().
+	SET hud_main:STYLe:WIDTH TO 430.
+	SET hud_main:STYLe:HEIGHT TO 240.
+	SET hud_main:STYLE:ALIGN TO "Center".
+	hud_main:addspacing(0).
+	
+	GLOBAL flaptrim_sliderbox IS hud_main:ADDVLAYOUT().
+	SET flaptrim_sliderbox:STYLe:WIDTH TO 15.
+	SET flaptrim_sliderbox:STYLE:ALIGN TO "right".
+	flaptrim_sliderbox:addspacing(72).
+	GLOBAL flaptrim_slider is flaptrim_sliderbox:addvslider(0,1,-1).
+	SET flaptrim_slider:STYLE:ALIGN TO "Center".
+	SET flaptrim_slider:style:vstretch to false.
+	SET flaptrim_slider:style:hstretch to false.
+	SET flaptrim_slider:STYLE:WIDTH TO 20.
+	SET flaptrim_slider:STYLE:HEIGHT TO 100.
+
+
+
+	
+
+
+	GLOBAL pointbox IS hud_main:addhbox().
+	SET pointbox:STYLE:ALIGN TO "Center".
+	SET pointbox:STYLe:WIDTH TO 360.
+	SET pointbox:STYLe:HEIGHT TO 240.
+	set pointbox:style:margin:top to 0.
+	set pointbox:style:margin:left to 0.
+	SET pointbox:style:vstretch to false.
+	SET pointbox:style:hstretch to false.
+	SET  pointbox:style:BG to "Shuttle_entrysim/src/gui_images/bg_marker_square.png".
+	
+	
+	
+	GLOBAL diamond IS pointbox:ADDLABEL().
+	SET diamond:IMAGE TO "Shuttle_entrysim/src/gui_images/diamond.png".
+	SET diamond:STYLe:WIDTH TO 22.
+	SET diamond:STYLe:HEIGHT TO 22.
+	
+
+	//GLOBAL diamond_hmargin IS  pointbox:STYLe:WIDTH*0.458 .
+	//GLOBAL diamond_vmargin IS pointbox:STYLE:HEIGHT*0.447.
+	
+	//define central position as global constants.
+	GLOBAL diamond_central_x IS pointbox:STYLe:WIDTH*0.4785.
+	GLOBAL diamond_central_y IS pointbox:STYLE:HEIGHT*0.450.
+	
+	SET diamond:STYLE:margin:h TO diamond_central_x.
+	SET diamond:STYLE:margin:v TO diamond_central_y.
+
+
+
+	GLOBAL vspd_sliderbox IS hud_main:ADDHLAYOUT().
+	SET vspd_sliderbox:STYLe:WIDTH TO 20.
+	SET vspd_sliderbox:STYLE:ALIGN TO "Center".
+	GLOBAL vspd_slider is vspd_sliderbox:addvslider(0,-20,20).
+	SET vspd_slider:STYLE:ALIGN TO "Center".
+	SET vspd_slider:style:vstretch to false.
+	SET vspd_slider:style:hstretch to false.
+	SET vspd_slider:STYLE:WIDTH TO 20.
+	SET vspd_slider:STYLE:HEIGHT TO 230.
+
+
+
+
+	GLOBAL bottom_box IS hud:ADDHLAYOUT().
+	SET bottom_box:STYLe:WIDTH TO 400.
+	//SET bottom_box:STYLE:ALIGN TO "left".
+
+	bottom_box:addspacing(75).
+
+	GLOBAL bottom_txtbox IS bottom_box:ADDHLAYOUT().
+	SET bottom_txtbox:STYLe:WIDTH TO 185.
+	GLOBAL mode_txt IS bottom_txtbox:ADDLABEL("<size=20>    </size>").
+	SET mode_txt:STYLE:ALIGN TO "Left".
+
+	GLOBAL mode_dist_text IS  bottom_txtbox:ADDLABEL( "<size=18>"+"</size>" ).
+
+	bottom_box:addspacing(0).
+
+	GLOBAL spdbk_slider_box IS bottom_box:ADDHLAYOUT().
+	GLOBAL spdbk_slider is spdbk_slider_box:addhslider(0,0,1).
+	SET spdbk_slider:style:vstretch to false.
+	SET spdbk_slider:style:hstretch to false.
+	SET spdbk_slider:STYLE:WIDTH TO 110.
+	SET spdbk_slider:STYLE:HEIGHT TO 20.
 
 }

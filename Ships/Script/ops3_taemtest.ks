@@ -29,7 +29,7 @@ make_main_entry_gui().
 
 
 IF (DEFINED tgtrwy) {UNSET tgtrwy.}
-GLOBAL tgtrwy IS refresh_runway_lex(ldgsiteslex[select_tgt:VALUE]).
+GLOBAL tgtrwy IS refresh_runway_lex(select_tgt:VALUE).
 
 //this must be called after the GUI and the tgtrwy lexicon have been initialised
 select_random_rwy().
@@ -67,9 +67,35 @@ FUNCTION ops3_taem_test {
 		).
 		
 		
-		print rwystate.
 		
-		print get_vehicle_state().
+		local taemg_in is LEXICON(
+											"h", rwystate["h"],
+											"hdot", rwystate["hdot"],
+											"x", rwystate["x"], 
+											"y", rwystate["y"], 
+											"surfv", rwystate["surfv"],
+											"surfv_h", rwystate["surfv_h"],
+											"xdot", rwystate["xdot"], 
+											"ydot", rwystate["ydot"], 
+											"psd", rwystate["rwy_rel_crs"], 
+											"mach", rwystate["mach"],
+											"qbar", rwystate["qbar"],
+											"phi",  rwystate["phi"],
+											"theta", rwystate["theta"],
+											"m", rwystate["mass"],
+											"gamma", rwystate["fpa"],
+											"ovhd", tgtrwy["overhead"],
+											"rwid", tgtrwy["number"]
+									).
+									
+							
+		
+		//call taem guidance here
+		//LOCAL taemg_out is taemg_wrapper(
+		//								taemg_in						
+		//).
+		//print 	taemg_out.	
+		
 		
 		pos_arrow(tgtrwy["position"],"runwaypos", 5000, 0.1).
 		pos_arrow(tgtrwy["td_pt"],"td_pt", 5000, 0.1).
