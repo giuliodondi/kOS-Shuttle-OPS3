@@ -69,6 +69,8 @@ FUNCTION ops3_taem_test {
 		
 		print rwystate.
 		
+		print get_vehicle_state().
+		
 		pos_arrow(tgtrwy["position"],"runwaypos", 5000, 0.1).
 		pos_arrow(tgtrwy["td_pt"],"td_pt", 5000, 0.1).
 		pos_arrow(tgtrwy["end_pt"],"end_pt" , 5000, 0.1).

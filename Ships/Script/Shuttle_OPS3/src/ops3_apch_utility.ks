@@ -128,3 +128,13 @@ FUNCTION get_runway_rel_state {
 			"rwy_dist", ship_rwy_dist_mt
 	).
 }
+
+//get several vehicle-related quantities
+FUNCTION get_vehicle_state {
+
+	RETURN LEXICON(
+					"phi", get_roll_lvlh(),
+					"theta", get_pitch_lvlh()
+	).
+
+}
