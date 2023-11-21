@@ -22,7 +22,7 @@ GLOBAL mps2kt IS 1.94384.			//m/s / knots
 //		mach 
 //		qbar 	//psf dynamic pressure
 //		cosphi 	//cosine of roll 
-//		secth 	//secant of pitch 			//not used???
+//		secth 	//secant of pitch 			//not used???			BUT costh is used to limit nzc
 //		weight 	//slugs mass 
 //		tas 		//ft/s true airspeed		//deprecated, used in dap and true airspeed estimator, don't need those
 //		gamma 	//deg earth relative fpa  
@@ -70,7 +70,8 @@ FUNCTION taemg_wrapper {
 										"psd", taemg_input["psd"], 		//deg course wrt runway centerline 
 										"mach", taemg_input["mach"], 
 										"qbar", taemg_input["qbar"] * atm2pa * pa2psf, 	//psf dynamic pressure
-										"cosphi", taemg_input["phi"], 	//cosine of roll 
+										"cosphi", COS(taemg_input["phi"]), 	//cosine of roll 
+										"costh", COS(taemg_input["theta"]), 	//cosine of roll 
 										"weight", taemg_input["m"] * kg2slug, 	//slugs mass 
 										"gamma", taemg_input["gamma"], 	//deg earth relative fpa  
 										"ovhd", taemg_input["ovhd"],  		// ovhd/straight-in flag , it's a 2-elem list, one for each value of rwid 			//changed into a simple flag
@@ -258,7 +259,8 @@ global taemg_constants is lexicon (
 									"philm4", 60, 				//deg bank lim for large bank command 
 									"philmc", 100, 				//deg bank lim for large bank command 
 									"qbmxs1", -400,				//psf slope of qbmxnz with mach < qbm1 
-									"hmin3", 7000				//min altitude for prefinal
+									"hmin3", 7000,				//min altitude for prefinal
+									"nztotallim", 2,				// my addition from the taem paper
 ).
 
 
@@ -289,7 +291,8 @@ global taemg_internal is lexicon(
 								"ireset", TRUE,		//initially true
 								"isr", 0,		// pre-final roll fader
 								"mep", FALSE,	//minimum entry point flag
-								"nzc", 0, 	//g-units normal load factor increment from equilibrium
+								"nzc", 0, 	//g-units normal load factor increment from equilibrium	
+								"nztotal", 0, 	//g-units my addition from the taem paper, total normal load factor
 								"ohalrt", FALSE,		//one-time flag for  automatic downmoding to straight-in hac
 								"ovhd0", TRUE,		//i introduced this to keep track of changes from overhead to straight-in
 								//"phi0", 0,		//previous value of phic
@@ -762,6 +765,9 @@ FUNCTION tgnzc {
 	
 	//apply strucutral limits on nz cmd
 	set taemg_internal["nzc"] to midval(taemg_internal["nzc"], taemg_internal["dnzll"], taemg_internal["dnzul"]).
+	
+	//my addition from 
+	set taemg_internal["nztotal"] to midval(taemg_internal["nzc"] + taemg_input["costh"] / taemg_input["cosphi"], -taemg_constants["nztotallim"], taemg_constants["nztotallim"]).
 }		
 									
 FUNCTION tgsbc {
@@ -858,6 +864,11 @@ FUNCTION tgphic {
 		}
 	
 	}
+	
+	//taken from level-c and adapted with inspiration from the taem paper 
+	//limit roll not to exceed total maximum vertical acceleration
+	LOCAL phinzlim IS ARCCOS( taemg_input["costh"] / (taemg_constants["nztotallim"] - taemg_internal["nzc"]) ).
+	SET philimit TO MIN(philimit, phinzlim).
 	
 	set taemg_internal["phic_at"] to midval ( taemg_internal["phic"], -philimit, philimit).
 }								
