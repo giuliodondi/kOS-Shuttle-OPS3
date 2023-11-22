@@ -29,10 +29,10 @@ GLOBAL ldgsiteslex IS LEXICON(
 							
 						),
 						"Mataveri",LEXICON(
-							"position",LATLNG(-27.1759651,-109.4014619),
-							"elevation",105,
-							"length",3770,
-							"heading",348.47
+							"position",LATLNG(-27.176167,-109.402237),
+							"elevation",100,
+							"length",3654,
+							"heading",348.48
 							
 						),
 						"Istres",LEXICON(
@@ -75,6 +75,13 @@ GLOBAL ldgsiteslex IS LEXICON(
 							"elevation",99,
 							"length",4380.5,
 							"heading",180.02
+							
+						),
+						"Hao",LEXICON(
+							"position",LATLNG(-17.743215,-140.643975),
+							"elevation",28.1,
+							"length",3876.55,
+							"heading",186.85
 							
 						)
 						
