@@ -331,7 +331,8 @@ FUNCTION make_main_entry_gui {
 	
 	GLOBAL arbkb IS  toggles_box:ADDCHECKBOX("Auto Airbk",false).
 
-	select_random_rwy().	
+	select_random_rwy().
+	SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, select_rwy:VALUE).	
 
 	main_entry_gui:SHOW().
 }

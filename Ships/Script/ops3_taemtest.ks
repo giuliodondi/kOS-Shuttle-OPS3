@@ -20,21 +20,14 @@ RUNPATH("0:/Shuttle_OPS3/src/taem_guid.ks").
 
 GLOBAL quit_program IS FALSE.
 
+IF (DEFINED tgtrwy) {UNSET tgtrwy.}
+GLOBAL tgtrwy IS LEXICON().
+
 //initialise touchdown points for all landing sites
 define_td_points().
 
 //after the td points but before anything that modifies the default button selections
 make_main_entry_gui().
-
-
-
-IF (DEFINED tgtrwy) {UNSET tgtrwy.}
-GLOBAL tgtrwy IS LEXICON().
-GLOBAL tgtrwy IS LEXICON().
-
-//this must be called after the GUI and the tgtrwy lexicon have been initialised
-select_random_rwy().
-
 
 
 
@@ -84,7 +77,7 @@ FUNCTION ops3_taem_test {
 											"m", rwystate["mass"],
 											"gamma", rwystate["fpa"],
 											"ovhd", tgtrwy["overhead"],
-											"rwid", tgtrwy["number"]
+											"rwid", tgtrwy["name"]
 									).
 									
 							

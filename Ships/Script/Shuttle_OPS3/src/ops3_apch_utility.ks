@@ -5,32 +5,14 @@
 //given runway coordinates, assumed to be centre, and length 
 //finds the coordinates of the touchdown points and adds them to the lexicon
 FUNCTION define_td_points {
-
-	FUNCTION add_runway_tdpt {
-		PARAMETER pos.
-		PARAMETER bng.
-		PARAMETER end_dist.
-		PARAMETER td_dist.
-		
-		//site["rwys"]:ADD(rwy_number,rwy_lexicon).
-		
-		RETURN LEXICON(
-					"number", ROUND(bng/10,0),
-					"position", pos,
-					"heading", bng,
-					"end_pt", new_position(pos,end_dist,fixangle(bng - 180)),
-					"td_pt", new_position(pos,td_dist,fixangle(bng - 180))
-		).
-	}
 	
 	FROM {LOCAL k IS 0.} UNTIL k >= (ldgsiteslex:KEYS:LENGTH) STEP { SET k TO k+1.} DO{	
-		LOCAL site IS ldgsiteslex[ldgsiteslex:KEYS[k]].
-	
+		LOCAL sitename IS ldgsiteslex:KEYS[k].
+		
+		LOCAL site IS ldgsiteslex[sitename].
 	
 		LOCAL end_dist IS site["length"]/2.
 		LOCAL head IS site["heading"].
-		
-		site:ADD("rwys",LEXICON()).
 		
 		//convert in kilometres
 		SET end_dist TO end_dist/1000.
@@ -39,11 +21,38 @@ FUNCTION define_td_points {
 		//runway halfway point
 		SET td_dist TO end_dist*0.8.
 		
-		SET site TO add_runway_tdpt(site,head,end_dist,td_dist).
+		LOCAL rwyslex IS LEXICON().
+		
+		LOCAL rwyno IS "".
+		
+		SET rwyno TO ROUND(head/10,0).
+
+		rwyslex:ADD(
+					rwyno, 
+					LEXICON(
+						"name", sitename + rwyno,
+						"heading", head,
+						"end_pt", new_position(site["position"],end_dist,fixangle(head - 180)),
+						"td_pt", new_position(site["position"],td_dist,fixangle(head - 180))
+			)
+		).
 		
 		//now get the touchdown point for the opposite side of the runway
 		SET head TO fixangle(head + 180).
-		SET site TO  (site,head,end_dist,td_dist).
+		
+		SET rwyno TO ROUND(head/10,0).
+
+		rwyslex:ADD(
+					rwyno, 
+					LEXICON(
+						"name", sitename + rwyno,
+						"heading", head,
+						"end_pt", new_position(site["position"],end_dist,fixangle(head - 180)),
+						"td_pt", new_position(site["position"],td_dist,fixangle(head - 180))
+			)
+		).
+		
+		site:ADD("rwys", rwyslex).
 		
 		SET ldgsiteslex[ldgsiteslex:KEYS[k]] TO site.
 
@@ -58,18 +67,19 @@ FUNCTION refresh_runway_lex {
 	PARAMETER tgt_site.
 	PARAMETER tgt_rwy_number.
 	
-	local siterwy is ldgsiteslex[tgt_site]["rwys"][tgt_rwy_number].
+	LOCAL site IS ldgsiteslex[tgt_site].
+	local siterwy is site["rwys"][tgt_rwy_number].
 
 	RETURN LEXICON(
-							"number",tgt_rwy_number,
-							"position",siterwy["position"],
-							"elevation",siterwy["elevation"],
+							"name",siterwy["name"],
+							"position",site["position"],
+							"elevation",site["elevation"],
 							"heading",siterwy["heading"],
-							"length",siterwy["length"],
-							"end_pt",LATLNG(0,0),
-							"td_pt",LATLNG(0,0),
+							"length",site["length"],
+							"end_pt",siterwy["end_pt"],
+							"td_pt",siterwy["td_pt"],
 							"glideslope",0,
-							"overhead",TRUE,	//default choice
+							"overhead",is_apch_overhead(),
 							"aiming_pt",LATLNG(0,0),
 							"acq_guid_pt",LATLNG(0,0),
 							"hac",LATLNG(0,0)
