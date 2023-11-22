@@ -375,10 +375,8 @@ function tgexec {
 FUNCTION tginit {
 	PARAMETER taemg_input.
 	
-	IF (taemg_internal["ireset"] = TRUE) {
-		SET taemg_internal["rwid0"] TO taemg_input["rwid"].
-		SET taemg_internal["ovhd0"] TO taemg_input["ovhd"].
-	}
+	SET taemg_internal["rwid0"] TO taemg_input["rwid"].
+	SET taemg_internal["ovhd0"] TO taemg_input["ovhd"].
 	
 	SET taemg_internal["iphase"] TO 1.	
 	

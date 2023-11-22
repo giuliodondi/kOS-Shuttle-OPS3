@@ -7,29 +7,20 @@
 FUNCTION define_td_points {
 
 	FUNCTION add_runway_tdpt {
-		PARAMETER site.
+		PARAMETER pos.
 		PARAMETER bng.
 		PARAMETER end_dist.
 		PARAMETER td_dist.
-
-		LOCAL rwy_lexicon IS LEXICON(
-											"heading",0,
-											"end_pt",LATLNG(0,0),
-											"td_pt",LATLNG(0,0)
-								).
-								
-								
-		LOCAL pos IS site["position"].
 		
-		local rwy_number IS "" + ROUND(bng/10,0).
-		SET rwy_lexicon["heading"] TO bng.
-		SET rwy_lexicon["end_pt"] TO new_position(pos,end_dist,fixangle(bng - 180)).
-		SET rwy_lexicon["td_pt"] TO new_position(pos,td_dist,fixangle(bng - 180)).
+		//site["rwys"]:ADD(rwy_number,rwy_lexicon).
 		
-		
-		site["rwys"]:ADD(rwy_number,rwy_lexicon).
-		
-		RETURN site.
+		RETURN LEXICON(
+					"number", ROUND(bng/10,0),
+					"position", pos,
+					"heading", bng,
+					"end_pt", new_position(pos,end_dist,fixangle(bng - 180)),
+					"td_pt", new_position(pos,td_dist,fixangle(bng - 180))
+		).
 	}
 	
 	FROM {LOCAL k IS 0.} UNTIL k >= (ldgsiteslex:KEYS:LENGTH) STEP { SET k TO k+1.} DO{	
@@ -52,7 +43,7 @@ FUNCTION define_td_points {
 		
 		//now get the touchdown point for the opposite side of the runway
 		SET head TO fixangle(head + 180).
-		SET site TO add_runway_tdpt(site,head,end_dist,td_dist).
+		SET site TO  (site,head,end_dist,td_dist).
 		
 		SET ldgsiteslex[ldgsiteslex:KEYS[k]] TO site.
 
@@ -64,16 +55,17 @@ FUNCTION define_td_points {
 
 //refresh the runway lexicon upon changing runway.
 FUNCTION refresh_runway_lex {
+	PARAMETER tgt_site.
 	PARAMETER tgt_rwy_number.
 	
-	local tgtsite is ldgsiteslex[tgt_rwy_number].
+	local siterwy is ldgsiteslex[tgt_site]["rwys"][tgt_rwy_number].
 
 	RETURN LEXICON(
 							"number",tgt_rwy_number,
-							"position",tgtsite["position"],
-							"elevation",tgtsite["elevation"],
-							"heading",tgtsite["heading"],
-							"length",tgtsite["length"],
+							"position",siterwy["position"],
+							"elevation",siterwy["elevation"],
+							"heading",siterwy["heading"],
+							"length",siterwy["length"],
 							"end_pt",LATLNG(0,0),
 							"td_pt",LATLNG(0,0),
 							"glideslope",0,

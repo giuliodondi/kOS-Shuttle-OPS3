@@ -29,12 +29,11 @@ make_main_entry_gui().
 
 
 IF (DEFINED tgtrwy) {UNSET tgtrwy.}
-GLOBAL tgtrwy IS refresh_runway_lex(select_tgt:VALUE).
+GLOBAL tgtrwy IS LEXICON().
+GLOBAL tgtrwy IS LEXICON().
 
 //this must be called after the GUI and the tgtrwy lexicon have been initialised
 select_random_rwy().
-SET tgtrwy["heading"] TO ldgsiteslex[select_tgt:VALUE]["rwys"][select_rwy:VALUE]["heading"].
-SET tgtrwy["td_pt"] TO ldgsiteslex[select_tgt:VALUE]["rwys"][select_rwy:VALUE]["td_pt"].
 
 
 
@@ -94,14 +93,15 @@ FUNCTION ops3_taem_test {
 		//LOCAL taemg_out is taemg_wrapper(
 		//								taemg_in						
 		//).
-		//print 	taemg_out.	
+		
+		print 	rwystate.	
 		
 		
 		pos_arrow(tgtrwy["position"],"runwaypos", 5000, 0.1).
 		pos_arrow(tgtrwy["td_pt"],"td_pt", 5000, 0.1).
 		pos_arrow(tgtrwy["end_pt"],"end_pt" , 5000, 0.1).
 		
-		wait 0.5.
+		wait 0.2.
 	}
 	
 }

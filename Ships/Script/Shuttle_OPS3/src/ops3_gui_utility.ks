@@ -1,5 +1,7 @@
 @LAZYGLOBAL OFF.
 
+close_all_GUIs().
+
 GLOBAL guitextgreen IS RGB(20/255,255/255,21/255).
 GLOBAL guitextred IS RGB(255/255,21/255,20/255).
 global trajbgblack IS RGB(5/255,8/255,8/255).
@@ -291,15 +293,9 @@ FUNCTION make_main_entry_gui {
 	SET select_rwy:ONCHANGE to { 
 		PARAMETER rwy.	
 		
-		LOCAL newsite IS ldgsiteslex[select_tgt:VALUE].
+		SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, rwy).
 		
 		reset_overhead_apch().
-		
-		SET tgtrwy["number"] TO rwy.
-		SET tgtrwy["heading"] TO newsite["rwys"][rwy]["heading"].
-		SET tgtrwy["td_pt"] TO newsite["rwys"][rwy]["td_pt"].
-		SET tgtrwy["end_pt"] TO newsite["rwys"][rwy]["end_pt"].
-		SET tgtrwy["overhead"] TO is_apch_overhead().
 	}.
 	
 	SET select_tgt:ONCHANGE to {
@@ -307,21 +303,12 @@ FUNCTION make_main_entry_gui {
 		
 		LOCAL newsite IS ldgsiteslex[lex_key].
 		
-		SET tgtrwy TO refresh_runway_lex(newsite).
-		
 		select_rwy:CLEAR.
 		FOR rwy IN newsite["rwys"]:KEYS {
 			select_rwy:addoption(rwy).
 		}	
 		
 		select_random_rwy().
-		
-		reset_overhead_apch().
-		
-		SET tgtrwy["heading"] TO newsite["rwys"][rwy]["heading"].
-		SET tgtrwy["td_pt"] TO newsite["rwys"][rwy]["td_pt"].
-		SET tgtrwy["end_pt"] TO newsite["rwys"][rwy]["end_pt"].
-		SET tgtrwy["overhead"] TO is_apch_overhead().
 
 		reset_hud_bg_brightness().
 	}.	
@@ -344,6 +331,7 @@ FUNCTION make_main_entry_gui {
 	
 	GLOBAL arbkb IS  toggles_box:ADDCHECKBOX("Auto Airbk",false).
 
+	select_random_rwy().	
 
 	main_entry_gui:SHOW().
 }
@@ -354,7 +342,6 @@ FUNCTION select_random_rwy {
 	LOCAL rwynum IS select_rwy:OPTIONS:LENGTH.
 	SET select_rwy:INDEX TO FLOOR(rwynum*RANDOM()).
 	
-	reset_overhead_apch().
 	WAIT 0.
 }
 
@@ -880,4 +867,21 @@ FUNCTION make_hud_gui {
 	SET spdbk_slider:STYLE:WIDTH TO 110.
 	SET spdbk_slider:STYLE:HEIGHT TO 20.
 
+}
+
+//sets bright or dark hud background based on the local time at the target
+FUNCTION reset_hud_bg_brightness {
+	IF NOT (DEFINED hud_gui) {RETURN.}
+
+	LOCAL tgt_lng IS tgtrwy["td_pt"]:LNG.
+
+	LOCAL tgt_local_time IS local_time_seconds(tgt_lng).
+	
+	IF (tgt_local_time < 19800 OR tgt_local_time>66000) {
+		SET hud_gui:style:BG to "Shuttle_entrysim/src/gui_images/hudbackground_bright.png".
+	} ELSe {
+		SET hud_gui:style:BG to "Shuttle_entrysim/src/gui_images/hudbackground_dark.png".
+	}
+	
+	
 }
