@@ -88,6 +88,8 @@ FUNCTION taemg_wrapper {
 					"emep", taemg_output["emep"] / mt2ft, 	//ft energy/weight at which the mep is selected 
 					"eow", taemg_output["eow"] / mt2ft, 		//ft energy/weight
 					"es", taemg_output["es"] / mt2ft, 		//ft energy/weight at which the s-turn is initiated 
+					"emax", taemg_output["emax"] / mt2ft, 		//ft energy/weight to constrain nzc above nominal
+					"emin", taemg_output["emin"] / mt2ft, 		//ft energy/weight to constrain nzc below nominal
 					"rpred", taemg_output["rpred"] / mt2ft,	//ft predicted range to threshold 
 					"iphase", taemg_output["iphase"], 	//phase counter 
 					"tg_end", taemg_output["tg_end"], 	//termination flag 
@@ -130,14 +132,25 @@ global taemg_constants is lexicon (
 									"dtr", 0.0174533, 		//rad/deg deg2rad
 									"edelc1", 1,			//emax calc constant 
 									"edelc2", 1,			//emax calc constant 
-									"edelnz", list(0, 4000, 4000),			// -/ft/ft eow delta from nominal energy line slope for s-turn
-									"edrs", list(0, 0.69946182, 0.69946182),		// -/ ft^2/ft / ft^2/ft slope for s-turn energy line 
-									"emep_c1", list(0, list(0,-3263, 12088), list(0, -3263, 12088)),		//all in ft mep energy line y intercept 
-									"emep_c2", list(0, list(0,0.51554944, 0.265521), list(0, 0.51554944, 0.265521)),		//all in ft^2/ft mep energy line slope
-									"en_c1", list(0, list(0, 949, 15360), list(0, 949, 15360)),		//all ft^2/ft nom energy line y-intercept 
-									"en_c2", list(0, list(0, 0.6005, 0.46304), list(0, 0.6005, 0.46304)),		//all ft^2/ft nom energy line slope
-									"es1", list(0, 4523, 4523),		//ft y-intercept of s-turn energy line 
-									"eow_spt", list(0, 76068, 76068), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
+									//"edelnz", list(0, 4000, 4000),			// -/ft/ft eow delta from nominal energy line slope for s-turn  	//OTT paper
+									//"edrs", list(0, 0.69946182, 0.69946182),		// -/ ft^2/ft / ft^2/ft slope for s-turn energy line   	//OTT paper
+									//"emep_c1", list(0, list(0,-3263, 12088), list(0, -3263, 12088)),		//all in ft mep energy line y intercept  	//OTT paper
+									//"emep_c2", list(0, list(0,0.51554944, 0.265521), list(0, 0.51554944, 0.265521)),		//all in ft^2/ft mep energy line slope 	//OTT paper
+									//"en_c1", list(0, list(0, 949, 15360), list(0, 949, 15360)),		//all ft^2/ft nom energy line y-intercept 	//OTT paper
+									//"en_c2", list(0, list(0, 0.6005, 0.46304), list(0, 0.6005, 0.46304)),		//all ft^2/ft nom energy line slope 	//OTT paper
+									//"es1", list(0, 4523, 4523),		//ft y-intercept of s-turn energy line   	//OTT paper
+									//"eow_spt", list(0, 76068, 76068), 	//ft range at which to change slope and y-intercept on the mep and nom energy line  	//OTT paper
+									
+									"edelnzu", 10000,			//eow delta from nominal energy line for emax
+									"edelnzl", 4000,			//eow delta from nominal energy line for emin
+									"edrs", list(0, 0.635416, 0.635416),		// -/ ft^2/ft / ft^2/ft slope for s-turn energy line 
+									"emep_c1", list(0, list(0,-10000, 15000), list(0, -10000, 15000)),		//all in ft mep energy line y intercept 
+									"emep_c2", list(0, list(0,0.44375, 0.29168), list(0, 0.44375, 0.29168)),		//all in ft^2/ft mep energy line slope
+									"en_c1", list(0, list(0, -3000, 15000), list(0, -3000, 15000)),		//all ft^2/ft nom energy line y-intercept 
+									"en_c2", list(0, list(0, 0.5625, 0.375), list(0, 0.5625, 0.375)),		//all ft^2/ft nom energy line slope
+									"es1", list(0, 15000, 15000),		//ft y-intercept of s-turn energy line 
+									"eow_spt", list(0, 90000, 90000), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
+									
 									"g", 32.174,					//ft/s^2 earth gravity 
 									"gamma_coef1", 0.0007,			//deg/ft fpa error coef 
 									"gamma_coef2", 3,			//deg fpa error coef 
@@ -166,10 +179,11 @@ global taemg_constants is lexicon (
 									"hftc", LIST(0, 12018, 12018),		//ft altitude of a/l steep gs at nominal entry pt
 									"machad", 0.75,		//mach to use air data (used in gcomp appendix)
 									"mxqbwt", 0.0007368421,		// psf/lb max l/d dyn press for nominal weight		//deprecated 
-									"pbgc", LISt(0, 0.1112666, 0.1112666), 		//lin coeff of range for href and lower lim of dhdrrf
+									"pbgc", LISt(0, 0.1112666, 0.1112666), 		//lin coeff of range for href and lower lim of dhdrrf	//6° of glideslope
 									"pbhc", LIST(0, 78161.826, 78161.826), 		//ft alt ref for drpred = pbrc
 									"pbrc", LISt(0, 256527.82, 256527.82), 		//ft max range for cubic alt ref 
-									"pbrcq", LIST(0, 89971.082, 89971.082), 			//ft range breakpoint for qbref
+									//"pbrcq", LIST(0, 89971.082, 89971.082), 			//ft range breakpoint for qbref 	//OTT paper
+									"pbrcq", LIST(0, 121522, 121522), 			//ft range breakpoint for qbref
 									"phavgc", 63.33,			//deg constant for phavg
 									"phavgll", 30,			//deg lower lim of phavg
 									"phavgs", 13.33,		//deg slope for phavg 
@@ -196,9 +210,12 @@ global taemg_constants is lexicon (
 									"qbmx3", 300,			//psf constant for qbmxnz
 									"qbm1", 1.05,				//mach breakpoint for computing qbmxnz
 									"qbm2", 1.7,				//mach breakpoint for computing qbmxnz
-									"qbrll", LIST(0, 180, 180),		//psf  qbref ll
-									"qbrml", LIST(0, 220, 220),		//psf  qbref ml
-									"qbrul", LIST(0, 285, 285),		//psf  qbref ul
+									//"qbrll", LIST(0, 180, 180),		//psf  qbref ll 	//OTT paper
+									//"qbrml", LIST(0, 220, 220),		//psf  qbref ml 	//OTT paper
+									//"qbrul", LIST(0, 285, 285),		//psf  qbref ul 	//OTT paper
+									"qbrll", LIST(0, 225, 225),		//psf  qbref ll
+									"qbrml", LIST(0, 247, 247),		//psf  qbref ml
+									"qbrul", LIST(0, 305, 305),		//psf  qbref ul
 									"rerrlm", 7000,			//ft limit of rerrc 		//was 50 deg????
 									"rftc", 5,			//s roll fader time const 
 									"rminst", LIST(0, 122204.6, 122204.6),		//ft min range allowed to initiate sturn 
@@ -209,7 +226,8 @@ global taemg_constants is lexicon (
 									"sbmin", 0,				//deg min sbrbk command (was 5)		//deprecated
 									"tggs", LISt(0, -0.40402623, -0.40402623), 		//tan of steep gs for autoland 	-22°
 									"vco", 1e20, 			//fps constant used in turn compensation 			//deprecated
-									"wt_gs1", 8000, 			//slugs max orbiter weight 
+									//"wt_gs1", 8000, 			//slugs max orbiter weight 
+									"wt_gs1", 6837, 			//slugs max orbiter weight 
 									"xa", LIST(0, -5000, -5000),		//steep gs intercept 
 									"yerrlm", 280,				//deg limit on yerrc 
 									"y_error", 1000,			//ft xrange err bound 		//deprecated
@@ -224,7 +242,8 @@ global taemg_constants is lexicon (
 									"dhoh2", 35705,			//ft alt ref dev/spiral range bias
 									"dhoh3", 6000,			//ft alt ref dev/spiral max shift of altitude
 									"eqlowu", 85000,			//ft upper eow of region for OVHD that qhat qbmxnz is lowered
-									"eshfmx", 20000,			//ft max shift of en target at hac 
+									//"eshfmx", 20000,			//ft max shift of en target at hac  	//OTT paper
+									"eshfmx", 10000,			//ft max shift of en target at hac 
 									"phils", -300,			//deg constant used to calculated philimit
 									"pewrr", 0.52,			//partial of en with respect to range at r2max 
 									"pqbwrr", 0.006,			//psf / ft partial of qbar with respect to range with constraints of e=en and mach = phim 
@@ -278,7 +297,9 @@ global taemg_internal is lexicon(
 								"eas_cmd", 0, 		//kn equivalent airspeed commanded 
 								"emep", 0,		//ft energy/weight at which the mep is selected 
 								"eow", 0,			//ft energy/weight
-								"en", 0,			//energy reference
+								"en", 0,			//energy/weight reference
+								"emax", 0,			//energy/weight to constrain nzc above nominal ref
+								"emin", 0,			//energy/weight to constrain nzc below nominal ref
 								"es", 0, 		//ft energy/weight at which the s-turn is initiated 
 								"hderr", 0, 		//ft hdot error
 								"herror", 0, 		//ft altitude error
@@ -359,6 +380,8 @@ function tgexec {
 					"emep", taemg_internal["emep"],
 					"eow", taemg_internal["eow"], 
 					"es", taemg_internal["es"],
+					"emax", taemg_internal["emax"],
+					"emin", taemg_internal["emin"],
 					"rpred", taemg_internal["rpred"],
 					"iphase", taemg_internal["iphase"],
 					"tg_end", taemg_internal["tg_end"],
@@ -558,7 +581,9 @@ FUNCTION tgcomp {
 		set taemg_internal["iel"] to 1.
 	}
 	
-	set taemg_internal["en"] to taemg_constants["en_c1"][taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["en_c2"][taemg_internal["igs"]][taemg_internal["iel"]] - midval(taemg_constants["en_c2"][taemg_internal["igs"]][1]*(taemg_internal["rpred2"] - taemg_constants["r2max"]), 0, taemg_constants["eshfmx"]).
+	//for clarity
+	LOCAL en_shift IS midval(taemg_constants["en_c2"][taemg_internal["igs"]][1]*(taemg_internal["rpred2"] - taemg_constants["r2max"]), 0, taemg_constants["eshfmx"]).
+	set taemg_internal["en"] to taemg_constants["en_c1"][taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["en_c2"][taemg_internal["igs"]][taemg_internal["iel"]] - en_shift.
 	
 	
 	if (taemg_internal["drpred"] > taemg_constants["pbrc"][taemg_internal["igs"]]) {
@@ -741,10 +766,14 @@ FUNCTION tgnzc {
 		set taemg_internal["nzc"] to midval(dnzc, qbnzll, qbnzul).
 	} else {
 		//eow limits
-		local emax is taemg_internal["en"] + taemg_constants["edelnz"][taemg_internal["igs"]] * midval( taemg_internal["drpred"] / taemg_constants["del_r_emax"][taemg_internal["igs"]] , taemg_constants["edelc1"], taemg_constants["edelc2"]).
-		local emin is taemg_internal["en"] - taemg_constants["edelnz"][taemg_internal["igs"]].
-		local eownzul is (taemg_constants["geul"] * gdh * (emax - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdul"] * gdh.
-		local eownzll is (taemg_constants["gell"] * gdh * (emin - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdll"] * gdh.
+		//SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnz"][taemg_internal["igs"]] * midval( taemg_internal["drpred"] / taemg_constants["del_r_emax"][taemg_internal["igs"]] , taemg_constants["edelc1"], taemg_constants["edelc2"]).
+		//SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnz"][taemg_internal["igs"]].
+		
+		SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnzu"][taemg_internal["igs"]].
+		SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnzl"][taemg_internal["igs"]].
+		
+		local eownzul is (taemg_constants["geul"] * gdh * (taemg_internal["emax"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdul"] * gdh.
+		local eownzll is (taemg_constants["gell"] * gdh * (taemg_internal["emin"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdll"] * gdh.
 		
 		//cascade of filters
 		//limit by eow
