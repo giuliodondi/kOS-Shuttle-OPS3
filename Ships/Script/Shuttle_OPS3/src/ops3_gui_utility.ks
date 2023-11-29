@@ -183,7 +183,7 @@ FUNCTION make_main_entry_gui {
 
 	//create the GUI.
 	GLOBAL main_entry_gui is gui(main_entry_gui_width,main_entry_gui_height).
-	SET main_entry_gui:X TO 200.
+	SET main_entry_gui:X TO 170.
 	SET main_entry_gui:Y TO 670.
 	SET main_entry_gui:STYLe:WIDTH TO main_entry_gui_width.
 	SET main_entry_gui:STYLe:HEIGHT TO main_entry_gui_height.
@@ -201,6 +201,20 @@ FUNCTION make_main_entry_gui {
 
 	GLOBAL text0 IS title_box:ADDLABEL("<b><size=20>SPACE SHUTTLE OPS3 ENTRY GUIDANCE</size></b>").
 	SET text0:STYLE:ALIGN TO "center".
+	
+	GLOBAL hudcb IS  title_box:ADDBUTTON("☒").
+	set hudcb:style:margin:h to 7.
+	set hudcb:style:margin:v to 7.
+	set hudcb:style:width to 20.
+	set hudcb:style:height to 20.
+	set hudcb:TOGGLE to TRUE.
+	function recenterhud {
+		PARAMETER pressed.
+		recenter_hud().
+		
+		SET hudcb:pressed to false.
+	}
+	SET hudcb:ONTOGGLE TO recenterhud@.
 
 	GLOBAL minb IS  title_box:ADDBUTTON("-").
 	set minb:style:margin:h to 7.
@@ -689,12 +703,17 @@ FUNCTION make_hud_gui {
 	IF (DEFINED hud_gui AND hud_gui:visible) {
 		RETURN.
 	}
+	
+	LOCAL hudfont IS "Consolas".
+	
+	GLOBAL hudwidth IS 450.
+	GLOBAL hudheight IS 340.
 
-	GLOBAL hud_gui is gui(430,320).
-	SET hud_gui:X TO 700.
-	SET hud_gui:Y TO 150.
-	SET hud_gui:STYLe:WIDTH TO 450.
-	SET hud_gui:STYLe:HEIGHT TO 320.
+	GLOBAL hud_gui is gui(hudwidth,hudheight).
+	SET hud_gui:STYLe:WIDTH TO hudwidth.
+	SET hud_gui:STYLe:HEIGHT TO hudheight.
+	
+	recenter_hud().
 	reset_hud_bg_brightness().
 	SET hud_gui:skin:LABEL:TEXTCOLOR to guitextgreen.
 	hud_gui:SHOW.
@@ -722,6 +741,7 @@ FUNCTION make_hud_gui {
 	SET hdg_box:STYLE:MARGIN:left TO 165.
 	GLOBAL hdg_text IS hdg_box:ADDLABEL("").
 	SET hdg_text:STYLE:ALIGN TO "Center".
+	SET hdg_text:STYLE:FONT TO hudfont.
 	
 	GLOBAL overlaiddata IS hud:ADDVLAYOUT().
 	SET overlaiddata:STYLE:ALIGN TO "Center".
@@ -739,6 +759,8 @@ FUNCTION make_hud_gui {
 	SET spdbox:STYLe:MARGIN:top TO 87.
 	GLOBAL spd_text IS spdbox:ADDLABEL("<size=18>M26.5</size>").
 	SET spd_text:STYLE:ALIGN TO "Right".
+	SET spd_text:STYLE:WIDTH TO 60.
+	SET spd_text:STYLE:FONT TO hudfont.
 	
 	
 	GLOBAL altbox IS spdaltbox:ADDHLAYOUT().
@@ -748,6 +770,7 @@ FUNCTION make_hud_gui {
 	SET altbox:STYLe:MARGIN:top TO 87.
 	GLOBAL alt_text IS altbox:ADDLABEL("<size=18>100.5</size>").
 	SET alt_text:STYLE:ALIGN TO "Left".
+	SET alt_text:STYLE:FONT TO hudfont.
 	
 	
 	
@@ -761,6 +784,7 @@ FUNCTION make_hud_gui {
 	GLOBAL hudrll_text IS hudrll:ADDLABEL("rll").
 	SET hudrll_text:STYLe:WIDTH TO 30.
 	SET hudrll_text:STYLE:ALIGN TO "Center".
+	SET hudrll_text:STYLE:FONT TO hudfont.
 	
 	GLOBAL hudpch IS overlaiddata:ADDVLAYOUT().
 	SET hudpch:STYLe:WIDTH TO 20.
@@ -770,20 +794,22 @@ FUNCTION make_hud_gui {
 	GLOBAL hudpch_text IS hudpch:ADDLABEL("pch").
 	SET hudpch_text:STYLe:WIDTH TO 30.
 	SET hudpch_text:STYLE:ALIGN TO "Left".
+	SET hudpch_text:STYLE:FONT TO hudfont.
 
 
 	GLOBAL hud_nz IS overlaiddata:ADDHLAYOUT().
 	SET hud_nz:STYLe:WIDTH TO 70.
 	SET hud_nz:STYLe:HEIGHT TO 30.
-	SET hud_nz:STYLE:MARGIN:top TO 13.
-	SET hud_nz:STYLE:MARGIN:left TO 75.
+	SET hud_nz:STYLE:MARGIN:top TO 1.
+	SET hud_nz:STYLE:MARGIN:left TO 58.
 	GLOBAL nz_text IS hud_nz:ADDLABEL("").
 	SET nz_text:STYLe:WIDTH TO 100.
 	SET nz_text:STYLE:ALIGN TO "Right".
+	SET nz_text:STYLE:FONT TO hudfont.
 
 	GLOBAL hud_main IS hud:ADDHLAYOUT().
 	SET hud_main:STYLe:WIDTH TO 430.
-	SET hud_main:STYLe:HEIGHT TO 240.
+	SET hud_main:STYLe:HEIGHT TO 230.
 	SET hud_main:STYLE:ALIGN TO "Center".
 	hud_main:addspacing(0).
 	
@@ -847,19 +873,34 @@ FUNCTION make_hud_gui {
 
 
 	GLOBAL bottom_box IS hud:ADDHLAYOUT().
-	SET bottom_box:STYLe:WIDTH TO 400.
-	//SET bottom_box:STYLE:ALIGN TO "left".
-
-	bottom_box:addspacing(75).
-
+	SET bottom_box:STYLe:WIDTH TO 500.
+	
+	
 	GLOBAL bottom_txtbox IS bottom_box:ADDHLAYOUT().
-	SET bottom_txtbox:STYLe:WIDTH TO 185.
-	GLOBAL mode_txt IS bottom_txtbox:ADDLABEL("<size=20>    </size>").
+	SET bottom_txtbox:STYLe:WIDTH TO 260.
+	SET bottom_txtbox:STYLE:ALIGN TO "Left".
+	SET bottom_txtbox:STYLE:HSTRETCH TO TRUE.
+	
+	bottom_txtbox:addspacing(30).
+	
+	GLOBAL steer_txt IS bottom_txtbox:ADDLABEL("<size=18>    </size>").
+	SET steer_txt:STYLe:WIDTH TO 55.
+	SET steer_txt:STYLE:MARGIN:top TO 40.
+	SET steer_txt:STYLE:ALIGN TO "Left".
+	SET steer_txt:STYLE:FONT TO hudfont.
+	
+	
+	GLOBAL mode_txt IS bottom_txtbox:ADDLABEL("<size=18>    </size>").
+	SET mode_txt:STYLe:WIDTH TO 75.
 	SET mode_txt:STYLE:ALIGN TO "Left".
+	SET mode_txt:STYLE:MARGIN:top TO 13.
+	SET mode_txt:STYLE:FONT TO hudfont.
+	
 
 	GLOBAL mode_dist_text IS  bottom_txtbox:ADDLABEL( "<size=18>"+"</size>" ).
+	SET mode_dist_text:STYLE:MARGIN:top TO 13.
+	SET mode_dist_text:STYLE:FONT TO hudfont.
 
-	bottom_box:addspacing(0).
 
 	GLOBAL spdbk_slider_box IS bottom_box:ADDHLAYOUT().
 	GLOBAL spdbk_slider is spdbk_slider_box:addhslider(0,0,1).
@@ -868,6 +909,12 @@ FUNCTION make_hud_gui {
 	SET spdbk_slider:STYLE:WIDTH TO 110.
 	SET spdbk_slider:STYLE:HEIGHT TO 20.
 
+}
+
+//set to the centre of the screen
+FUNCTION recenter_hud {
+	SET hud_gui:X TO (constants["game_resolution_width"] - hudwidth)/2.
+	SET hud_gui:Y TO (constants["game_resolution_height"] - hudheight)/2.
 }
 
 //sets bright or dark hud background based on the local time at the target
@@ -885,4 +932,77 @@ FUNCTION reset_hud_bg_brightness {
 	}
 	
 	
+}
+
+
+
+FUNCTION update_hud_gui {
+	PARAMETER mode_str.
+	PARAMETER steer_str.
+	PARAMETER pipper_pos.
+	PARAMETER altt.
+	PARAMETEr dist.
+	PARAMETER hdgval.
+	PARAMETER spd.
+	PARAMETER pch.
+	PARAMETER rll.
+	PARAMETER spdbk_val.
+	PARAMETER flapval.
+	PARAMETER cur_nz.
+
+	SET steer_txt:text TO "<size=18>" + steer_str + "</size>".
+	
+	SET mode_txt:text TO "<size=18>" + mode_str + "</size>".
+
+	// set the pipper to an intermediate position between the desired and the current position so the transition is smoother
+	LOCAL smooth_fac IS 0.5.
+	
+	LOCAL pipper_pos_cur IS LIST(diamond:STYLE:margin:h, diamond:STYLE:margin:v).
+	
+	SET diamond:STYLE:margin:h TO pipper_pos_cur[0] + smooth_fac*(pipper_pos[0] - pipper_pos_cur[0]).
+	SET diamond:STYLE:margin:v TO pipper_pos_cur[1] + smooth_fac*(pipper_pos[1] - pipper_pos_cur[1]).
+	
+	SET vspd_slider:VALUE TO CLAMP(-SHIP:VERTICALSPEED,vspd_slider:MIN,vspd_slider:MAX).
+	
+	SET hdg_text:text TO "<size=18>" + hdgval + "</size>".
+	
+	SET spd_text:text TO "<size=18>M"+ ROUND(spd,1) + "</size>".
+	SET alt_text:text TO "<size=18>" + ROUND(altt,1) + "</size>".
+	
+	SET nz_text:text TO "<size=18>" + ROUND(cur_nz,1) + " G</size>".
+	
+	SET mode_dist_text:text TO "<size=18>" + dist + "</size>".
+		
+	SET spdbk_slider:VALUE TO spdbk_val.
+	
+	SET flaptrim_slider:VALUE TO flapval.
+	
+	SET hudrll_text:text TO "<size=12>" + ROUND(rll,0) + "</size>".
+	SET hudpch_text:text TO "<size=12>" + ROUND(pch,0) + "</size>".
+
+}
+
+
+//scales the deltas by the right amount for display
+//accounting for the diamond window width
+FUNCTION diamond_deviation_debug {
+	
+	LOCAL hmargin IS diamond_central_x.
+	LOCAL vmargin IS diamond_central_y.
+	
+	LOCAL horiz IS SHIP:CONTROL:PILOTROLL.
+	LOCAL vert IS -SHIP:CONTROL:PILOTPITCH.
+
+
+	//transpose the deltas to the interval [0, 1] times the window widths
+	LOCAL diamond_horiz IS hmargin*(1 + horiz).
+	LOCAL diamond_vert IS vmargin*(1 + vert).
+
+	//clamp them 
+	SET diamond_horiz TO CLAMP(diamond_horiz,0,2*hmargin).
+	SET diamond_vert TO CLAMP(diamond_vert,0,2*vmargin). 
+	
+
+	RETURN LIST(diamond_horiz,diamond_vert).
+
 }
