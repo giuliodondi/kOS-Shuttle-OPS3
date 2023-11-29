@@ -172,7 +172,7 @@ global taemg_constants is lexicon (
 									"h_error", 1000,		//ft altitude error bound	//deprecated
 									"h_ref1", 10000,			//ft alt for check to transition to a/l
 									"h_ref2", 5000,			//ft alt to force transition to a/l
-									"hali", LIST(0, 10018, 10018),		//ft altitude at a/l steep gs at MEP
+									"hali", LIST(0, 10018, 10018),		//ft altitude at a/l for reference profiles
 									"hdreqg", 0.1,				//hdreq computation gain 
 									"hftc", LIST(0, 12018, 12018),		//ft altitude of a/l steep gs at nominal entry pt
 									"machad", 0.75,		//mach to use air data (used in gcomp appendix)
@@ -237,7 +237,7 @@ global taemg_constants is lexicon (
 									
 									//i think the following constants were added once OTT was implemented
 									"dr4", 2000,			//ft range from hac for phase 3
-									"hmep", LISt(0, 6000, 6000),	//ft mep altitude
+									"hmep", LISt(0, 6000, 6000),	//ft altitude at a/l steep gs at MEP
 									"demxsb", 10000,			//ft max eow error for speedbrakes out 		
 									"dhoh1", 0.11,			//alt ref dev/spiral slope
 									"dhoh2", 35705,			//ft alt ref dev/spiral range bias
@@ -339,8 +339,8 @@ global taemg_internal is lexicon(
 								"rf", 0,		//spiral hac radius on final
 								"rwid0", 0,		//store the runway selection
 								"tg_end", FALSE,		//termination flag 
-								"xali", 0,			// x coord of apch/land interface	(is negative)
-								"xftc", 0,			//x coord where we should arrive on the final apch plane (and place the hac origin) (is negative)
+								"xali", 0,			// x coord of a/l interface for reference profiles
+								"xftc", 0,			//x coord of nominal entry point (and place the hac origin) (is negative)
 								"xhac", 0,			//x coord of hac centre		(is negative)
 								"xmep", 0,			//x coord of minimum entry point	(is negative)
 								"ysgn", 1,		//r/l cone indicator (i.e. left/right hac ??)		//moved from inputs
