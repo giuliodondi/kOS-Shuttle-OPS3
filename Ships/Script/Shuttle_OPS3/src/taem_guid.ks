@@ -111,8 +111,6 @@ global taemg_constants is lexicon (
 									"cpmin", 0.707,		//cosphi min value 
 									"cqdg", 0.31886860,		//gain for qbd calculation 
 									"cqg", 0.5583958,		//gain for calculation of dnzcd and qbard 
-									"cubic_c3", list(0, -4.7714787e-7, -4.7714787e-7),	//ft/ft^2 href curve fit quadratic term
-									"cubic_c4", list(0, -2.4291527e-13, -2.4291527e-13),	//ft/ft^2 href curve fit cubic term
 									"del_h1", 0.19,				//alt error coeff 
 									"del_h2", 900,				//ft alt error coeff 
 									"del_r_emax", list(0,54000,54000),		// -/ft/ft constant ised for computing emax 
@@ -180,8 +178,11 @@ global taemg_constants is lexicon (
 									"machad", 0.75,		//mach to use air data (used in gcomp appendix)
 									"mxqbwt", 0.0007368421,		// psf/lb max l/d dyn press for nominal weight		//deprecated 
 									"pbgc", LISt(0, 0.1112666, 0.1112666), 		//lin coeff of range for href and lower lim of dhdrrf	//6° of glideslope
-									"pbhc", LIST(0, 78161.826, 78161.826), 		//ft alt ref for drpred = pbrc
-									"pbrc", LISt(0, 256527.82, 256527.82), 		//ft max range for cubic alt ref 
+									
+									//my addition, linear fir coefficients for pbhc and pbrc based on outer glideslope
+									"pbrc_fit", LIST(256527.82, 1320895.49875, 0.3249196962),		//ft max range for cubic alt ref 
+									"pbhc_fit", LISt(78161.826, 170534.500266, 0.3249196962), 		//ft alt ref for drpred = pbrc
+									
 									//"pbrcq", LIST(0, 89971.082, 89971.082), 			//ft range breakpoint for qbref 	//OTT paper
 									"pbrcq", LIST(0, 121522, 121522), 			//ft range breakpoint for qbref
 									"phavgc", 63.33,			//deg constant for phavg
@@ -224,7 +225,7 @@ global taemg_constants is lexicon (
 									"rtd", 	57.29578,			//deg/rad rad2teg
 									"rturn", 20000,				//ft hac radius 				//deprecated
 									"sbmin", 0,				//deg min sbrbk command (was 5)		//deprecated
-									"tggs", LISt(0, -0.40402623, -0.40402623), 		//tan of steep gs for autoland 	-22°
+									"tggs", LISt(0, 0.40402623, 0.40402623), 		//tan of steep gs for autoland 	// I refactored everything so they're positive
 									"vco", 1e20, 			//fps constant used in turn compensation 			//deprecated
 									//"wt_gs1", 8000, 			//slugs max orbiter weight 
 									"wt_gs1", 6837, 			//slugs max orbiter weight 
@@ -285,6 +286,12 @@ global taemg_constants is lexicon (
 
 //internal variables
 global taemg_internal is lexicon(
+								//moved from constants to variables that are calculated based on glideslopes
+								"cubic_c3", 0,	//ft/ft^2 href curve fit quadratic term
+								"cubic_c4", 0,	//ft/ft^2 href curve fit cubic term
+								"pbhc", 0, 		//ft alt ref for drpred = pbrc
+								"pbrc", 0, 		//ft max range for cubic alt ref 
+								
 								"delrng", 0,	//ft range error from altitude profile 
 								"dnzc", 0, 
 								"dnzcl", 0, 	//limited load factor cmd
@@ -434,6 +441,21 @@ FUNCTION tginit {
 		set taemg_internal["igs"] to 1.
 	}
 	
+	set taemg_internal["xftc"] to taemg_constants["xa"][1] - taemg_constants["hftc"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
+	set taemg_internal["xali"] to taemg_constants["xa"][1] - taemg_constants["hali"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
+	set taemg_internal["xmep"] to taemg_constants["xa"][1] - taemg_constants["hmep"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
+	
+	//my addition, pbrc and pbhc are now linear fit functions of tggs 
+	set taemg_internal["pbrc"] TO taemg_constants["pbrc_fit"][0] + taemg_constants["pbrc_fit"][1] * (taemg_constants["tggs"][taemg_internal["igs"]] - taemg_constants["pbrc_fit"][2]).
+	set taemg_internal["pbhc"] TO taemg_constants["pbhc_fit"][0] + taemg_constants["pbhc_fit"][1] * (taemg_constants["tggs"][taemg_internal["igs"]] - taemg_constants["pbhc_fit"][2]).
+	
+	//my addition, cubic coefs are calculated so that (href = hali and fpa = tggs at drpred = 0) and (href = pbhc and fpa = pbgc at drpred = pbrc )
+	local chi is (taemg_internal["pbhc"] - taemg_constants["hali"][taemg_internal["igs"]]) / (taemg_internal["pbrc"]^2) - taemg_constants["tggs"][taemg_internal["igs"]] / taemg_internal["pbrc"].
+	local th is (taemg_constants["pbgc"][taemg_internal["igs"]] - taemg_constants["tggs"][taemg_internal["igs"]]) / (2 * taemg_internal["pbrc"]).
+	
+	set taemg_internal["cubic_c3"] to 3*chi - 2*th.
+	set taemg_internal["cubic_c4"] to 2*(th - chi) / taemg_internal["pbrc"].
+	
 	
 	SET taemg_input["tg_end"] TO FALSE.
 	
@@ -481,11 +503,7 @@ FUNCTION tgxhac {
 		
 	}
 	
-	
-	set taemg_internal["xftc"] to taemg_constants["xa"][1] + taemg_constants["hftc"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
-	set taemg_internal["xali"] to taemg_constants["xa"][1] + taemg_constants["hali"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
-
-	set taemg_internal["xmep"] to taemg_constants["xa"][1] + taemg_constants["hmep"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
+	//moved uto tginit everything that won't change between iterations
 	
 	if (taemg_internal["mep"]) {
 		set taemg_internal["xhac"] TO taemg_internal["xmep"].
@@ -586,15 +604,15 @@ FUNCTION tgcomp {
 	set taemg_internal["en"] to taemg_constants["en_c1"][taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["en_c2"][taemg_internal["igs"]][taemg_internal["iel"]] - en_shift.
 	
 	
-	if (taemg_internal["drpred"] > taemg_constants["pbrc"][taemg_internal["igs"]]) {
+	if (taemg_internal["drpred"] > taemg_internal["pbrc"]) {
 		//linear altitude profile at long range
-		set taemg_internal["href"] to taemg_constants["pbhc"][taemg_internal["igs"]] + taemg_constants["pbgc"][taemg_internal["igs"]] * (taemg_internal["drpred"] - taemg_constants["pbrc"][taemg_internal["igs"]]).
+		set taemg_internal["href"] to taemg_internal["pbhc"] + taemg_constants["pbgc"][taemg_internal["igs"]] * (taemg_internal["drpred"] - taemg_internal["pbrc"]).
 	} else {
 		//close-in linear profile with outer glideslope
-		set taemg_internal["href"] to taemg_constants["hali"][taemg_internal["igs"]] - taemg_constants["tggs"][taemg_internal["igs"]] * taemg_internal["drpred"].
+		set taemg_internal["href"] to taemg_constants["hali"][taemg_internal["igs"]] + taemg_constants["tggs"][taemg_internal["igs"]] * taemg_internal["drpred"].
 		//add the cubic profile for mid-ranges
 		if (taemg_internal["drpred"] > 0) {
-			set taemg_internal["href"] to taemg_internal["href"] + taemg_internal["drpred"]^2 * (taemg_constants["cubic_c3"][taemg_internal["igs"]] + taemg_internal["drpred"] * taemg_constants["cubic_c4"][taemg_internal["igs"]]).
+			set taemg_internal["href"] to taemg_internal["href"] + taemg_internal["drpred"]^2 * (taemg_internal["cubic_c3"] + taemg_internal["drpred"] * taemg_internal["cubic_c4"]).
 		}
 	}
 	
@@ -617,10 +635,10 @@ FUNCTION tgcomp {
 	
 	//calculate tangent of ref. fpa
 	local dhdrrf is 0.
-	if (taemg_internal["drpred"] > taemg_constants["pbrc"][taemg_internal["igs"]]) {
+	if (taemg_internal["drpred"] > taemg_internal["pbrc"]) {
 		set dhdrrf to -taemg_constants["pbgc"][taemg_internal["igs"]].
 	} else {
-		set dhdrrf to - midval( -taemg_constants["tggs"][taemg_internal["igs"]] + taemg_internal["drpred"] * (2 * taemg_constants["cubic_c3"][taemg_internal["igs"]] + 3 * taemg_constants["cubic_c4"][taemg_internal["igs"]] * taemg_internal["drpred"]), taemg_constants["pbgc"][taemg_internal["igs"]], -taemg_constants["tggs"][taemg_internal["igs"]]).
+		set dhdrrf to - midval( taemg_constants["tggs"][taemg_internal["igs"]] + taemg_internal["drpred"] * (2 * taemg_internal["cubic_c3"] + 3 * taemg_internal["cubic_c4"] * taemg_internal["drpred"]), taemg_constants["pbgc"][taemg_internal["igs"]], taemg_constants["tggs"][taemg_internal["igs"]]).
 	}
 	
 	//moved up from tgnzc so I can output hdref instead of dhdrrf
