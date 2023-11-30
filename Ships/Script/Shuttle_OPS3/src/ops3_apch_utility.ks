@@ -139,11 +139,10 @@ FUNCTION get_runway_rel_state {
 	).
 }
 
-//get several vehicle-related quantities
-FUNCTION get_vehicle_state {
-
-	RETURN LEXICON(
-					
-	).
+//measure vertical load factor in Gs
+FUNCTION get_current_nz {
+	LOCAL aeroacc IS cur_aeroaccel_ld().
+	return aeroacc["lift"] / 9.80665.
 
 }
+

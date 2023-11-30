@@ -964,14 +964,14 @@ FUNCTION update_hud_gui {
 	
 	SET vspd_slider:VALUE TO CLAMP(-SHIP:VERTICALSPEED,vspd_slider:MIN,vspd_slider:MAX).
 	
-	SET hdg_text:text TO "<size=18>" + hdgval + "</size>".
+	SET hdg_text:text TO "<size=18>" + ROUND(hdgval, 0)  + "</size>".
 	
 	SET spd_text:text TO "<size=18>M"+ ROUND(spd,1) + "</size>".
 	SET alt_text:text TO "<size=18>" + ROUND(altt,1) + "</size>".
 	
 	SET nz_text:text TO "<size=18>" + ROUND(cur_nz,1) + " G</size>".
 	
-	SET mode_dist_text:text TO "<size=18>" + dist + "</size>".
+	SET mode_dist_text:text TO "<size=18>" + ROUND(dist, 0) + "</size>".
 		
 	SET spdbk_slider:VALUE TO spdbk_val.
 	
@@ -992,6 +992,39 @@ FUNCTION diamond_deviation_debug {
 	
 	LOCAL horiz IS SHIP:CONTROL:PILOTROLL.
 	LOCAL vert IS -SHIP:CONTROL:PILOTPITCH.
+
+
+	//transpose the deltas to the interval [0, 1] times the window widths
+	LOCAL diamond_horiz IS hmargin*(1 + horiz).
+	LOCAL diamond_vert IS vmargin*(1 + vert).
+
+	//clamp them 
+	SET diamond_horiz TO CLAMP(diamond_horiz,0,2*hmargin).
+	SET diamond_vert TO CLAMP(diamond_vert,0,2*vmargin). 
+	
+
+	RETURN LIST(diamond_horiz,diamond_vert).
+
+}
+
+//scales the deltas by the right amount for display
+//accounting for the diamond window width
+FUNCTION diamond_deviation_taem {
+	PARAMETER deltas.
+	
+	LOCAL hmargin IS diamond_central_x.
+	LOCAL vmargin IS diamond_central_y.
+	
+	LOCAL vdelta IS deltas[1].
+	LOCAL hdelta IS deltas[0].
+	
+	//the vertical multiplier needs to be negative
+	LOCAL vmult iS -0.25.
+	
+	LOCAL hmult iS 0.01.
+	
+	LOCAL horiz IS hmult*hdelta.
+	LOCAL vert IS  vmult*vdelta.
 
 
 	//transpose the deltas to the interval [0, 1] times the window widths

@@ -45,11 +45,7 @@ FUNCTION dap_controller_factory{
 	this:add("nz", 0).
 	
 	this:add("update_nz", {
-		LOCAL aeroacc IS cur_aeroaccel_ld().
-		
-		LOCAL g0 IS 9.80665.
-		
-		SET this:nz to aeroacc["lift"] / g0.
+		SET this:nz to get_current_nz().
 	}).
 	
 	this:update_nz().

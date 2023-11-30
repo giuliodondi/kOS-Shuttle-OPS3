@@ -29,7 +29,7 @@ define_td_points().
 //after the td points but before anything that modifies the default button selections
 make_main_entry_gui().
 
-
+make_hud_gui().
 
 ops3_taem_test().
 
@@ -83,16 +83,40 @@ FUNCTION ops3_taem_test {
 							
 		
 		//call taem guidance here
-		//LOCAL taemg_out is taemg_wrapper(
-		//								taemg_in						
-		//).
+		LOCAL taemg_out is taemg_wrapper(
+										taemg_in						
+		).
 		
-		print 	rwystate.	
+		//print 	taemg_out.	
 		
 		
 		pos_arrow(tgtrwy["position"],"runwaypos", 5000, 0.1).
 		pos_arrow(tgtrwy["td_pt"],"td_pt", 5000, 0.1).
 		pos_arrow(tgtrwy["end_pt"],"end_pt" , 5000, 0.1).
+		
+		LOCAL lvlh_pch IS get_pitch_lvlh().
+		LOCAL lvlh_rll IS get_roll_lvlh().
+		LOCAL cur_nz IS get_current_nz().
+		
+		LOCAL deltas IS LIST(
+									taemg_out["phic_at"] - lvlh_rll, 
+									taemg_out["nztotal"] -  cur_nz
+		).
+		
+		update_hud_gui(
+			"ACQ",
+			"AUTO",
+			diamond_deviation_taem(deltas),
+			rwystate["h"] / 1000,
+			taemg_out["rpred"] / 1000,
+			rwystate["rwy_rel_crs"],
+			ADDONS:FAR:MACH,
+			lvlh_pch,
+			lvlh_rll,
+		    0, 
+		    0, 
+			cur_nz
+		).
 		
 		wait 0.2.
 	}

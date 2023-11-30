@@ -225,7 +225,7 @@ global taemg_constants is lexicon (
 									"rtd", 	57.29578,			//deg/rad rad2teg
 									"rturn", 20000,				//ft hac radius 				//deprecated
 									"sbmin", 0,				//deg min sbrbk command (was 5)		//deprecated
-									"tggs", LISt(0, 0.40402623, 0.40402623), 		//tan of steep gs for autoland 	// I refactored everything so they're positive
+									"tggs", LISt(0, 0.40402623, 0.3639702343), 		//tan of steep gs for autoland 	// I refactored everything so they're positive
 									"vco", 1e20, 			//fps constant used in turn compensation 			//deprecated
 									//"wt_gs1", 8000, 			//slugs max orbiter weight 
 									"wt_gs1", 6837, 			//slugs max orbiter weight 
@@ -787,8 +787,8 @@ FUNCTION tgnzc {
 		//SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnz"][taemg_internal["igs"]] * midval( taemg_internal["drpred"] / taemg_constants["del_r_emax"][taemg_internal["igs"]] , taemg_constants["edelc1"], taemg_constants["edelc2"]).
 		//SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnz"][taemg_internal["igs"]].
 		
-		SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnzu"][taemg_internal["igs"]].
-		SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnzl"][taemg_internal["igs"]].
+		SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnzu"].
+		SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnzl"].
 		
 		local eownzul is (taemg_constants["geul"] * gdh * (taemg_internal["emax"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdul"] * gdh.
 		local eownzll is (taemg_constants["gell"] * gdh * (taemg_internal["emin"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdll"] * gdh.
