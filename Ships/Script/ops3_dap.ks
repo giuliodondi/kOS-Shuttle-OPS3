@@ -4,6 +4,7 @@ RUNONCEPATH("0:/Libraries/navigation_library").
 RUNONCEPATH("0:/Libraries/aerosim_library").
 
 RUNPATH("0:/Shuttle_OPS3/src/ops3_control_utility.ks").
+RUNPATH("0:/Shuttle_OPS3/src/ops3_apch_utility.ks").
 
 RUNPATH("0:/Shuttle_OPS3/vessel_dir").
 RUNPATH("0:/Shuttle_OPS3/VESSELS/" + vessel_dir + "/aerosurfaces_control").
@@ -22,17 +23,17 @@ ON (AG9) {
 		UNLOCK STEERING.
 	} ELSe {
 		SET engaged TO TRUE.
-		dap:reset_nz_css().
+		dap:reset_steering().
 		LOCK STEERING TO steerdir.
 	}
 	PRESERVE.
 }
 
 ON (AG8) {
-	IF (dap:mode = "atmo_css") {
+	IF (dap:mode = "atmo_pch_css") {
 		SET dap:mode TO "atmo_nz_css".
 	} ELSe IF (dap:mode = "atmo_nz_css") {
-		SET dap:mode TO "atmo_css".
+		SET dap:mode TO "atmo_pch_css".
 	} 
 	PRESERVE.
 }
@@ -50,7 +51,7 @@ until false{
 	
 	SET steerdir TO dap:update().
 	
-	speed_control(FALSE, aerosurfaces_control, 0).
+	//speed_control(FALSE, aerosurfaces_control, 0).
 	aerosurfaces_control["deflect"]().
 	
 	dap:print_debug(2).

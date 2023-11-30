@@ -12,13 +12,9 @@ FUNCTION dap_controller_factory{
 
 	this:add("enabled", TRUE).
 	
-	this:add("mode", "atmo_css").
+	this:add("mode", "atmo_pch_css").
 	
 	this:add("steering_dir", SHIP:FACINg).
-	
-	this:add("reset_steering",{
-		SET this:steering_dir TO SHIP:FACINg.
-	}).
 	
 	this:add("last_time", TIME:SECONDS).
 	
@@ -34,13 +30,19 @@ FUNCTION dap_controller_factory{
 	this:add("prog_yaw",0).
 	this:add("prog_roll",0).
 	
-	this:add("update_prog_angles", {
+	this:add("lvlh_pitch",0).
+	this:add("fpa",0).
+	
+	this:add("measure_angles", {
 		SET this:prog_pitch TO get_pitch_prograde().
 		SET this:prog_roll TO get_roll_prograde().
 		SET this:prog_yaw TO get_yaw_prograde().
+		
+		SET this:lvlh_pitch TO get_pitch_lvlh().
+		set this:fpa to get_surf_fpa().
 	}).
 	
-	this:update_prog_angles().
+	this:measure_angles().
 	
 	this:add("nz", 0).
 	
@@ -52,7 +54,6 @@ FUNCTION dap_controller_factory{
 	
 	this:add("tgt_nz", 0).
 	
-	
 	this:add("nz_pitch_pid", PIDLOOP(1.8,0,0.1)).
 	
 	SET this:nz_pitch_pid:SETPOINT TO 0.
@@ -63,6 +64,7 @@ FUNCTION dap_controller_factory{
 	}).
 	
 	this:add("steer_pitch",0).
+	this:add("steer_lvlh_pitch",0).
 	this:add("steer_yaw",0).
 	this:add("steer_roll",0).
 	
@@ -70,6 +72,11 @@ FUNCTION dap_controller_factory{
 		set this:steer_pitch to this:prog_pitch.
 		set this:steer_roll to this:prog_roll.
 		set this:steer_yaw to 0.
+	}).
+	
+	this:add("reset_pch_css", {
+		this:reset_steering_angles().
+		set this:steer_lvlh_pitch TO this:lvlh_pitch.
 	}).
 	
 	this:add("reset_nz_css", {
@@ -115,17 +122,26 @@ FUNCTION dap_controller_factory{
 	}).
 	
 	this:add("update", {
-		IF (this:mode = "atmo_css") {
-			return this:atmo_css().
+		IF (this:mode = "atmo_pch_css") {
+			return this:atmo_pch_css().
 		} ELSe IF (this:mode = "atmo_nz_css") {
 			return this:atmo_nz_css().
+		}
+	}).
+	
+	this:add("reset_steering",{
+		SET this:steering_dir TO SHIP:FACINg.
+		IF (this:mode = "atmo_pch_css") {
+			this:reset_pch_css().
+		} ELSe IF (this:mode = "atmo_nz_css") {
+			this:reset_nz_css().
 		}
 	}).
 	
 	this:add("atmo_nz_css", {
 	
 		this:update_time().
-		this:update_prog_angles().
+		this:measure_angles().
 		this:update_nz().
 		
 		//gains suitable for manoeivrable steerign in atmosphere
@@ -147,7 +163,7 @@ FUNCTION dap_controller_factory{
 		
 		//apply the deltas to the current angles so the inputs will tend to "ndge" the nose around and then leave it where it is when the controls are released
 		SET this:steer_roll TO this:steer_roll + deltaroll.
-		SET this:steer_yaw TO this:prog_yaw*0.2 + deltayaw.
+		SET this:steer_yaw TO 0 + deltayaw.
 		
 		SET this:steering_dir TO this:create_prog_steering_dir(
 			this:steer_pitch,
@@ -159,14 +175,14 @@ FUNCTION dap_controller_factory{
 	
 	}).
 
-	this:add("atmo_css", {
+	this:add("atmo_pch_css", {
 	
 		this:update_time().
-		this:update_prog_angles().
+		this:measure_angles().
 		
 		//gains suitable for manoeivrable steerign in atmosphere
-		LOCAL rollgain IS 2.
-		LOCAL pitchgain IS 0.8.
+		LOCAL rollgain IS 1.3.
+		LOCAL pitchgain IS 0.5.
 		LOCAL yawgain IS 2.
 		
 		//required for continuous pilot input across several funcion calls
@@ -177,9 +193,14 @@ FUNCTION dap_controller_factory{
 		LOCAL deltapitch IS time_gain * pitchgain * (SHIP:CONTROL:PILOTPITCH - SHIP:CONTROL:PILOTPITCHTRIM).
 		LOCAL deltayaw IS time_gain * yawgain * (SHIP:CONTROL:PILOTYAW - SHIP:CONTROL:PILOTYAWTRIM).
 		
-		SET this:steer_pitch TO this:steer_pitch + deltapitch.
+		LOCAL cosroll IS MAX(ABS(COS(this:steer_roll)), 0.5).
+		
+		SET this:steer_lvlh_pitch TO this:steer_lvlh_pitch + deltapitch * cosroll.
+		
+		SET this:steer_pitch TO this:steer_lvlh_pitch / cosroll - (this:fpa /cosroll).
+		
 		SET this:steer_roll TO this:steer_roll + deltaroll.
-		SET this:steer_yaw TO this:prog_yaw*0.2 + deltayaw.
+		SET this:steer_yaw TO 0 + deltayaw.
 		
 		SET this:steering_dir TO this:create_prog_steering_dir(
 			this:steer_pitch,
@@ -194,7 +215,7 @@ FUNCTION dap_controller_factory{
 	this:add("reentry_css", {
 	
 		this:update_time().
-		this:update_prog_angles().
+		this:measure_angles().
 		
 		LOCAL rollgain IS 1.0.
 		LOCAL pitchgain IS 0.4.
@@ -222,7 +243,7 @@ FUNCTION dap_controller_factory{
 		PARAMETER pitchguid.
 		
 		this:update_time().
-		this:update_prog_angles().
+		this:measure_angles().
 		
 		LOCAL pitch_tol IS 8.
 		LOCAL roll_tol IS 8.
@@ -252,14 +273,17 @@ FUNCTION dap_controller_factory{
 		print "prog pitch : " + round(this:prog_pitch,3) + "    " at (0,line + 2).
 		print "prog roll : " + round(this:prog_roll,3) + "    " at (0,line + 3).
 		print "prog yaw : " + round(this:prog_yaw,3) + "    " at (0,line + 4).
+		print "lvlh pitch : " + round(this:lvlh_pitch,3) + "    " at (0,line + 5).
+		print "fpa : " + round(this:fpa,3) + "    " at (0,line + 6).
 		
 		
-		print "steer pitch : " + round(this:steer_pitch,3) + "    " at (0,line + 5).
-		print "steer roll : " + round(this:steer_roll,3) + "    " at (0,line + 6).
-		print "steer yaw : " + round(this:steer_yaw,3) + "    " at (0,line + 7).
+		print "steer pitch : " + round(this:steer_pitch,3) + "    " at (0,line + 8).
+		print "steer lvlh pitch : " + round(this:steer_lvlh_pitch,3) + "    " at (0,line + 9).
+		print "steer roll : " + round(this:steer_roll,3) + "    " at (0,line + 10).
+		print "steer yaw : " + round(this:steer_yaw,3) + "    " at (0,line + 11).
 		
-		print "tgt nz : " + round(this:tgt_nz,3) + "    " at (0,line + 9).
-		print "cur nz : " + round(this:nz,3) + "    " at (0,line + 10).
+		print "tgt nz : " + round(this:tgt_nz,3) + "    " at (0,line + 13).
+		print "cur nz : " + round(this:nz,3) + "    " at (0,line + 14).
 		
 	}).
 	

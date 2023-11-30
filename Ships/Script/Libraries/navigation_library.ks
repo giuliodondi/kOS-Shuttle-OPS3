@@ -522,17 +522,16 @@ FUNCTION get_pitch_lvlh {
 	).
 }
 
-//returns the current flight path angle with respect to the local horizontal
-function get_fpa {
-	parameter vec.
-	PARAMETER geopos.
+//returns the current surface flight path angle with respect to the local horizontal
+function get_surf_fpa {
+	LOCAL surfv IS SHIP:srfprograde:vector.
 	
-	LOCAL upvec IS pos2vec(geopos):NORMALIZED.
-	LOCAL velproj IS VXCL(upvec,vec).
+	LOCAL upvec IS -SHIP:ORBIT:BODY:POSITION:NORMALIZED.
+	LOCAL surfv_h IS VXCL(upvec,surfv).
 	
-	LOCAL rightvec IS -VCRS(velproj,vec):NORMALIZED.
+	LOCAL hdot_ IS VDOT(surfv, upvec).
 	
-	RETURN signed_angle(velproj:NORMALIZED,vec:NORMALIZED,rightvec,0).
+	RETURN ARCTAN2(hdot_, surfv_h:MAG).
 }
 
 //returns the vehicle azimuth angle, north is 0 and east is 90
