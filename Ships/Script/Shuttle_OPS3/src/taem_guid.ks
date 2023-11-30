@@ -81,23 +81,28 @@ FUNCTION taemg_wrapper {
 
 	//dsbc_at needs to be transformed to a 0-1 variable based on max deflection (halved)
 	RETURN LEXICON(
+					"iphase", taemg_output["iphase"], 	//phase counter 
+					//geometric outputs
+					"rpred", taemg_output["rpred"] / mt2ft,	//ft predicted range to threshold 
+					"herror", taemg_output["herror"] / mt2ft, 	//ft altitude error
+					"psha", taemg_output["psha"], 	//deg hac turn angle
+					"dpsac", taemg_output["dpsac"], 	//deg heading error to the hac tangent 
+					//commands
 					"nztotal", taemg_output["nztotal"], 	//g-units normal load factor
 					"phic_at", taemg_output["phic_at"], 	//deg commanded roll 
-					"dpsac", taemg_output["dpsac"], 	//deg heading error to the hac tangent 
 					"dsbc_at", taemg_output["dsbc_at"] / taemg_constants["dsblim"], 	//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
+					//energy and other stuff
 					"emep", taemg_output["emep"] / mt2ft, 	//ft energy/weight at which the mep is selected 
 					"eow", taemg_output["eow"] / mt2ft, 		//ft energy/weight
 					"es", taemg_output["es"] / mt2ft, 		//ft energy/weight at which the s-turn is initiated 
 					"emax", taemg_output["emax"] / mt2ft, 		//ft energy/weight to constrain nzc above nominal
 					"emin", taemg_output["emin"] / mt2ft, 		//ft energy/weight to constrain nzc below nominal
-					"rpred", taemg_output["rpred"] / mt2ft,	//ft predicted range to threshold 
-					"iphase", taemg_output["iphase"], 	//phase counter 
-					"tg_end", taemg_output["tg_end"], 	//termination flag 
 					"eas_cmd", taemg_output["eas_cmd"] / mps2kt, 	//kn equivalent airspeed commanded  (not useful)
-					"herror", taemg_output["herror"] / mt2ft, 	//ft altitude error
 					"qbarf", taemg_output["qbarf"] / (atm2pa * pa2psf), 	//psf filtered dynamic press 
+					//flags
 					"ohalrt", taemg_output["ohalrt"],	//taem automatic downmode flag 
-					"mep", taemg_output["mep"] 		//min entry point flag 
+					"mep", taemg_output["mep"], 		//min entry point flag 
+					"tg_end", taemg_output["tg_end"] 	//termination flag 
 	
 	).
 }
@@ -382,6 +387,7 @@ function tgexec {
 					"nzc", taemg_internal["nzc"],
 					"nztotal", taemg_internal["nztotal"],
 					"phic_at", taemg_internal["phic_at"],
+					"psha", taemg_internal["psha"],
 					"dpsac", taemg_internal["dpsac"],
 					"dsbc_at", taemg_internal["dsbc_at"],
 					"emep", taemg_internal["emep"],
@@ -456,6 +462,18 @@ FUNCTION tginit {
 	set taemg_internal["cubic_c3"] to 3*chi - 2*th.
 	set taemg_internal["cubic_c4"] to 2*(th - chi) / taemg_internal["pbrc"].
 	
+	//moved up from tgxhac because if we don't trigger phase 2 before we cross the runway centreline 
+	//the ysign will flip and mess everything up
+	//refactored this block based on the taem paper
+	//determine ysgn of the hac turn
+	if (taemg_input["ovhd"]) {
+		//for the overhead turn we'll turn around the hac on the opposite side of the runway to our own
+		//the ysgn is +1 if the hac is on the +y side so we set the sign to the opposite sign of the current y coord 
+		SET taemg_internal["ysgn"] TO - SIGN(taemg_input["y"]). 
+	} else {
+		//else it's on our same side
+		SET taemg_internal["ysgn"] TO SIGN(taemg_input["y"]). 
+	}
 	
 	SET taemg_input["tg_end"] TO FALSE.
 	
@@ -488,22 +506,9 @@ FUNCTION tgxhac {
 	
 	//got rid of the automatic straight-in downmode (if I want ot do it I'll do it outside the guidance exec)
 	
-	//refactored this block based on the taem paper
-	//determine ysgn of the hac turn, but don't change it if we're beyond phase 1
-	IF (taemg_internal["iphase"] < 2) {
-		
-		if (taemg_input["ovhd"]) {
-			//for the overhead turn we'll turn around the hac on the opposite side of the runway to our own
-			//the ysgn is +1 if the hac is on the +y side so we set the sign to the opposite sign of the current y coord 
-			SET taemg_internal["ysgn"] TO - SIGN(taemg_input["y"]). 
-		} else {
-			//else it's on our same side
-			SET taemg_internal["ysgn"] TO SIGN(taemg_input["y"]). 
-		}
-		
-	}
+	//moved ysgn calculations to the init block 
 	
-	//moved uto tginit everything that won't change between iterations
+	//moved to tginit everything that won't change between iterations
 	
 	if (taemg_internal["mep"]) {
 		set taemg_internal["xhac"] TO taemg_internal["xmep"].
@@ -553,6 +558,7 @@ FUNCTION gtp {
 	
 	set pst to unfixangle(pst).
 	
+	//moved dpsac calculation bc there's no reason to do it after phase 2 triggered
 	set taemg_internal["dpsac"] to unfixangle(pst - taemg_input["psd"]).
 	
 	//calculate hac turn angle 

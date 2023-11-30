@@ -87,7 +87,7 @@ FUNCTION ops3_taem_test {
 										taemg_in						
 		).
 		
-		//print 	taemg_out.	
+		print 	taemg_out.	
 		
 		
 		pos_arrow(tgtrwy["position"],"runwaypos", 5000, 0.1).

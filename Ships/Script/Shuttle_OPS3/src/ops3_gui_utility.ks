@@ -1019,9 +1019,9 @@ FUNCTION diamond_deviation_taem {
 	LOCAL hdelta IS deltas[0].
 	
 	//the vertical multiplier needs to be negative
-	LOCAL vmult iS -0.25.
+	LOCAL vmult iS -0.17.
 	
-	LOCAL hmult iS 0.01.
+	LOCAL hmult iS 0.008.
 	
 	LOCAL horiz IS hmult*hdelta.
 	LOCAL vert IS  vmult*vdelta.
