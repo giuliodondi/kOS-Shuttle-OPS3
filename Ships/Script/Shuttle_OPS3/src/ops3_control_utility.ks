@@ -1,4 +1,5 @@
-
+IF (DEFINED BRAKESPID) {UNSET BRAKESPID.}
+IF (DEFINED FLAPPID) {UNSET FLAPPID.}
 
 
 //control functions
@@ -33,24 +34,20 @@ FUNCTION dap_controller_factory{
 	this:add("lvlh_pitch",0).
 	this:add("fpa",0).
 	
-	this:add("measure_angles", {
+	this:add("nz", 0).
+	
+	this:add("measure_cur_state", {
 		SET this:prog_pitch TO get_pitch_prograde().
 		SET this:prog_roll TO get_roll_prograde().
 		SET this:prog_yaw TO get_yaw_prograde().
 		
 		SET this:lvlh_pitch TO get_pitch_lvlh().
 		set this:fpa to get_surf_fpa().
-	}).
-	
-	this:measure_angles().
-	
-	this:add("nz", 0).
-	
-	this:add("update_nz", {
+		
 		SET this:nz to get_current_nz().
 	}).
 	
-	this:update_nz().
+	this:measure_cur_state().
 	
 	this:add("tgt_nz", 0).
 	
@@ -62,6 +59,9 @@ FUNCTION dap_controller_factory{
 	this:add("update_nz_pid", {
 		return -this:nz_pitch_pid:UPDATE(this:last_time, this:tgt_nz - this:nz ).
 	}).
+	
+	this:add("css_roll_lims", LIST(-55, 55)).
+	this:add("css_pitch_lims", LIST(-10, 20)).
 	
 	this:add("steer_pitch",0).
 	this:add("steer_lvlh_pitch",0).
@@ -141,11 +141,10 @@ FUNCTION dap_controller_factory{
 	this:add("atmo_nz_css", {
 	
 		this:update_time().
-		this:measure_angles().
-		this:update_nz().
+		this:measure_cur_state().
 		
 		//gains suitable for manoeivrable steerign in atmosphere
-		LOCAL rollgain IS 0.8.
+		LOCAL rollgain IS 2.
 		LOCAL nzgain IS 0.018.
 		LOCAL yawgain IS 2.
 		
@@ -162,8 +161,11 @@ FUNCTION dap_controller_factory{
 		SET this:steer_pitch TO this:steer_pitch + this:update_nz_pid().
 		
 		//apply the deltas to the current angles so the inputs will tend to "ndge" the nose around and then leave it where it is when the controls are released
-		SET this:steer_roll TO this:steer_roll + deltaroll.
+		SET this:steer_roll TO this:prog_roll + deltaroll.
 		SET this:steer_yaw TO 0 + deltayaw.
+		
+		SET this:steer_roll TO CLAMP(this:steer_roll, this:css_roll_lims[0], this:css_roll_lims[1]).
+		SET this:steer_pitch TO CLAMP(this:steer_pitch, this:css_pitch_lims[0], this:css_pitch_lims[1]).
 		
 		SET this:steering_dir TO this:create_prog_steering_dir(
 			this:steer_pitch,
@@ -178,10 +180,10 @@ FUNCTION dap_controller_factory{
 	this:add("atmo_pch_css", {
 	
 		this:update_time().
-		this:measure_angles().
+		this:measure_cur_state().
 		
 		//gains suitable for manoeivrable steerign in atmosphere
-		LOCAL rollgain IS 1.3.
+		LOCAL rollgain IS 2.
 		LOCAL pitchgain IS 0.5.
 		LOCAL yawgain IS 2.
 		
@@ -199,8 +201,11 @@ FUNCTION dap_controller_factory{
 		
 		SET this:steer_pitch TO this:steer_lvlh_pitch / cosroll - (this:fpa /cosroll).
 		
-		SET this:steer_roll TO this:steer_roll + deltaroll.
+		SET this:steer_roll TO this:prog_roll + deltaroll.
 		SET this:steer_yaw TO 0 + deltayaw.
+		
+		SET this:steer_roll TO CLAMP(this:steer_roll, this:css_roll_lims[0], this:css_roll_lims[1]).
+		SET this:steer_pitch TO CLAMP(this:steer_pitch, this:css_pitch_lims[0], this:css_pitch_lims[1]).
 		
 		SET this:steering_dir TO this:create_prog_steering_dir(
 			this:steer_pitch,
@@ -215,7 +220,7 @@ FUNCTION dap_controller_factory{
 	this:add("reentry_css", {
 	
 		this:update_time().
-		this:measure_angles().
+		this:measure_cur_state().
 		
 		LOCAL rollgain IS 1.0.
 		LOCAL pitchgain IS 0.4.
@@ -243,7 +248,7 @@ FUNCTION dap_controller_factory{
 		PARAMETER pitchguid.
 		
 		this:update_time().
-		this:measure_angles().
+		this:measure_cur_state().
 		
 		LOCAL pitch_tol IS 8.
 		LOCAL roll_tol IS 8.
@@ -371,3 +376,5 @@ FUNCTION  flaptrim_control{
 	
 	SET aerosurfaces_control["flap_defl"] TO CLAMP(aerosurfaces_control["flap_defl"] + flap_incr,-1,1).
 }
+
+reset_pids().

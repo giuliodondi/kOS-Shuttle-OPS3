@@ -12,11 +12,12 @@ RUNPATH("0:/Shuttle_OPS3/constants").
 RUNPATH("0:/Shuttle_OPS3/src/ops3_entry_utility.ks").
 RUNPATH("0:/Shuttle_OPS3/src/ops3_gui_utility.ks").
 RUNPATH("0:/Shuttle_OPS3/src/ops3_apch_utility.ks").
+RUNPATH("0:/Shuttle_OPS3/src/ops3_control_utility.ks").
 
 RUNPATH("0:/Shuttle_OPS3/src/taem_guid.ks").
 
-//RUNPATH("0:/Shuttle_OPS3/vessel_dir").
-//RUNPATH("0:/Shuttle_OPS3/VESSELS/" + vessel_dir + "/pitch_profile").
+RUNPATH("0:/Shuttle_OPS3/vessel_dir").
+RUNPATH("0:/Shuttle_OPS3/VESSELS/" + vessel_dir + "/aerosurfaces_control").
 
 GLOBAL quit_program IS FALSE.
 
@@ -43,12 +44,40 @@ close_all_GUIs().
 FUNCTION ops3_taem_test {
 	SET CONFIG:IPU TO 1800.	
 	
+	
+	LOCAL dap IS dap_controller_factory().
+	
+	SET dap:mode TO "atmo_pch_css".
+	
+	LOCAL aerosurfaces_control IS aerosurfaces_control_factory().
+	
+	aerosurfaces_control["set_aoa_feedback"](50).
+	
+	local engaged Is FALSE.
+	LOCAL steerdir IS SHIP:FACING.
+
+	ON (AG9) {
+		IF engaged {
+			SET engaged TO FALSE.
+			UNLOCK STEERING.
+		} ELSe {
+			SET engaged TO TRUE.
+			dap:reset_steering().
+			LOCK STEERING TO steerdir.
+		}
+		PRESERVE.
+	}
+	
 	until false{
 		clearscreen.
 		clearvecdraws().
 		
 		if (quit_program) {
 			break.
+		}
+		
+		IF (SHIP:STATUS = "LANDEd") {
+			UNLOCK STEERING.
 		}
 	
 		
@@ -87,6 +116,12 @@ FUNCTION ops3_taem_test {
 										taemg_in						
 		).
 		
+		IF EXISTS("0:/taemg_internal.txt") {
+			DELETEPATH("0:/taemg_internal.txt").
+		}
+		
+		log taemg_internal:dump() to "0:/taemg_internal.txt".
+		
 		print 	taemg_out.	
 		
 		
@@ -103,6 +138,13 @@ FUNCTION ops3_taem_test {
 									taemg_out["nztotal"] -  cur_nz
 		).
 		
+		
+		SET steerdir TO dap:update().
+		
+		flaptrim_control(TRUE, aerosurfaces_control).
+		SET aerosurfaces_control["spdbk_defl"] TO taemg_out["dsbc_at"].
+		aerosurfaces_control["deflect"]().
+		
 		update_hud_gui(
 			"ACQ",
 			"AUTO",
@@ -113,12 +155,12 @@ FUNCTION ops3_taem_test {
 			ADDONS:FAR:MACH,
 			lvlh_pch,
 			lvlh_rll,
-		    0, 
-		    0, 
+		    aerosurfaces_control["spdbk_defl"],
+			aerosurfaces_control["flap_defl"],
 			cur_nz
 		).
 		
-		wait 0.2.
+		wait 0.15.
 	}
 	
 }

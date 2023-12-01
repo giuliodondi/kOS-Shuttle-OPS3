@@ -92,11 +92,10 @@ FUNCTION taemg_wrapper {
 					"phic_at", taemg_output["phic_at"], 	//deg commanded roll 
 					"dsbc_at", taemg_output["dsbc_at"] / taemg_constants["dsblim"], 	//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
 					//energy and other stuff
-					"emep", taemg_output["emep"] / mt2ft, 	//ft energy/weight at which the mep is selected 
 					"eow", taemg_output["eow"] / mt2ft, 		//ft energy/weight
 					"es", taemg_output["es"] / mt2ft, 		//ft energy/weight at which the s-turn is initiated 
-					"emax", taemg_output["emax"] / mt2ft, 		//ft energy/weight to constrain nzc above nominal
-					"emin", taemg_output["emin"] / mt2ft, 		//ft energy/weight to constrain nzc below nominal
+					"en", taemg_output["en"] / mt2ft, 	//ft energy/weight nominal
+					"emep", taemg_output["emep"] / mt2ft, 	//ft energy/weight at which the mep is selected 
 					"eas_cmd", taemg_output["eas_cmd"] / mps2kt, 	//kn equivalent airspeed commanded  (not useful)
 					"qbarf", taemg_output["qbarf"] / (atm2pa * pa2psf), 	//psf filtered dynamic press 
 					//flags
@@ -127,7 +126,8 @@ global taemg_constants is lexicon (
 									"dr3", 8000,		//ft delta range val for rpred3
 									"dsbcm", 0.95,		//mach at which speedbrake modulation starts 
 									"dsblim", 98.6,	//deg dsbc max value 
-									"dsbsup", 65,	//deg fixed spdbk deflection at supersonic 
+									//"dsbsup", 65,	//deg fixed spdbk deflection at supersonic 		//ott
+									"dsbsup", 98.6,	//deg fixed spdbk deflection at supersonic 
 									"dsbil", 20,	//deg min spdbk deflection 
 									"dsbnom", 65,		//deg nominal spdbk deflection
 									"dshply", 4000,		//ft delta range value in shplyk  	//deprecated
@@ -161,7 +161,8 @@ global taemg_constants is lexicon (
 									"gamsgs", LIST(0, -22, -22),	//deg a/l steep glideslope angle	//maybe put 24 here?
 									"gdhc", 2.0, 			//  constant for computing gdh 
 									"gdhll", 0.3, 			//gdh lower limit 
-									"gdhs", 7.0e-5,		//1/ft	slope for computing gdh 
+									//"gdhs", 7.0e-5,		//1/ft	slope for computing gdh 		//ott
+									"gdhs", 3.5e-5,		//1/ft	slope for computing gdh 
 									"gdhul", 1.0,			//gdh upper lim 
 									"gehdll", 0.01, 		//g/fps  gain used in computing eownzll
 									"gehdul", 0.01, 		//g/fps  gain used in computing eownzul
@@ -198,7 +199,8 @@ global taemg_constants is lexicon (
 									"philm1", 50,			//deg acq roll cmd lim 
 									"philm2", 60,			//deg heading alignment roll cmd lim 
 									"philm3", 30, 			//deg prefinal roll cmd lim 
-									"philmsup", 30, 		//deg supersonic roll cmd lim 
+									//"philmsup", 30, 		//deg supersonic roll cmd lim 		//OTT
+									"philmsup", 45, 		//deg supersonic roll cmd lim 
 									"phim", 0.95, 				//mach at which supersonic roll lim is removed
 									"phip2c", 30,			//deg constant for phase 3 roll cmd 	//deprecated
 									"p2trnc1", 1.1, 		//phase 2 transition logic constant 
@@ -257,7 +259,8 @@ global taemg_constants is lexicon (
 									"psrf", 90,				//deg max psha for adjusting rf 
 									"psohal", 200, 			//deg min psha to issue ohalrt 
 									"psohqb", 0, 			//deg min psha for which qbmxnz is lowered 
-									"psstrn", 200,			//deg max psha for s-turn 
+									//"psstrn", 200,			//deg max psha for s-turn //OTT
+									"psstrn", 300,			//deg max psha for s-turn 
 									"qbref2", LISt(0, 185, 185),		//psf qbref at r2max 
 									"qbmsl1", -0.0288355,			//psf/slug slope of mxqbwt with mach 
 									"qbmsl2", -0.00570829,			//psf/slug slope of mxqbwt with mach 
@@ -275,7 +278,8 @@ global taemg_constants is lexicon (
 									"dsbuls", -336,				//deg constant for dsbcul
 									"emohc1", LISt(0, -3894, -3894), 		//ft constant eow used ot compute emnoh
 									"emohc2", LISt(0, 0.51464, 0.51464), 		//slope of emnoh with range 
-									"enbias", 0, 					//ft eow bias for s-turn off 
+									//"enbias", 0, 					//ft eow bias for s-turn off 		//OTT
+									"enbias", 3000, 					//ft eow bias for s-turn off 
 									"eqlowl", 60000,			//ft lower eow of region for ovhd that wbmxnz is lowered 
 									"rmoh", 273500,				//ft min rpred to issue ohalrt 
 									"r1", 0, 			//ft/deg linear coeff of hac spiral 
@@ -351,8 +355,9 @@ global taemg_internal is lexicon(
 								"ysgn", 1,		//r/l cone indicator (i.e. left/right hac ??)		//moved from inputs
 								"ysturn", 0,	//sign of s-turn		//renamed from s
 
-								"xcir", 0,		//ft hac centre x-coord
-								"ycir", 0,		//ft hac centre y-coord
+								"xcir", 0,		//ft ship-hac centre distance component along x
+								"ycir", 0,		//ft ship-hac centre distance component along y
+								"yhac", 0,		//ft x coord of hac centre
 								"rcir", 0		//ft ship-hac distance
 
 ).
@@ -393,6 +398,7 @@ function tgexec {
 					"emep", taemg_internal["emep"],
 					"eow", taemg_internal["eow"], 
 					"es", taemg_internal["es"],
+					"en", taemg_internal["en"],
 					"emax", taemg_internal["emax"],
 					"emin", taemg_internal["emin"],
 					"rpred", taemg_internal["rpred"],
@@ -400,6 +406,7 @@ function tgexec {
 					"tg_end", taemg_internal["tg_end"],
 					"eas_cmd", taemg_internal["eas_cmd"],
 					"herror", taemg_internal["herror"],
+					"hdref", taemg_internal["hdref"],
 					"qbarf", taemg_internal["qbarf"],
 					"ohalrt", taemg_internal["ohalrt"],	
 					"mep", taemg_internal["mep"]
@@ -526,6 +533,8 @@ FUNCTION gtp {
 
 	//the x-distancebetween current pos and the hac position
 	SET taemg_internal["xcir"] TO taemg_internal["xhac"] - taemg_input["x"].
+	//my addition
+	SET taemg_internal["yhac"] TO taemg_internal["ysgn"] * taemg_internal["rf"].
 	
 	LOCAL signy IS SIGN(taemg_input["y"]).
 	
@@ -536,7 +545,7 @@ FUNCTION gtp {
 	}
 	//ELSE
 	
-	set taemg_internal["ycir"] to taemg_internal["ysgn"] * taemg_internal["rf"] - taemg_input["y"].
+	set taemg_internal["ycir"] to taemg_internal["yhac"] - taemg_input["y"].
 		
 	//euclidean distance from orbiter to hac centre in runway coords
 	set taemg_internal["rcir"] to SQRT(taemg_internal["xcir"]^2 + taemg_internal["ycir"]^2).
@@ -557,8 +566,7 @@ FUNCTION gtp {
 	}
 	
 	set pst to unfixangle(pst).
-	
-	//moved dpsac calculation bc there's no reason to do it after phase 2 triggered
+
 	set taemg_internal["dpsac"] to unfixangle(pst - taemg_input["psd"]).
 	
 	//calculate hac turn angle 
@@ -697,7 +705,7 @@ FUNCTION tgtran {
 		return.
 	} else if (taemg_internal["iphase"] = 1) {
 		//check if we can still do an s-turn  to avoid geometry problems
-		if ((taemg_internal["psha"] < taemg_constants["psstrn"]) and (taemg_internal["drpred"] > taemg_constants["rminst"][taemg_internal["igs"]])) {
+		if ((taemg_internal["psha"] < taemg_constants["psstrn"] and taemg_internal["drpred"] > taemg_constants["rminst"][taemg_internal["igs"]])) {
 			set taemg_internal["es"] to taemg_constants["es1"][taemg_internal["igs"]] + taemg_internal["drpred"] * taemg_constants["edrs"][taemg_internal["igs"]].
 			//if above energy, transition to s-turn 
 			if (taemg_internal["eow"] > taemg_internal["es"]) {

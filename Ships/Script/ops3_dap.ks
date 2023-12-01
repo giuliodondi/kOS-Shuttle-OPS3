@@ -47,8 +47,6 @@ until false{
 		UNLOCK STEERING.
 	}
 	
-	dap:update_nz().
-	
 	SET steerdir TO dap:update().
 	
 	//speed_control(FALSE, aerosurfaces_control, 0).
