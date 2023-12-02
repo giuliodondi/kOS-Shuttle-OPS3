@@ -57,7 +57,7 @@ GLOBAL mps2kt IS 1.94384.			//m/s / knots
 FUNCTION taemg_wrapper {
 	PARAMETER taemg_input.
 
-	LOCAL taemg_output IS tgexec(
+	tgexec(
 								LEXICON(
 										"h", taemg_input["h"] * mt2ft,		//ft height above rwy
 										"hdot", taemg_input["hdot"] * mt2ft,	//ft/s vert speed
@@ -81,27 +81,34 @@ FUNCTION taemg_wrapper {
 
 	//dsbc_at needs to be transformed to a 0-1 variable based on max deflection (halved)
 	RETURN LEXICON(
-					"iphase", taemg_output["iphase"], 	//phase counter 
+					"iphase", taemg_internal["iphase"], 	//phase counter 
 					//geometric outputs
-					"rpred", taemg_output["rpred"] / mt2ft,	//ft predicted range to threshold 
-					"herror", taemg_output["herror"] / mt2ft, 	//ft altitude error
-					"psha", taemg_output["psha"], 	//deg hac turn angle
-					"dpsac", taemg_output["dpsac"], 	//deg heading error to the hac tangent 
+					"rpred", taemg_internal["rpred"] / mt2ft,	//ft predicted range to threshold 
+					"herror", taemg_internal["herror"] / mt2ft, 	//ft altitude error
+					"psha", taemg_internal["psha"], 	//deg hac turn angle
+					"dpsac", taemg_internal["dpsac"], 	//deg heading error to the hac tangent 
+					"xhac", taemg_internal["xhac"] / mt2ft, 	//ft x coordinate of hac centre
+					"yhac", taemg_internal["yhac"] / mt2ft, 	//ft y coordinate of hac centre
+					"rturn", taemg_internal["rturn"] / mt2ft, 	//ft hac radius
+					"ysgn", taemg_internal["ysgn"], 	//ft hac turn direction (+1 is a right-handed hac)
+					
+					
 					//commands
-					"nztotal", taemg_output["nztotal"], 	//g-units normal load factor
-					"phic_at", taemg_output["phic_at"], 	//deg commanded roll 
-					"dsbc_at", taemg_output["dsbc_at"] / taemg_constants["dsblim"], 	//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
+					"nzc", taemg_internal["nzc"], 	//g-units normal load factor
+					"nztotal", taemg_internal["nztotal"], 	//g-units normal load factor
+					"phic_at", taemg_internal["phic_at"], 	//deg commanded roll 
+					"dsbc_at", taemg_internal["dsbc_at"] / taemg_constants["dsblim"], 	//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
 					//energy and other stuff
-					"eow", taemg_output["eow"] / mt2ft, 		//ft energy/weight
-					"es", taemg_output["es"] / mt2ft, 		//ft energy/weight at which the s-turn is initiated 
-					"en", taemg_output["en"] / mt2ft, 	//ft energy/weight nominal
-					"emep", taemg_output["emep"] / mt2ft, 	//ft energy/weight at which the mep is selected 
-					"eas_cmd", taemg_output["eas_cmd"] / mps2kt, 	//kn equivalent airspeed commanded  (not useful)
-					"qbarf", taemg_output["qbarf"] / (atm2pa * pa2psf), 	//psf filtered dynamic press 
+					"eow", taemg_internal["eow"] / mt2ft, 		//ft energy/weight
+					"es", taemg_internal["es"] / mt2ft, 		//ft energy/weight at which the s-turn is initiated 
+					"en", taemg_internal["en"] / mt2ft, 	//ft energy/weight nominal
+					"emep", taemg_internal["emep"] / mt2ft, 	//ft energy/weight at which the mep is selected 
+					"eas_cmd", taemg_internal["eas_cmd"] / mps2kt, 	//kn equivalent airspeed commanded  (not useful)
+					"qbarf", taemg_internal["qbarf"] / (atm2pa * pa2psf), 	//psf filtered dynamic press 
 					//flags
-					"ohalrt", taemg_output["ohalrt"],	//taem automatic downmode flag 
-					"mep", taemg_output["mep"], 		//min entry point flag 
-					"tg_end", taemg_output["tg_end"] 	//termination flag 
+					"ohalrt", taemg_internal["ohalrt"],	//taem automatic downmode flag 
+					"mep", taemg_internal["mep"], 		//min entry point flag 
+					"tg_end", taemg_internal["tg_end"] 	//termination flag 
 	
 	).
 }
@@ -200,7 +207,7 @@ global taemg_constants is lexicon (
 									"philm2", 60,			//deg heading alignment roll cmd lim 
 									"philm3", 30, 			//deg prefinal roll cmd lim 
 									//"philmsup", 30, 		//deg supersonic roll cmd lim 		//OTT
-									"philmsup", 45, 		//deg supersonic roll cmd lim 
+									"philmsup", 40, 		//deg supersonic roll cmd lim 
 									"phim", 0.95, 				//mach at which supersonic roll lim is removed
 									"phip2c", 30,			//deg constant for phase 3 roll cmd 	//deprecated
 									"p2trnc1", 1.1, 		//phase 2 transition logic constant 
@@ -279,7 +286,7 @@ global taemg_constants is lexicon (
 									"emohc1", LISt(0, -3894, -3894), 		//ft constant eow used ot compute emnoh
 									"emohc2", LISt(0, 0.51464, 0.51464), 		//slope of emnoh with range 
 									//"enbias", 0, 					//ft eow bias for s-turn off 		//OTT
-									"enbias", 3000, 					//ft eow bias for s-turn off 
+									"enbias", 7000, 					//ft eow bias for s-turn off 
 									"eqlowl", 60000,			//ft lower eow of region for ovhd that wbmxnz is lowered 
 									"rmoh", 273500,				//ft min rpred to issue ohalrt 
 									"r1", 0, 			//ft/deg linear coeff of hac spiral 
@@ -289,7 +296,7 @@ global taemg_constants is lexicon (
 									"philmc", 100, 				//deg bank lim for large bank command 
 									"qbmxs1", -400,				//psf slope of qbmxnz with mach < qbm1 
 									"hmin3", 7000,				//min altitude for prefinal
-									"nztotallim", 2.2				// my addition from the taem paper
+									"nztotallim", 2.5				// my addition from the taem paper
 ).
 
 
@@ -386,32 +393,6 @@ function tgexec {
 	tgsbc(taemg_input).
 	
 	tgphic(taemg_input).
-
-	//i want to return a new lexicon of internal variables
-	RETURN LEXICON(
-					"nzc", taemg_internal["nzc"],
-					"nztotal", taemg_internal["nztotal"],
-					"phic_at", taemg_internal["phic_at"],
-					"psha", taemg_internal["psha"],
-					"dpsac", taemg_internal["dpsac"],
-					"dsbc_at", taemg_internal["dsbc_at"],
-					"emep", taemg_internal["emep"],
-					"eow", taemg_internal["eow"], 
-					"es", taemg_internal["es"],
-					"en", taemg_internal["en"],
-					"emax", taemg_internal["emax"],
-					"emin", taemg_internal["emin"],
-					"rpred", taemg_internal["rpred"],
-					"iphase", taemg_internal["iphase"],
-					"tg_end", taemg_internal["tg_end"],
-					"eas_cmd", taemg_internal["eas_cmd"],
-					"herror", taemg_internal["herror"],
-					"hdref", taemg_internal["hdref"],
-					"qbarf", taemg_internal["qbarf"],
-					"ohalrt", taemg_internal["ohalrt"],	
-					"mep", taemg_internal["mep"]
-	
-	).
 
 }
 
@@ -584,7 +565,9 @@ FUNCTION gtp {
 
 	//if s-turn or acq build the hac acquisition turn circle based on velocity and average bank angle as a function of mach
 	IF (taemg_internal["iphase"] < 2) {
-		local phavg is midval(taemg_constants["phavgc"] - taemg_constants["phavgs"] * taemg_input["mach"], taemg_constants["phavgll"], taemg_constants["phavgul"]).
+		//my modification, use supersonic roll instead
+		//local phavg is midval(taemg_constants["phavgc"] - taemg_constants["phavgs"] * taemg_input["mach"], taemg_constants["phavgll"], taemg_constants["phavgul"]).
+		local phavg is taemg_constants["philmsup"].
 		local rtac is taemg_input["surfv"] * taemg_input["surfv_h"] / (taemg_constants["g"] * TAN(phavg)).
 		local arcac is rtac * ABS(taemg_internal["dpsac"]) * taemg_constants["dtr"].
 		

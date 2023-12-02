@@ -68,6 +68,35 @@ FUNCTION ops3_taem_test {
 		PRESERVE.
 	}
 	
+	//Initialise log lexicon 
+	GLOBAL loglex IS LEXICON(
+							"iphase",1,
+							"time",0,
+							"alt",0,
+							"speed",0,
+							"mach",0,
+							"hdot",0,
+							"lat",0,
+							"long",0,
+							"x",0,
+							"y",0,
+							
+							"rpred", 0,
+							"herror", 0,
+							"psha", 0,
+							"dpsac", 0,
+							
+							"nzc", 0,
+							"nztotal", 0,
+							"phic_at", 0,
+							"dsbc_at", 0,
+							
+							"eow",0,
+							"es",0,
+							"en",0,
+							"emep",0
+	).
+	
 	until false{
 		clearscreen.
 		clearvecdraws().
@@ -116,6 +145,8 @@ FUNCTION ops3_taem_test {
 										taemg_in						
 		).
 		
+		build_hac_points(taemg_out, tgtrwy).
+		
 		IF EXISTS("0:/taemg_internal.txt") {
 			DELETEPATH("0:/taemg_internal.txt").
 		}
@@ -128,6 +159,9 @@ FUNCTION ops3_taem_test {
 		pos_arrow(tgtrwy["position"],"runwaypos", 5000, 0.1).
 		pos_arrow(tgtrwy["td_pt"],"td_pt", 5000, 0.1).
 		pos_arrow(tgtrwy["end_pt"],"end_pt" , 5000, 0.1).
+		pos_arrow(tgtrwy["hac_exit"],"hac_exit" , 5000, 0.1).
+		pos_arrow(tgtrwy["hac_centre"],"hac_centre" , 5000, 0.1).
+		pos_arrow(tgtrwy["hac_tan"],"hac_tan" , 5000, 0.1).
 		
 		LOCAL lvlh_pch IS get_pitch_lvlh().
 		LOCAL lvlh_rll IS get_roll_lvlh().
@@ -159,6 +193,64 @@ FUNCTION ops3_taem_test {
 			aerosurfaces_control["flap_defl"],
 			cur_nz
 		).
+		
+		GLOBAL loglex IS LEXICON(
+							"iphase",1,
+							"time",0,
+							"alt",0,
+							"speed",0,
+							"mach",0,
+							"hdot",0,
+							"lat",0,
+							"long",0,
+							
+							"x",0,
+							"y",0,
+							
+							"rpred", 0,
+							"herror", 0,
+							"psha", 0,
+							"dpsac", 0,
+							
+							"nzc", 0,
+							"nztotal", 0,
+							"phic_at", 0,
+							"dsbc_at", 0,
+							
+							"eow",0,
+							"es",0,
+							"en",0,
+							"emep",0
+		).
+		
+		SET loglex["time"] TO TIME:SECONDS.
+		SET loglex["alt"] TO taemg_in["h"].
+		SET loglex["speed"] TO taemg_in["surfv"]. 
+		SET loglex["mach"] TO taemg_in["mach"]. 
+		SET loglex["hdot"] TO taemg_in["hdot"].
+		SET loglex["lat"] TO SHIP:GEOPOSITION:LAT.
+		SET loglex["long"] TO SHIP:GEOPOSITION:LNG.
+		
+		SET loglex["x"] TO taemg_in["x"].
+		SET loglex["y"] TO taemg_in["y"].
+		
+		SET loglex["rpred"] TO taemg_out["rpred"].
+		SET loglex["herror"] TO taemg_out["herror"].
+		SET loglex["psha"] TO taemg_out["psha"].
+		SET loglex["dpsac"] TO taemg_out["dpsac"].
+		
+		SET loglex["nzc"] TO taemg_out["nzc"].
+		SET loglex["nztotal"] TO taemg_out["nztotal"].
+		SET loglex["phic_at"] TO taemg_out["phic_at"].
+		SET loglex["dsbc_at"] TO taemg_out["dsbc_at"].
+		
+		SET loglex["eow"] TO taemg_out["eow"].
+		SET loglex["es"] TO taemg_out["es"].
+		SET loglex["en"] TO taemg_out["en"].
+		SET loglex["emep"] TO taemg_out["emep"].
+		
+		log_data(loglex,"0:/Shuttle_OPS3/LOGS/taem_log").
+	
 		
 		wait 0.15.
 	}

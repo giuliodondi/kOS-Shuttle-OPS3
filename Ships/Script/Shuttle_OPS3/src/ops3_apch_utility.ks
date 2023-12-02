@@ -80,9 +80,10 @@ FUNCTION refresh_runway_lex {
 							"td_pt",siterwy["td_pt"],
 							"glideslope",0,
 							"overhead",is_apch_overhead(),
-							"aiming_pt",LATLNG(0,0),
-							"acq_guid_pt",LATLNG(0,0),
-							"hac",LATLNG(0,0)
+							"hac_centre",LATLNG(0,0),
+							"hac_exit",LATLNG(0,0),
+							"hac_tan",LATLNG(0,0)
+							
 	).
 }
 
@@ -145,4 +146,28 @@ FUNCTION get_current_nz {
 	return aeroacc["lift"] / 9.80665.
 
 }
+
+//use the taemg output to set hac points 
+FUNCTION build_hac_points {
+	PARAMETEr taemg_out.
+	PARAMETER rwy.
+	
+	LOCAL rwy_heading IS rwy["heading"].
+	
+	LOCAL hac_exit_az IS fixangle(rwy_heading + ARCTAN2(0, taemg_out["xhac"])).
+	
+	SET rwy["hac_exit"] TO new_position(rwy["td_pt"], ABS(taemg_out["xhac"]/1000), hac_exit_az).
+	
+	LOCAL hac_centre_az IS fixangle(rwy_heading + ARCTAN2(taemg_out["yhac"], taemg_out["xhac"])).
+	
+	LOCAL hac_centre_dist Is SQRT(taemg_out["xhac"]^2 + taemg_out["yhac"]^2).
+	
+	SET rwy["hac_centre"] TO new_position(rwy["td_pt"], hac_centre_dist/1000, hac_centre_az).
+	
+	LOCAL hac_tan_az IS fixangle(rwy_heading - taemg_out["ysgn"] * (90 + taemg_out["psha"])).
+
+	SET rwy["hac_tan"] TO new_position(rwy["hac_centre"], taemg_out["rturn"]/1000, hac_tan_az).
+}
+
+
 
