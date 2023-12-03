@@ -59,6 +59,7 @@ FUNCTION taemg_wrapper {
 
 	tgexec(
 								LEXICON(
+										"dtg", taemg_input["dtg"],
 										"h", taemg_input["h"] * mt2ft,		//ft height above rwy
 										"hdot", taemg_input["hdot"] * mt2ft,	//ft/s vert speed
 										"x", taemg_input["x"] * mt2ft,		//ft x component on runway coord
@@ -85,6 +86,7 @@ FUNCTION taemg_wrapper {
 					//geometric outputs
 					"rpred", taemg_internal["rpred"] / mt2ft,	//ft predicted range to threshold 
 					"herror", taemg_internal["herror"] / mt2ft, 	//ft altitude error
+					"hdref", taemg_internal["hdref"] / mt2ft, 	//ft reference hdot
 					"psha", taemg_internal["psha"], 	//deg hac turn angle
 					"dpsac", taemg_internal["dpsac"], 	//deg heading error to the hac tangent 
 					"xhac", taemg_internal["xhac"] / mt2ft, 	//ft x coordinate of hac centre
@@ -125,7 +127,8 @@ global taemg_constants is lexicon (
 									"del_h1", 0.19,				//alt error coeff 
 									"del_h2", 900,				//ft alt error coeff 
 									"del_r_emax", list(0,54000,54000),		// -/ft/ft constant ised for computing emax 
-									"dnzcg", 0.01,		//g-unit/s gain for dnzc
+									//"dnzcg", 0.01,		//g-unit/s gain for dnzc	OTT
+									"dnzcg", 0.02,		//g-unit/s gain for dnzc
 									"dnzlc1", -0.5,		//g-unit phase 0,1,2 nzc lower lim 
 									"dnzlc2", -0.5,		//g-unit phase 3 nzc lower lim 
 									"dnzuc1", 0.5,		//g-unit phase 0,1,2 nzc upper lim 
@@ -168,8 +171,7 @@ global taemg_constants is lexicon (
 									"gamsgs", LIST(0, -22, -22),	//deg a/l steep glideslope angle	//maybe put 24 here?
 									"gdhc", 2.0, 			//  constant for computing gdh 
 									"gdhll", 0.3, 			//gdh lower limit 
-									//"gdhs", 7.0e-5,		//1/ft	slope for computing gdh 		//ott
-									"gdhs", 3.5e-5,		//1/ft	slope for computing gdh 
+									"gdhs", 7.0e-5,		//1/ft	slope for computing gdh 		//ott
 									"gdhul", 1.0,			//gdh upper lim 
 									"gehdll", 0.01, 		//g/fps  gain used in computing eownzll
 									"gehdul", 0.01, 		//g/fps  gain used in computing eownzul
@@ -190,7 +192,8 @@ global taemg_constants is lexicon (
 									"hftc", LIST(0, 12018, 12018),		//ft altitude of a/l steep gs at nominal entry pt
 									"machad", 0.75,		//mach to use air data (used in gcomp appendix)
 									"mxqbwt", 0.0007368421,		// psf/lb max l/d dyn press for nominal weight		//deprecated 
-									"pbgc", LISt(0, 0.1112666, 0.1112666), 		//lin coeff of range for href and lower lim of dhdrrf	//6° of glideslope
+									//"pbgc", LISt(0, 0.1112666, 0.1112666), 		//lin coeff of range for href and lower lim of dhdrrf	//6° of glideslope OTT
+									"pbgc", LISt(0, 0.14054, 0.14054), 		//lin coeff of range for href and lower lim of dhdrrf	//6° of glideslope OTT
 									
 									//my addition, linear fir coefficients for pbhc and pbrc based on outer glideslope
 									"pbrc_fit", LIST(256527.82, 1320895.49875, 0.3249196962),		//ft max range for cubic alt ref 
@@ -404,7 +407,7 @@ FUNCTION tginit {
 	
 	SET taemg_internal["iphase"] TO 1.	
 	
-	SET taemg_internal["isr"] TO taemg_constants["rftc"] / taemg_constants["dtg"].
+	SET taemg_internal["isr"] TO taemg_constants["rftc"] / taemg_input["dtg"].
 	
 	SET taemg_internal["rf"] TO taemg_constants["rf0"].
 	SET taemg_internal["rturn"] TO taemg_internal["rf"].	//i added this bc I don't see rturn being initialised anywhere	- or should it be initialised to zero??
@@ -644,7 +647,7 @@ FUNCTION tgcomp {
 	//rate of change of filtered dyn press 
 	local qbard is midval( taemg_constants["cqg"] * (taemg_input["qbar"] - taemg_internal["qbarf"]), -taemg_constants["qbardl"], taemg_constants["qbardl"]).
 	//update filtered dyn press 
-	set taemg_internal["qbarf"] to taemg_internal["qbarf"] + qbard * taemg_constants["dtg"].
+	set taemg_internal["qbarf"] to taemg_internal["qbarf"] + qbard * taemg_input["dtg"].
 	set taemg_internal["qbd"] to taemg_constants["cdeqd"] * taemg_internal["qbd"] + taemg_constants["cqdg"] * qbard.
 	//error on qbar 
 	set taemg_internal["qberr"] to taemg_internal["qbref"] - taemg_internal["qbarf"].
@@ -757,7 +760,7 @@ FUNCTION tgnzc {
 		set mxqbwt to midval(taemg_constants["qbwt2"] + taemg_constants["qbmsl2"] * (taemg_input["mach"] - taemg_constants["qmach2"]), taemg_constants["qbwt2"], taemg_constants["qbwt3"]).
 	}
 	
-	local qbll is mxqbwt + taemg_input["weight"].
+	local qbll is mxqbwt * taemg_input["weight"].
 	local qbmnnz is qbll / max( taemg_input["cosphi"], taemg_constants["cpmin"]).
 	
 	//calculate max qbar profile
@@ -777,7 +780,7 @@ FUNCTION tgnzc {
 	local qbnzul is - (taemg_constants["qbg1"] * (qbmnnz - taemg_internal["qbarf"]) - taemg_internal["qbd"]) * taemg_constants["qbg2"].
 	local qbnzll is - (taemg_constants["qbg1"] * (qbmxnz - taemg_internal["qbarf"]) - taemg_internal["qbd"]) * taemg_constants["qbg2"].
 	
-	if (taemg_internal["iphase"] = 3) {
+	if (taemg_internal["iphase"] > 2) {
 		set taemg_internal["nzc"] to midval(dnzc, qbnzll, qbnzul).
 	} else {
 		//eow limits
@@ -798,7 +801,7 @@ FUNCTION tgnzc {
 		
 		//calculate commanded nz
 		local dnzcd is midval((taemg_internal["dnzcl"] - taemg_internal["nzc"]) * taemg_constants["cqg"], -taemg_constants["dnzcdl"], taemg_constants["dnzcdl"]).
-		set taemg_internal["nzc"] to taemg_internal["nzc"] + dnzcd * taemg_constants["dtg"].
+		set taemg_internal["nzc"] to taemg_internal["nzc"] + dnzcd * taemg_input["dtg"].
 	}
 	
 	//apply strucutral limits on nz cmd
@@ -829,7 +832,7 @@ FUNCTION tgsbc {
 		local dsbe is taemg_constants["gsbe"] * taemg_internal["qberr"].
 		
 		if (dsbc > dsbcll) and (dsbc < dsbcul) {
-			set taemg_internal["dsbi"] to midval(taemg_internal["dsbi"] + taemg_constants["gsbi"] * taemg_internal["qberr"] * taemg_constants["dtg"], -taemg_constants["dsbil"], taemg_constants["dsbil"]).
+			set taemg_internal["dsbi"] to midval(taemg_internal["dsbi"] + taemg_constants["gsbi"] * taemg_internal["qberr"] * taemg_input["dtg"], -taemg_constants["dsbil"], taemg_constants["dsbil"]).
 		}
 		
 		set dsbc to taemg_constants["dsbnom"] - dsbe - taemg_internal["dsbi"].

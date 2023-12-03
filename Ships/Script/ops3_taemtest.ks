@@ -53,20 +53,23 @@ FUNCTION ops3_taem_test {
 	
 	aerosurfaces_control["set_aoa_feedback"](50).
 	
-	local engaged Is FALSE.
 	LOCAL steerdir IS SHIP:FACING.
+	
+	dap:reset_steering().
+	LOCK STEERING TO steerdir.
+	SAS OFF.
 
 	ON (AG9) {
-		IF engaged {
-			SET engaged TO FALSE.
-			UNLOCK STEERING.
-		} ELSe {
-			SET engaged TO TRUE.
-			dap:reset_steering().
-			LOCK STEERING TO steerdir.
-		}
+		IF (dap:mode = "atmo_nz_auto") {
+			SET dap:mode TO "atmo_pch_css".
+		} ELSe IF (dap:mode = "atmo_pch_css") {
+			SET dap:mode TO "atmo_nz_auto".
+		} 
 		PRESERVE.
 	}
+	
+	
+	
 	
 	//Initialise log lexicon 
 	GLOBAL loglex IS LEXICON(
@@ -97,6 +100,24 @@ FUNCTION ops3_taem_test {
 							"emep",0
 	).
 	
+	
+	
+	local control_loop is loop_executor_factory(
+		0.15,
+		{
+			IF (SHIP:STATUS = "LANDEd") {
+				UNLOCK STEERING.
+			}
+			
+			SET steerdir TO dap:update().
+		
+			flaptrim_control(TRUE, aerosurfaces_control).
+			aerosurfaces_control["deflect"]().
+			
+		}
+	).
+	
+	LOCAL last_iter Is TIMe:SECONDS.
 	until false{
 		clearscreen.
 		clearvecdraws().
@@ -105,9 +126,7 @@ FUNCTION ops3_taem_test {
 			break.
 		}
 		
-		IF (SHIP:STATUS = "LANDEd") {
-			UNLOCK STEERING.
-		}
+		
 	
 		
 		LOCAL rwystate IS get_runway_rel_state(
@@ -116,9 +135,11 @@ FUNCTION ops3_taem_test {
 			tgtrwy
 		).
 		
+		LOCAL cur_iter IS TIMe:SECONDS.
 		
 		
 		local taemg_in is LEXICON(
+											"dtg", MAX(0.05, (cur_iter - last_iter)),
 											"h", rwystate["h"],
 											"hdot", rwystate["hdot"],
 											"x", rwystate["x"], 
@@ -138,7 +159,7 @@ FUNCTION ops3_taem_test {
 											"rwid", tgtrwy["name"]
 									).
 									
-							
+		SET last_iter TO cur_iter.
 		
 		//call taem guidance here
 		LOCAL taemg_out is taemg_wrapper(
@@ -147,21 +168,12 @@ FUNCTION ops3_taem_test {
 		
 		build_hac_points(taemg_out, tgtrwy).
 		
-		IF EXISTS("0:/taemg_internal.txt") {
-			DELETEPATH("0:/taemg_internal.txt").
-		}
+		SET aerosurfaces_control["spdbk_defl"] TO taemg_out["dsbc_at"].
+		SET dap:tgt_nz tO taemg_out["nztotal"].
+		SET dap:tgt_roll tO taemg_out["phic_at"].
 		
-		log taemg_internal:dump() to "0:/taemg_internal.txt".
+		SET aerosurfaces_control["spdbk_defl"] TO taemg_out["dsbc_at"].
 		
-		print 	taemg_out.	
-		
-		
-		pos_arrow(tgtrwy["position"],"runwaypos", 5000, 0.1).
-		pos_arrow(tgtrwy["td_pt"],"td_pt", 5000, 0.1).
-		pos_arrow(tgtrwy["end_pt"],"end_pt" , 5000, 0.1).
-		pos_arrow(tgtrwy["hac_exit"],"hac_exit" , 5000, 0.1).
-		pos_arrow(tgtrwy["hac_centre"],"hac_centre" , 5000, 0.1).
-		pos_arrow(tgtrwy["hac_tan"],"hac_tan" , 5000, 0.1).
 		
 		LOCAL lvlh_pch IS get_pitch_lvlh().
 		LOCAL lvlh_rll IS get_roll_lvlh().
@@ -172,12 +184,6 @@ FUNCTION ops3_taem_test {
 									taemg_out["nztotal"] -  cur_nz
 		).
 		
-		
-		SET steerdir TO dap:update().
-		
-		flaptrim_control(TRUE, aerosurfaces_control).
-		SET aerosurfaces_control["spdbk_defl"] TO taemg_out["dsbc_at"].
-		aerosurfaces_control["deflect"]().
 		
 		update_hud_gui(
 			"ACQ",
@@ -193,6 +199,23 @@ FUNCTION ops3_taem_test {
 			aerosurfaces_control["flap_defl"],
 			cur_nz
 		).
+		
+		
+		IF EXISTS("0:/taemg_internal.txt") {
+			DELETEPATH("0:/taemg_internal.txt").
+		}
+		
+		log taemg_internal:dump() to "0:/taemg_internal.txt".
+		
+		
+		pos_arrow(tgtrwy["position"],"runwaypos", 5000, 0.1).
+		pos_arrow(tgtrwy["td_pt"],"td_pt", 5000, 0.1).
+		pos_arrow(tgtrwy["end_pt"],"end_pt" , 5000, 0.1).
+		pos_arrow(tgtrwy["hac_exit"],"hac_exit" , 5000, 0.1).
+		pos_arrow(tgtrwy["hac_centre"],"hac_centre" , 5000, 0.1).
+		pos_arrow(tgtrwy["hac_tan"],"hac_tan" , 5000, 0.1).
+		
+		
 		
 		GLOBAL loglex IS LEXICON(
 							"iphase",1,
@@ -223,6 +246,7 @@ FUNCTION ops3_taem_test {
 							"emep",0
 		).
 		
+		SET loglex["iphase"] TO taemg_out["iphase"].
 		SET loglex["time"] TO TIME:SECONDS.
 		SET loglex["alt"] TO taemg_in["h"].
 		SET loglex["speed"] TO taemg_in["surfv"]. 
@@ -236,6 +260,7 @@ FUNCTION ops3_taem_test {
 		
 		SET loglex["rpred"] TO taemg_out["rpred"].
 		SET loglex["herror"] TO taemg_out["herror"].
+		SET loglex["hdref"] TO taemg_out["hdref"].
 		SET loglex["psha"] TO taemg_out["psha"].
 		SET loglex["dpsac"] TO taemg_out["dpsac"].
 		
@@ -249,10 +274,11 @@ FUNCTION ops3_taem_test {
 		SET loglex["en"] TO taemg_out["en"].
 		SET loglex["emep"] TO taemg_out["emep"].
 		
-		log_data(loglex,"0:/Shuttle_OPS3/LOGS/taem_log").
-	
+		log_data(loglex,"0:/Shuttle_OPS3/LOGS/taem_log", TRUE).
 		
-		wait 0.15.
+		WAIt 0.1.
 	}
 	
+	
+	control_loop:stop_execution().
 }

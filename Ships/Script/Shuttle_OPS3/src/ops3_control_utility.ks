@@ -68,8 +68,10 @@ FUNCTION dap_controller_factory{
 	this:measure_cur_state().
 	
 	this:add("tgt_nz", 0).
+	this:add("tgt_pitch", 0).
+	this:add("tgt_roll", 0).
 	
-	this:add("nz_pitch_pid", PIDLOOP(1.8,0,0.1)).
+	this:add("nz_pitch_pid", PIDLOOP(1.7,0,0.1)).
 	
 	SET this:nz_pitch_pid:SETPOINT TO 0.
 	
@@ -97,7 +99,7 @@ FUNCTION dap_controller_factory{
 		set this:steer_lvlh_pitch TO this:lvlh_pitch.
 	}).
 	
-	this:add("reset_nz_css", {
+	this:add("reset_nz_auto", {
 		SET this:tgt_nz TO this:nz.
 		this:reset_steering_angles().
 	}).
@@ -142,8 +144,8 @@ FUNCTION dap_controller_factory{
 	this:add("update", {
 		IF (this:mode = "atmo_pch_css") {
 			return this:atmo_pch_css().
-		} ELSe IF (this:mode = "atmo_nz_css") {
-			return this:atmo_nz_css().
+		} ELSe IF (this:mode = "atmo_nz_auto") {
+			return this:atmo_nz_auto().
 		}
 	}).
 	
@@ -151,36 +153,23 @@ FUNCTION dap_controller_factory{
 		SET this:steering_dir TO SHIP:FACINg.
 		IF (this:mode = "atmo_pch_css") {
 			this:reset_pch_css().
-		} ELSe IF (this:mode = "atmo_nz_css") {
-			this:reset_nz_css().
+		} ELSe IF (this:mode = "atmo_nz_auto") {
+			this:reset_nz_auto().
 		}
 	}).
 	
-	this:add("atmo_nz_css", {
+	this:add("atmo_nz_auto", {
 	
 		this:update_time().
 		this:measure_cur_state().
 		
-		//gains suitable for manoeivrable steerign in atmosphere
-		LOCAL rollgain IS 2.
-		LOCAL nzgain IS 0.018.
-		LOCAL yawgain IS 2.
 		
-		//required for continuous pilot input across several funcion calls
-		LOCAL time_gain IS ABS(this:iteration_dt/0.03).
-		
-		//measure input minus the trim settings
-		LOCAL deltaroll IS time_gain * rollgain * (SHIP:CONTROL:PILOTROLL - SHIP:CONTROL:PILOTROLLTRIM).
-		LOCAL deltanz IS time_gain * nzgain * (SHIP:CONTROL:PILOTPITCH - SHIP:CONTROL:PILOTPITCHTRIM).
-		LOCAL deltayaw IS time_gain * yawgain * (SHIP:CONTROL:PILOTYAW - SHIP:CONTROL:PILOTYAWTRIM).
-		
-		SET this:tgt_nz TO this:tgt_nz + deltanz.
+		LOCAL roll_tol IS 8.
 		
 		SET this:steer_pitch TO this:steer_pitch + this:update_nz_pid().
 		
-		//apply the deltas to the current angles so the inputs will tend to "ndge" the nose around and then leave it where it is when the controls are released
-		SET this:steer_roll TO this:prog_roll + deltaroll.
-		SET this:steer_yaw TO 0 + deltayaw.
+		SET this:steer_roll TO this:prog_roll + CLAMP(this:tgt_roll - this:prog_roll,-roll_tol,roll_tol).
+		SET this:steer_yaw TO 0.
 		
 		SET this:steer_roll TO CLAMP(this:steer_roll, this:css_roll_lims[0], this:css_roll_lims[1]).
 		SET this:steer_pitch TO CLAMP(this:steer_pitch, this:css_pitch_lims[0], this:css_pitch_lims[1]).
