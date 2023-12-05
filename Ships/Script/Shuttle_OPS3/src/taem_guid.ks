@@ -56,9 +56,8 @@ GLOBAL mps2kt IS 1.94384.			//m/s / knots
 
 FUNCTION taemg_wrapper {
 	PARAMETER taemg_input.
-
-	tgexec(
-								LEXICON(
+	
+	LOCAL tg_input IS LEXICON(
 										"dtg", taemg_input["dtg"],
 										"h", taemg_input["h"] * mt2ft,		//ft height above rwy
 										"hdot", taemg_input["hdot"] * mt2ft,	//ft/s vert speed
@@ -77,8 +76,11 @@ FUNCTION taemg_wrapper {
 										"gamma", taemg_input["gamma"], 	//deg earth relative fpa  
 										"ovhd", taemg_input["ovhd"],  		// ovhd/straight-in flag , it's a 2-elem list, one for each value of rwid 			//changed into a simple flag
 										"rwid", taemg_input["rwid"]		//runway id flag  (only needed to detect a runway change, the runway number is fine)
-								)
-	).
+								).
+
+	tgexec(tg_input).
+	
+	taemg_dump(tg_input).
 
 	//dsbc_at needs to be transformed to a 0-1 variable based on max deflection (halved)
 	RETURN LEXICON(
@@ -146,6 +148,9 @@ global taemg_constants is lexicon (
 									"edelc1", 1,			//emax calc constant 
 									"edelc2", 1,			//emax calc constant 
 									//"edelnz", list(0, 4000, 4000),			// -/ft/ft eow delta from nominal energy line slope for s-turn  	//OTT paper
+									"edelnzu", 10000,			//eow delta from nominal energy line for emax
+									"edelnzl", 4000,			//eow delta from nominal energy line for emin
+									
 									//"edrs", list(0, 0.69946182, 0.69946182),		// -/ ft^2/ft / ft^2/ft slope for s-turn energy line   	//OTT paper
 									//"emep_c1", list(0, list(0,-3263, 12088), list(0, -3263, 12088)),		//all in ft mep energy line y intercept  	//OTT paper
 									//"emep_c2", list(0, list(0,0.51554944, 0.265521), list(0, 0.51554944, 0.265521)),		//all in ft^2/ft mep energy line slope 	//OTT paper
@@ -154,8 +159,6 @@ global taemg_constants is lexicon (
 									//"es1", list(0, 4523, 4523),		//ft y-intercept of s-turn energy line   	//OTT paper
 									//"eow_spt", list(0, 76068, 76068), 	//ft range at which to change slope and y-intercept on the mep and nom energy line  	//OTT paper
 									
-									"edelnzu", 10000,			//eow delta from nominal energy line for emax
-									"edelnzl", 4000,			//eow delta from nominal energy line for emin
 									"edrs", list(0, 0.635416, 0.635416),		// -/ ft^2/ft / ft^2/ft slope for s-turn energy line 
 									"emep_c1", list(0, list(0,-10000, 15000), list(0, -10000, 15000)),		//all in ft mep energy line y intercept 
 									"emep_c2", list(0, list(0,0.44375, 0.29168), list(0, 0.44375, 0.29168)),		//all in ft^2/ft mep energy line slope
@@ -197,7 +200,7 @@ global taemg_constants is lexicon (
 									
 									//my addition, linear fir coefficients for pbhc and pbrc based on outer glideslope
 									"pbrc_fit", LIST(256527.82, 1320895.49875, 0.3249196962),		//ft max range for cubic alt ref 
-									"pbhc_fit", LISt(78161.826, 170534.500266, 0.3249196962), 		//ft alt ref for drpred = pbrc
+									"pbhc_fit", LISt(90000, 170534.500266, 0.3249196962), 		//ft alt ref for drpred = pbrc
 									
 									//"pbrcq", LIST(0, 89971.082, 89971.082), 			//ft range breakpoint for qbref 	//OTT paper
 									"pbrcq", LIST(0, 121522, 121522), 			//ft range breakpoint for qbref
@@ -236,13 +239,13 @@ global taemg_constants is lexicon (
 									"qbrul", LIST(0, 305, 305),		//psf  qbref ul
 									"rerrlm", 7000,			//ft limit of rerrc 		//was 50 deg????
 									"rftc", 5,			//s roll fader time const 
-									"rminst", LIST(0, 122204.6, 122204.6),		//ft min range allowed to initiate sturn 
+									"rminst", LIST(0, 122204.6, 122204.6),		//ft min range allowed to initiate sturn 	//OTT
 									"rn1", LISt(0, 6542.886, 6542.866),			//ft range at which the gain on edelmz goes to zero 	//deprecated
 									"rtbias", 3000,			//ft max value of rt for ha initiation		//deprecated
 									"rtd", 	57.29578,			//deg/rad rad2teg
 									"rturn", 20000,				//ft hac radius 				//deprecated
 									"sbmin", 0,				//deg min sbrbk command (was 5)		//deprecated
-									"tggs", LISt(0, 0.40402623, 0.3639702343), 		//tan of steep gs for autoland 	// I refactored everything so they're positive
+									"tggs", LISt(0, 0.44522869, 0.40402623), 		//tan of steep gs for autoland 	// I refactored everything so they're positive
 									"vco", 1e20, 			//fps constant used in turn compensation 			//deprecated
 									//"wt_gs1", 8000, 			//slugs max orbiter weight 
 									"wt_gs1", 6837, 			//slugs max orbiter weight 
@@ -288,8 +291,8 @@ global taemg_constants is lexicon (
 									"dsbuls", -336,				//deg constant for dsbcul
 									"emohc1", LISt(0, -3894, -3894), 		//ft constant eow used ot compute emnoh
 									"emohc2", LISt(0, 0.51464, 0.51464), 		//slope of emnoh with range 
-									//"enbias", 0, 					//ft eow bias for s-turn off 		//OTT
-									"enbias", 7000, 					//ft eow bias for s-turn off 
+									"enbias", 0, 					//ft eow bias for s-turn off 		//OTT
+									//"enbias", 18000, 					//ft eow bias for s-turn off 
 									"eqlowl", 60000,			//ft lower eow of region for ovhd that wbmxnz is lowered 
 									"rmoh", 273500,				//ft min rpred to issue ohalrt 
 									"r1", 0, 			//ft/deg linear coeff of hac spiral 
@@ -299,7 +302,8 @@ global taemg_constants is lexicon (
 									"philmc", 100, 				//deg bank lim for large bank command 
 									"qbmxs1", -400,				//psf slope of qbmxnz with mach < qbm1 
 									"hmin3", 7000,				//min altitude for prefinal
-									"nztotallim", 2.5				// my addition from the taem paper
+									"nztotallim", 2.5,				// my addition from the taem paper
+									"rtanmin", 328				//ft my own addition, empirical
 ).
 
 
@@ -347,10 +351,13 @@ global taemg_internal is lexicon(
 								"phic_at", 0,	//deg commanded roll
 								"philim", 0,	//deg roll cmd limit
 								"psha", 0, 			//deg hac turn angle 		//moved from inputs
+								"psc", 0, 			//deg heading to hac centre 
+								"pst", 0, 			//deg heading to hac tangency pt 
 								"qberr", 0,			//psf error on qbar
 								"qbarf", 0,		//psf filtered dynamic press 
 								"qbref", 0,		//psf dyn press ref 
 								"qbd", 0,			// delta of qbar
+								"rtan", 0, 		//ft distance to hac tangent point 
 								"rpred", 0, 		//ft predicted total range to threshold 
 								"rpred2", 0,		//ft predicted range final + hac turn
 								"rpred3", 0, 		//ft predicted range to final for prefinal transition
@@ -371,6 +378,23 @@ global taemg_internal is lexicon(
 								"rcir", 0		//ft ship-hac distance
 
 ).
+
+function taemg_dump {
+	parameter taemg_input.
+	
+	local taemg_dumplex is lexicon().
+	
+	for k in taemg_input:keys {
+		taemg_dumplex:add(k, taemg_input[k]). 
+	}
+	
+	for k in taemg_internal:keys {
+		taemg_dumplex:add(k, taemg_internal[k]). 
+	}
+	
+	log_data(taemg_dumplex,"0:/Shuttle_OPS3/LOGS/taem_dump", TRUE).
+}
+
 
 //phases (iphase):
 // 0= s-turn,	1=hac acq,	2=hac turn (hdg),	3=pre-final 
@@ -466,7 +490,7 @@ FUNCTION tginit {
 		SET taemg_internal["ysgn"] TO SIGN(taemg_input["y"]). 
 	}
 	
-	SET taemg_input["tg_end"] TO FALSE.
+	SET taemg_internal["tg_end"] TO FALSE.
 	
 	SET taemg_internal["ireset"] TO FALSE.
 
@@ -535,26 +559,27 @@ FUNCTION gtp {
 	set taemg_internal["rcir"] to SQRT(taemg_internal["xcir"]^2 + taemg_internal["ycir"]^2).
 	
 	//distance to the tangency point
-	LOCAL rtan IS 0.
+	set taemg_internal["rtan"] to 0.
 	IF (taemg_internal["rcir"] > taemg_internal["rturn"]) {
-		SET rtan TO SQRT(taemg_internal["rcir"]^2 - taemg_internal["rturn"]^2).
+		SET taemg_internal["rtan"] TO SQRT(taemg_internal["rcir"]^2 - taemg_internal["rturn"]^2).
 	}
+	
+	//my own modification 
+	//rtan will never be less than some constant 
+	SET taemg_internal["rtan"] TO MAX(taemg_internal["rtan"], taemg_constants["rtanmin"]).
 	
 	//heading to hac centre 
-	local psc is ARCTAN2(taemg_internal["ycir"], taemg_internal["xcir"]).
+	set taemg_internal["psc"] to ARCTAN2(taemg_internal["ycir"], taemg_internal["xcir"]).
 	
 	//heading to hac tangency pt 
-	local pst IS psc.
-	if (rtan > 0) {
-		set pst to pst - taemg_internal["ysgn"] * ARCTAN2(taemg_internal["rturn"], rtan).
-	}
+	set taemg_internal["pst"] to taemg_internal["psc"] - taemg_internal["ysgn"] * ARCTAN2(taemg_internal["rturn"], taemg_internal["rtan"]).
 	
-	set pst to unfixangle(pst).
+	set taemg_internal["pst"] to unfixangle(taemg_internal["pst"]).
 
-	set taemg_internal["dpsac"] to unfixangle(pst - taemg_input["psd"]).
+	set taemg_internal["dpsac"] to unfixangle(taemg_internal["pst"] - taemg_input["psd"]).
 	
 	//calculate hac turn angle 
-	local pshan is -pst * taemg_internal["ysgn"].
+	local pshan is -taemg_internal["pst"] * taemg_internal["ysgn"].
 	if ((taemg_internal["psha"] > taemg_constants["pshars"] + 1) or (pshan < -1) or (taemg_internal["ysgn"] <> signy)) and (taemg_internal["psha"] > 90) {
 		set pshan to pshan + 360.
 	}
@@ -575,13 +600,13 @@ FUNCTION gtp {
 		local arcac is rtac * ABS(taemg_internal["dpsac"]) * taemg_constants["dtr"].
 		
 		local a_ IS rtac * (1 - COS(taemg_internal["dpsac"])).
-		local b_ IS rtan - rtac * ABS(SIN(taemg_internal["dpsac"])).
+		local b_ IS taemg_internal["rtan"] - rtac * ABS(SIN(taemg_internal["dpsac"])).
 		local rc IS SQRT(a_^2 + b_^2).
 		
-		SET rtan tO arcac + rc.
+		SET taemg_internal["rtan"] tO arcac + rc.
 	}
 	
-	set taemg_internal["rpred"] TO  taemg_internal["rpred2"] + rtan.
+	set taemg_internal["rpred"] TO  taemg_internal["rpred2"] + taemg_internal["rtan"].
 
 }	
 

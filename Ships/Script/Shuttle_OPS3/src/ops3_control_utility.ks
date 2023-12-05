@@ -71,7 +71,7 @@ FUNCTION dap_controller_factory{
 	this:add("tgt_pitch", 0).
 	this:add("tgt_roll", 0).
 	
-	this:add("nz_pitch_pid", PIDLOOP(1.7,0,0.1)).
+	this:add("nz_pitch_pid", PIDLOOP(1.6,0,0.1)).
 	
 	SET this:nz_pitch_pid:SETPOINT TO 0.
 	

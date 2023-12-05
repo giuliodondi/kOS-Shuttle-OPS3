@@ -58,12 +58,16 @@ FUNCTION ops3_taem_test {
 	dap:reset_steering().
 	LOCK STEERING TO steerdir.
 	SAS OFF.
+	
+	LOCAL css_flag Is TRUE.
 
 	ON (AG9) {
 		IF (dap:mode = "atmo_nz_auto") {
 			SET dap:mode TO "atmo_pch_css".
+			SET css_flag TO TRUE.
 		} ELSe IF (dap:mode = "atmo_pch_css") {
 			SET dap:mode TO "atmo_nz_auto".
+			SET css_flag TO FALSE.
 		} 
 		PRESERVE.
 	}
@@ -184,10 +188,11 @@ FUNCTION ops3_taem_test {
 									taemg_out["nztotal"] -  cur_nz
 		).
 		
+		LOCAL guid_phase IS 20 + taemg_out["iphase"].
 		
 		update_hud_gui(
-			"ACQ",
-			"AUTO",
+			guid_phase,
+			css_flag,
 			diamond_deviation_taem(deltas),
 			rwystate["h"] / 1000,
 			taemg_out["rpred"] / 1000,
@@ -199,13 +204,6 @@ FUNCTION ops3_taem_test {
 			aerosurfaces_control["flap_defl"],
 			cur_nz
 		).
-		
-		
-		IF EXISTS("0:/taemg_internal.txt") {
-			DELETEPATH("0:/taemg_internal.txt").
-		}
-		
-		log taemg_internal:dump() to "0:/taemg_internal.txt".
 		
 		
 		pos_arrow(tgtrwy["position"],"runwaypos", 5000, 0.1).
@@ -226,6 +224,7 @@ FUNCTION ops3_taem_test {
 							"hdot",0,
 							"lat",0,
 							"long",0,
+							"psd", 0,
 							
 							"x",0,
 							"y",0,
@@ -254,6 +253,7 @@ FUNCTION ops3_taem_test {
 		SET loglex["hdot"] TO taemg_in["hdot"].
 		SET loglex["lat"] TO SHIP:GEOPOSITION:LAT.
 		SET loglex["long"] TO SHIP:GEOPOSITION:LNG.
+		SET loglex["psd"] TO taemg_in["psd"].
 		
 		SET loglex["x"] TO taemg_in["x"].
 		SET loglex["y"] TO taemg_in["y"].

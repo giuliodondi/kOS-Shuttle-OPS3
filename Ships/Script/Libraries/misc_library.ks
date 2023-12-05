@@ -40,11 +40,17 @@ FUNCTION PRINTPLACE{
 //then creates the column headers by dumping the lexicon keys
 //if the log file has already been created just logs the lexicon to file
 FUNCTION log_data {
+	PARAMETER log_lex.
+	PARAMETER logname_string IS "".
+	PARAMETER overwrite IS FALSE.
 	
-	//logs to a file specified by filename the values of a lexicon log_lex
-	FUNCTION dataLog {
-		DECLARE PARAMETER filename.
-		PARAMETER log_lex.
+	if not (defined logfileslist) {
+		GLOBAL logfileslist IS LISt().
+	}
+	
+	LOCAL logfilename IS logname_string  + ".csv".
+	
+	if logfileslist:CONTAINS(logfilename) {
 		
 		LOCAL str IS "".
 		
@@ -52,32 +58,25 @@ FUNCTION log_data {
 		FOR val IN log_lex:VALUES {
 			SET str TO str + val + ",".
 		}
+		
+		str:remove(str:length - 1, 1).
 
-		LOG str TO filename.
-	}
-
-	PARAMETER log_lex.
-	PARAMETER logname_string IS "".
-	PARAMETER overwrite IS FALSE.
+		LOG str TO logfilename.
 	
-	if not (defined logname) {
-	
+	} ELSE { 
 		IF overwrite {
-			GLOBAL logname is logname_string  + ".csv".
-			IF EXISTS(logname)=TRUE {
-				MOVEPATH(logname,logname_string + "_old" + ".csv").
+			IF EXISTS(logfilename) {
+				MOVEPATH(logfilename,logname_string + "_old" + ".csv").
 			}
 		} ELSE {
 			local logcount is 0.
-			GLOBAL logname is logname_string + "_" + logcount + ".csv".
+			set logfilename to logname_string + "_" + logcount + ".csv".
 			until false {
-				set logname to logname_string + "_" + logcount + ".csv".
-				IF EXISTS(logname)=TRUE {
+				set logfilename to logname_string + "_" + logcount + ".csv".
+				IF EXISTS(logfilename) {
 					set logcount to logcount + 1.
 				}
 				ELSE {break.}
-				
-				
 			}
 		}
 		
@@ -87,10 +86,9 @@ FUNCTION log_data {
 			SET titlestr TO titlestr + key + ",".
 		}
 		
-		log titlestr to logname.
-
-	} ELSE { 	
-		dataLog(logname,log_lex).
+		log titlestr to logfilename.
+		
+		logfileslist:add(logfilename).
 	}
 }
 

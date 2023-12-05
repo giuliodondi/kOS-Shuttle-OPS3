@@ -937,8 +937,8 @@ FUNCTION reset_hud_bg_brightness {
 
 
 FUNCTION update_hud_gui {
-	PARAMETER mode_str.
-	PARAMETER steer_str.
+	PARAMETER iphase.
+	PARAMETER css_flag.
 	PARAMETER pipper_pos.
 	PARAMETER altt.
 	PARAMETEr dist.
@@ -949,10 +949,15 @@ FUNCTION update_hud_gui {
 	PARAMETER spdbk_val.
 	PARAMETER flapval.
 	PARAMETER cur_nz.
+	
+	LOCAL steer_str IS "AUTO".
+	IF (css_flag) {
+		SET steer_str TO "CSS ".
+	}
 
 	SET steer_txt:text TO "<size=18>" + steer_str + "</size>".
 	
-	SET mode_txt:text TO "<size=18>" + mode_str + "</size>".
+	SET mode_txt:text TO "<size=18>" + hud_guid_labels(iphase) + "</size>".
 
 	// set the pipper to an intermediate position between the desired and the current position so the transition is smoother
 	LOCAL smooth_fac IS 0.5.
@@ -1037,5 +1042,38 @@ FUNCTION diamond_deviation_taem {
 	
 
 	RETURN LIST(diamond_horiz,diamond_vert).
+
+}
+
+FUNCTION hud_guid_labels{
+	PARAMETEr iphase.
+	
+	IF (iphase>=30) {
+		//a/l
+	} ELSE IF (iphase>=20) {
+		//taem / grtls
+		IF (iphase=20) {
+			RETURN "STURN".
+		} ELSE IF (iphase=21) {
+			RETURN "ACQ  ".
+		} ELSE IF (iphase=22) {
+			RETURN "HDG  ".
+		} ELSE IF (iphase=23) {
+			RETURN "PRFNL".
+		} 
+	} ELSE IF (iphase>=10) {
+		//entry
+		IF (iphase=11) {
+			RETURN "PREEN".
+		} ELSE IF (iphase=12) {
+			RETURN "TEMP ".
+		} ELSE IF (iphase=13) {
+			RETURN "EQGL ".
+		} ELSE IF (iphase=14) {
+			RETURN "CONSTD".
+		} ELSE IF (iphase=15) {
+			RETURN "TRAN ".
+		}
+	}
 
 }
