@@ -159,12 +159,13 @@ global taemg_constants is lexicon (
 									//"es1", list(0, 4523, 4523),		//ft y-intercept of s-turn energy line   	//OTT paper
 									//"eow_spt", list(0, 76068, 76068), 	//ft range at which to change slope and y-intercept on the mep and nom energy line  	//OTT paper
 									
-									"edrs", list(0, 0.635416, 0.635416),		// -/ ft^2/ft / ft^2/ft slope for s-turn energy line 
-									"emep_c1", list(0, list(0,-10000, 15000), list(0, -10000, 15000)),		//all in ft mep energy line y intercept 
-									"emep_c2", list(0, list(0,0.44375, 0.29168), list(0, 0.44375, 0.29168)),		//all in ft^2/ft mep energy line slope
-									"en_c1", list(0, list(0, -3000, 15000), list(0, -3000, 15000)),		//all ft^2/ft nom energy line y-intercept 
-									"en_c2", list(0, list(0, 0.5625, 0.375), list(0, 0.5625, 0.375)),		//all ft^2/ft nom energy line slope
-									"es1", list(0, 15000, 15000),		//ft y-intercept of s-turn energy line 
+
+									"emep_c1", list(0, list(0, 43100.5, 22000), list(0, 43100.5, 22000)),		//all in ft mep energy line y intercept 
+									"emep_c2", list(0, list(0, 0.51554944, 0.75), list(0, 0.51554944, 0.75)),		//all in ft^2/ft mep energy line slope
+									"en_c1", list(0, list(0, 49855, 22000), list(0, 49855, 22000)),		//all ft^2/ft nom energy line y-intercept 
+									"en_c2", list(0, list(0, 0.6005, 0.91), list(0, 0.6005, 0.91)),		//all ft^2/ft nom energy line slope
+									"es_c1", list(0, list(0, 53848.4, 32000), list(0, 53848.4, 32000)),		//all ft^2/ft s-turn energy line y-intercept 		//my addition
+									"es_c2", list(0, list(0, 0.69946182, 0.94222182), list(0, 0.69946182, 0.94222182)),		//all ft^2/ft s-turn energy line slope			//my addition
 									"eow_spt", list(0, 90000, 90000), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
 									
 									"g", 32.174,					//ft/s^2 earth gravity 
@@ -628,6 +629,8 @@ FUNCTION tgcomp {
 	LOCAL en_shift IS midval(taemg_constants["en_c2"][taemg_internal["igs"]][1]*(taemg_internal["rpred2"] - taemg_constants["r2max"]), 0, taemg_constants["eshfmx"]).
 	set taemg_internal["en"] to taemg_constants["en_c1"][taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["en_c2"][taemg_internal["igs"]][taemg_internal["iel"]] - en_shift.
 	
+	SET taemg_internal["emep"] TO taemg_constants["emep_c1"][taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["emep_c2"][taemg_internal["igs"]][taemg_internal["iel"]].
+	SET taemg_internal["es"] TO taemg_constants["es_c1"][taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["es_c2"][taemg_internal["igs"]][taemg_internal["iel"]].
 	
 	if (taemg_internal["drpred"] > taemg_internal["pbrc"]) {
 		//linear altitude profile at long range
@@ -717,7 +720,9 @@ FUNCTION tgtran {
 	} else if (taemg_internal["iphase"] = 1) {
 		//check if we can still do an s-turn  to avoid geometry problems
 		if ((taemg_internal["psha"] < taemg_constants["psstrn"] and taemg_internal["drpred"] > taemg_constants["rminst"][taemg_internal["igs"]])) {
-			set taemg_internal["es"] to taemg_constants["es1"][taemg_internal["igs"]] + taemg_internal["drpred"] * taemg_constants["edrs"][taemg_internal["igs"]].
+			
+			//moved es calculation to tgcomp
+			
 			//if above energy, transition to s-turn 
 			if (taemg_internal["eow"] > taemg_internal["es"]) {
 				set taemg_internal["iphase"] to 0.
@@ -736,7 +741,7 @@ FUNCTION tgtran {
 		
 		//this is equation block 46
 		//suggest downmoding to MEP 
-		SET taemg_internal["emep"] TO taemg_constants["emep_c1"][taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["emep_c2"][taemg_internal["igs"]][taemg_internal["iel"]].
+		//moved emep calculation to tgcomp
 		if (taemg_internal["eow"] < taemg_internal["emep"]) and (NOT taemg_internal["mep"]) {
 			set taemg_internal["mep"] to TRUE.
 		}
