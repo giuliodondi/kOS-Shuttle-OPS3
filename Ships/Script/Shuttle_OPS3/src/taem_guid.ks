@@ -196,8 +196,7 @@ global taemg_constants is lexicon (
 									"hftc", LIST(0, 12018, 12018),		//ft altitude of a/l steep gs at nominal entry pt
 									"machad", 0.75,		//mach to use air data (used in gcomp appendix)
 									"mxqbwt", 0.0007368421,		// psf/lb max l/d dyn press for nominal weight		//deprecated 
-									//"pbgc", LISt(0, 0.1112666, 0.1112666), 		//lin coeff of range for href and lower lim of dhdrrf	//6° of glideslope OTT
-									"pbgc", LISt(0, 0.14054, 0.14054), 		//lin coeff of range for href and lower lim of dhdrrf	//6° of glideslope OTT
+									"pbgc", LISt(0, 0.1112666, 0.1112666), 		//lin coeff of range for href and lower lim of dhdrrf	//6° of glideslope OTT
 									
 									//my addition, linear fir coefficients for pbhc and pbrc based on outer glideslope
 									"pbrc_fit", LIST(256527.82, 1320895.49875, 0.3249196962),		//ft max range for cubic alt ref 
@@ -313,8 +312,8 @@ global taemg_internal is lexicon(
 								//moved from constants to variables that are calculated based on glideslopes
 								"cubic_c3", 0,	//ft/ft^2 href curve fit quadratic term
 								"cubic_c4", 0,	//ft/ft^2 href curve fit cubic term
-								"pbhc", 0, 		//ft alt ref for drpred = pbrc
-								"pbrc", 0, 		//ft max range for cubic alt ref 
+								"pbhc", LIST(0, 0), 		//ft href for drpred = pbrc[i]
+								"pbrc", LIST(30000, 0), 		//ft ranges for different href segments
 								
 								"delrng", 0,	//ft range error from altitude profile 
 								"dnzc", 0, 
@@ -467,16 +466,27 @@ FUNCTION tginit {
 	set taemg_internal["xali"] to taemg_constants["xa"][1] - taemg_constants["hali"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
 	set taemg_internal["xmep"] to taemg_constants["xa"][1] - taemg_constants["hmep"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
 	
-	//my addition, pbrc and pbhc are now linear fit functions of tggs 
-	set taemg_internal["pbrc"] TO taemg_constants["pbrc_fit"][0] + taemg_constants["pbrc_fit"][1] * (taemg_constants["tggs"][taemg_internal["igs"]] - taemg_constants["pbrc_fit"][2]).
-	set taemg_internal["pbhc"] TO taemg_constants["pbhc_fit"][0] + taemg_constants["pbhc_fit"][1] * (taemg_constants["tggs"][taemg_internal["igs"]] - taemg_constants["pbhc_fit"][2]).
+	//my modification:
+	//href is now a 3 segment profile: 
+	//	linear with slope tggs when drpred bw 0 and pbrc[0]
+	//	cubic when drpred bw pbrc[0] and pbrc[1]
+	//	linear with slope pbgc when drpred above pbrc[1]
+	//pbrc[1] and pbhc[1] are now linear fit functions of tggs 
+	//the cubic coefficients are calculated to match altitude and fpa at both pbrc[0] and pbrc[1]
 	
-	//my addition, cubic coefs are calculated so that (href = hali and fpa = tggs at drpred = 0) and (href = pbhc and fpa = pbgc at drpred = pbrc )
-	local chi is (taemg_internal["pbhc"] - taemg_constants["hali"][taemg_internal["igs"]]) / (taemg_internal["pbrc"]^2) - taemg_constants["tggs"][taemg_internal["igs"]] / taemg_internal["pbrc"].
-	local th is (taemg_constants["pbgc"][taemg_internal["igs"]] - taemg_constants["tggs"][taemg_internal["igs"]]) / (2 * taemg_internal["pbrc"]).
+	set taemg_internal["pbhc"][0] to taemg_constants["hali"][taemg_internal["igs"]] + taemg_internal["pbrc"][0] * taemg_constants["tggs"][taemg_internal["igs"]].
+
+	set taemg_internal["pbrc"][1] TO taemg_constants["pbrc_fit"][0] + taemg_constants["pbrc_fit"][1] * (taemg_constants["tggs"][taemg_internal["igs"]] - taemg_constants["pbrc_fit"][2]).
+	set taemg_internal["pbhc"][1] TO taemg_constants["pbhc_fit"][0] + taemg_constants["pbhc_fit"][1] * (taemg_constants["tggs"][taemg_internal["igs"]] - taemg_constants["pbhc_fit"][2]).
+	
+	local dpbrc is taemg_internal["pbrc"][1] - taemg_internal["pbrc"][0].
+	local dpbhc is taemg_internal["pbhc"][1] - taemg_internal["pbhc"][0].
+
+	local chi is dpbhc / (dpbrc^2) - taemg_constants["tggs"][taemg_internal["igs"]] / dpbrc.
+	local th is (taemg_constants["pbgc"][taemg_internal["igs"]] - taemg_constants["tggs"][taemg_internal["igs"]]) / (2 * dpbrc).
 	
 	set taemg_internal["cubic_c3"] to 3*chi - 2*th.
-	set taemg_internal["cubic_c4"] to 2*(th - chi) / taemg_internal["pbrc"].
+	set taemg_internal["cubic_c4"] to 2*(th - chi) / dpbrc.
 	
 	//moved up from tgxhac because if we don't trigger phase 2 before we cross the runway centreline 
 	//the ysign will flip and mess everything up
@@ -632,16 +642,22 @@ FUNCTION tgcomp {
 	SET taemg_internal["emep"] TO taemg_constants["emep_c1"][taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["emep_c2"][taemg_internal["igs"]][taemg_internal["iel"]].
 	SET taemg_internal["es"] TO taemg_constants["es_c1"][taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["es_c2"][taemg_internal["igs"]][taemg_internal["iel"]].
 	
-	if (taemg_internal["drpred"] > taemg_internal["pbrc"]) {
+	//calculate ref altitude profile
+	//calculate tangent of ref. fpa
+	local dhdrrf is 0.
+	if (taemg_internal["drpred"] > taemg_internal["pbrc"][1]) {
 		//linear altitude profile at long range
-		set taemg_internal["href"] to taemg_internal["pbhc"] + taemg_constants["pbgc"][taemg_internal["igs"]] * (taemg_internal["drpred"] - taemg_internal["pbrc"]).
-	} else {
+		set taemg_internal["href"] to taemg_internal["pbhc"][1] + taemg_constants["pbgc"][taemg_internal["igs"]] * (taemg_internal["drpred"] - taemg_internal["pbrc"][1]).
+		set dhdrrf to -taemg_constants["pbgc"][taemg_internal["igs"]].
+	} else if (taemg_internal["drpred"] < taemg_internal["pbrc"][0]) {
 		//close-in linear profile with outer glideslope
 		set taemg_internal["href"] to taemg_constants["hali"][taemg_internal["igs"]] + taemg_constants["tggs"][taemg_internal["igs"]] * taemg_internal["drpred"].
-		//add the cubic profile for mid-ranges
-		if (taemg_internal["drpred"] > 0) {
-			set taemg_internal["href"] to taemg_internal["href"] + taemg_internal["drpred"]^2 * (taemg_internal["cubic_c3"] + taemg_internal["drpred"] * taemg_internal["cubic_c4"]).
-		}
+		set dhdrrf to -taemg_constants["tggs"][taemg_internal["igs"]].
+	} else {
+		//cubic profile for mid-ranges
+		local drpred1 is taemg_internal["drpred"] - taemg_internal["pbrc"][0].
+		set taemg_internal["href"] to taemg_internal["pbhc"][0] + (taemg_constants["tggs"][taemg_internal["igs"]] + (taemg_internal["cubic_c3"] + drpred1 * taemg_internal["cubic_c4"]) * drpred1) * drpred1.
+		set dhdrrf to - midval( taemg_constants["tggs"][taemg_internal["igs"]] + drpred1 * (2 * taemg_internal["cubic_c3"] + 3 * taemg_internal["cubic_c4"] * drpred1), taemg_constants["pbgc"][taemg_internal["igs"]], taemg_constants["tggs"][taemg_internal["igs"]]).
 	}
 	
 	// linear profiles for qbref
@@ -661,13 +677,7 @@ FUNCTION tgcomp {
 	
 	set taemg_internal["herror"] to taemg_internal["href"] - taemg_input["h"].
 	
-	//calculate tangent of ref. fpa
-	local dhdrrf is 0.
-	if (taemg_internal["drpred"] > taemg_internal["pbrc"]) {
-		set dhdrrf to -taemg_constants["pbgc"][taemg_internal["igs"]].
-	} else {
-		set dhdrrf to - midval( taemg_constants["tggs"][taemg_internal["igs"]] + taemg_internal["drpred"] * (2 * taemg_internal["cubic_c3"] + 3 * taemg_internal["cubic_c4"] * taemg_internal["drpred"]), taemg_constants["pbgc"][taemg_internal["igs"]], taemg_constants["tggs"][taemg_internal["igs"]]).
-	}
+	//moved dhdrrf calculation up together with href
 	
 	//moved up from tgnzc so I can output hdref instead of dhdrrf
 	set taemg_internal["hdref"] to taemg_input["surfv_h"] * dhdrrf.
