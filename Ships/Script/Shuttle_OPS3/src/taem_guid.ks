@@ -130,16 +130,17 @@ global taemg_constants is lexicon (
 									"del_h1", 0.19,				//alt error coeff 
 									"del_h2", 900,				//ft alt error coeff 
 									"del_r_emax", list(0,54000,54000),		// -/ft/ft constant ised for computing emax 
-									"dnzcg", 0.01,		//g-unit/s gain for dnzc	OTT
+									//"dnzcg", 0.01,		//g-unit/s gain for dnzc	OTT
+									"dnzcg", 0.015,		//g-unit/s gain for dnzc	OTT
 									"dnzlc1", -0.7,		//g-unit phase 0,1 nzc lower lim 
 									"dnzlc2", -1,		//g-unit phase 2, 3 nzc lower lim 
 									"dnzuc1", 0.7,		//g-unit phase 0,1 nzc upper lim 
 									"dnzuc2", 1,		//g-unit phase 2, 3 nzc upper lim 
 									"dr3", 8000,		//ft delta range val for rpred3
-									"dsbcm", 0.95,		//mach at which speedbrake modulation starts 
+									"dsbcm", 1.5,		//mach at which speedbrake modulation starts 
 									"dsblim", 98.6,	//deg dsbc max value 
-									//"dsbsup", 65,	//deg fixed spdbk deflection at supersonic 		//ott
-									"dsbsup", 98.6,	//deg fixed spdbk deflection at supersonic 
+									"dsbsup", 65,	//deg fixed spdbk deflection at supersonic 		//ott
+									//"dsbsup", 98.6,	//deg fixed spdbk deflection at supersonic 
 									"dsbil", 20,	//deg min spdbk deflection 
 									"dsbnom", 65,		//deg nominal spdbk deflection
 									"dshply", 4000,		//ft delta range value in shplyk  	//deprecated
@@ -176,8 +177,8 @@ global taemg_constants is lexicon (
 									"gamsgs", LIST(0, -24, -22),	//deg a/l steep glideslope angle	//maybe put 24 here?
 									"gdhc", 2.0, 			//  constant for computing gdh 
 									"gdhll", 0.3, 			//gdh lower limit 	//OTT
-									"gdhs", 7.0e-5,		//1/ft	slope for computing gdh 		//ott
-									"gdhul", 1.0,			//gdh upper lim 
+									"gdhs", 6.0e-5,		//1/ft	slope for computing gdh 		//ott
+									"gdhul", 0.8,			//gdh upper lim 
 									"gehdll", 0.01, 		//g/fps  gain used in computing eownzll
 									"gehdul", 0.01, 		//g/fps  gain used in computing eownzul
 									"gell", 0.1, 		//1/s  gain used in computing eownzll
@@ -193,7 +194,8 @@ global taemg_constants is lexicon (
 									"h_ref1", 10000,			//ft alt for check to transition to a/l
 									"h_ref2", 5000,			//ft alt to force transition to a/l
 									"hali", LIST(0, 10018, 10018),		//ft altitude at a/l for reference profiles
-									"hdreqg", 0.1,				//hdreq computation gain 		//OTT
+									//"hdreqg", 0.1,				//hdreq computation gain 		//OTT
+									"hdreqg", 0.15,				//hdreq computation gain 		//OTT
 									"hftc", LIST(0, 12018, 12018),		//ft altitude of a/l steep gs at nominal entry pt
 									"machad", 0.75,		//mach to use air data (used in gcomp appendix)
 									"mxqbwt", 0.0007368421,		// psf/lb max l/d dyn press for nominal weight		//deprecated 
@@ -255,7 +257,7 @@ global taemg_constants is lexicon (
 									
 									//i think the following constants were added once OTT was implemented
 									"dr4", 2000,			//ft range from hac for phase 3
-									"hmep", LISt(0, 6000, 6000),	//ft altitude at a/l steep gs at MEP
+									"hmep", LISt(0, 8018, 8018),	//ft altitude at a/l steep gs at MEP
 									"demxsb", 10000,			//ft max eow error for speedbrakes out 		
 									"dhoh1", 0.11,			//alt ref dev/spiral slope
 									"dhoh2", 35705,			//ft alt ref dev/spiral range bias
@@ -839,7 +841,8 @@ FUNCTION tgnzc {
 	//to see the effect of filters in the debug dump
 	set taemg_internal["dnzcl"] to taemg_internal["dnzc"].
 	
-	if (taemg_internal["iphase"] > 2) {
+	//my modification: never do energy filtering during heading phase
+	if (taemg_internal["iphase"] > 1) {
 		set taemg_internal["nzc"] to midval(taemg_internal["dnzcl"], qbnzll, qbnzul).
 	} else {
 		//eow limits
@@ -858,11 +861,12 @@ FUNCTION tgnzc {
 		
 		//limit by qbar
 		//set taemg_internal["dnzcl"] to midval(taemg_internal["dnzcl"], qbnzll, qbnzul).
-		
-		//calculate commanded nz
-		local dnzcd is midval((taemg_internal["dnzcl"] - taemg_internal["nzc"]) * taemg_constants["cqg"], -taemg_constants["dnzcdl"], taemg_constants["dnzcdl"]).
-		set taemg_internal["nzc"] to taemg_internal["nzc"] + dnzcd * taemg_input["dtg"].
 	}
+	
+	//moved out of the if block 
+	//calculate commanded nz by limiting delta
+	local dnzcd is midval((taemg_internal["dnzcl"] - taemg_internal["nzc"]) * taemg_constants["cqg"], -taemg_constants["dnzcdl"], taemg_constants["dnzcdl"]).
+	set taemg_internal["nzc"] to taemg_internal["nzc"] + dnzcd * taemg_input["dtg"].
 	
 	//apply strucutral limits on nz cmd
 	set taemg_internal["nzc"] to midval(taemg_internal["nzc"], taemg_internal["dnzll"], taemg_internal["dnzul"]).

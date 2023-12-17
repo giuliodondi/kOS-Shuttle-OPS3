@@ -121,7 +121,8 @@ FUNCTION ops3_taem_test {
 		}
 	).
 	
-	LOCAL taemg_out is LEXICON().
+	//initialise with just the end flag
+	LOCAL taemg_out is LEXICON("tg_end", FALSE).
 	
 	LOCAL last_iter Is TIMe:SECONDS.
 	until false{
@@ -142,31 +143,34 @@ FUNCTION ops3_taem_test {
 		).
 		
 		LOCAL cur_iter IS TIMe:SECONDS.
-		LOCAL iter_dt IS cur_iter - last_iter.
+		
+		
+		local taemg_in is LEXICON(
+											"dtg", MAX(0.05, (cur_iter - last_iter)),
+											"h", rwystate["h"],
+											"hdot", rwystate["hdot"],
+											"x", rwystate["x"], 
+											"y", rwystate["y"], 
+											"surfv", rwystate["surfv"],
+											"surfv_h", rwystate["surfv_h"],
+											"xdot", rwystate["xdot"], 
+											"ydot", rwystate["ydot"], 
+											"psd", rwystate["rwy_rel_crs"], 
+											"mach", rwystate["mach"],
+											"qbar", rwystate["qbar"],
+											"phi",  rwystate["phi"],
+											"theta", rwystate["theta"],
+											"m", rwystate["mass"],
+											"gamma", rwystate["fpa"],
+											"ovhd", tgtrwy["overhead"],
+											"rwid", tgtrwy["name"]
+									).
+									
 		SET last_iter TO cur_iter.
 		
 		//call taem guidance here
 		SET taemg_out TO taemg_wrapper(
-									LEXICON(
-										"dtg", MAX(0.05, iter_dt),
-										"h", rwystate["h"],
-										"hdot", rwystate["hdot"],
-										"x", rwystate["x"], 
-										"y", rwystate["y"], 
-										"surfv", rwystate["surfv"],
-										"surfv_h", rwystate["surfv_h"],
-										"xdot", rwystate["xdot"], 
-										"ydot", rwystate["ydot"], 
-										"psd", rwystate["rwy_rel_crs"], 
-										"mach", rwystate["mach"],
-										"qbar", rwystate["qbar"],
-										"phi",  rwystate["phi"],
-										"theta", rwystate["theta"],
-										"m", rwystate["mass"],
-										"gamma", rwystate["fpa"],
-										"ovhd", tgtrwy["overhead"],
-										"rwid", tgtrwy["name"]
-									)					
+										taemg_in						
 		).
 		
 		build_hac_points(taemg_out, tgtrwy).
