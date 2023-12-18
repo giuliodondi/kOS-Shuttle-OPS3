@@ -702,7 +702,7 @@ FUNCTION tgcomp {
 	//error on qbar 
 	set taemg_internal["qberr"] to taemg_internal["qbref"] - taemg_internal["qbarf"].
 	//cmd eas 
-	set taemg_internal["eas_cmd"] to 17.1865 + sqrt(taemg_internal["qbref"]).
+	set taemg_internal["eas_cmd"] to 17.1865 * sqrt(taemg_internal["qbref"]).
 
 }	
 
