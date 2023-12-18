@@ -174,7 +174,7 @@ global taemg_constants is lexicon (
 									"gamma_coef1", 0.0007,			//deg/ft fpa error coef 
 									"gamma_coef2", 3,			//deg fpa error coef 
 									"gamma_error", 4,			//deg fpa error band 	//deprecated
-									"gamsgs", LIST(0, -24, -22),	//deg a/l steep glideslope angle	//maybe put 24 here?
+									"gamsgs", LIST(0, -24, -22),	//deg a/l steep glideslope angle	//maybe put 24 here	
 									"gdhc", 2.0, 			//  constant for computing gdh 
 									"gdhll", 0.3, 			//gdh lower limit 	//OTT
 									"gdhs", 6.0e-5,		//1/ft	slope for computing gdh 		//ott
@@ -245,7 +245,7 @@ global taemg_constants is lexicon (
 									"rtd", 	57.29578,			//deg/rad rad2teg
 									"rturn", 20000,				//ft hac radius 				//deprecated
 									"sbmin", 0,				//deg min sbrbk command (was 5)		//deprecated
-									"tggs", LISt(0, 0.44522869, 0.40402623), 		//tan of steep gs for autoland 	// I refactored everything so they're positive
+									"tggs", LISt(0, TAN(24), TAN(22)), 		//tan of steep gs for autoland 	// I refactored everything so they're positive
 									"vco", 1e20, 			//fps constant used in turn compensation 			//deprecated
 									//"wt_gs1", 8000, 			//slugs max orbiter weight 
 									"wt_gs1", 6837, 			//slugs max orbiter weight 
@@ -303,7 +303,19 @@ global taemg_constants is lexicon (
 									"qbmxs1", -400,				//psf slope of qbmxnz with mach < qbm1 
 									"hmin3", 7000,				//min altitude for prefinal
 									"nztotallim", 2.5,				// my addition from the taem paper
-									"rtanmin", 328				//ft my own addition, empirical
+									"rtanmin", 328,				//ft my own addition, empirical
+									
+									//A/L guidance stuff 
+									"tgsh", TAN(2.5),			//tangent of shallow gs
+									"xaim", 1000,			//ft aim point distance from threshold		
+									"xk", -3000,			//ft x coord of the centre of the flare circle 
+									"hflare", 2000,			//ft transition to open loop flare
+									"hcloop", 1700,			//ft transition to closed loop flare
+									"rflare", 28802,		//ft flare circle radius
+									"xexp", -4722,			//ft exp decay reference x coord
+									"hdecay", 29,			//ft exponential decay gain
+									"sigma_exp", 920,		//ft exp decay characteristic distance
+									
 ).
 
 
@@ -377,7 +389,15 @@ global taemg_internal is lexicon(
 								"ycir", 0,		//ft ship-hac centre distance component along y
 								"yhac", 0,		//ft x coord of hac centre
 								"rcir", 0		//ft ship-hac distance
-
+								
+								//A/L guidance stuff 
+								"p_mode", 0,		//a/l mode flag 
+								"f_mode", 0,		//a/l flare mode flag during p_mode=3
+								"tgstp", 0,			//steep gs tangent (set to tggs)
+								"gsstp", 0,			//° steep glideslope
+								"gssh", 0,			//° shallow glideslope
+								"hk", 0,			//ft altitude of flare circle 
+								"herrexp", 0,		//ft flare exponential error 
 ).
 
 function taemg_dump {
@@ -411,6 +431,12 @@ function taemg_dump {
 //phases (iphase):
 // 0= s-turn,	1=hac acq,	2=hac turn (hdg),	3=pre-final 
 // 4=alpha tran,	5=nz hold,	6=alpha recovery
+
+//a/l phases (p_mode):
+// 1= pitch capture,	2=steep gs,	3=pull up,	4=shallow gs, final flare, rollout
+
+//a/l flare modes (f_mode):
+// 1= open-loop pullup, 2= closed-loop circular pullup, 3= exponential decay onto shallow gs
 
 function tgexec {
 	PARAMETER taemg_input.
@@ -474,9 +500,9 @@ FUNCTION tginit {
 		set taemg_internal["igs"] to 1.
 	}
 	
-	set taemg_internal["xftc"] to taemg_constants["xa"][1] - taemg_constants["hftc"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
-	set taemg_internal["xali"] to taemg_constants["xa"][1] - taemg_constants["hali"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
-	set taemg_internal["xmep"] to taemg_constants["xa"][1] - taemg_constants["hmep"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
+	set taemg_internal["xftc"] to taemg_constants["xa"][taemg_internal["igs"]] - taemg_constants["hftc"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
+	set taemg_internal["xali"] to taemg_constants["xa"][taemg_internal["igs"]] - taemg_constants["hali"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
+	set taemg_internal["xmep"] to taemg_constants["xa"][taemg_internal["igs"]] - taemg_constants["hmep"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
 	
 	//my modification:
 	//href is now a 3 segment profile: 
@@ -514,6 +540,15 @@ FUNCTION tginit {
 	}
 	
 	SET taemg_internal["tg_end"] TO FALSE.
+	
+	//a/l stuff 
+	//glideslopes
+	set taemg_internal["tgstp"] to taemg_constants["tggs"][taemg_internal["igs"]].
+	set taemg_internal["gsstp"] to ARCTAN(taemg_internal["tgstp"]).
+	set taemg_internal["gssh"] to ARCTAN(taemg_internal["tgsh"]).
+	//flare circle coordinates
+	set taemg_internal["hk"] to taemg_constants["hcloop"] + taemg_constants["rflare"] * COS(taemg_internal["gsstp"]). 
+	set taemg_internal["xk"] to taemg_constants["xa"][taemg_internal["igs"]] - taemg_constants["hcloop"]/taemg_internal["tgstp"] + taemg_constants["rflare"] * SIN(taemg_internal["gsstp"]).
 	
 	SET taemg_internal["ireset"] TO FALSE.
 
@@ -569,8 +604,8 @@ FUNCTION gtp {
 	
 	LOCAL signy IS SIGN(taemg_input["y"]).
 	
-	//if pre-final and very close
-	IF (taemg_internal["iphase"] = 3) AND (taemg_internal["xcir"] < taemg_constants["dr4"]) {
+	//if a/l or pre-final and very close
+	IF (taemg_internal["p_mode"] > 0) OR ((taemg_internal["iphase"] = 3) AND (taemg_internal["xcir"] < taemg_constants["dr4"])) {
 		set taemg_internal["rpred"] TO SQRT(taemg_input["x"]^2 + taemg_input["y"]^2).
 		RETURN.
 	}
@@ -657,19 +692,42 @@ FUNCTION tgcomp {
 	//calculate ref altitude profile
 	//calculate tangent of ref. fpa
 	local dhdrrf is 0.
-	if (taemg_internal["drpred"] > taemg_internal["pbrc"][1]) {
-		//linear altitude profile at long range
-		set taemg_internal["href"] to taemg_internal["pbhc"][1] + taemg_constants["pbgc"][taemg_internal["igs"]] * (taemg_internal["drpred"] - taemg_internal["pbrc"][1]).
-		set dhdrrf to -taemg_constants["pbgc"][taemg_internal["igs"]].
-	} else if (taemg_internal["drpred"] < taemg_internal["pbrc"][0]) {
-		//close-in linear profile with outer glideslope
-		set taemg_internal["href"] to taemg_constants["hali"][taemg_internal["igs"]] + taemg_constants["tggs"][taemg_internal["igs"]] * taemg_internal["drpred"].
-		set dhdrrf to -taemg_constants["tggs"][taemg_internal["igs"]].
+	
+	
+	if (taemg_internal["p_mode"] == 0) {
+		//taem altitude profiles
+	
+		if (taemg_internal["drpred"] > taemg_internal["pbrc"][1]) {
+			//linear altitude profile at long range
+			set taemg_internal["href"] to taemg_internal["pbhc"][1] + taemg_constants["pbgc"][taemg_internal["igs"]] * (taemg_internal["drpred"] - taemg_internal["pbrc"][1]).
+			set dhdrrf to -taemg_constants["pbgc"][taemg_internal["igs"]].
+		} else if (taemg_internal["drpred"] < taemg_internal["pbrc"][0]) {
+			//close-in linear profile with outer glideslope
+			set taemg_internal["href"] to taemg_constants["hali"][taemg_internal["igs"]] + taemg_constants["tggs"][taemg_internal["igs"]] * taemg_internal["drpred"].
+			set dhdrrf to -taemg_constants["tggs"][taemg_internal["igs"]].
+		} else {
+			//cubic profile for mid-ranges
+			local drpred1 is taemg_internal["drpred"] - taemg_internal["pbrc"][0].
+			set taemg_internal["href"] to taemg_internal["pbhc"][0] + (taemg_constants["tggs"][taemg_internal["igs"]] + (taemg_internal["cubic_c3"] + drpred1 * taemg_internal["cubic_c4"]) * drpred1) * drpred1.
+			set dhdrrf to - midval( taemg_constants["tggs"][taemg_internal["igs"]] + drpred1 * (2 * taemg_internal["cubic_c3"] + 3 * taemg_internal["cubic_c4"] * drpred1), taemg_constants["pbgc"][taemg_internal["igs"]], taemg_constants["tggs"][taemg_internal["igs"]]).
+		}
+	} else if (taemg_internal["p_mode"] >= 4) {
+		//a/l inner gs
+		set taemg_internal["href"] to (taemg_constants["xaim"] - taemg_input["x"]) * taemg_constants["tgsh"].
+	} else if (taemg_internal["p_mode"] == 3) {
+		//a/l pullup
+		if (taemg_internal["f_mode"] < 3) {
+			//flare circle
+			set taemg_internal["href"] to taemg_constants["hk"] - SQRT(taemg_constants["rflare"]^2 - (taemg_constants["xk"] - taemg_input["x"])^2).
+		} else {
+			//exponential decay
+			set taemg_internal["herrexp"] to taemg_constants["hdecay"] * constant:e^((taemg_constants["xexp"] - taemg_input["x"])/taemg_constants["sigma_exp"]).
+			//add on top of shallow gs 
+			set taemg_internal["href"] to (taemg_constants["xaim"] - taemg_input["x"]) * taemg_constants["tgsh"] + taemg_internal["herrexp"].
+		}
 	} else {
-		//cubic profile for mid-ranges
-		local drpred1 is taemg_internal["drpred"] - taemg_internal["pbrc"][0].
-		set taemg_internal["href"] to taemg_internal["pbhc"][0] + (taemg_constants["tggs"][taemg_internal["igs"]] + (taemg_internal["cubic_c3"] + drpred1 * taemg_internal["cubic_c4"]) * drpred1) * drpred1.
-		set dhdrrf to - midval( taemg_constants["tggs"][taemg_internal["igs"]] + drpred1 * (2 * taemg_internal["cubic_c3"] + 3 * taemg_internal["cubic_c4"] * drpred1), taemg_constants["pbgc"][taemg_internal["igs"]], taemg_constants["tggs"][taemg_internal["igs"]]).
+		//a/l outer gs
+		set taemg_internal["href"] to (taemg_constants["xa"][taemg_internal["igs"]] - taemg_input["x"]) * taemg_internal["tgstp"].
 	}
 	
 	// linear profiles for qbref
