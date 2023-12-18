@@ -170,4 +170,9 @@ FUNCTION build_hac_points {
 }
 
 
+//weight-on-wheels
+FUNCTION measure_wow {
+	RETURN (SHIP:STATUS = "LANDED").
+}
+
 

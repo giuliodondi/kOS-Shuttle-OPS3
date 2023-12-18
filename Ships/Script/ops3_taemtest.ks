@@ -147,6 +147,7 @@ FUNCTION ops3_taem_test {
 		
 		local taemg_in is LEXICON(
 											"dtg", MAX(0.05, (cur_iter - last_iter)),
+											"wow", measure_wow(),
 											"h", rwystate["h"],
 											"hdot", rwystate["hdot"],
 											"x", rwystate["x"], 
@@ -191,10 +192,8 @@ FUNCTION ops3_taem_test {
 									taemg_out["nztotal"] -  cur_nz
 		).
 		
-		LOCAL guid_phase IS 20 + taemg_out["iphase"].
-		
 		update_hud_gui(
-			guid_phase,
+			taemg_out["guid_id"],
 			css_flag,
 			diamond_deviation_taem(deltas),
 			rwystate["h"] / 1000,

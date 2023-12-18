@@ -1050,6 +1050,18 @@ FUNCTION hud_guid_labels{
 	
 	IF (iphase>=30) {
 		//a/l
+		IF (iphase=31) {
+			RETURN "CAPTR".
+		} ELSE IF (iphase=32) {
+			RETURN "OGS  ".
+		} ELSE IF (iphase=33) {
+			RETURN "FLARE ".
+		} ELSE IF (iphase=34) {
+			RETURN "FNLFL".
+		} ELSE IF (iphase=35) {
+			RETURN "ROLLOUT".
+		}
+		
 	} ELSE IF (iphase>=20) {
 		//taem / grtls
 		IF (iphase=20) {

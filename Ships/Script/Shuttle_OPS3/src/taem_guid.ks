@@ -33,7 +33,8 @@ GLOBAL mps2kt IS 1.94384.			//m/s / knots
 //		rwid		//runway id flag  (	1 for primary, 2 for secondary)
 //		vtogl	//fps velocity to toggle ovhd/stri hac status (to simulate automatically a change of hac halfway through)		//deprecated
 
-
+//		dtg		// loop execution delta-t measured outside
+//		wow		// weight-on-wheels measured outside
 
 //outputs 
 //		nzc 	//g-units normal load factor increment from equilibrium
@@ -52,6 +53,8 @@ GLOBAL mps2kt IS 1.94384.			//m/s / knots
 //		qbarf 	//psf filtered dynamic press 
 //		ohalrt	//taem automatic downmode flag 
 //		mep 		//min entry point flag 
+//    	geardown		//flag to command gear down
+//		guid_id		//number to signal the hud the mode string 
 
 
 FUNCTION taemg_wrapper {
@@ -59,6 +62,7 @@ FUNCTION taemg_wrapper {
 	
 	LOCAL tg_input IS LEXICON(
 										"dtg", taemg_input["dtg"],
+										"wow", taemg_input["wow"],
 										"h", taemg_input["h"] * mt2ft,		//ft height above rwy
 										"hdot", taemg_input["hdot"] * mt2ft,	//ft/s vert speed
 										"x", taemg_input["x"] * mt2ft,		//ft x component on runway coord
@@ -81,10 +85,18 @@ FUNCTION taemg_wrapper {
 	tgexec(tg_input).
 	
 	taemg_dump(tg_input).
+	
+	//work out the guidance mode - needs to be consistent with the hud string mappings
+	local guid_id is 0.
+	if (taemg_internal["tg_end"]) {
+		set guid_id to  30 + taemg_internal["p_mode"].
+	} else {
+		set  guid_id to 20 + taemg_internal["iphase"].
+	}
 
 	//dsbc_at needs to be transformed to a 0-1 variable based on max deflection (halved)
 	RETURN LEXICON(
-					"iphase", taemg_internal["iphase"], 	//phase counter 
+					"guid_id", guid_id,					//counter to signal the current mode to the hud 
 					//geometric outputs
 					"rpred", taemg_internal["rpred"] / mt2ft,	//ft predicted range to threshold 
 					"herror", taemg_internal["herror"] / mt2ft, 	//ft altitude error
@@ -103,6 +115,7 @@ FUNCTION taemg_wrapper {
 					"nztotal", taemg_internal["nztotal"], 	//g-units normal load factor
 					"phic_at", taemg_internal["phic_at"], 	//deg commanded roll 
 					"dsbc_at", taemg_internal["dsbc_at"] / taemg_constants["dsblim"], 	//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
+					
 					//energy and other stuff
 					"eow", taemg_internal["eow"] / mt2ft, 		//ft energy/weight
 					"es", taemg_internal["es"] / mt2ft, 		//ft energy/weight at which the s-turn is initiated 
@@ -110,10 +123,12 @@ FUNCTION taemg_wrapper {
 					"emep", taemg_internal["emep"] / mt2ft, 	//ft energy/weight at which the mep is selected 
 					"eas_cmd", taemg_internal["eas_cmd"] / mps2kt, 	//kn equivalent airspeed commanded  (not useful)
 					"qbarf", taemg_internal["qbarf"] / (atm2pa * pa2psf), 	//psf filtered dynamic press 
+					
 					//flags
 					"ohalrt", taemg_internal["ohalrt"],	//taem automatic downmode flag 
 					"mep", taemg_internal["mep"], 		//min entry point flag 
-					"tg_end", taemg_internal["tg_end"] 	//termination flag 
+					"tg_end", taemg_internal["tg_end"], 	//termination flag 
+					"geardown", taemg_internal["geardown"]
 	
 	).
 }
@@ -249,7 +264,7 @@ global taemg_constants is lexicon (
 									"vco", 1e20, 			//fps constant used in turn compensation 			//deprecated
 									//"wt_gs1", 8000, 			//slugs max orbiter weight 
 									"wt_gs1", 6837, 			//slugs max orbiter weight 
-									"xa", LIST(0, -5000, -5000),		//steep gs intercept 
+									"xa", LIST(0, -5000, -5000),		//steep gs intercept 				//deprecated
 									"yerrlm", 280,				//deg limit on yerrc 
 									"y_error", 1000,			//ft xrange err bound 		//deprecated
 									"y_range1", 0.18,			//xrange coeff 
@@ -308,13 +323,14 @@ global taemg_constants is lexicon (
 									//A/L guidance stuff 
 									"tgsh", TAN(2.5),			//tangent of shallow gs
 									"xaim", 1000,			//ft aim point distance from threshold		
-									"xk", -3000,			//ft x coord of the centre of the flare circle 
 									"hflare", 2000,			//ft transition to open loop flare
 									"hcloop", 1700,			//ft transition to closed loop flare
-									"rflare", 28802,		//ft flare circle radius
-									"xexp", -4722,			//ft exp decay reference x coord
+									"rflare", 16500,		//ft flare circle radius
 									"hdecay", 29,			//ft exponential decay gain
-									"sigma_exp", 920,		//ft exp decay characteristic distance
+									"sigma_exp", 750,		//ft exp decay characteristic distance
+									"al_capt_herrlim", 50, 	//ft altitude error for steep gs capture
+									"al_fnlfl_herrexpmin", 1, //ft alt delta on exponential decay for final flare toggle
+									"hfnlfl", 80,			//ft alt at which to force transition to final flare
 									
 ).
 
@@ -389,14 +405,20 @@ global taemg_internal is lexicon(
 								"ycir", 0,		//ft ship-hac centre distance component along y
 								"yhac", 0,		//ft x coord of hac centre
 								"rcir", 0		//ft ship-hac distance
+								"xa", 0,		//ft steep gs intercept, turned into a variable that is calculated from the a/l flare circle
+								
 								
 								//A/L guidance stuff 
+								
 								"p_mode", 0,		//a/l mode flag 
 								"f_mode", 0,		//a/l flare mode flag during p_mode=3
+								"geardown", FALSE,	//flag to command gear down to outside executive
 								"tgstp", 0,			//steep gs tangent (set to tggs)
 								"gsstp", 0,			//° steep glideslope
 								"gssh", 0,			//° shallow glideslope
-								"hk", 0,			//ft altitude of flare circle 
+								"hk", 0,			//ft altitude of flare circle centre
+								"xk", 0,			//ft x-coordinate of flare circle centre
+								"xexp", 0,			//ft x-coordinate of transition from flare circle to exp decay
 								"herrexp", 0,		//ft flare exponential error 
 ).
 
@@ -433,7 +455,7 @@ function taemg_dump {
 // 4=alpha tran,	5=nz hold,	6=alpha recovery
 
 //a/l phases (p_mode):
-// 1= pitch capture,	2=steep gs,	3=pull up,	4=shallow gs, final flare, rollout
+// 1= pitch capture,	2=steep gs,	3=pull up,	4=shallow gs, final flare 5=rollout
 
 //a/l flare modes (f_mode):
 // 1= open-loop pullup, 2= closed-loop circular pullup, 3= exponential decay onto shallow gs
@@ -463,6 +485,21 @@ function tgexec {
 
 FUNCTION tginit {
 	PARAMETER taemg_input.
+	
+	//a/l stuff first because now we calculate xa
+	//glideslopes
+	set taemg_internal["tgstp"] to taemg_constants["tggs"][taemg_internal["igs"]].
+	set taemg_internal["gsstp"] to ARCTAN(taemg_internal["tgstp"]).
+	set taemg_internal["gssh"] to ARCTAN(taemg_internal["tgsh"]).
+	//flare circle coordinates
+	set taemg_internal["hk"] to taemg_constants["hcloop"] + taemg_constants["rflare"] * COS(taemg_internal["gsstp"]). 
+	
+	local he is taemg_internal["hk"] - taemg_constants["rflare"] * COS(taemg_internal["gssh"]) - taemg_constants["hdecay"].
+	set taemg_internal["xexp"] to - he/taemg_internal["tgsh"] + taemg_constants["xaim"].
+	set taemg_internal["xk"] to taemg_internal["xexp"] + taemg_constants["rflare"] * SIN(taemg_internal["gssh"]).
+	
+	set taemg_internal["xa"] TO taemg_internal["xk"] - taemg_constants["rflare"] * SIN(taemg_internal["gsstp"]) + taemg_constants["hcloop"] / taemg_internal["tgstp"].
+	
 	
 	SET taemg_internal["rwid0"] TO taemg_input["rwid"].
 	SET taemg_internal["ovhd0"] TO taemg_input["ovhd"].
@@ -500,9 +537,9 @@ FUNCTION tginit {
 		set taemg_internal["igs"] to 1.
 	}
 	
-	set taemg_internal["xftc"] to taemg_constants["xa"][taemg_internal["igs"]] - taemg_constants["hftc"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
-	set taemg_internal["xali"] to taemg_constants["xa"][taemg_internal["igs"]] - taemg_constants["hali"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
-	set taemg_internal["xmep"] to taemg_constants["xa"][taemg_internal["igs"]] - taemg_constants["hmep"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
+	set taemg_internal["xftc"] to taemg_internal["xa"] - taemg_constants["hftc"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
+	set taemg_internal["xali"] to taemg_internal["xa"] - taemg_constants["hali"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
+	set taemg_internal["xmep"] to taemg_internal["xa"] - taemg_constants["hmep"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
 	
 	//my modification:
 	//href is now a 3 segment profile: 
@@ -540,15 +577,6 @@ FUNCTION tginit {
 	}
 	
 	SET taemg_internal["tg_end"] TO FALSE.
-	
-	//a/l stuff 
-	//glideslopes
-	set taemg_internal["tgstp"] to taemg_constants["tggs"][taemg_internal["igs"]].
-	set taemg_internal["gsstp"] to ARCTAN(taemg_internal["tgstp"]).
-	set taemg_internal["gssh"] to ARCTAN(taemg_internal["tgsh"]).
-	//flare circle coordinates
-	set taemg_internal["hk"] to taemg_constants["hcloop"] + taemg_constants["rflare"] * COS(taemg_internal["gsstp"]). 
-	set taemg_internal["xk"] to taemg_constants["xa"][taemg_internal["igs"]] - taemg_constants["hcloop"]/taemg_internal["tgstp"] + taemg_constants["rflare"] * SIN(taemg_internal["gsstp"]).
 	
 	SET taemg_internal["ireset"] TO FALSE.
 
@@ -693,7 +721,6 @@ FUNCTION tgcomp {
 	//calculate tangent of ref. fpa
 	local dhdrrf is 0.
 	
-	
 	if (taemg_internal["p_mode"] == 0) {
 		//taem altitude profiles
 	
@@ -714,20 +741,28 @@ FUNCTION tgcomp {
 	} else if (taemg_internal["p_mode"] >= 4) {
 		//a/l inner gs
 		set taemg_internal["href"] to (taemg_constants["xaim"] - taemg_input["x"]) * taemg_constants["tgsh"].
+		set dhdrrf to -taemg_internal["tgsh"].
 	} else if (taemg_internal["p_mode"] == 3) {
 		//a/l pullup
 		if (taemg_internal["f_mode"] < 3) {
 			//flare circle
-			set taemg_internal["href"] to taemg_constants["hk"] - SQRT(taemg_constants["rflare"]^2 - (taemg_constants["xk"] - taemg_input["x"])^2).
+			local xflarecir IS taemg_internal["xk"] - taemg_input["x"].
+			local yflarecir is SQRT(taemg_constants["rflare"]^2 - xflarecir^2).
+			set taemg_internal["href"] to taemg_internal["hk"] - yflarecir.
+			//dhref/dx clamped
+			set dhdrrf to - midval( xflarecir/yflarecir , taemg_internal["tgsh"], taemg_internal["tgstp"]).
 		} else {
 			//exponential decay
-			set taemg_internal["herrexp"] to taemg_constants["hdecay"] * constant:e^((taemg_constants["xexp"] - taemg_input["x"])/taemg_constants["sigma_exp"]).
+			set taemg_internal["herrexp"] to taemg_constants["hdecay"] * constant:e^((taemg_internal["xexp"] - taemg_input["x"])/taemg_constants["sigma_exp"]).
 			//add on top of shallow gs 
 			set taemg_internal["href"] to (taemg_constants["xaim"] - taemg_input["x"]) * taemg_constants["tgsh"] + taemg_internal["herrexp"].
+			//dhref/dx clamped
+			set dhdrrf to - (taemg_internal["tgsh"] + taemg_internal["herrexp"]/taemg_constants["sigma_exp"]).
 		}
 	} else {
 		//a/l outer gs
-		set taemg_internal["href"] to (taemg_constants["xa"][taemg_internal["igs"]] - taemg_input["x"]) * taemg_internal["tgstp"].
+		set taemg_internal["href"] to (taemg_internal["xa"] - taemg_input["x"]) * taemg_internal["tgstp"].
+		set dhdrrf to -taemg_internal["tgstp"].
 	}
 	
 	// linear profiles for qbref
@@ -768,6 +803,55 @@ FUNCTION tgcomp {
 FUNCTION tgtran {
 	PARAMETER taemg_input.	
 	
+	//a/l transitions
+	if (taemg_internal["tg_end"]) {
+		//capture steep gs when errors small enough
+		if (taemg_internal["p_mode"] = 1) {
+			if (abs(taemg_internal["herror"]) < taemg_constants["al_capt_herrlim"]) or (taemg_input["h"] < taemg_constants["h_ref2"]) {
+				set taemg_internal["p_mode"] to 2.
+				return.
+			}
+		}
+		
+		//toggle open-loop flare
+		if (taemg_internal["p_mode"] = 2) and (taemg_input["h"] <= taemg_constants["hflare"]) {
+			set taemg_internal["p_mode"] to 3.
+			set taemg_internal["f_mode"] to 1.
+			return.
+		}
+		
+		
+		if (taemg_internal["p_mode"] = 3) {
+			//toggle closed-loop flare
+			if (taemg_internal["f_mode"] = 1) and (taemg_input["h"] <= taemg_constants["hcloop"]) {
+				set taemg_internal["f_mode"] to 2.
+				return.
+			}
+			
+			//toggle exp decay 
+			if (taemg_internal["f_mode"] = 2) and (taemg_input["x"] >= taemg_internal["xexp"]) {
+				set taemg_internal["f_mode"] to 3.
+				return.
+			}
+			
+			//toggle shallow gs and final flare 
+			if (taemg_internal["f_mode"] = 3) {
+				if (abs(taemg_internal["herrexp"]) <= taemg_constants["al_fnlfl_herrexpmin"]) or (taemg_input["h"] <= taemg_constants["hfnlfl"]) {
+					set taemg_internal["p_mode"] to 4.
+					//command gear down 
+					set taemg_internal["geardown"] to TRUE.
+					return.
+				}
+			}
+		}
+		
+		if (taemg_internal["p_mode"] = 4) and (taemg_input["wow"]) {
+			set taemg_internal["p_mode"] to 5.
+			return.
+		}
+	}
+	
+	
 	//transition to a/l 
 	if (taemg_internal["iphase"] = 3) {
 		if (
@@ -776,8 +860,10 @@ FUNCTION tgtran {
 			and (abs(taemg_input["gamma"] - taemg_constants["gamsgs"][taemg_internal["igs"]]) < (taemg_input["h"] * taemg_constants["gamma_coef1"] - taemg_constants["gamma_coef2"]))
 			and (abs(taemg_internal["qberr"]) < taemg_constants["qb_error2"])
 			and (taemg_input["h"] < taemg_constants["h_ref1"])
-			) or (taemg_input["h"] < taemg_constants["h_ref2"]) {
+		) or (taemg_input["h"] < taemg_constants["h_ref2"]) {
 				set taemg_internal["tg_end"] to TRUE.
+				//handover to a/l 
+				set taemg_internal["p_mode"] to 1.
 			}
 		return.
 	}
