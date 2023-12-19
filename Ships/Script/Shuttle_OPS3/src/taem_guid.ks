@@ -329,8 +329,14 @@ global taemg_constants is lexicon (
 									"hdecay", 29,			//ft exponential decay gain
 									"sigma_exp", 750,		//ft exp decay characteristic distance
 									"al_capt_herrlim", 50, 	//ft altitude error for steep gs capture
+									"al_capt_gammalim", 2, 	//deg fpa error for steep gs capture
 									"al_fnlfl_herrexpmin", 1, //ft alt delta on exponential decay for final flare toggle
-									"hfnlfl", 80,			//ft alt at which to force transition to final flare
+									"hfnlfl", 90,			//ft alt at which to force transition to final flare
+									"k_h", 0.0036,	//g /ft	gain
+									"k_hdot", 0.0109,	//g /ft	gain
+									"k_hint", 0.05,	//g /ft / s	gain
+									"h_errormax", 300,	//ft clamp on herror
+									"h_intmx", 50,	//ft clamp on hdot integral term
 									
 ).
 
@@ -420,6 +426,9 @@ global taemg_internal is lexicon(
 								"xk", 0,			//ft x-coordinate of flare circle centre
 								"xexp", 0,			//ft x-coordinate of transition from flare circle to exp decay
 								"herrexp", 0,		//ft flare exponential error 
+								"nzc1", 0, 		//nzc hdot error contribution
+								"nzc2h", 0, 		//nzc h error contribution
+								"nzc2i", 0, 		//nzc h error integral contribution
 ).
 
 function taemg_dump {
@@ -807,7 +816,7 @@ FUNCTION tgtran {
 	if (taemg_internal["tg_end"]) {
 		//capture steep gs when errors small enough
 		if (taemg_internal["p_mode"] = 1) {
-			if (abs(taemg_internal["herror"]) < taemg_constants["al_capt_herrlim"]) or (taemg_input["h"] < taemg_constants["h_ref2"]) {
+			if (abs(taemg_internal["herror"]) < taemg_constants["al_capt_herrlim"] and abs(taemg_input["gamma"] - taemg_internal["gsstp"]) < taemg_constants["al_capt_gammalim"] ) or (taemg_input["h"] < taemg_constants["h_ref2"]) {
 				set taemg_internal["p_mode"] to 2.
 				return.
 			}
@@ -819,7 +828,6 @@ FUNCTION tgtran {
 			set taemg_internal["f_mode"] to 1.
 			return.
 		}
-		
 		
 		if (taemg_internal["p_mode"] = 3) {
 			//toggle closed-loop flare
@@ -845,98 +853,99 @@ FUNCTION tgtran {
 			}
 		}
 		
+		//toggle rollout
 		if (taemg_internal["p_mode"] = 4) and (taemg_input["wow"]) {
 			set taemg_internal["p_mode"] to 5.
 			return.
 		}
-	}
+	} else {
+		//just to make sure we don't end up here during a/l and vice-versa
 	
-	
-	//transition to a/l 
-	if (taemg_internal["iphase"] = 3) {
-		if (
-			(abs(taemg_internal["herror"]) < (taemg_input["h"] * taemg_constants["del_h1"] - taemg_constants["del_h2"]))
-			and (abs(taemg_input["y"]) < (taemg_input["h"] * taemg_constants["y_range1"] - taemg_constants["y_range2"])) 
-			and (abs(taemg_input["gamma"] - taemg_constants["gamsgs"][taemg_internal["igs"]]) < (taemg_input["h"] * taemg_constants["gamma_coef1"] - taemg_constants["gamma_coef2"]))
-			and (abs(taemg_internal["qberr"]) < taemg_constants["qb_error2"])
-			and (taemg_input["h"] < taemg_constants["h_ref1"])
-		) or (taemg_input["h"] < taemg_constants["h_ref2"]) {
-				set taemg_internal["tg_end"] to TRUE.
-				//handover to a/l 
-				set taemg_internal["p_mode"] to 1.
-			}
-		return.
-	}
-	
-	//transition to pre-final based on distance or altitude if on a low energy profile
-	if (taemg_internal["rpred"] < taemg_internal["rpred3"]) or (taemg_input["h"] < taemg_constants["hmin3"]) {
-		set taemg_internal["iphase"] to 3.
-		//set taemg_internal["phi0"] to taemg_internal["phic"].
-		set taemg_internal["philim"] to taemg_constants["philm3"].
-		set taemg_internal["dnzul"] to taemg_constants["dnzuc2"].
-		set taemg_internal["dnzll"] to taemg_constants["dnzlc2"].
-		return.
-	}
-	
-	//my modification, enbias is the delta bw es and en times a gain
-	local enbias is ABS(taemg_internal["es"] - taemg_internal["en"]) * 0.75.
-	
-	//transition from s-turn to acq when below an energy band
-	if (taemg_internal["iphase"] = 0) and (taemg_internal["eow"] < taemg_internal["en"] + enbias) {
-		set taemg_internal["iphase"] to 1.
-		set taemg_internal["philim"] to taemg_constants["philm1"].
-		return.
-	} else if (taemg_internal["iphase"] = 1) {
-		//check if we can still do an s-turn  to avoid geometry problems
-		if ((taemg_internal["psha"] < taemg_constants["psstrn"] and taemg_internal["drpred"] > taemg_constants["rminst"][taemg_internal["igs"]])) {
-			
-			//moved es calculation to tgcomp
-			
-			//if above energy, transition to s-turn 
-			if (taemg_internal["eow"] > taemg_internal["es"]) {
-				set taemg_internal["iphase"] to 0.
-				set taemg_internal["philim"] to taemg_constants["philm0"].
-				//direction of s-turn 
-				set taemg_internal["ysturn"] to -taemg_internal["ysgn"].
-				local spsi is taemg_internal["ysturn"] * unfixangle(taemg_input["psd"]).
+		//transition to a/l 
+		if (taemg_internal["iphase"] = 3) {
+			//modified transition criteria to be purely altitude
+			//if (
+			//	(abs(taemg_internal["herror"]) < (taemg_input["h"] * taemg_constants["del_h1"] - taemg_constants["del_h2"]))
+			//	and (abs(taemg_input["y"]) < (taemg_input["h"] * taemg_constants["y_range1"] - taemg_constants["y_range2"])) 
+			//	and (abs(taemg_input["gamma"] - taemg_constants["gamsgs"][taemg_internal["igs"]]) < (taemg_input["h"] * taemg_constants["gamma_coef1"] - taemg_constants["gamma_coef2"]))
+			//	and (taemg_input["h"] < taemg_constants["h_ref1"])
+			//) or (taemg_input["h"] < taemg_constants["h_ref2"]) {
+			if (taemg_input["h"] <= taemg_constants["hali"][taemg_internal["igs"]]) {
+					set taemg_internal["tg_end"] to TRUE.
+					set taemg_internal["p_mode"] to 1.
+				}
+			return.
+		}
+		
+		//transition to pre-final based on distance or altitude if on a low energy profile
+		if (taemg_internal["rpred"] < taemg_internal["rpred3"]) or (taemg_input["h"] < taemg_constants["hmin3"]) {
+			set taemg_internal["iphase"] to 3.
+			//set taemg_internal["phi0"] to taemg_internal["phic"].
+			set taemg_internal["philim"] to taemg_constants["philm3"].
+			set taemg_internal["dnzul"] to taemg_constants["dnzuc2"].
+			set taemg_internal["dnzll"] to taemg_constants["dnzlc2"].
+			return.
+		}
+		
+		//my modification, enbias is the delta bw es and en times a gain
+		local enbias is ABS(taemg_internal["es"] - taemg_internal["en"]) * 0.75.
+		
+		//transition from s-turn to acq when below an energy band
+		if (taemg_internal["iphase"] = 0) and (taemg_internal["eow"] < taemg_internal["en"] + enbias) {
+			set taemg_internal["iphase"] to 1.
+			set taemg_internal["philim"] to taemg_constants["philm1"].
+			return.
+		} else if (taemg_internal["iphase"] = 1) {
+			//check if we can still do an s-turn  to avoid geometry problems
+			if ((taemg_internal["psha"] < taemg_constants["psstrn"] and taemg_internal["drpred"] > taemg_constants["rminst"][taemg_internal["igs"]])) {
 				
-				if (spsi < 0) and (taemg_internal["psha"] < 90) {
-					set taemg_internal["ysturn"] to -taemg_internal["ysturn"].
+				//moved es calculation to tgcomp
+				
+				//if above energy, transition to s-turn 
+				if (taemg_internal["eow"] > taemg_internal["es"]) {
+					set taemg_internal["iphase"] to 0.
+					set taemg_internal["philim"] to taemg_constants["philm0"].
+					//direction of s-turn 
+					set taemg_internal["ysturn"] to -taemg_internal["ysgn"].
+					local spsi is taemg_internal["ysturn"] * unfixangle(taemg_input["psd"]).
+					
+					if (spsi < 0) and (taemg_internal["psha"] < 90) {
+						set taemg_internal["ysturn"] to -taemg_internal["ysturn"].
+					}
 				}
 			}
+			
+			//a bit of confusion ensues bc the level-c ott document is ass
+			
+			//this is equation block 46
+			//suggest downmoding to MEP 
+			//moved emep calculation to tgcomp
+			if (taemg_internal["eow"] < taemg_internal["emep"]) and (NOT taemg_internal["mep"]) {
+				set taemg_internal["mep"] to TRUE.
+			}
+			
+			//these two blocks look like they're inside equation block 45 in the case eow > es but it doesn't make sense
+			//I think these two belong outside the s-turn block
+			
+			//suggest downmoding to straight-in
+			local emoh is taemg_constants["emohc1"][taemg_internal["igs"]] + taemg_constants["emohc2"][taemg_internal["igs"]] * taemg_internal["drpred"].
+			if (taemg_internal["eow"] < emoh) and (taemg_internal["psha"] > taemg_constants["psohal"]) and (taemg_internal["rpred"] > taemg_constants["rmoh"]) {
+				set taemg_internal["ohalrt"] to TRUE.
+			}
+			
+			//transition to hac heading when close to the hac radius 
+			if (taemg_internal["rcir"] < taemg_constants["p2trnc1"] * taemg_internal["rturn"]) {
+				SET taemg_internal["iphase"] to 2.
+				set taemg_internal["philim"] to taemg_constants["philm2"].
+			}
+			
+		} else if (taemg_internal["iphase"] = 2) {
+			//my addition
+			set taemg_internal["dnzul"] to taemg_constants["dnzuc2"].
+			set taemg_internal["dnzll"] to taemg_constants["dnzlc2"].
 		}
-		
-		//a bit of confusion ensues bc the level-c ott document is ass
-		
-		//this is equation block 46
-		//suggest downmoding to MEP 
-		//moved emep calculation to tgcomp
-		if (taemg_internal["eow"] < taemg_internal["emep"]) and (NOT taemg_internal["mep"]) {
-			set taemg_internal["mep"] to TRUE.
-		}
-		
-		//these two blocks look like they're inside equation block 45 in the case eow > es but it doesn't make sense
-		//I think these two belong outside the s-turn block
-		
-		//suggest downmoding to straight-in
-		local emoh is taemg_constants["emohc1"][taemg_internal["igs"]] + taemg_constants["emohc2"][taemg_internal["igs"]] * taemg_internal["drpred"].
-		if (taemg_internal["eow"] < emoh) and (taemg_internal["psha"] > taemg_constants["psohal"]) and (taemg_internal["rpred"] > taemg_constants["rmoh"]) {
-			set taemg_internal["ohalrt"] to TRUE.
-		}
-		
-		//transition to hac heading when close to the hac radius 
-		if (taemg_internal["rcir"] < taemg_constants["p2trnc1"] * taemg_internal["rturn"]) {
-			SET taemg_internal["iphase"] to 2.
-			set taemg_internal["philim"] to taemg_constants["philm2"].
-		}
-		
-	} else if (taemg_internal["iphase"] = 2) {
-		//my addition
-		set taemg_internal["dnzul"] to taemg_constants["dnzuc2"].
-		set taemg_internal["dnzll"] to taemg_constants["dnzlc2"].
+	
 	}
-	
-	
 
 }		
 	
@@ -944,12 +953,45 @@ FUNCTION tgtran {
 FUNCTION tgnzc {
 	PARAMETER taemg_input.	
 	
-	//gain factor on herr and hderr
-	set taemg_internal["gdh"] to midval(taemg_constants["gdhc"] - taemg_constants["gdhs"] * taemg_input["h"], taemg_constants["gdhll"], taemg_constants["gdhul"]).
 	set taemg_internal["hderr"] to taemg_internal["hdref"] - taemg_input["hdot"].
 	
-	//unlimited normal accel commanded to stay on profile
-	set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * taemg_internal["gdh"] * (taemg_internal["hderr"] + taemg_constants["hdreqg"] * taemg_internal["gdh"] * taemg_internal["herror"]).
+	if (taemg_internal["tg_end"]) {	
+		// a/l stuff
+		
+		if (taemg_internal["p_mode"] = 3) {
+			//flare
+		} else if (taemg_internal["p_mode"] = 4) {
+		
+			//final flare
+			set hdpt_openloop = (hdot_td1 - hdest) / tflr
+			
+			set hdref to - max(0, h - h_noacc) / tau_td2 + hdot_td2
+			
+		} else {
+		
+			//capture and ogs 
+			
+			set taemg_internal["nzc1"] to taemg_internal["hderr"] * taemg_constants["k_hdot"].
+			set taemg_internal["nzc2h"] to taemg_constants["k_h"] * midval(taemg_internal["herror"], -taemg_constants["h_errormax"], taemg_constants["h_errormax"]).
+			
+			if (taemg_internal["p_mode"] = 2) {
+				set taemg_internal["nzc2i"] to taemg_constants["k_hint"] * midval(taemg_internal["hderr"], -taemg_constants["h_intmx"], taemg_constants["h_intmx"]) * taemg_input["dtg"].
+			} else {
+				set taemg_internal["nzc2i"] to 0.
+			}
+			
+			set taemg_internal["dnzc"] to  taemg_internal["nzc1"] + taemg_internal["nzc2h"] + taemg_internal["nzc2i"].
+			
+		}
+		
+	} else {
+		//taem stuff 
+		//gain factor on herr and hderr
+		set taemg_internal["gdh"] to midval(taemg_constants["gdhc"] - taemg_constants["gdhs"] * taemg_input["h"], taemg_constants["gdhll"], taemg_constants["gdhul"]).
+		
+		//unlimited normal accel commanded to stay on profile
+		set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * taemg_internal["gdh"] * (taemg_internal["hderr"] + taemg_constants["hdreqg"] * taemg_internal["gdh"] * taemg_internal["herror"]).
+	} 
 	
 	//qbar profile varies within an upper and a lower profile
 	
