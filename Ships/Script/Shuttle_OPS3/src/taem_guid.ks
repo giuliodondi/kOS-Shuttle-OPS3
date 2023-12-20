@@ -176,13 +176,13 @@ global taemg_constants is lexicon (
 									//"eow_spt", list(0, 76068, 76068), 	//ft range at which to change slope and y-intercept on the mep and nom energy line  	//OTT paper
 									
 									//my modification: single set of energy profiles, 3-point piecewise lines
-									"emep_c1", list(50313.4, -41204, 12000),		//all in ft mep energy line y intercept 
-									"emep_c2", list(0.51511, 0.8671, 0.4404),		//all in ft^2/ft mep energy line slope
-									"en_c1", list(52248, -54352, 14000),		//all ft^2/ft nom energy line y-intercept 
-									"en_c2", list(0.6, 1.01, 0.4404),		//all ft^2/ft nom energy line slope
-									"es_c1", list(62189.8, -51692.8, 14000),		//all ft^2/ft s-turn energy line y-intercept 		//my addition
-									"es_c2", list(0.68732, 1.12533, 0.57789),		//all ft^2/ft s-turn energy line slope			//my addition
-									"eow_spt", list(260000, 120000, -1), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
+									"emep_c1", list(-15256.6, -41204, 12000),		//all in ft mep energy line y intercept 
+									"emep_c2", list(0.69517, 0.8671, 0.4404),		//all in ft^2/ft mep energy line slope
+									"en_c1", list(-7552, -54352, 14000),		//all ft^2/ft nom energy line y-intercept 
+									"en_c2", list(0.75, 1.01, 0.4404),		//all ft^2/ft nom energy line slope
+									"es_c1", list(5219.6, -51692.8, 14000),		//all ft^2/ft s-turn energy line y-intercept 		//my addition
+									"es_c2", list(0.80915, 1.12533, 0.57789),		//all ft^2/ft s-turn energy line slope			//my addition
+									"eow_spt", list(180000, 120000, -1), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
 									
 
 									"g", 32.174,					//ft/s^2 earth gravity 
