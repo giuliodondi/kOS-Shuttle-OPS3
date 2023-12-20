@@ -190,10 +190,10 @@ global taemg_constants is lexicon (
 									"gamma_coef2", 3,			//deg fpa error coef 
 									"gamma_error", 4,			//deg fpa error band 	//deprecated
 									"gamsgs", LIST(0, -24, -22),	//deg a/l steep glideslope angle	//maybe put 24 here	
-									"gdhc", 2.0, 			//  constant for computing gdh 
+									"gdhc", 2.0, 			//  constant for computing gdh 		//ott
 									"gdhll", 0.3, 			//gdh lower limit 	//OTT
-									"gdhs", 6.0e-5,		//1/ft	slope for computing gdh 		//ott
-									"gdhul", 0.8,			//gdh upper lim 
+									"gdhs", 7.0e-5,		//1/ft	slope for computing gdh 		//ott
+									"gdhul", 0.55,			//gdh upper lim 
 									"gehdll", 0.01, 		//g/fps  gain used in computing eownzll
 									"gehdul", 0.01, 		//g/fps  gain used in computing eownzul
 									"gell", 0.1, 		//1/s  gain used in computing eownzll
@@ -210,7 +210,7 @@ global taemg_constants is lexicon (
 									"h_ref2", 5000,			//ft alt to force transition to a/l
 									"hali", LIST(0, 10018, 10018),		//ft altitude at a/l for reference profiles
 									//"hdreqg", 0.1,				//hdreq computation gain 		//OTT
-									"hdreqg", 0.15,				//hdreq computation gain 		//OTT
+									"hdreqg", 0.19,				//hdreq computation gain 		//OTT
 									"hftc", LIST(0, 12018, 12018),		//ft altitude of a/l steep gs at nominal entry pt
 									"machad", 0.75,		//mach to use air data (used in gcomp appendix)
 									"mxqbwt", 0.0007368421,		// psf/lb max l/d dyn press for nominal weight		//deprecated 
@@ -228,7 +228,7 @@ global taemg_constants is lexicon (
 									"philm2", 60,			//deg heading alignment roll cmd lim 
 									"philm3", 30, 			//deg prefinal roll cmd lim 
 									//"philmsup", 30, 		//deg supersonic roll cmd lim 		//OTT
-									"philmsup", 35, 		//deg supersonic roll cmd lim 
+									"philmsup", 30, 		//deg supersonic roll cmd lim 
 									"phim", 0.95, 				//mach at which supersonic roll lim is removed
 									"phip2c", 30,			//deg constant for phase 3 roll cmd 	//deprecated
 									"p2trnc1", 1.1, 		//phase 2 transition logic constant 
@@ -336,7 +336,7 @@ global taemg_constants is lexicon (
 									"k_hdot", 0.0109,	//g /ft	gain
 									"k_hint", 0.05,	//g /ft / s	gain
 									"h_errormax", 300,	//ft clamp on herror
-									"h_intmx", 50,	//ft clamp on hdot integral term
+									"h_intmx", 50	//ft clamp on hdot integral term
 									
 ).
 
@@ -410,7 +410,7 @@ global taemg_internal is lexicon(
 								"xcir", 0,		//ft ship-hac centre distance component along x
 								"ycir", 0,		//ft ship-hac centre distance component along y
 								"yhac", 0,		//ft x coord of hac centre
-								"rcir", 0		//ft ship-hac distance
+								"rcir", 0,		//ft ship-hac distance
 								"xa", 0,		//ft steep gs intercept, turned into a variable that is calculated from the a/l flare circle
 								
 								
@@ -420,6 +420,7 @@ global taemg_internal is lexicon(
 								"f_mode", 0,		//a/l flare mode flag during p_mode=3
 								"geardown", FALSE,	//flag to command gear down to outside executive
 								"tgstp", 0,			//steep gs tangent (set to tggs)
+								"tgsh", 0,			//shallow gs tangent
 								"gsstp", 0,			//° steep glideslope
 								"gssh", 0,			//° shallow glideslope
 								"hk", 0,			//ft altitude of flare circle centre
@@ -428,7 +429,7 @@ global taemg_internal is lexicon(
 								"herrexp", 0,		//ft flare exponential error 
 								"nzc1", 0, 		//nzc hdot error contribution
 								"nzc2h", 0, 		//nzc h error contribution
-								"nzc2i", 0, 		//nzc h error integral contribution
+								"nzc2i", 0 		//nzc h error integral contribution
 ).
 
 function taemg_dump {
@@ -497,6 +498,7 @@ FUNCTION tginit {
 	
 	//a/l stuff first because now we calculate xa
 	//glideslopes
+	set taemg_internal["tgsh"] to taemg_constants["tgsh"].
 	set taemg_internal["tgstp"] to taemg_constants["tggs"][taemg_internal["igs"]].
 	set taemg_internal["gsstp"] to ARCTAN(taemg_internal["tgstp"]).
 	set taemg_internal["gssh"] to ARCTAN(taemg_internal["tgsh"]).
@@ -730,7 +732,7 @@ FUNCTION tgcomp {
 	//calculate tangent of ref. fpa
 	local dhdrrf is 0.
 	
-	if (taemg_internal["p_mode"] == 0) {
+	if (taemg_internal["p_mode"] = 0) {
 		//taem altitude profiles
 	
 		if (taemg_internal["drpred"] > taemg_internal["pbrc"][1]) {
@@ -749,9 +751,9 @@ FUNCTION tgcomp {
 		}
 	} else if (taemg_internal["p_mode"] >= 4) {
 		//a/l inner gs
-		set taemg_internal["href"] to (taemg_constants["xaim"] - taemg_input["x"]) * taemg_constants["tgsh"].
+		set taemg_internal["href"] to (taemg_constants["xaim"] - taemg_input["x"]) * taemg_internal["tgsh"].
 		set dhdrrf to -taemg_internal["tgsh"].
-	} else if (taemg_internal["p_mode"] == 3) {
+	} else if (taemg_internal["p_mode"] = 3) {
 		//a/l pullup
 		if (taemg_internal["f_mode"] < 3) {
 			//flare circle
@@ -958,36 +960,53 @@ FUNCTION tgnzc {
 	if (taemg_internal["tg_end"]) {	
 		// a/l stuff
 		
-		if (taemg_internal["p_mode"] = 3) {
-			//flare
-		} else if (taemg_internal["p_mode"] = 4) {
-		
-			//final flare
-			set hdpt_openloop = (hdot_td1 - hdest) / tflr
-			
-			set hdref to - max(0, h - h_noacc) / tau_td2 + hdot_td2
-			
-		} else {
-		
-			//capture and ogs 
-			
-			set taemg_internal["nzc1"] to taemg_internal["hderr"] * taemg_constants["k_hdot"].
-			set taemg_internal["nzc2h"] to taemg_constants["k_h"] * midval(taemg_internal["herror"], -taemg_constants["h_errormax"], taemg_constants["h_errormax"]).
-			
-			if (taemg_internal["p_mode"] = 2) {
-				set taemg_internal["nzc2i"] to taemg_constants["k_hint"] * midval(taemg_internal["hderr"], -taemg_constants["h_intmx"], taemg_constants["h_intmx"]) * taemg_input["dtg"].
-			} else {
-				set taemg_internal["nzc2i"] to 0.
-			}
-			
-			set taemg_internal["dnzc"] to  taemg_internal["nzc1"] + taemg_internal["nzc2h"] + taemg_internal["nzc2i"].
-			
-		}
+		//if (taemg_internal["p_mode"] = 3) {
+		//	//flare
+		//} else if (taemg_internal["p_mode"] = 4) {
+		//	//final flare
+		//	
+		//	//open loop
+		//	//set hdot_openloop to (hdot_td1 - (hdot_openloop * taemg_input["dtg"] - hdest) / tflr ).
+		//	set hdot_openloop to (hdot_td1 - hdest) / tflr.
+		//	
+		//	set nzcom6 to k_slope * hdot_openloop * kflr.
+		//	
+		//	
+		//	//closed loop
+		//	
+		//	set hdref to - max(0, h - h_noacc) / tau_td2 + hdot_td2
+		//	
+		//	set hdref to taem_lag_filter(3, hdref, a3, taemg_input["dtg"]).
+		//	
+		//	
+		//	set hderr to (hdref + hdot) * khdot
+		//	
+		//	set nzcom7 to hderr + hderr * kiflr * taemg_input["dtg"]
+		//	
+		//	set dnzc to nzcom6 + nzcom7.
+		//	
+		//} else {
+		//
+		//	//capture and ogs 
+		//	
+		//	set taemg_internal["nzc1"] to taemg_internal["hderr"] * taemg_constants["k_hdot"].
+		//	set taemg_internal["nzc2h"] to taemg_constants["k_h"] * midval(taemg_internal["herror"], -taemg_constants["h_errormax"], taemg_constants["h_errormax"]).
+		//	
+		//	if (taemg_internal["p_mode"] = 2) {
+		//		set taemg_internal["nzc2i"] to taemg_constants["k_hint"] * midval(taemg_internal["hderr"], -taemg_constants["h_intmx"], taemg_constants["h_intmx"]) * taemg_input["dtg"].
+		//	} else {
+		//		set taemg_internal["nzc2i"] to 0.
+		//	}
+		//	
+		//	set taemg_internal["dnzc"] to  taemg_internal["nzc1"] + taemg_internal["nzc2h"] + taemg_internal["nzc2i"].
+		//	
+		//}
 		
 	} else {
 		//taem stuff 
 		//gain factor on herr and hderr
-		set taemg_internal["gdh"] to midval(taemg_constants["gdhc"] - taemg_constants["gdhs"] * taemg_input["h"], taemg_constants["gdhll"], taemg_constants["gdhul"]).
+		//set taemg_internal["gdh"] to midval(taemg_constants["gdhc"] - taemg_constants["gdhs"] * (taemg_input["h"] - taemg_constants["gdhconst"]), taemg_constants["gdhll"], taemg_constants["gdhul"]).
+		set taemg_internal["gdh"] to taemg_constants["gdhul"].
 		
 		//unlimited normal accel commanded to stay on profile
 		set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * taemg_internal["gdh"] * (taemg_internal["hderr"] + taemg_constants["hdreqg"] * taemg_internal["gdh"] * taemg_internal["herror"]).
@@ -1052,10 +1071,9 @@ FUNCTION tgnzc {
 	//moved out of the if block 
 	//calculate commanded nz by limiting delta
 	local dnzcd is midval((taemg_internal["dnzcl"] - taemg_internal["nzc"]) * taemg_constants["cqg"], -taemg_constants["dnzcdl"], taemg_constants["dnzcdl"]).
-	set taemg_internal["nzc"] to taemg_internal["nzc"] + dnzcd * taemg_input["dtg"].
 	
 	//apply strucutral limits on nz cmd
-	set taemg_internal["nzc"] to midval(taemg_internal["nzc"], taemg_internal["dnzll"], taemg_internal["dnzul"]).
+	set taemg_internal["nzc"] to midval(taemg_internal["nzc"] + dnzcd * taemg_input["dtg"], taemg_internal["dnzll"], taemg_internal["dnzul"]).
 	
 	//my addition from 
 	set taemg_internal["nztotal"] to midval(taemg_internal["nzc"] + taemg_input["costh"] / taemg_input["cosphi"], -taemg_constants["nztotallim"], taemg_constants["nztotallim"]).
@@ -1164,4 +1182,43 @@ FUNCTION tgphic {
 	set taemg_internal["phic_at"] to midval ( taemg_internal["phic"], -philimit, philimit).
 }								
 									
-									
+
+//I think this is needed because many controller equations have a feedback
+//and the gains are gauged on a fixed dtg value and do not work if we call guidance any faster
+//first order lag filter equation  : new_filtered_value = k * (input + old_input) + (1 - 2k) * old_filtered_value
+//and k in this case is c_ / (c_ + s) where s is one time unit
+FUNCTION taem_lag_filter {
+	PARAMETEr filter_no.
+	PARAMETER in_.
+	PARAMETER c_.
+	PARAMETER input_dtg.
+	
+	local d_ is taemg_constants["dtg"] + input_dtg * c_.
+	
+	local k1_ is c_ / (c_ + taemg_constants["dtg"]/input_dtg).
+	
+	local k2_ is 1 - 2 * k1_.
+	
+	LOCAL x0 IS taem_lag_filters[filter_no][0].
+	LOCAL x1 IS taem_lag_filters[filter_no][1].
+	
+	local filtered_in is (in_ + x0) * k1_ + x1 * k2_.
+	
+	set taem_lag_filters[filter_no][0] to in_.
+	set taem_lag_filters[filter_no][1] to filtered_in.
+	
+	return filtered_in.
+}		
+
+
+//filter coefs
+//add as many as required, comment of what variable they filter
+GLOBAL taem_lag_filters Is LIST(
+								LISt(0,0),	//dnzc during taem 0-2
+								LISt(0,0),
+								LISt(0,0),
+								LISt(0,0),	//hdref in nzc a/l mode 4
+								LISt(0,0),
+								LISt(0,0),
+								LISt(0,0)
+).

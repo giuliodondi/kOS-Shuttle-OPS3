@@ -217,67 +217,67 @@ FUNCTION ops3_taem_test {
 		
 		
 		
-		GLOBAL loglex IS LEXICON(
-							"iphase",1,
-							"time",0,
-							"alt",0,
-							"speed",0,
-							"mach",0,
-							"hdot",0,
-							"lat",0,
-							"long",0,
-							"psd", 0,
-							
-							"x",0,
-							"y",0,
-							
-							"rpred", 0,
-							"herror", 0,
-							"psha", 0,
-							"dpsac", 0,
-							
-							"nzc", 0,
-							"nztotal", 0,
-							"phic_at", 0,
-							"dsbc_at", 0,
-							
-							"eow",0,
-							"es",0,
-							"en",0,
-							"emep",0
-		).
-		
-		SET loglex["iphase"] TO taemg_out["iphase"].
-		SET loglex["time"] TO TIME:SECONDS.
-		SET loglex["alt"] TO taemg_in["h"].
-		SET loglex["speed"] TO taemg_in["surfv"]. 
-		SET loglex["mach"] TO taemg_in["mach"]. 
-		SET loglex["hdot"] TO taemg_in["hdot"].
-		SET loglex["lat"] TO SHIP:GEOPOSITION:LAT.
-		SET loglex["long"] TO SHIP:GEOPOSITION:LNG.
-		SET loglex["psd"] TO taemg_in["psd"].
-		
-		SET loglex["x"] TO taemg_in["x"].
-		SET loglex["y"] TO taemg_in["y"].
-		
-		SET loglex["rpred"] TO taemg_out["rpred"].
-		SET loglex["herror"] TO taemg_out["herror"].
-		SET loglex["hdref"] TO taemg_out["hdref"].
-		SET loglex["psha"] TO taemg_out["psha"].
-		SET loglex["dpsac"] TO taemg_out["dpsac"].
-		
-		SET loglex["dnzc"] TO taemg_out["dnzc"].
-		SET loglex["nzc"] TO taemg_out["nzc"].
-		SET loglex["nztotal"] TO taemg_out["nztotal"].
-		SET loglex["phic_at"] TO taemg_out["phic_at"].
-		SET loglex["dsbc_at"] TO taemg_out["dsbc_at"].
-		
-		SET loglex["eow"] TO taemg_out["eow"].
-		SET loglex["es"] TO taemg_out["es"].
-		SET loglex["en"] TO taemg_out["en"].
-		SET loglex["emep"] TO taemg_out["emep"].
-		
-		log_data(loglex,"0:/Shuttle_OPS3/LOGS/taem_log", TRUE).
+		//GLOBAL loglex IS LEXICON(
+		//					"iphase",1,
+		//					"time",0,
+		//					"alt",0,
+		//					"speed",0,
+		//					"mach",0,
+		//					"hdot",0,
+		//					"lat",0,
+		//					"long",0,
+		//					"psd", 0,
+		//					
+		//					"x",0,
+		//					"y",0,
+		//					
+		//					"rpred", 0,
+		//					"herror", 0,
+		//					"psha", 0,
+		//					"dpsac", 0,
+		//					
+		//					"nzc", 0,
+		//					"nztotal", 0,
+		//					"phic_at", 0,
+		//					"dsbc_at", 0,
+		//					
+		//					"eow",0,
+		//					"es",0,
+		//					"en",0,
+		//					"emep",0
+		//).
+		//
+		//SET loglex["iphase"] TO taemg_out["iphase"].
+		//SET loglex["time"] TO TIME:SECONDS.
+		//SET loglex["alt"] TO taemg_in["h"].
+		//SET loglex["speed"] TO taemg_in["surfv"]. 
+		//SET loglex["mach"] TO taemg_in["mach"]. 
+		//SET loglex["hdot"] TO taemg_in["hdot"].
+		//SET loglex["lat"] TO SHIP:GEOPOSITION:LAT.
+		//SET loglex["long"] TO SHIP:GEOPOSITION:LNG.
+		//SET loglex["psd"] TO taemg_in["psd"].
+		//
+		//SET loglex["x"] TO taemg_in["x"].
+		//SET loglex["y"] TO taemg_in["y"].
+		//
+		//SET loglex["rpred"] TO taemg_out["rpred"].
+		//SET loglex["herror"] TO taemg_out["herror"].
+		//SET loglex["hdref"] TO taemg_out["hdref"].
+		//SET loglex["psha"] TO taemg_out["psha"].
+		//SET loglex["dpsac"] TO taemg_out["dpsac"].
+		//
+		//SET loglex["dnzc"] TO taemg_out["dnzc"].
+		//SET loglex["nzc"] TO taemg_out["nzc"].
+		//SET loglex["nztotal"] TO taemg_out["nztotal"].
+		//SET loglex["phic_at"] TO taemg_out["phic_at"].
+		//SET loglex["dsbc_at"] TO taemg_out["dsbc_at"].
+		//
+		//SET loglex["eow"] TO taemg_out["eow"].
+		//SET loglex["es"] TO taemg_out["es"].
+		//SET loglex["en"] TO taemg_out["en"].
+		//SET loglex["emep"] TO taemg_out["emep"].
+		//
+		//log_data(loglex,"0:/Shuttle_OPS3/LOGS/taem_log", TRUE).
 		
 		WAIt 0.1.
 	}
