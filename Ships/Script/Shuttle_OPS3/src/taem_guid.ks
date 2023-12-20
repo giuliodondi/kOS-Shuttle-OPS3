@@ -175,14 +175,14 @@ global taemg_constants is lexicon (
 									//"es1", list(0, 4523, 4523),		//ft y-intercept of s-turn energy line   	//OTT paper
 									//"eow_spt", list(0, 76068, 76068), 	//ft range at which to change slope and y-intercept on the mep and nom energy line  	//OTT paper
 									
-
-									"emep_c1", list(0, list(0, -3263, 12088), list(0, -3263, 12088)),		//all in ft mep energy line y intercept 
-									"emep_c2", list(0, list(0, 0.60955, 0.40566), list(0, 0.60955, 0.40566)),		//all in ft^2/ft mep energy line slope
-									"en_c1", list(0, list(0, -5875.2, 15360), list(0, -5875.2, 15360)),		//all ft^2/ft nom energy line y-intercept 
-									"en_c2", list(0, list(0, 0.71, 0.53304), list(0, 0.71, 0.53304)),		//all ft^2/ft nom energy line slope
-									"es_c1", list(0, list(0, 4854.5784, 15360), list(0, 4854.5784, 15360)),		//all ft^2/ft s-turn energy line y-intercept 		//my addition
-									"es_c2", list(0, list(0, 0.787007, 0.69946182), list(0, 0.787007, 0.69946182)),		//all ft^2/ft s-turn energy line slope			//my addition
-									"eow_spt", list(0, 120000, 120000), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
+									//my modification: single set of energy profiles, 3-point piecewise lines
+									"emep_c1", list(50313.4, -41204, 12000),		//all in ft mep energy line y intercept 
+									"emep_c2", list(0.51511, 0.8671, 0.4404),		//all in ft^2/ft mep energy line slope
+									"en_c1", list(52248, -54352, 14000),		//all ft^2/ft nom energy line y-intercept 
+									"en_c2", list(0.6, 1.01, 0.4404),		//all ft^2/ft nom energy line slope
+									"es_c1", list(62189.8, -51692.8, 14000),		//all ft^2/ft s-turn energy line y-intercept 		//my addition
+									"es_c2", list(0.68732, 1.12533, 0.57789),		//all ft^2/ft s-turn energy line slope			//my addition
+									"eow_spt", list(260000, 120000, -1), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
 									
 
 									"g", 32.174,					//ft/s^2 earth gravity 
@@ -715,18 +715,18 @@ FUNCTION tgcomp {
 	set taemg_internal["drpred"] to taemg_internal["rpred"] + taemg_internal["xali"].
 	set taemg_internal["eow"] to taemg_input["h"] + taemg_input["surfv"]^2 / (2 * taemg_constants["g"]).
 	
-	if (taemg_internal["drpred"] < taemg_constants["eow_spt"][taemg_internal["igs"]]) {
-		set taemg_internal["iel"] to 2.
-	} else {
-		set taemg_internal["iel"] to 1.
+	//my own modification to the way energy profiles are calculated
+	local iel is 0.
+	until (taemg_internal["drpred"] >= taemg_constants["eow_spt"][iel]) {
+		set iel to iel + 1.
 	}
+	set taemg_internal["iel"] to iel.
 	
-	//for clarity
-	LOCAL en_shift IS midval(taemg_constants["en_c2"][taemg_internal["igs"]][1]*(taemg_internal["rpred2"] - taemg_constants["r2max"]), 0, taemg_constants["eshfmx"]).
-	set taemg_internal["en"] to taemg_constants["en_c1"][taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["en_c2"][taemg_internal["igs"]][taemg_internal["iel"]] - en_shift.
+	LOCAL en_shift IS midval(taemg_constants["en_c2"][taemg_internal["iel"]]*(taemg_internal["rpred2"] - taemg_constants["r2max"]), 0, taemg_constants["eshfmx"]).
+	set taemg_internal["en"] to taemg_constants["en_c1"][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["en_c2"][taemg_internal["iel"]] - en_shift.
 	
-	SET taemg_internal["emep"] TO taemg_constants["emep_c1"][taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["emep_c2"][taemg_internal["igs"]][taemg_internal["iel"]].
-	SET taemg_internal["es"] TO taemg_constants["es_c1"][taemg_internal["igs"]][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["es_c2"][taemg_internal["igs"]][taemg_internal["iel"]].
+	SET taemg_internal["emep"] TO taemg_constants["emep_c1"][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["emep_c2"][taemg_internal["iel"]].
+	SET taemg_internal["es"] TO taemg_constants["es_c1"][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["es_c2"][taemg_internal["iel"]].
 	
 	//calculate ref altitude profile
 	//calculate tangent of ref. fpa
