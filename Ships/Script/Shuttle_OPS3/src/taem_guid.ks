@@ -118,6 +118,7 @@ FUNCTION taemg_wrapper {
 					
 					//energy and other stuff
 					"eow", taemg_internal["eow"] / mt2ft, 		//ft energy/weight
+					"eowerror", taemg_internal["eowerror"] / mt2ft, 		//ft energy/weight error
 					"es", taemg_internal["es"] / mt2ft, 		//ft energy/weight at which the s-turn is initiated 
 					"en", taemg_internal["en"] / mt2ft, 	//ft energy/weight nominal
 					"emep", taemg_internal["emep"] / mt2ft, 	//ft energy/weight at which the mep is selected 
@@ -180,8 +181,8 @@ global taemg_constants is lexicon (
 									"emep_c2", list(0.69517, 0.8671, 0.4404),		//all in ft^2/ft mep energy line slope
 									"en_c1", list(-7552, -54352, 14000),		//all ft^2/ft nom energy line y-intercept 
 									"en_c2", list(0.75, 1.01, 0.4404),		//all ft^2/ft nom energy line slope
-									"es_c1", list(5219.6, -51692.8, 14000),		//all ft^2/ft s-turn energy line y-intercept 		//my addition
-									"es_c2", list(0.80915, 1.12533, 0.57789),		//all ft^2/ft s-turn energy line slope			//my addition
+									"es_c1", list(7796.6, -75692.8, 14000),		//all ft^2/ft s-turn energy line y-intercept 		//my addition
+									"es_c2", list(0.8615, 1.32533, 0.57789),		//all ft^2/ft s-turn energy line slope			//my addition
 									"eow_spt", list(180000, 120000, -1), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
 									
 
@@ -196,8 +197,9 @@ global taemg_constants is lexicon (
 									"gdhul", 0.55,			//gdh upper lim 
 									"gehdll", 0.01, 		//g/fps  gain used in computing eownzll
 									"gehdul", 0.01, 		//g/fps  gain used in computing eownzul
-									"gell", 0.1, 		//1/s  gain used in computing eownzll
-									"geul", 0.1, 		//1/s  gain used in computing eownzul
+									"gell", 0.01, 		//1/s  gain used in computing eownzll
+									"geul", 0.01, 		//1/s  gain used in computing eownzul
+									"geownzc", 0.0005, 		//1/s  gain used to correct eow error
 									"gphi", 2.5, 		//heading err gain for phic 
 									"gr", 0.005,			//deg/ft gain on rcir in computing ha roll angle command 
 									"grdot", 0.2,			//deg/fps  gain on drcir/dt in computing ha roll angle command 
@@ -361,11 +363,13 @@ global taemg_internal is lexicon(
 								"eas_cmd", 0, 		//kn equivalent airspeed commanded 
 								"emep", 0,		//ft energy/weight at which the mep is selected 
 								"eow", 0,			//ft energy/weight
+								"eowerror", 0,			//ft energy/weight error
 								"en", 0,			//energy/weight reference
 								"emax", 0,			//energy/weight to constrain nzc above nominal ref
 								"emin", 0,			//energy/weight to constrain nzc below nominal ref
 								"es", 0, 		//ft energy/weight at which the s-turn is initiated 
 								"gdh", 0, 		// gain for nzc
+								"hdreqg", 0, 		//gain for herror in nzc
 								"hderr", 0, 		//ft hdot error
 								"herror", 0, 		//ft altitude error
 								"hdref", 0,			//ft/s hdot reference
@@ -728,6 +732,8 @@ FUNCTION tgcomp {
 	SET taemg_internal["emep"] TO taemg_constants["emep_c1"][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["emep_c2"][taemg_internal["iel"]].
 	SET taemg_internal["es"] TO taemg_constants["es_c1"][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["es_c2"][taemg_internal["iel"]].
 	
+	set taemg_internal["eowerror"] to taemg_internal["eow"] - taemg_internal["en"].
+	
 	//calculate ref altitude profile
 	//calculate tangent of ref. fpa
 	local dhdrrf is 0.
@@ -958,59 +964,24 @@ FUNCTION tgnzc {
 	set taemg_internal["hderr"] to taemg_internal["hdref"] - taemg_input["hdot"].
 	
 	if (taemg_internal["tg_end"]) {	
-		// a/l stuff
 		
-		//if (taemg_internal["p_mode"] = 3) {
-		//	//flare
-		//} else if (taemg_internal["p_mode"] = 4) {
-		//	//final flare
-		//	
-		//	//open loop
-		//	//set hdot_openloop to (hdot_td1 - (hdot_openloop * taemg_input["dtg"] - hdest) / tflr ).
-		//	set hdot_openloop to (hdot_td1 - hdest) / tflr.
-		//	
-		//	set nzcom6 to k_slope * hdot_openloop * kflr.
-		//	
-		//	
-		//	//closed loop
-		//	
-		//	set hdref to - max(0, h - h_noacc) / tau_td2 + hdot_td2
-		//	
-		//	set hdref to taem_lag_filter(3, hdref, a3, taemg_input["dtg"]).
-		//	
-		//	
-		//	set hderr to (hdref + hdot) * khdot
-		//	
-		//	set nzcom7 to hderr + hderr * kiflr * taemg_input["dtg"]
-		//	
-		//	set dnzc to nzcom6 + nzcom7.
-		//	
-		//} else {
-		//
-		//	//capture and ogs 
-		//	
-		//	set taemg_internal["nzc1"] to taemg_internal["hderr"] * taemg_constants["k_hdot"].
-		//	set taemg_internal["nzc2h"] to taemg_constants["k_h"] * midval(taemg_internal["herror"], -taemg_constants["h_errormax"], taemg_constants["h_errormax"]).
-		//	
-		//	if (taemg_internal["p_mode"] = 2) {
-		//		set taemg_internal["nzc2i"] to taemg_constants["k_hint"] * midval(taemg_internal["hderr"], -taemg_constants["h_intmx"], taemg_constants["h_intmx"]) * taemg_input["dtg"].
-		//	} else {
-		//		set taemg_internal["nzc2i"] to 0.
-		//	}
-		//	
-		//	set taemg_internal["dnzc"] to  taemg_internal["nzc1"] + taemg_internal["nzc2h"] + taemg_internal["nzc2i"].
-		//	
-		//}
 		
 	} else {
-		//taem stuff 
-		//gain factor on herr and hderr
-		//set taemg_internal["gdh"] to midval(taemg_constants["gdhc"] - taemg_constants["gdhs"] * (taemg_input["h"] - taemg_constants["gdhconst"]), taemg_constants["gdhll"], taemg_constants["gdhul"]).
-		set taemg_internal["gdh"] to taemg_constants["gdhul"].
 		
-		//unlimited normal accel commanded to stay on profile
-		set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * taemg_internal["gdh"] * (taemg_internal["hderr"] + taemg_constants["hdreqg"] * taemg_internal["gdh"] * taemg_internal["herror"]).
+		if (taemg_internal["iphase"] <= 1) {
+			set taemg_internal["gdh"] to 0.3.
+			set taemg_internal["hdreqg"] to 0.25.
+		} else if (taemg_internal["iphase"] = 2) {
+			set taemg_internal["gdh"] to 0.32.
+			set taemg_internal["hdreqg"] to 0.45.
+		} else if (taemg_internal["iphase"] = 3) {
+			set taemg_internal["gdh"] to 0.45.
+			set taemg_internal["hdreqg"] to 0.58.
+		}	
+		
 	} 
+	
+	set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * taemg_internal["gdh"] * (taemg_internal["hderr"] + taemg_internal["hdreqg"] * taemg_internal["gdh"] * taemg_internal["herror"]).
 	
 	//qbar profile varies within an upper and a lower profile
 	
@@ -1046,19 +1017,17 @@ FUNCTION tgnzc {
 	//to see the effect of filters in the debug dump
 	set taemg_internal["dnzcl"] to taemg_internal["dnzc"].
 	
-	//my modification: never do energy filtering during heading phase
-	if (taemg_internal["iphase"] > 1) {
-		set taemg_internal["nzc"] to midval(taemg_internal["dnzcl"], qbnzll, qbnzul).
-	} else {
+	//my modification: never do energy filtering beyond acq phase
+	if (taemg_internal["iphase"] <= 1) {
 		//eow limits
 		//SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnz"][taemg_internal["igs"]] * midval( taemg_internal["drpred"] / taemg_constants["del_r_emax"][taemg_internal["igs"]] , taemg_constants["edelc1"], taemg_constants["edelc2"]).
 		//SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnz"][taemg_internal["igs"]].
 		
-		SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnzu"].
-		SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnzl"].
+		//SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnzu"].
+		//SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnzl"].
 		
-		local eownzul is (taemg_constants["geul"] * taemg_internal["gdh"] * (taemg_internal["emax"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdul"] * taemg_internal["gdh"].
-		local eownzll is (taemg_constants["gell"] * taemg_internal["gdh"] * (taemg_internal["emin"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdll"] * taemg_internal["gdh"].
+		//local eownzul is (taemg_constants["geul"] * taemg_internal["gdh"] * (taemg_internal["emax"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdul"] * taemg_internal["gdh"].
+		//local eownzll is (taemg_constants["gell"] * taemg_internal["gdh"] * (taemg_internal["emin"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdll"] * taemg_internal["gdh"].
 		
 		//cascade of filters
 		//limit by eow
@@ -1066,6 +1035,10 @@ FUNCTION tgnzc {
 		
 		//limit by qbar
 		//set taemg_internal["dnzcl"] to midval(taemg_internal["dnzcl"], qbnzll, qbnzul).
+		
+		
+		//my modification: custom correction to dnzcl based on energy error 
+		//set taemg_internal["dnzcl"] to taemg_internal["dnzcl"] * (1 + taemg_constants["geownzc"] * taemg_internal["gdh"] * taemg_internal["eowerror"]).
 	}
 	
 	//moved out of the if block 
