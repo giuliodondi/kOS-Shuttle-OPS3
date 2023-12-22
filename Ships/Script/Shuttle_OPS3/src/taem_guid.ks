@@ -142,7 +142,7 @@ global taemg_constants is lexicon (
 									"cdeqd", 0.68113143,	//gain in qbd calculation
 									"cpmin", 0.707,		//cosphi min value 
 									"cqdg", 0.31886860,		//gain for qbd calculation 
-									"cqg", 0.5583958,		//gain for calculation of dnzcd and qbard 
+									"cqg", 0.7583958,		//gain for calculation of dnzcd and qbard 
 									"del_h1", 0.19,				//alt error coeff 
 									"del_h2", 900,				//ft alt error coeff 
 									"del_r_emax", list(0,54000,54000),		// -/ft/ft constant ised for computing emax 
@@ -183,7 +183,7 @@ global taemg_constants is lexicon (
 									"en_c2", list(0.75, 1.01, 0.4404),		//all ft^2/ft nom energy line slope
 									"es_c1", list(7796.6, -75692.8, 14000),		//all ft^2/ft s-turn energy line y-intercept 		//my addition
 									"es_c2", list(0.8615, 1.32533, 0.57789),		//all ft^2/ft s-turn energy line slope			//my addition
-									"eow_spt", list(180000, 120000, -1), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
+									"eow_spt", list(180000, 120000, -100000), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
 									
 
 									"g", 32.174,					//ft/s^2 earth gravity 
@@ -205,8 +205,8 @@ global taemg_constants is lexicon (
 									"grdot", 0.2,			//deg/fps  gain on drcir/dt in computing ha roll angle command 
 									"gsbe", 1.5, 			//deg/psf-s 	spdbk prop. gain on qberr 
 									"gsbi", 0.1, 		//deg/psf-s gain on qberr integral in computing spdbk cmd
-									"gy", 0.07,			//deg/ft gain on y in computing pfl roll angle cmd 
-									"gydot", 0.7,		//deg/fps gain on ydot on computing pfl roll angle cmd 
+									"gy", 0.075,			//deg/ft gain on y in computing pfl roll angle cmd 
+									"gydot", 0.9,		//deg/fps gain on ydot on computing pfl roll angle cmd 
 									"h_error", 1000,		//ft altitude error bound	//deprecated
 									"h_ref1", 10000,			//ft alt for check to transition to a/l
 									"h_ref2", 5000,			//ft alt to force transition to a/l
@@ -216,8 +216,8 @@ global taemg_constants is lexicon (
 									"hftc", LIST(0, 12018, 12018),		//ft altitude of a/l steep gs at nominal entry pt
 									"machad", 0.75,		//mach to use air data (used in gcomp appendix)
 									"mxqbwt", 0.0007368421,		// psf/lb max l/d dyn press for nominal weight		//deprecated 
-									"pbgc", LISt(0, 0.1112666, 0.1112666), 		//lin coeff of range for href and lower lim of dhdrrf	//6° of glideslope OTT
-									"pbhc", LISt(0, 78161.826, 78161.826),				//ft altitude ref for drpred = pbrc
+									"pbgc", LISt(0, TAN(6), TAN(6)), 		//lin coeff of range for href and lower lim of dhdrrf	//6° of glideslope OTT
+									"pbhc", LISt(0, 81161.826, 81161.826),				//ft altitude ref for drpred = pbrc
 									"pbrc", LISt(0, 237527.82, 237527.82),				//ft drpred value for splicing of cubuc alt ref with pbgc
 									//"pbrcq", LIST(0, 89971.082, 89971.082), 			//ft range breakpoint for qbref 	//OTT paper
 									"pbrcq", LIST(0, 121522, 121522), 			//ft range breakpoint for qbref
@@ -267,7 +267,7 @@ global taemg_constants is lexicon (
 									//"wt_gs1", 8000, 			//slugs max orbiter weight 
 									"wt_gs1", 6837, 			//slugs max orbiter weight 
 									"xa", LIST(0, -5000, -5000),		//steep gs intercept 				//deprecated
-									"yerrlm", 280,				//deg limit on yerrc 
+									"yerrlm", 300,				//deg limit on yerrc 
 									"y_error", 1000,			//ft xrange err bound 		//deprecated
 									"y_range1", 0.18,			//xrange coeff 
 									"y_range2", 800,			//ft xrange coeff 
@@ -302,7 +302,7 @@ global taemg_constants is lexicon (
 									"rfmin", 5000,				//ft min hac spiral radius on final 
 									"rfmax", 14000,				//ft max hac spiral radius on final 
 									"rf0", 14000,				//ft initial hac spiral radius on final 
-									"dnzcdl", 0.1,				//g/sec nzc rate lim 
+									"dnzcdl", 0.2,				//g/sec nzc rate lim 
 									"drfk", -3,					//rf adjust gain (-0.8/tan 15°)
 									"dsblls", 650,				//deg constant for dsbcll
 									"dsbuls", -336,				//deg constant for dsbcul
@@ -315,7 +315,7 @@ global taemg_constants is lexicon (
 									"r1", 0, 			//ft/deg linear coeff of hac spiral 
 									"r2", 0.093, 			//ft/deg quadratic coeff of hac spiral 
 									"r2max", 115000,			//ft max range on hac to be subsonic with nominal qbar 
-									"philm4", 60, 				//deg bank lim for large bank command 
+									"philm4", 20, 				//deg bank lim for large bank command 
 									"philmc", 100, 				//deg bank lim for large bank command 
 									"qbmxs1", -400,				//psf slope of qbmxnz with mach < qbm1 
 									"hmin3", 7000,				//min altitude for prefinal
@@ -879,8 +879,8 @@ FUNCTION tgtran {
 			//	and (taemg_input["h"] < taemg_constants["h_ref1"])
 			//) or (taemg_input["h"] < taemg_constants["h_ref2"]) {
 			if (taemg_input["h"] <= taemg_constants["hali"][taemg_internal["igs"]]) {
-					set taemg_internal["tg_end"] to TRUE.
-					set taemg_internal["p_mode"] to 1.
+					//set taemg_internal["tg_end"] to TRUE.
+					//set taemg_internal["p_mode"] to 1.
 				}
 			return.
 		}
@@ -963,25 +963,32 @@ FUNCTION tgnzc {
 	
 	set taemg_internal["hderr"] to taemg_internal["hdref"] - taemg_input["hdot"].
 	
+	local hdherrc is 0.
+	
 	if (taemg_internal["tg_end"]) {	
 		
 		
 	} else {
-		
+	
+		set taemg_internal["gdh"] to 0.32.
+	
 		if (taemg_internal["iphase"] <= 1) {
-			set taemg_internal["gdh"] to 0.3.
-			set taemg_internal["hdreqg"] to 0.25.
-		} else if (taemg_internal["iphase"] = 2) {
-			set taemg_internal["gdh"] to 0.32.
-			set taemg_internal["hdreqg"] to 0.45.
-		} else if (taemg_internal["iphase"] = 3) {
-			set taemg_internal["gdh"] to 0.45.
-			set taemg_internal["hdreqg"] to 0.58.
-		}	
+	
+			set taemg_internal["hdreqg"] to 0.7.
+		
+		} else if (taemg_internal["iphase"] >= 2) {
+			
+			set taemg_internal["hdreqg"] to 1.4.
+			
+		}
+		
+		local hdherrclimg is 0.7.
+		set hdherrc to midval(taemg_internal["gdh"] * taemg_internal["hdreqg"] * taemg_internal["herror"], - hdherrclimg * taemg_internal["hdref"], hdherrclimg * taemg_internal["hdref"]).
+		
+		set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * taemg_internal["gdh"] * (taemg_internal["hderr"] + hdherrc).
 		
 	} 
 	
-	set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * taemg_internal["gdh"] * (taemg_internal["hderr"] + taemg_internal["hdreqg"] * taemg_internal["gdh"] * taemg_internal["herror"]).
 	
 	//qbar profile varies within an upper and a lower profile
 	
@@ -1018,7 +1025,9 @@ FUNCTION tgnzc {
 	set taemg_internal["dnzcl"] to taemg_internal["dnzc"].
 	
 	//my modification: never do energy filtering beyond acq phase
-	if (taemg_internal["iphase"] <= 1) {
+	if (taemg_internal["iphase"] >=3) {
+		set taemg_internal["nzc"] to taemg_internal["dnzcl"].
+	} else if (taemg_internal["iphase"] <= 2) {
 		//eow limits
 		//SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnz"][taemg_internal["igs"]] * midval( taemg_internal["drpred"] / taemg_constants["del_r_emax"][taemg_internal["igs"]] , taemg_constants["edelc1"], taemg_constants["edelc2"]).
 		//SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnz"][taemg_internal["igs"]].
@@ -1039,14 +1048,13 @@ FUNCTION tgnzc {
 		
 		//my modification: custom correction to dnzcl based on energy error 
 		//set taemg_internal["dnzcl"] to taemg_internal["dnzcl"] * (1 + taemg_constants["geownzc"] * taemg_internal["gdh"] * taemg_internal["eowerror"]).
+		//moved out of the if block 
+		//calculate commanded nz by limiting delta
+		local dnzcd is midval((taemg_internal["dnzcl"] - taemg_internal["nzc"]) * taemg_constants["cqg"], -taemg_constants["dnzcdl"], taemg_constants["dnzcdl"]).
+		//apply strucutral limits on nz cmd
+		set taemg_internal["nzc"] to midval(taemg_internal["nzc"] + dnzcd * taemg_input["dtg"], taemg_internal["dnzll"], taemg_internal["dnzul"]).
 	}
-	
-	//moved out of the if block 
-	//calculate commanded nz by limiting delta
-	local dnzcd is midval((taemg_internal["dnzcl"] - taemg_internal["nzc"]) * taemg_constants["cqg"], -taemg_constants["dnzcdl"], taemg_constants["dnzcdl"]).
-	
-	//apply strucutral limits on nz cmd
-	set taemg_internal["nzc"] to midval(taemg_internal["nzc"] + dnzcd * taemg_input["dtg"], taemg_internal["dnzll"], taemg_internal["dnzul"]).
+
 	
 	//my addition from 
 	set taemg_internal["nztotal"] to midval(taemg_internal["nzc"] + taemg_input["costh"] / taemg_input["cosphi"], -taemg_constants["nztotallim"], taemg_constants["nztotallim"]).
@@ -1132,7 +1140,7 @@ FUNCTION tgphic {
 		local yerrc is midval ( -taemg_constants["gy"] * taemg_input["y"], -taemg_constants["yerrlm"], taemg_constants["yerrlm"]).
 		set taemg_internal["phic"] to yerrc - taemg_constants["gydot"] * taemg_input["ydot"].
 		
-		if (abs(taemg_internal["phic"]) > taemg_constants["philmc"]) {
+		if (abs(taemg_internal["phic"]) > taemg_constants["philm4"]) {
 			set philimit to taemg_constants["philm4"].
 		}
 		
