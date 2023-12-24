@@ -45,7 +45,7 @@ FUNCTION ops3_taem_test {
 	SET CONFIG:IPU TO 1800.	
 	
 	
-	LOCAL dap IS dap_nz_controller_factory().
+	LOCAL dap IS dap_hdot_nz_controller_factory().
 	
 	SET dap:mode TO "atmo_pch_css".
 	
@@ -62,12 +62,11 @@ FUNCTION ops3_taem_test {
 	LOCAL css_flag Is TRUE.
 
 	ON (AG9) {
-		IF (dap:mode = "atmo_nz_auto") {
+		IF (dap:mode = "atmo_pch_css") {
+			SET dap:mode TO "atmo_hdot_auto".
+			dap:reset_hdot_auto().
+		} ELSe IF (dap:mode = "atmo_hdot_auto") {
 			SET dap:mode TO "atmo_pch_css".
-			SET css_flag TO TRUE.
-		} ELSe IF (dap:mode = "atmo_pch_css") {
-			SET dap:mode TO "atmo_nz_auto".
-			SET css_flag TO FALSE.
 		} 
 		PRESERVE.
 	}
@@ -107,7 +106,7 @@ FUNCTION ops3_taem_test {
 	
 	
 	local control_loop is loop_executor_factory(
-		0.15,
+		0.2,
 		{
 			IF (SHIP:STATUS = "LANDEd") {
 				UNLOCK STEERING.
@@ -186,7 +185,7 @@ FUNCTION ops3_taem_test {
 		build_taemg_guid_points(taemg_out, tgtrwy).
 		
 		SET aerosurfaces_control["spdbk_defl"] TO taemg_out["dsbc_at"].
-		SET dap:tgt_nz tO taemg_out["nztotal"].
+		SET dap:tgt_hdot tO taemg_out["hdrefc"].
 		SET dap:tgt_roll tO taemg_out["phic_at"].
 		SET dap:tgt_yaw tO taemg_out["betac_at"].
 		
@@ -207,7 +206,7 @@ FUNCTION ops3_taem_test {
 		
 		LOCAL deltas IS LIST(
 									taemg_out["phic_at"] - lvlh_rll, 
-									taemg_out["nztotal"] -  cur_nz
+									taemg_out["hdrefc"] -  taemg_in["hdot"]
 		).
 		
 		update_hud_gui(
@@ -296,6 +295,8 @@ FUNCTION ops3_taem_test {
 		//SET loglex["emep"] TO taemg_out["emep"].
 		//
 		//log_data(loglex,"0:/Shuttle_OPS3/LOGS/taem_log", TRUE).
+		
+		dap:print_debug(2).
 		
 		WAIt 0.1.
 	}

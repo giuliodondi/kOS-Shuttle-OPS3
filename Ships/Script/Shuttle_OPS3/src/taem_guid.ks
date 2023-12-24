@@ -102,6 +102,7 @@ FUNCTION taemg_wrapper {
 					"rpred", taemg_internal["rpred"] / mt2ft,	//ft predicted range to threshold 
 					"herror", taemg_internal["herror"] / mt2ft, 	//ft altitude error
 					"hdref", taemg_internal["hdref"] / mt2ft, 	//ft reference hdot
+					"hdrefc", taemg_internal["hdrefc"] / mt2ft, 	//ft reference hdot corrected
 					"psha", taemg_internal["psha"], 	//deg hac turn angle
 					"dpsac", taemg_internal["dpsac"], 	//deg heading error to the hac tangent 
 					"xhac", taemg_internal["xhac"] / mt2ft, 	//ft x coordinate of hac centre
@@ -375,9 +376,9 @@ global taemg_internal is lexicon(
 								"gddh", 0, 		// hddot gain for nzc
 								"hdreqg", 0, 		//gain for herror in nzc
 								"hderr", 0, 		//ft hdot error
-								"hderrc", 0, 		//ft hdot error corrected for altitude error - my addition
 								"herror", 0, 		//ft altitude error
 								"hdref", 0,			//ft/s hdot reference
+								"hdrefc", 0,			//ft/s hdot reference corrected for altitude error - my addition
 								"href", 0,			//ft ref altitude
 								"iel", 0,			//energy reference profile selector flag
 								"igi", 1,			//glideslope selector from input, based on headwind 	//deprecated
@@ -990,50 +991,34 @@ FUNCTION tgnzc {
 	
 	
 	set taemg_internal["gdh"] to 0.55.
-	set taemg_internal["gddh"] to -0.8.
-	set taemg_internal["hdreqg"] to 0.7.
-	
-	//local dnzcg is taemg_constants["dnzcg"].
-	//
-	//if (taemg_internal["tg_end"]) {	
-	//	
-	//	set dnzcg to dnzcg * 0.8.
-	//	
-	//	set taemg_internal["hdreqg"] to 0.3.
-	//	
-	//	if (taemg_internal["p_mode"] >= 4) {
-	//		set taemg_internal["hdreqg"] to 0.1.
-	//	}
-	//	
-	//} else {
-	//	
-	//	if (taemg_internal["iphase"] <= 1) {
-	//	
-	//	} else if (taemg_internal["iphase"] = 2) {
-	//	
-	//		set dnzcg to dnzcg * 1.2.
-	//		
-	//	} else if (taemg_internal["iphase"] = 3) {
-	//		set taemg_internal["hdreqg"] to 0.4.
-	//		set dnzcg to dnzcg * 1.3.
-	//	}
-	//	
-	//}
-	//
-	//local hderrcmax is 250.	
-	//
-	//set taemg_internal["hderrc"] to taemg_internal["hderr"] + midval(taemg_internal["hdreqg"] * taemg_internal["herror"], - hderrcmax, hderrcmax).
-	//set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * (taemg_internal["gdh"] * taemg_internal["hderrc"] + taemg_internal["gddh"] * taemg_input["hddot"]).
-	
-	set taemg_internal["gdh"] to 0.55.
-	set taemg_internal["gddh"] to midval(1.01e-3 * taemg_input["surfv"], 0.15, 0.9).
-	set taemg_internal["hdreqg"] to 0.7.
 	
 	
+	if (taemg_internal["tg_end"]) {	
+		
+		//set taemg_internal["hdreqg"] to 0.18.
+		
+		if (taemg_internal["p_mode"] >= 4) {
+			//set taemg_internal["hdreqg"] to 0.1.
+		}
+		
+	} else {
+		
+		if (taemg_internal["iphase"] <= 1) {
+			set taemg_internal["hdreqg"] to 0.05.
+		} else if (taemg_internal["iphase"] = 2) {
+			set taemg_internal["hdreqg"] to 0.08.
+			
+		} else if (taemg_internal["iphase"] = 3) {
+			set taemg_internal["hdreqg"] to 0.1.
+		}
+		
+	}
 		
 	//unlimited normal accel commanded to stay on profile
-	set taemg_internal["hderrc"] to taemg_internal["hderr"] + taemg_constants["hdreqg"] * taemg_internal["herror"].
-	set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * (taemg_internal["gdh"] * taemg_internal["hderrc"] - taemg_internal["gddh"] * taemg_input["hddot"]).
+	set taemg_internal["hdrefc"] to taemg_internal["hdref"] + taemg_constants["hdreqg"] * taemg_internal["herror"].
+	local hderrc is taemg_internal["hdrefc"] - taemg_input["hdot"].
+	
+	set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * (taemg_internal["gdh"] * hderrc).
 	
 	
 	//qbar profile varies within an upper and a lower profile
@@ -1103,8 +1088,9 @@ FUNCTION tgnzc {
 	//}
 
 	
-	//my addition from 
-	set taemg_internal["nztotal"] to midval(taemg_internal["nzc"] + taemg_input["costh"] / taemg_input["cosphi"], -taemg_constants["nztotallim"], taemg_constants["nztotallim"]).
+	//my addition from the papers 
+	//removed roll correction since we take care of it in the dap
+	set taemg_internal["nztotal"] to midval(taemg_internal["nzc"] + taemg_input["costh"], -taemg_constants["nztotallim"], taemg_constants["nztotallim"]).
 }		
 									
 FUNCTION tgsbc {

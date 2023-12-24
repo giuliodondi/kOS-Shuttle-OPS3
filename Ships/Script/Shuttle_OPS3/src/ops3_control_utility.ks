@@ -362,7 +362,7 @@ FUNCTION dap_hdot_nz_controller_factory{
 	this:add("tgt_roll", 0).
 	this:add("tgt_yaw", 0).
 	
-	this:add("hdot_nz_pid", PIDLOOP(0.0015, 0, 0.007)).
+	this:add("hdot_nz_pid", PIDLOOP(0.0009, 0, 0.003)).
 	
 	SET this:hdot_nz_pid:SETPOINT TO 0.
 	
