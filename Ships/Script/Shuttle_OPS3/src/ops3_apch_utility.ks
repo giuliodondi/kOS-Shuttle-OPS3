@@ -32,8 +32,7 @@ FUNCTION define_td_points {
 					LEXICON(
 						"name", sitename + rwyno,
 						"heading", head,
-						"end_pt", new_position(site["position"],end_dist,fixangle(head - 180)),
-						"td_pt", new_position(site["position"],td_dist,fixangle(head - 180))
+						"end_pt", new_position(site["position"],end_dist,fixangle(head - 180))
 			)
 		).
 		
@@ -47,8 +46,7 @@ FUNCTION define_td_points {
 					LEXICON(
 						"name", sitename + rwyno,
 						"heading", head,
-						"end_pt", new_position(site["position"],end_dist,fixangle(head - 180)),
-						"td_pt", new_position(site["position"],td_dist,fixangle(head - 180))
+						"end_pt", new_position(site["position"],end_dist,fixangle(head - 180))
 			)
 		).
 		
@@ -77,9 +75,9 @@ FUNCTION refresh_runway_lex {
 							"heading",siterwy["heading"],
 							"length",site["length"],
 							"end_pt",siterwy["end_pt"],
-							"td_pt",siterwy["td_pt"],
 							"glideslope",0,
 							"overhead",is_apch_overhead(),
+							"td_pt",LATLNG(0,0),
 							"hac_centre",LATLNG(0,0),
 							"hac_exit",LATLNG(0,0),
 							"hac_tan",LATLNG(0,0)
@@ -102,6 +100,9 @@ FUNCTION get_runway_rel_state {
 	PARAMETER cur_pos.
 	PARAMETER cur_surfv.
 	PARAMETER rwy.
+	PARAMETER state_lex_prev IS LEXICON().
+	
+	local firstpass is (state_lex_prev:KEYS:LENGTH = 0).
 	
 	LOCAL rwy_heading IS rwy["heading"].
 	LOCAL rwy_ship_bng IS bearingg(cur_pos, rwy["end_pt"]).
@@ -120,13 +121,24 @@ FUNCTION get_runway_rel_state {
 	LOCAL cur_surfv_h IS cur_surfv_h_vec:MAG.
 	LOCAL cur_hdot IS VDOT(cur_surfv, cur_pos:NORMALIZED).
 	
+	local cur_time IS TIMe:SECONDS.
+	local dt is 0.
+	local hddot is 0.
+	if (NOT firstpass) {
+		set dt to MAX(0.05, cur_time - state_lex_prev["time"]).
+		set hddot to (cur_hdot - state_lex_prev["hdot"]) / dt.
+	}
+	
 	return LEXICON(
+			"time", cur_time, 
+			"dt", dt,
 			"x", ship_rwy_dist_mt*COS(pos_rwy_rel_angle),
 			"y", ship_rwy_dist_mt*SIN(pos_rwy_rel_angle),
 			"h", cur_h,
 			"xdot", cur_surfv_h*COS(vel_rwy_rel_angle),
 			"ydot", cur_surfv_h*SIN(vel_rwy_rel_angle),
 			"hdot", cur_hdot,
+			"hddot", hddot,
 			"surfv", cur_surfv:MAG,
 			"surfv_h", cur_surfv_h,
 			"fpa", ARCTAN2(cur_hdot, cur_surfv_h),
@@ -147,12 +159,14 @@ FUNCTION get_current_nz {
 
 }
 
-//use the taemg output to set hac points 
-FUNCTION build_hac_points {
+//use the taemg output to set guidance points 
+FUNCTION build_taemg_guid_points {
 	PARAMETEr taemg_out.
 	PARAMETER rwy.
 	
 	LOCAL rwy_heading IS rwy["heading"].
+	
+	SET rwy["td_pt"] TO new_position(rwy["end_pt"], taemg_out["xaim"]/1000, rwy_heading).
 	
 	LOCAL hac_exit_az IS fixangle(rwy_heading + ARCTAN2(0, taemg_out["xhac"])).
 	

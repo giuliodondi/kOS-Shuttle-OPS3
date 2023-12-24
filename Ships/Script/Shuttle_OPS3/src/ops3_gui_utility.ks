@@ -862,7 +862,7 @@ FUNCTION make_hud_gui {
 	GLOBAL vspd_sliderbox IS hud_main:ADDHLAYOUT().
 	SET vspd_sliderbox:STYLe:WIDTH TO 20.
 	SET vspd_sliderbox:STYLE:ALIGN TO "Center".
-	GLOBAL vspd_slider is vspd_sliderbox:addvslider(0,-20,20).
+	GLOBAL vspd_slider is vspd_sliderbox:addvslider(0,-150,150).
 	SET vspd_slider:STYLE:ALIGN TO "Center".
 	SET vspd_slider:style:vstretch to false.
 	SET vspd_slider:style:hstretch to false.

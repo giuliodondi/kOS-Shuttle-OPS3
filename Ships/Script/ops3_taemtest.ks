@@ -121,35 +121,44 @@ FUNCTION ops3_taem_test {
 		}
 	).
 	
-	//initialise with just the end flag
-	LOCAL taemg_out is LEXICON("tg_end", FALSE).
+	//initialise with just the a/L end flag
+	LOCAL taemg_out is LEXICON("al_end", FALSE).
+	//initialise as empty 
+	LOCAL rwystate IS get_runway_rel_state(
+			-SHIP:ORBIT:BODY:POSITION,
+			SHIP:VELOCITY:SURFACE,
+			tgtrwy
+		).
+	
 	
 	LOCAL last_iter Is TIMe:SECONDS.
 	until false{
 		clearscreen.
 		clearvecdraws().
 		
-		if (quit_program OR taemg_out["tg_end"]) {
+		if (quit_program OR taemg_out["al_end"]) {
 			break.
 		}
 		
 		
 	
 		
-		LOCAL rwystate IS get_runway_rel_state(
+		set rwystate to get_runway_rel_state(
 			-SHIP:ORBIT:BODY:POSITION,
 			SHIP:VELOCITY:SURFACE,
-			tgtrwy
+			tgtrwy,
+			rwystate
 		).
 		
 		LOCAL cur_iter IS TIMe:SECONDS.
 		
 		
 		local taemg_in is LEXICON(
-											"dtg", MAX(0.05, (cur_iter - last_iter)),
+											"dtg", rwystate["dt"],
 											"wow", measure_wow(),
 											"h", rwystate["h"],
 											"hdot", rwystate["hdot"],
+											"hddot", rwystate["hddot"],
 											"x", rwystate["x"], 
 											"y", rwystate["y"], 
 											"surfv", rwystate["surfv"],
@@ -174,13 +183,22 @@ FUNCTION ops3_taem_test {
 										taemg_in						
 		).
 		
-		build_hac_points(taemg_out, tgtrwy).
+		build_taemg_guid_points(taemg_out, tgtrwy).
 		
 		SET aerosurfaces_control["spdbk_defl"] TO taemg_out["dsbc_at"].
 		SET dap:tgt_nz tO taemg_out["nztotal"].
 		SET dap:tgt_roll tO taemg_out["phic_at"].
+		SET dap:tgt_yaw tO taemg_out["betac_at"].
 		
 		SET aerosurfaces_control["spdbk_defl"] TO taemg_out["dsbc_at"].
+		
+		if (NOT GEAR) and (taemg_out["geardown"]) {
+			GEAR ON.
+		}
+		
+		if (NOT BRAKES) and (taemg_out["brakeson"]) {
+			BRAKES ON.
+		}
 		
 		
 		LOCAL lvlh_pch IS get_pitch_lvlh().

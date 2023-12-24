@@ -11,12 +11,12 @@ SET STEERINGMANAGER:ROLLTS TO 3.
 
 SET STEERINGMANAGER:PITCHPID:KD TO 0.5.
 SET STEERINGMANAGER:YAWPID:KD TO 0.5.
-SET STEERINGMANAGER:ROLLPID:KD TO 0.05.
+SET STEERINGMANAGER:ROLLPID:KD TO 0.2.
 
 IF (STEERINGMANAGER:PITCHPID:HASSUFFIX("epsilon")) {
 	SET STEERINGMANAGER:PITCHPID:EPSILON TO 0.1.
 	SET STEERINGMANAGER:YAWPID:EPSILON TO 0.1.
-	SET STEERINGMANAGER:ROLLPID:EPSILON TO 0.1.
+	SET STEERINGMANAGER:ROLLPID:EPSILON TO 0.2.
 }
 
 
@@ -70,8 +70,9 @@ FUNCTION dap_controller_factory{
 	this:add("tgt_nz", 0).
 	this:add("tgt_pitch", 0).
 	this:add("tgt_roll", 0).
+	this:add("tgt_yaw", 0).
 	
-	this:add("nz_pitch_pid", PIDLOOP(1.85,0,0.06)).
+	this:add("nz_pitch_pid", PIDLOOP(1.95,0,0.08)).
 	
 	SET this:nz_pitch_pid:SETPOINT TO 0.
 	
@@ -169,7 +170,7 @@ FUNCTION dap_controller_factory{
 		SET this:steer_pitch TO this:steer_pitch + this:update_nz_pid().
 		
 		SET this:steer_roll TO this:prog_roll + CLAMP(this:tgt_roll - this:prog_roll,-roll_tol,roll_tol).
-		SET this:steer_yaw TO 0.
+		SET this:steer_yaw TO this:tgt_yaw.
 		
 		SET this:steer_roll TO CLAMP(this:steer_roll, this:css_roll_lims[0], this:css_roll_lims[1]).
 		SET this:steer_pitch TO CLAMP(this:steer_pitch, this:css_pitch_lims[0], this:css_pitch_lims[1]).

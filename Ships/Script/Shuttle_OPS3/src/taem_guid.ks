@@ -65,6 +65,7 @@ FUNCTION taemg_wrapper {
 										"wow", taemg_input["wow"],
 										"h", taemg_input["h"] * mt2ft,		//ft height above rwy
 										"hdot", taemg_input["hdot"] * mt2ft,	//ft/s vert speed
+										"hddot", taemg_input["hddot"] * mt2ft,	//ft/s vert acceleration
 										"x", taemg_input["x"] * mt2ft,		//ft x component on runway coord
 										"y", taemg_input["y"] * mt2ft,		//ft y component on runway coord
 										"surfv", taemg_input["surfv"] * mt2ft, 		//ft/s earth relative velocity mag 			//was v
@@ -105,6 +106,7 @@ FUNCTION taemg_wrapper {
 					"dpsac", taemg_internal["dpsac"], 	//deg heading error to the hac tangent 
 					"xhac", taemg_internal["xhac"] / mt2ft, 	//ft x coordinate of hac centre
 					"yhac", taemg_internal["yhac"] / mt2ft, 	//ft y coordinate of hac centre
+					"xaim", taemg_internal["xaim"] / mt2ft, 	//ft x coordinate of touchdown aiming point
 					"rturn", taemg_internal["rturn"] / mt2ft, 	//ft hac radius
 					"ysgn", taemg_internal["ysgn"], 	//ft hac turn direction (+1 is a right-handed hac)
 					
@@ -114,6 +116,7 @@ FUNCTION taemg_wrapper {
 					"nzc", taemg_internal["nzc"], 	//g-units normal load factor
 					"nztotal", taemg_internal["nztotal"], 	//g-units normal load factor
 					"phic_at", taemg_internal["phic_at"], 	//deg commanded roll 
+					"betac_at", taemg_internal["betac_at"], 	//deg commanded yaw 
 					"dsbc_at", taemg_internal["dsbc_at"] / taemg_constants["dsblim"], 	//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
 					
 					//energy and other stuff
@@ -129,7 +132,9 @@ FUNCTION taemg_wrapper {
 					"ohalrt", taemg_internal["ohalrt"],	//taem automatic downmode flag 
 					"mep", taemg_internal["mep"], 		//min entry point flag 
 					"tg_end", taemg_internal["tg_end"], 	//termination flag 
-					"geardown", taemg_internal["geardown"]
+					"al_end", taemg_internal["al_end"], 	//termination flag 
+					"geardown", taemg_internal["geardown"],	
+					"brakeson", taemg_internal["brakeson"]
 	
 	).
 }
@@ -147,7 +152,7 @@ global taemg_constants is lexicon (
 									"del_h2", 900,				//ft alt error coeff 
 									"del_r_emax", list(0,54000,54000),		// -/ft/ft constant ised for computing emax 
 									//"dnzcg", 0.01,		//g-unit/s gain for dnzc	OTT
-									"dnzcg", 0.015,		//g-unit/s gain for dnzc	OTT
+									"dnzcg", 0.01,		//g-unit/s gain for dnzc
 									"dnzlc1", -0.7,		//g-unit phase 0,1 nzc lower lim 
 									"dnzlc2", -1,		//g-unit phase 2, 3 nzc lower lim 
 									"dnzuc1", 0.7,		//g-unit phase 0,1 nzc upper lim 
@@ -155,8 +160,8 @@ global taemg_constants is lexicon (
 									"dr3", 8000,		//ft delta range val for rpred3
 									"dsbcm", 1.5,		//mach at which speedbrake modulation starts 
 									"dsblim", 98.6,	//deg dsbc max value 
-									"dsbsup", 65,	//deg fixed spdbk deflection at supersonic 		//ott
-									//"dsbsup", 98.6,	//deg fixed spdbk deflection at supersonic 
+									//dsbsup", 65,	//deg fixed spdbk deflection at supersonic 		//ott
+									"dsbsup", 98.6,	//deg fixed spdbk deflection at supersonic 
 									"dsbil", 20,	//deg min spdbk deflection 
 									"dsbnom", 65,		//deg nominal spdbk deflection
 									"dshply", 4000,		//ft delta range value in shplyk  	//deprecated
@@ -206,7 +211,7 @@ global taemg_constants is lexicon (
 									"gsbe", 1.5, 			//deg/psf-s 	spdbk prop. gain on qberr 
 									"gsbi", 0.1, 		//deg/psf-s gain on qberr integral in computing spdbk cmd
 									"gy", 0.075,			//deg/ft gain on y in computing pfl roll angle cmd 
-									"gydot", 0.9,		//deg/fps gain on ydot on computing pfl roll angle cmd 
+									"gydot", 0.5,		//deg/fps gain on ydot on computing pfl roll angle cmd 
 									"h_error", 1000,		//ft altitude error bound	//deprecated
 									"h_ref1", 10000,			//ft alt for check to transition to a/l
 									"h_ref2", 5000,			//ft alt to force transition to a/l
@@ -230,7 +235,7 @@ global taemg_constants is lexicon (
 									"philm2", 60,			//deg heading alignment roll cmd lim 
 									"philm3", 30, 			//deg prefinal roll cmd lim 
 									//"philmsup", 30, 		//deg supersonic roll cmd lim 		//OTT
-									"philmsup", 30, 		//deg supersonic roll cmd lim 
+									"philmsup", 35, 		//deg supersonic roll cmd lim 
 									"phim", 0.95, 				//mach at which supersonic roll lim is removed
 									"phip2c", 30,			//deg constant for phase 3 roll cmd 	//deprecated
 									"p2trnc1", 1.1, 		//phase 2 transition logic constant 
@@ -315,7 +320,7 @@ global taemg_constants is lexicon (
 									"r1", 0, 			//ft/deg linear coeff of hac spiral 
 									"r2", 0.093, 			//ft/deg quadratic coeff of hac spiral 
 									"r2max", 115000,			//ft max range on hac to be subsonic with nominal qbar 
-									"philm4", 20, 				//deg bank lim for large bank command 
+									"philm4", 30, 				//deg bank lim for large bank command 
 									"philmc", 100, 				//deg bank lim for large bank command 
 									"qbmxs1", -400,				//psf slope of qbmxnz with mach < qbm1 
 									"hmin3", 7000,				//min altitude for prefinal
@@ -334,11 +339,9 @@ global taemg_constants is lexicon (
 									"al_capt_gammalim", 2, 	//deg fpa error for steep gs capture
 									"al_fnlfl_herrexpmin", 1, //ft alt delta on exponential decay for final flare toggle
 									"hfnlfl", 90,			//ft alt at which to force transition to final flare
-									"k_h", 0.0036,	//g /ft	gain
-									"k_hdot", 0.0109,	//g /ft	gain
-									"k_hint", 0.05,	//g /ft / s	gain
-									"h_errormax", 300,	//ft clamp on herror
-									"h_intmx", 50	//ft clamp on hdot integral term
+									"philm5", 10, 				//deg bank lim for flare and beyond
+									"surfv_h_brakes", 140,		//ft/s trigger for braking outside executive
+									"surfv_h_exit", 15		//ft/s trigger for termination
 									
 ).
 
@@ -368,9 +371,11 @@ global taemg_internal is lexicon(
 								"emax", 0,			//energy/weight to constrain nzc above nominal ref
 								"emin", 0,			//energy/weight to constrain nzc below nominal ref
 								"es", 0, 		//ft energy/weight at which the s-turn is initiated 
-								"gdh", 0, 		// gain for nzc
+								"gdh", 0, 		// hdot gain for nzc
+								"gddh", 0, 		// hddot gain for nzc
 								"hdreqg", 0, 		//gain for herror in nzc
 								"hderr", 0, 		//ft hdot error
+								"hderrc", 0, 		//ft hdot error corrected for altitude error - my addition
 								"herror", 0, 		//ft altitude error
 								"hdref", 0,			//ft/s hdot reference
 								"href", 0,			//ft ref altitude
@@ -388,6 +393,7 @@ global taemg_internal is lexicon(
 								//"phi0", 0,		//previous value of phic
 								"phic", 0, 			//unlimited roll cmd
 								"phic_at", 0,	//deg commanded roll
+								"betac_at", 0,	//deg commanded sideslip
 								"philim", 0,	//deg roll cmd limit
 								"psha", 0, 			//deg hac turn angle 		//moved from inputs
 								"psc", 0, 			//deg heading to hac centre 
@@ -413,16 +419,18 @@ global taemg_internal is lexicon(
 
 								"xcir", 0,		//ft ship-hac centre distance component along x
 								"ycir", 0,		//ft ship-hac centre distance component along y
+								"xaim", 0,		//ft touchdown aiming point
 								"yhac", 0,		//ft x coord of hac centre
 								"rcir", 0,		//ft ship-hac distance
 								"xa", 0,		//ft steep gs intercept, turned into a variable that is calculated from the a/l flare circle
 								
 								
 								//A/L guidance stuff 
-								
+								"al_end", FALSE,		//termination flag 
 								"p_mode", 0,		//a/l mode flag 
 								"f_mode", 0,		//a/l flare mode flag during p_mode=3
 								"geardown", FALSE,	//flag to command gear down to outside executive
+								"brakeson", FALSE,	//flag to command brakes on to outside executive
 								"tgstp", 0,			//steep gs tangent (set to tggs)
 								"tgsh", 0,			//shallow gs tangent
 								"gsstp", 0,			//° steep glideslope
@@ -506,11 +514,12 @@ FUNCTION tginit {
 	set taemg_internal["tgstp"] to taemg_constants["tggs"][taemg_internal["igs"]].
 	set taemg_internal["gsstp"] to ARCTAN(taemg_internal["tgstp"]).
 	set taemg_internal["gssh"] to ARCTAN(taemg_internal["tgsh"]).
+	set taemg_internal["xaim"] to taemg_constants["xaim"].
 	//flare circle coordinates
 	set taemg_internal["hk"] to taemg_constants["hcloop"] + taemg_constants["rflare"] * COS(taemg_internal["gsstp"]). 
 	
 	local he is taemg_internal["hk"] - taemg_constants["rflare"] * COS(taemg_internal["gssh"]) - taemg_constants["hdecay"].
-	set taemg_internal["xexp"] to - he/taemg_internal["tgsh"] + taemg_constants["xaim"].
+	set taemg_internal["xexp"] to - he/taemg_internal["tgsh"] + taemg_internal["xaim"].
 	set taemg_internal["xk"] to taemg_internal["xexp"] + taemg_constants["rflare"] * SIN(taemg_internal["gssh"]).
 	
 	set taemg_internal["xa"] TO taemg_internal["xk"] - taemg_constants["rflare"] * SIN(taemg_internal["gsstp"]) + taemg_constants["hcloop"] / taemg_internal["tgstp"].
@@ -520,8 +529,6 @@ FUNCTION tginit {
 	SET taemg_internal["ovhd0"] TO taemg_input["ovhd"].
 	
 	SET taemg_internal["iphase"] TO 1.	
-	
-	SET taemg_internal["isr"] TO taemg_constants["rftc"] / taemg_input["dtg"].
 	
 	SET taemg_internal["rf"] TO taemg_constants["rf0"].
 	SET taemg_internal["rturn"] TO taemg_internal["rf"].	//i added this bc I don't see rturn being initialised anywhere	- or should it be initialised to zero??
@@ -757,7 +764,7 @@ FUNCTION tgcomp {
 		}
 	} else if (taemg_internal["p_mode"] >= 4) {
 		//a/l inner gs
-		set taemg_internal["href"] to (taemg_constants["xaim"] - taemg_input["x"]) * taemg_internal["tgsh"].
+		set taemg_internal["href"] to (taemg_internal["xaim"] - taemg_input["x"]) * taemg_internal["tgsh"].
 		set dhdrrf to -taemg_internal["tgsh"].
 	} else if (taemg_internal["p_mode"] = 3) {
 		//a/l pullup
@@ -772,7 +779,7 @@ FUNCTION tgcomp {
 			//exponential decay
 			set taemg_internal["herrexp"] to taemg_constants["hdecay"] * constant:e^((taemg_internal["xexp"] - taemg_input["x"])/taemg_constants["sigma_exp"]).
 			//add on top of shallow gs 
-			set taemg_internal["href"] to (taemg_constants["xaim"] - taemg_input["x"]) * taemg_constants["tgsh"] + taemg_internal["herrexp"].
+			set taemg_internal["href"] to (taemg_internal["xaim"] - taemg_input["x"]) * taemg_constants["tgsh"] + taemg_internal["herrexp"].
 			//dhref/dx clamped
 			set dhdrrf to - (taemg_internal["tgsh"] + taemg_internal["herrexp"]/taemg_constants["sigma_exp"]).
 		}
@@ -866,6 +873,16 @@ FUNCTION tgtran {
 			set taemg_internal["p_mode"] to 5.
 			return.
 		}
+		
+		//braking and termination
+		if (taemg_internal["p_mode"] = 5) {
+			if (taemg_input["surfv_h"] <= taemg_constants["surfv_h_brakes"] ) {
+				set taemg_internal["brakeson"] to TRUE.
+			} else if (taemg_input["surfv_h"] <= taemg_constants["surfv_h_exit"] ) {
+				set taemg_internal["al_end"] to TRUE.
+			}			
+			return.
+		}
 	} else {
 		//just to make sure we don't end up here during a/l and vice-versa
 	
@@ -878,9 +895,14 @@ FUNCTION tgtran {
 			//	and (abs(taemg_input["gamma"] - taemg_constants["gamsgs"][taemg_internal["igs"]]) < (taemg_input["h"] * taemg_constants["gamma_coef1"] - taemg_constants["gamma_coef2"]))
 			//	and (taemg_input["h"] < taemg_constants["h_ref1"])
 			//) or (taemg_input["h"] < taemg_constants["h_ref2"]) {
-			if (taemg_input["h"] <= taemg_constants["hali"][taemg_internal["igs"]]) {
-					//set taemg_internal["tg_end"] to TRUE.
-					//set taemg_internal["p_mode"] to 1.
+			
+			if (
+				(taemg_input["h"] <= taemg_constants["hali"][taemg_internal["igs"]])
+				and (abs(taemg_input["y"]) < (taemg_input["h"] * taemg_constants["y_range1"] - taemg_constants["y_range2"]))
+				and (abs(taemg_input["gamma"] - taemg_constants["gamsgs"][taemg_internal["igs"]]) < (taemg_input["h"] * taemg_constants["gamma_coef1"] - taemg_constants["gamma_coef2"]))
+			) or (taemg_input["h"] < taemg_constants["h_ref2"]) {
+					set taemg_internal["tg_end"] to TRUE.
+					set taemg_internal["p_mode"] to 2.
 				}
 			return.
 		}
@@ -888,10 +910,12 @@ FUNCTION tgtran {
 		//transition to pre-final based on distance or altitude if on a low energy profile
 		if (taemg_internal["rpred"] < taemg_internal["rpred3"]) or (taemg_input["h"] < taemg_constants["hmin3"]) {
 			set taemg_internal["iphase"] to 3.
-			//set taemg_internal["phi0"] to taemg_internal["phic"].
+			set taemg_internal["phic"] to taemg_internal["phic_at"].
 			set taemg_internal["philim"] to taemg_constants["philm3"].
 			set taemg_internal["dnzul"] to taemg_constants["dnzuc2"].
 			set taemg_internal["dnzll"] to taemg_constants["dnzlc2"].
+			//moved from init so we have an updated value of dtg
+			SET taemg_internal["isr"] TO taemg_constants["rftc"] / taemg_input["dtg"].
 			return.
 		}
 		
@@ -963,31 +987,53 @@ FUNCTION tgnzc {
 	
 	set taemg_internal["hderr"] to taemg_internal["hdref"] - taemg_input["hdot"].
 	
-	local hdherrc is 0.
 	
-	if (taemg_internal["tg_end"]) {	
-		
-		
-	} else {
 	
-		set taemg_internal["gdh"] to 0.32.
+	set taemg_internal["gdh"] to 0.55.
+	set taemg_internal["gddh"] to -0.8.
+	set taemg_internal["hdreqg"] to 0.7.
 	
-		if (taemg_internal["iphase"] <= 1) {
+	//local dnzcg is taemg_constants["dnzcg"].
+	//
+	//if (taemg_internal["tg_end"]) {	
+	//	
+	//	set dnzcg to dnzcg * 0.8.
+	//	
+	//	set taemg_internal["hdreqg"] to 0.3.
+	//	
+	//	if (taemg_internal["p_mode"] >= 4) {
+	//		set taemg_internal["hdreqg"] to 0.1.
+	//	}
+	//	
+	//} else {
+	//	
+	//	if (taemg_internal["iphase"] <= 1) {
+	//	
+	//	} else if (taemg_internal["iphase"] = 2) {
+	//	
+	//		set dnzcg to dnzcg * 1.2.
+	//		
+	//	} else if (taemg_internal["iphase"] = 3) {
+	//		set taemg_internal["hdreqg"] to 0.4.
+	//		set dnzcg to dnzcg * 1.3.
+	//	}
+	//	
+	//}
+	//
+	//local hderrcmax is 250.	
+	//
+	//set taemg_internal["hderrc"] to taemg_internal["hderr"] + midval(taemg_internal["hdreqg"] * taemg_internal["herror"], - hderrcmax, hderrcmax).
+	//set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * (taemg_internal["gdh"] * taemg_internal["hderrc"] + taemg_internal["gddh"] * taemg_input["hddot"]).
 	
-			set taemg_internal["hdreqg"] to 0.7.
+	set taemg_internal["gdh"] to 0.55.
+	set taemg_internal["gddh"] to midval(1.01e-3 * taemg_input["surfv"], 0.15, 0.9).
+	set taemg_internal["hdreqg"] to 0.7.
+	
+	
 		
-		} else if (taemg_internal["iphase"] >= 2) {
-			
-			set taemg_internal["hdreqg"] to 1.4.
-			
-		}
-		
-		local hdherrclimg is 0.7.
-		set hdherrc to midval(taemg_internal["gdh"] * taemg_internal["hdreqg"] * taemg_internal["herror"], - hdherrclimg * taemg_internal["hdref"], hdherrclimg * taemg_internal["hdref"]).
-		
-		set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * taemg_internal["gdh"] * (taemg_internal["hderr"] + hdherrc).
-		
-	} 
+	//unlimited normal accel commanded to stay on profile
+	set taemg_internal["hderrc"] to taemg_internal["hderr"] + taemg_constants["hdreqg"] * taemg_internal["herror"].
+	set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * (taemg_internal["gdh"] * taemg_internal["hderrc"] - taemg_internal["gddh"] * taemg_input["hddot"]).
 	
 	
 	//qbar profile varies within an upper and a lower profile
@@ -1023,37 +1069,38 @@ FUNCTION tgnzc {
 	//my modification
 	//to see the effect of filters in the debug dump
 	set taemg_internal["dnzcl"] to taemg_internal["dnzc"].
+	set taemg_internal["nzc"] to taemg_internal["dnzcl"].
 	
 	//my modification: never do energy filtering beyond acq phase
-	if (taemg_internal["iphase"] >=3) {
-		set taemg_internal["nzc"] to taemg_internal["dnzcl"].
-	} else if (taemg_internal["iphase"] <= 2) {
-		//eow limits
-		//SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnz"][taemg_internal["igs"]] * midval( taemg_internal["drpred"] / taemg_constants["del_r_emax"][taemg_internal["igs"]] , taemg_constants["edelc1"], taemg_constants["edelc2"]).
-		//SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnz"][taemg_internal["igs"]].
-		
-		//SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnzu"].
-		//SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnzl"].
-		
-		//local eownzul is (taemg_constants["geul"] * taemg_internal["gdh"] * (taemg_internal["emax"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdul"] * taemg_internal["gdh"].
-		//local eownzll is (taemg_constants["gell"] * taemg_internal["gdh"] * (taemg_internal["emin"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdll"] * taemg_internal["gdh"].
-		
-		//cascade of filters
-		//limit by eow
-		//set taemg_internal["dnzcl"] to midval(taemg_internal["dnzcl"], eownzll, eownzul).
-		
-		//limit by qbar
-		//set taemg_internal["dnzcl"] to midval(taemg_internal["dnzcl"], qbnzll, qbnzul).
-		
-		
-		//my modification: custom correction to dnzcl based on energy error 
-		//set taemg_internal["dnzcl"] to taemg_internal["dnzcl"] * (1 + taemg_constants["geownzc"] * taemg_internal["gdh"] * taemg_internal["eowerror"]).
-		//moved out of the if block 
-		//calculate commanded nz by limiting delta
-		local dnzcd is midval((taemg_internal["dnzcl"] - taemg_internal["nzc"]) * taemg_constants["cqg"], -taemg_constants["dnzcdl"], taemg_constants["dnzcdl"]).
-		//apply strucutral limits on nz cmd
-		set taemg_internal["nzc"] to midval(taemg_internal["nzc"] + dnzcd * taemg_input["dtg"], taemg_internal["dnzll"], taemg_internal["dnzul"]).
-	}
+	//if (taemg_internal["iphase"] >=2) {
+	//	set taemg_internal["nzc"] to taemg_internal["dnzcl"].
+	//} else if (taemg_internal["iphase"] <= 1) {
+	//	//eow limits
+	//	//SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnz"][taemg_internal["igs"]] * midval( taemg_internal["drpred"] / taemg_constants["del_r_emax"][taemg_internal["igs"]] , taemg_constants["edelc1"], taemg_constants["edelc2"]).
+	//	//SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnz"][taemg_internal["igs"]].
+	//	
+	//	//SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnzu"].
+	//	//SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnzl"].
+	//	
+	//	//local eownzul is (taemg_constants["geul"] * taemg_internal["gdh"] * (taemg_internal["emax"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdul"] * taemg_internal["gdh"].
+	//	//local eownzll is (taemg_constants["gell"] * taemg_internal["gdh"] * (taemg_internal["emin"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdll"] * taemg_internal["gdh"].
+	//	
+	//	//cascade of filters
+	//	//limit by eow
+	//	//set taemg_internal["dnzcl"] to midval(taemg_internal["dnzcl"], eownzll, eownzul).
+	//	
+	//	//limit by qbar
+	//	//set taemg_internal["dnzcl"] to midval(taemg_internal["dnzcl"], qbnzll, qbnzul).
+	//	
+	//	
+	//	//my modification: custom correction to dnzcl based on energy error 
+	//	//set taemg_internal["dnzcl"] to taemg_internal["dnzcl"] * (1 + taemg_constants["geownzc"] * taemg_internal["gdh"] * taemg_internal["eowerror"]).
+	//	//moved out of the if block 
+	//	//calculate commanded nz by limiting delta
+	//	local dnzcd is midval((taemg_internal["dnzcl"] - taemg_internal["nzc"]) * taemg_constants["cqg"], -taemg_constants["dnzcdl"], taemg_constants["dnzcdl"]).
+	//	//apply strucutral limits on nz cmd
+	//	set taemg_internal["nzc"] to midval(taemg_internal["nzc"] + dnzcd * taemg_input["dtg"], taemg_internal["dnzll"], taemg_internal["dnzul"]).
+	//}
 
 	
 	//my addition from 
@@ -1134,15 +1181,25 @@ FUNCTION tgphic {
 			
 			set taemg_internal["phic"] to taemg_internal["ysgn"] * MAX(phip2c + taemg_constants["gr"] * rerrc + taemg_constants["grdot"] * (rdot - rdotrf), 0).
 		}
-		
-	} else if (taemg_internal["iphase"] = 3) {
+	} else if (taemg_internal["iphase"] >= 3) {
+	
 		//prefinal bank proportional to lateral (y coord) deviation and rate relative to the centreline
-		local yerrc is midval ( -taemg_constants["gy"] * taemg_input["y"], -taemg_constants["yerrlm"], taemg_constants["yerrlm"]).
+		local yerrc is -taemg_constants["gy"] * midval(taemg_input["y"], -taemg_constants["yerrlm"], taemg_constants["yerrlm"]).
 		set taemg_internal["phic"] to yerrc - taemg_constants["gydot"] * taemg_input["ydot"].
-		
-		if (abs(taemg_internal["phic"]) > taemg_constants["philm4"]) {
+
+		if (taemg_internal["p_mode"] >= 4) {
+			set philimit to taemg_constants["philm5"].
+		} else if (abs(taemg_internal["phic"]) > taemg_constants["philm4"]) {
 			set philimit to taemg_constants["philm4"].
 		}
+			
+		//if a/l and rollout, turn the roll command into a yaw command	
+		if (taemg_internal["p_mode"] = 5)	{
+			set taemg_internal["phic_at"] to 0.
+			set taemg_internal["betac_at"] to midval ( taemg_internal["phic"], -philimit, philimit).
+			return.
+		}
+		
 		
 		//fade transition from phase 2 bank to phase 3 bank
 		//it works with the counter isr as a gain, first 1/5 then 1/4 etc..
@@ -1152,54 +1209,15 @@ FUNCTION tgphic {
 			set taemg_internal["phic"] to phi0 + dphi.
 			//set phi0 to taemg_internal["phic"].
 		}
-	
-	}
+	} 
 	
 	//taken from level-c and adapted with inspiration from the taem paper 
 	//limit roll not to exceed total maximum vertical acceleration
-	LOCAL phinzlim IS ARCCOS( taemg_input["costh"] / (taemg_constants["nztotallim"] - taemg_internal["nzc"]) ).
+	LOCAL phinzlim IS ARCCOS( limitarg(taemg_input["costh"] / (taemg_constants["nztotallim"] - taemg_internal["nzc"])) ).
 	SET philimit TO MIN(philimit, phinzlim).
 	
 	set taemg_internal["phic_at"] to midval ( taemg_internal["phic"], -philimit, philimit).
+	set taemg_internal["betac_at"] to 0.
+
 }								
-									
-
-//I think this is needed because many controller equations have a feedback
-//and the gains are gauged on a fixed dtg value and do not work if we call guidance any faster
-//first order lag filter equation  : new_filtered_value = k * (input + old_input) + (1 - 2k) * old_filtered_value
-//and k in this case is c_ / (c_ + s) where s is one time unit
-FUNCTION taem_lag_filter {
-	PARAMETEr filter_no.
-	PARAMETER in_.
-	PARAMETER c_.
-	PARAMETER input_dtg.
-	
-	local d_ is taemg_constants["dtg"] + input_dtg * c_.
-	
-	local k1_ is c_ / (c_ + taemg_constants["dtg"]/input_dtg).
-	
-	local k2_ is 1 - 2 * k1_.
-	
-	LOCAL x0 IS taem_lag_filters[filter_no][0].
-	LOCAL x1 IS taem_lag_filters[filter_no][1].
-	
-	local filtered_in is (in_ + x0) * k1_ + x1 * k2_.
-	
-	set taem_lag_filters[filter_no][0] to in_.
-	set taem_lag_filters[filter_no][1] to filtered_in.
-	
-	return filtered_in.
-}		
-
-
-//filter coefs
-//add as many as required, comment of what variable they filter
-GLOBAL taem_lag_filters Is LIST(
-								LISt(0,0),	//dnzc during taem 0-2
-								LISt(0,0),
-								LISt(0,0),
-								LISt(0,0),	//hdref in nzc a/l mode 4
-								LISt(0,0),
-								LISt(0,0),
-								LISt(0,0)
-).
+								
