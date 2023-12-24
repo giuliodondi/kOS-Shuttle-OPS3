@@ -45,7 +45,7 @@ FUNCTION ops3_taem_test {
 	SET CONFIG:IPU TO 1800.	
 	
 	
-	LOCAL dap IS dap_controller_factory().
+	LOCAL dap IS dap_nz_controller_factory().
 	
 	SET dap:mode TO "atmo_pch_css".
 	

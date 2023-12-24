@@ -9,7 +9,7 @@ RUNPATH("0:/Shuttle_OPS3/src/ops3_apch_utility.ks").
 RUNPATH("0:/Shuttle_OPS3/vessel_dir").
 RUNPATH("0:/Shuttle_OPS3/VESSELS/" + vessel_dir + "/aerosurfaces_control").
 
-LOCAL dap IS dap_controller_factory().
+LOCAL dap IS dap_hdot_nz_controller_factory().
 
 LOCAL aerosurfaces_control IS aerosurfaces_control_factory().
 
@@ -29,10 +29,11 @@ ON (AG9) {
 	PRESERVE.
 }
 
-ON (AG8) {
+ON (AG9) {
 	IF (dap:mode = "atmo_pch_css") {
-		SET dap:mode TO "atmo_nz_css".
-	} ELSe IF (dap:mode = "atmo_nz_css") {
+		SET dap:mode TO "atmo_hdot_auto".
+		dap:reset_hdot_auto().
+	} ELSe IF (dap:mode = "atmo_hdot_auto") {
 		SET dap:mode TO "atmo_pch_css".
 	} 
 	PRESERVE.
@@ -46,6 +47,10 @@ until false{
 	IF (SHIP:STATUS = "LANDEd") {
 		UNLOCK STEERING.
 	}
+	
+	SET dap:tgt_hdot tO dap:tgt_hdot + 8.0 *SHIP:CONTROL:PILOTPITCH.
+	SET dap:tgt_roll tO dap:tgt_roll + 2.0 * SHIP:CONTROL:PILOTROLL.
+	SET dap:tgt_yaw tO 5 * SHIP:CONTROL:PILOTYAW.
 	
 	SET steerdir TO dap:update().
 	
