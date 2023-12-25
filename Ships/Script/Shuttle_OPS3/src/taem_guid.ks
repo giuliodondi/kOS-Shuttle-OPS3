@@ -879,9 +879,12 @@ FUNCTION tgtran {
 		if (taemg_internal["p_mode"] = 5) {
 			if (taemg_input["surfv_h"] <= taemg_constants["surfv_h_brakes"] ) {
 				set taemg_internal["brakeson"] to TRUE.
-			} else if (taemg_input["surfv_h"] <= taemg_constants["surfv_h_exit"] ) {
+			}
+
+			if (taemg_input["surfv_h"] <= taemg_constants["surfv_h_exit"] ) {
 				set taemg_internal["al_end"] to TRUE.
-			}			
+			}		
+	
 			return.
 		}
 	} else {
@@ -991,35 +994,52 @@ FUNCTION tgnzc {
 	
 	
 	set taemg_internal["gdh"] to 0.55.
+
+	set taemg_internal["hdreqg"] to 0.0005.
 	
 	
-	if (taemg_internal["tg_end"]) {	
-		
-		//set taemg_internal["hdreqg"] to 0.18.
-		
-		if (taemg_internal["p_mode"] >= 4) {
-			//set taemg_internal["hdreqg"] to 0.1.
-		}
-		
-	} else {
-		
-		if (taemg_internal["iphase"] <= 1) {
-			set taemg_internal["hdreqg"] to 0.05.
-		} else if (taemg_internal["iphase"] = 2) {
-			set taemg_internal["hdreqg"] to 0.08.
-			
-		} else if (taemg_internal["iphase"] = 3) {
-			set taemg_internal["hdreqg"] to 0.1.
-		}
-		
-	}
+	//if (taemg_internal["tg_end"]) {	
+	//	
+	//	//set taemg_internal["hdreqg"] to 0.18.
+	//	
+	//	if (taemg_internal["p_mode"] >= 4) {
+	//		//set taemg_internal["hdreqg"] to 0.1.
+	//	}
+	//	
+	//} else {
+	//	
+	//	if (taemg_internal["iphase"] <= 1) {
+	//		set taemg_internal["hdreqg"] to 0.05.
+	//	} else if (taemg_internal["iphase"] = 2) {
+	//		set taemg_internal["hdreqg"] to 0.08.
+	//		
+	//	} else if (taemg_internal["iphase"] = 3) {
+	//		set taemg_internal["hdreqg"] to 0.1.
+	//	}
+	//	
+	//}
+
+	local hdherrcmax is 90.
 		
 	//unlimited normal accel commanded to stay on profile
-	set taemg_internal["hdrefc"] to taemg_internal["hdref"] + taemg_constants["hdreqg"] * taemg_internal["herror"].
+	local hdrefc_n is taemg_internal["hdref"] + clamp(taemg_constants["hdreqg"] * taemg_internal["herror"], -hdherrcmax, hdherrcmax) .
+
+	if (taemg_internal["hdrefc"] = 0) {
+		set taemg_internal["hdrefc"] to hdrefc_n.
+	} else {
+		local dhdrefc is 0.5 * (hdrefc_n - taemg_internal["hdrefc"]). 
+		set taemg_internal["hdrefc"] to taemg_internal["hdrefc"] + dhdrefc.
+	}
+	
+
+
 	local hderrc is taemg_internal["hdrefc"] - taemg_input["hdot"].
 	
 	set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * (taemg_internal["gdh"] * hderrc).
 	
+	if (taemg_internal["p_mode"] >= 5) {
+		set taemg_internal["hdrefc"] to 0. 
+	}
 	
 	//qbar profile varies within an upper and a lower profile
 	

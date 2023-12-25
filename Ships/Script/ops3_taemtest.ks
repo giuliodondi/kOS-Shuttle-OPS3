@@ -108,9 +108,6 @@ FUNCTION ops3_taem_test {
 	local control_loop is loop_executor_factory(
 		0.2,
 		{
-			IF (SHIP:STATUS = "LANDEd") {
-				UNLOCK STEERING.
-			}
 			
 			SET steerdir TO dap:update().
 		
@@ -132,7 +129,6 @@ FUNCTION ops3_taem_test {
 	
 	LOCAL last_iter Is TIMe:SECONDS.
 	until false{
-		clearscreen.
 		clearvecdraws().
 		
 		if (quit_program OR taemg_out["al_end"]) {
@@ -224,13 +220,7 @@ FUNCTION ops3_taem_test {
 			cur_nz
 		).
 		
-		
-		pos_arrow(tgtrwy["position"],"runwaypos", 5000, 0.1).
 		pos_arrow(tgtrwy["td_pt"],"td_pt", 5000, 0.1).
-		pos_arrow(tgtrwy["end_pt"],"end_pt" , 5000, 0.1).
-		pos_arrow(tgtrwy["hac_exit"],"hac_exit" , 5000, 0.1).
-		pos_arrow(tgtrwy["hac_centre"],"hac_centre" , 5000, 0.1).
-		pos_arrow(tgtrwy["hac_tan"],"hac_tan" , 5000, 0.1).
 		
 		
 		
@@ -298,9 +288,10 @@ FUNCTION ops3_taem_test {
 		
 		dap:print_debug(2).
 		
-		WAIt 0.1.
+		WAIt 0.
 	}
 	
 	
 	control_loop:stop_execution().
+	clearscreen.
 }

@@ -362,9 +362,9 @@ FUNCTION dap_hdot_nz_controller_factory{
 	this:add("tgt_roll", 0).
 	this:add("tgt_yaw", 0).
 
-	local kc is 0.005.
+	local kc is 0.006.
 	
-	this:add("hdot_nz_pid", PIDLOOP(kc, 0, kc * 3.1)).
+	this:add("hdot_nz_pid", PIDLOOP(kc, 0, kc * 3.4)).
 	
 	SET this:hdot_nz_pid:SETPOINT TO 0.
 	
