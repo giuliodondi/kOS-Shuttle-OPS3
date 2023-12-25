@@ -106,7 +106,7 @@ FUNCTION ops3_taem_test {
 	
 	
 	local control_loop is loop_executor_factory(
-		0.2,
+		0.1,
 		{
 			
 			SET steerdir TO dap:update().

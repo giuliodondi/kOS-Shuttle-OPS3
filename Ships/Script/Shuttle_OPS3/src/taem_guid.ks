@@ -998,26 +998,9 @@ FUNCTION tgnzc {
 	set taemg_internal["hdreqg"] to 0.0005.
 	
 	
-	//if (taemg_internal["tg_end"]) {	
-	//	
-	//	//set taemg_internal["hdreqg"] to 0.18.
-	//	
-	//	if (taemg_internal["p_mode"] >= 4) {
-	//		//set taemg_internal["hdreqg"] to 0.1.
-	//	}
-	//	
-	//} else {
-	//	
-	//	if (taemg_internal["iphase"] <= 1) {
-	//		set taemg_internal["hdreqg"] to 0.05.
-	//	} else if (taemg_internal["iphase"] = 2) {
-	//		set taemg_internal["hdreqg"] to 0.08.
-	//		
-	//	} else if (taemg_internal["iphase"] = 3) {
-	//		set taemg_internal["hdreqg"] to 0.1.
-	//	}
-	//	
-	//}
+	if (taemg_internal["p_mode"] >= 4) {
+		set taemg_internal["hdreqg"] to 0.
+	}
 
 	local hdherrcmax is 90.
 		
@@ -1027,7 +1010,7 @@ FUNCTION tgnzc {
 	if (taemg_internal["hdrefc"] = 0) {
 		set taemg_internal["hdrefc"] to hdrefc_n.
 	} else {
-		local dhdrefc is 0.5 * (hdrefc_n - taemg_internal["hdrefc"]). 
+		local dhdrefc is 0.3* (hdrefc_n - taemg_internal["hdrefc"]). 
 		set taemg_internal["hdrefc"] to taemg_internal["hdrefc"] + dhdrefc.
 	}
 	
