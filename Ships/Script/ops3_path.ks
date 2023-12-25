@@ -1,3 +1,5 @@
+SET CONFIG:IPU TO 1800.	
+
 RUNONCEPATH("0:/Libraries/misc_library").	
 RUNONCEPATH("0:/Libraries/maths_library").	
 RUNONCEPATH("0:/Libraries/navigation_library").
@@ -36,6 +38,21 @@ SAS OFF.
 
 local rwy is build_alt_profile().
 
+local control_loop is loop_executor_factory(
+		0.2,
+		{
+			IF (SHIP:STATUS = "LANDEd") {
+				UNLOCK STEERING.
+			}
+			
+			SET steerdir TO dap:update().
+		
+			flaptrim_control(TRUE, aerosurfaces_control).
+			aerosurfaces_control["deflect"]().
+			
+		}
+	).
+
 until false{
 	clearscreen.
 	clearvecdraws().
@@ -54,14 +71,12 @@ until false{
 	SET dap:tgt_roll tO guid["phi_at"].
 	SET dap:tgt_yaw tO 5 * SHIP:CONTROL:PILOTYAW.
 	
-	SET steerdir TO dap:update().
-	
 	//speed_control(FALSE, aerosurfaces_control, 0).
 	aerosurfaces_control["deflect"]().
 	
 	dap:print_debug(2).
 	
-	WAIT 0.15.
+	WAIT 0.23.
 }
 
 
@@ -129,14 +144,15 @@ function path_guid {
 	
 	local herr is href - cur_h.
 	
-	set hdref to hdref + 0.05 * herr.
+	set hdref to hdref + clamp(0.05 * herr, -30, 30).
+
 	
 	local yerrc is -0.075 * midval(y_, -300, 300) * 3.2.
 	local phic is yerrc - 0.5 * ydot  * 3.2.
 	
 	local philimit is phic.
-	if (abs(phic) > 30) {
-		set philimit to 30.
+	if (abs(phic) > 350) {
+		set philimit to 35.
 	}
 	
 	local phi is clamp( phic, -philimit, philimit).

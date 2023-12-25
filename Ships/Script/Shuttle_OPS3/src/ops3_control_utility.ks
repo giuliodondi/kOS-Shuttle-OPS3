@@ -361,12 +361,15 @@ FUNCTION dap_hdot_nz_controller_factory{
 	this:add("tgt_pitch", 0).
 	this:add("tgt_roll", 0).
 	this:add("tgt_yaw", 0).
+
+	local kc is 0.005.
 	
-	this:add("hdot_nz_pid", PIDLOOP(0.0009, 0, 0.003)).
+	this:add("hdot_nz_pid", PIDLOOP(kc, 0, kc * 3.1)).
 	
 	SET this:hdot_nz_pid:SETPOINT TO 0.
 	
-	this:add("nz_pitch_pid", PIDLOOP(1.95,0,0.08)).
+	//this:add("nz_pitch_pid", PIDLOOP(2.5,0,0.15)).
+	this:add("nz_pitch_pid", PIDLOOP(5.0,0,0.9)).
 	
 	SET this:nz_pitch_pid:SETPOINT TO 0.
 	
@@ -379,7 +382,7 @@ FUNCTION dap_hdot_nz_controller_factory{
 		return -this:nz_pitch_pid:UPDATE(this:last_time, this:tgt_nz - this:nz ).
 	}).
 	
-	this:add("nz_lims", LIST(-2.5, 2.5)).
+	this:add("nz_lims", LIST(-2.2, 2.2)).
 	
 	this:add("css_roll_lims", LIST(-55, 55)).
 	this:add("css_pitch_lims", LIST(-10, 20)).
@@ -468,7 +471,7 @@ FUNCTION dap_hdot_nz_controller_factory{
 		
 		LOCAL roll_tol IS 8.
 		
-		SET this:tgt_nz TO CLAMP(this:tgt_nz + this:update_hdot_pid(), this:nz_lims[0], this:nz_lims[1]).
+		SET this:tgt_nz TO CLAMP(this:nz + this:update_hdot_pid(), this:nz_lims[0], this:nz_lims[1]).
 		SET this:steer_pitch TO this:steer_pitch + this:update_nz_pid().
 		
 		SET this:steer_roll TO this:prog_roll + CLAMP(this:tgt_roll - this:prog_roll,-roll_tol,roll_tol).
