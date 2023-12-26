@@ -317,6 +317,8 @@ FUNCTION dap_hdot_nz_controller_factory{
 	LOCAL this IS lexicon().
 
 	this:add("enabled", TRUE).
+
+	this:add("pitch_channel_engaged", TRUE).
 	
 	this:add("mode", "atmo_pch_css").
 	
@@ -362,9 +364,9 @@ FUNCTION dap_hdot_nz_controller_factory{
 	this:add("tgt_roll", 0).
 	this:add("tgt_yaw", 0).
 
-	local kc is 0.006.
 	
-	this:add("hdot_nz_pid", PIDLOOP(kc, 0, kc * 2.52)).
+	
+	this:add("hdot_nz_pid", PIDLOOP(0, 0, 0)).
 	
 	SET this:hdot_nz_pid:SETPOINT TO 0.
 	
@@ -375,7 +377,7 @@ FUNCTION dap_hdot_nz_controller_factory{
 	
 	
 	this:add("update_hdot_pid", {
-		return - this:hdot_nz_pid:UPDATE(this:last_time, (this:tgt_hdot - this:hdot) / COS(this:prog_roll) ).
+		return - this:hdot_nz_pid:UPDATE(this:last_time, this:tgt_hdot - this:hdot ).
 	}).
 	
 	this:add("update_nz_pid", {
@@ -409,6 +411,21 @@ FUNCTION dap_hdot_nz_controller_factory{
 		this:reset_steering_angles().
 	}).
 	
+	this:add("set_taem_pid_gains", {
+		local kc is 0.003.
+
+		set this:hdot_nz_pid:Kp to kc.
+		set this:hdot_nz_pid:Ki to 0.
+		set this:hdot_nz_pid:Kd to kc * 6.
+	}).
+
+	this:add("set_landing_pid_gains", {
+		local kc is 0.0025.
+
+		set this:hdot_nz_pid:Kp to kc.
+		set this:hdot_nz_pid:Ki to 0.
+		set this:hdot_nz_pid:Kd to kc * 10.
+	}).
 	
 
 	//by default do not rotate in yaw, to enforce zero sideslip
@@ -471,8 +488,12 @@ FUNCTION dap_hdot_nz_controller_factory{
 		
 		LOCAL roll_tol IS 8.
 		
-		SET this:tgt_nz TO CLAMP(this:nz + this:update_hdot_pid(), this:nz_lims[0], this:nz_lims[1]).
-		SET this:steer_pitch TO this:steer_pitch + this:update_nz_pid().
+		if (this:pitch_channel_engaged) {
+			SET this:tgt_nz TO CLAMP(this:nz + (this:update_hdot_pid()) / COS(this:prog_roll), this:nz_lims[0], this:nz_lims[1]).
+			SET this:steer_pitch TO this:steer_pitch + this:update_nz_pid().
+		} else {
+			SET this:steer_pitch TO this:prog_pitch.
+		}
 		
 		SET this:steer_roll TO this:prog_roll + CLAMP(this:tgt_roll - this:prog_roll,-roll_tol,roll_tol).
 		SET this:steer_yaw TO this:tgt_yaw.

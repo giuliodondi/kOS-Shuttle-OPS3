@@ -48,6 +48,8 @@ FUNCTION ops3_taem_test {
 	LOCAL dap IS dap_hdot_nz_controller_factory().
 	
 	SET dap:mode TO "atmo_pch_css".
+
+	dap:set_taem_pid_gains().
 	
 	LOCAL aerosurfaces_control IS aerosurfaces_control_factory().
 	
@@ -186,13 +188,18 @@ FUNCTION ops3_taem_test {
 		SET dap:tgt_yaw tO taemg_out["betac_at"].
 		
 		SET aerosurfaces_control["spdbk_defl"] TO taemg_out["dsbc_at"].
-		
+
 		if (NOT GEAR) and (taemg_out["geardown"]) {
 			GEAR ON.
+			dap:set_landing_pid_gains().
 		}
 		
 		if (NOT BRAKES) and (taemg_out["brakeson"]) {
 			BRAKES ON.
+		}
+
+		if (taemg_in["wow"]) {
+			set dap:pitch_channel_engaged to FALSE.
 		}
 		
 		

@@ -340,6 +340,7 @@ global taemg_constants is lexicon (
 									"al_capt_gammalim", 2, 	//deg fpa error for steep gs capture
 									"al_fnlfl_herrexpmin", 1, //ft alt delta on exponential decay for final flare toggle
 									"hfnlfl", 200,			//ft alt at which to force transition to final flare
+									"sigma_exp_hdfnlfl", 20,			//ft exp decay for hdot during final flare
 									"philm5", 10, 				//deg bank lim for flare and beyond
 									"surfv_h_brakes", 140,		//ft/s trigger for braking outside executive
 									"surfv_h_exit", 15		//ft/s trigger for termination
@@ -766,7 +767,11 @@ FUNCTION tgcomp {
 	} else if (taemg_internal["p_mode"] >= 4) {
 		//a/l inner gs
 		set taemg_internal["href"] to (taemg_internal["xaim"] - taemg_input["x"]) * taemg_internal["tgsh"].
-		set dhdrrf to -taemg_internal["tgsh"].
+
+		local dhdrrf_base is -taemg_internal["tgsh"].
+		local dhdrrf_exp is -constant:e^(taemg_input["h"] / taemg_constants["sigma_exp_hdfnlfl"]).
+
+		set dhdrrf to MAX(dhdrrf_base, dhdrrf_exp).
 	} else if (taemg_internal["p_mode"] = 3) {
 		//a/l pullup
 		if (taemg_internal["f_mode"] < 3) {
