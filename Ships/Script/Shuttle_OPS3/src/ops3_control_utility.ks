@@ -364,12 +364,12 @@ FUNCTION dap_hdot_nz_controller_factory{
 
 	local kc is 0.006.
 	
-	this:add("hdot_nz_pid", PIDLOOP(kc, 0, kc * 2.5)).
+	this:add("hdot_nz_pid", PIDLOOP(kc, 0, kc * 2.52)).
 	
 	SET this:hdot_nz_pid:SETPOINT TO 0.
 	
 	//this:add("nz_pitch_pid", PIDLOOP(2.5,0,0.15)).
-	this:add("nz_pitch_pid", PIDLOOP(4,0,5.5)).
+	this:add("nz_pitch_pid", PIDLOOP(4,0,5.7)).
 	
 	SET this:nz_pitch_pid:SETPOINT TO 0.
 	

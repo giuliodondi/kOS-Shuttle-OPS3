@@ -212,7 +212,7 @@ global taemg_constants is lexicon (
 									"gsbe", 1.5, 			//deg/psf-s 	spdbk prop. gain on qberr 
 									"gsbi", 0.1, 		//deg/psf-s gain on qberr integral in computing spdbk cmd
 									"gy", 0.075,			//deg/ft gain on y in computing pfl roll angle cmd 
-									"gydot", 0.5,		//deg/fps gain on ydot on computing pfl roll angle cmd 
+									"gydot", 0.50,		//deg/fps gain on ydot on computing pfl roll angle cmd 
 									"h_error", 1000,		//ft altitude error bound	//deprecated
 									"h_ref1", 10000,			//ft alt for check to transition to a/l
 									"h_ref2", 5000,			//ft alt to force transition to a/l
@@ -321,7 +321,7 @@ global taemg_constants is lexicon (
 									"r1", 0, 			//ft/deg linear coeff of hac spiral 
 									"r2", 0.093, 			//ft/deg quadratic coeff of hac spiral 
 									"r2max", 115000,			//ft max range on hac to be subsonic with nominal qbar 
-									"philm4", 30, 				//deg bank lim for large bank command 
+									"philm4", 35, 				//deg bank lim for large bank command 
 									"philmc", 100, 				//deg bank lim for large bank command 
 									"qbmxs1", -400,				//psf slope of qbmxnz with mach < qbm1 
 									"hmin3", 7000,				//min altitude for prefinal
@@ -329,17 +329,17 @@ global taemg_constants is lexicon (
 									"rtanmin", 328,				//ft my own addition, empirical
 									
 									//A/L guidance stuff 
-									"tgsh", TAN(2.5),			//tangent of shallow gs
-									"xaim", 1000,			//ft aim point distance from threshold		
+									"tgsh", TAN(4),			//tangent of shallow gs
+									"xaim", 2000,			//ft aim point distance from threshold		
 									"hflare", 2000,			//ft transition to open loop flare
 									"hcloop", 1700,			//ft transition to closed loop flare
-									"rflare", 16500,		//ft flare circle radius
+									"rflare", 16000,		//ft flare circle radius
 									"hdecay", 29,			//ft exponential decay gain
-									"sigma_exp", 750,		//ft exp decay characteristic distance
+									"sigma_exp", 500,		//ft exp decay characteristic distance
 									"al_capt_herrlim", 50, 	//ft altitude error for steep gs capture
 									"al_capt_gammalim", 2, 	//deg fpa error for steep gs capture
 									"al_fnlfl_herrexpmin", 1, //ft alt delta on exponential decay for final flare toggle
-									"hfnlfl", 90,			//ft alt at which to force transition to final flare
+									"hfnlfl", 200,			//ft alt at which to force transition to final flare
 									"philm5", 10, 				//deg bank lim for flare and beyond
 									"surfv_h_brakes", 140,		//ft/s trigger for braking outside executive
 									"surfv_h_exit", 15		//ft/s trigger for termination
@@ -996,10 +996,13 @@ FUNCTION tgnzc {
 	set taemg_internal["gdh"] to 0.55.
 
 	set taemg_internal["hdreqg"] to 0.0005.
+
+	local dhdrefg is 0.3.
 	
 	
 	if (taemg_internal["p_mode"] >= 4) {
 		set taemg_internal["hdreqg"] to 0.
+		set dhdrefg to 0.8.
 	}
 
 	local hdherrcmax is 90.
@@ -1010,7 +1013,7 @@ FUNCTION tgnzc {
 	if (taemg_internal["hdrefc"] = 0) {
 		set taemg_internal["hdrefc"] to hdrefc_n.
 	} else {
-		local dhdrefc is 0.3* (hdrefc_n - taemg_internal["hdrefc"]). 
+		local dhdrefc is dhdrefg * (hdrefc_n - taemg_internal["hdrefc"]). 
 		set taemg_internal["hdrefc"] to taemg_internal["hdrefc"] + dhdrefc.
 	}
 	
@@ -1021,7 +1024,7 @@ FUNCTION tgnzc {
 	set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * (taemg_internal["gdh"] * hderrc).
 	
 	if (taemg_internal["p_mode"] >= 5) {
-		set taemg_internal["hdrefc"] to 0. 
+		set taemg_internal["hdrefc"] to taemg_input["hdot"]. 
 	}
 	
 	//qbar profile varies within an upper and a lower profile
