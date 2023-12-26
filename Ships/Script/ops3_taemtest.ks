@@ -211,12 +211,16 @@ FUNCTION ops3_taem_test {
 									taemg_out["phic_at"] - lvlh_rll, 
 									taemg_out["hdrefc"] -  taemg_in["hdot"]
 		).
+
+		if (taemg_out["itran"]) {
+			hud_decluttering(taemg_out["guid_id"]).
+		}
 		
 		update_hud_gui(
 			taemg_out["guid_id"],
 			css_flag,
 			diamond_deviation_taem(deltas),
-			rwystate["h"] / 1000,
+			rwystate["h"],
 			taemg_out["rpred"] / 1000,
 			rwystate["rwy_rel_crs"],
 			ADDONS:FAR:MACH,
@@ -226,9 +230,6 @@ FUNCTION ops3_taem_test {
 			aerosurfaces_control["flap_defl"],
 			cur_nz
 		).
-		
-		pos_arrow(tgtrwy["td_pt"],"td_pt", 5000, 0.1).
-		
 		
 		
 		//GLOBAL loglex IS LEXICON(

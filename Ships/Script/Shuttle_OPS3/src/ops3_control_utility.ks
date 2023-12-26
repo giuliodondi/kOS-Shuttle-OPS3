@@ -486,7 +486,7 @@ FUNCTION dap_hdot_nz_controller_factory{
 		this:measure_cur_state().
 		
 		
-		LOCAL roll_tol IS 8.
+		LOCAL roll_tol IS 14.
 		
 		if (this:pitch_channel_engaged) {
 			SET this:tgt_nz TO CLAMP(this:nz + (this:update_hdot_pid()) / COS(this:prog_roll), this:nz_lims[0], this:nz_lims[1]).

@@ -755,7 +755,7 @@ FUNCTION make_hud_gui {
 	GLOBAL spdbox IS spdaltbox:ADDHLAYOUT().
 	SET spdbox:STYLe:WIDTH TO 70.
 	SET spdbox:STYLe:HEIGHT TO 30.
-	SET spdbox:STYLe:MARGIN:left TO 20.
+	SET spdbox:STYLe:MARGIN:left TO 10.
 	SET spdbox:STYLe:MARGIN:top TO 87.
 	GLOBAL spd_text IS spdbox:ADDLABEL("<size=18>M26.5</size>").
 	SET spd_text:STYLE:ALIGN TO "Right".
@@ -766,7 +766,7 @@ FUNCTION make_hud_gui {
 	GLOBAL altbox IS spdaltbox:ADDHLAYOUT().
 	SET altbox:STYLe:WIDTH TO 70.
 	SET altbox:STYLe:HEIGHT TO 30.
-	SET altbox:STYLe:MARGIN:left TO 230.
+	SET altbox:STYLe:MARGIN:left TO 245.
 	SET altbox:STYLe:MARGIN:top TO 87.
 	GLOBAL alt_text IS altbox:ADDLABEL("<size=18>100.5</size>").
 	SET alt_text:STYLE:ALIGN TO "Left".
@@ -789,7 +789,7 @@ FUNCTION make_hud_gui {
 	GLOBAL hudpch IS overlaiddata:ADDVLAYOUT().
 	SET hudpch:STYLe:WIDTH TO 20.
 	SET hudpch:STYLe:HEIGHT TO 20.
-	SET hudpch:STYLE:MARGIN:top TO 4.
+	SET hudpch:STYLE:MARGIN:top TO 6.
 	SET hudpch:STYLE:MARGIN:left TO 213.
 	GLOBAL hudpch_text IS hudpch:ADDLABEL("pch").
 	SET hudpch_text:STYLe:WIDTH TO 30.
@@ -874,30 +874,33 @@ FUNCTION make_hud_gui {
 
 	GLOBAL bottom_box IS hud:ADDHLAYOUT().
 	SET bottom_box:STYLe:WIDTH TO 500.
+
+	GLOBAL bottom_data_box IS bottom_box:ADDHLAYOUT().
+	SET bottom_data_box:STYLe:WIDTH TO 260.
+	SET bottom_data_box:STYLE:HSTRETCH TO TRUE.
 	
-	
-	GLOBAL bottom_txtbox IS bottom_box:ADDHLAYOUT().
-	SET bottom_txtbox:STYLe:WIDTH TO 260.
-	SET bottom_txtbox:STYLE:ALIGN TO "Left".
-	SET bottom_txtbox:STYLE:HSTRETCH TO TRUE.
-	
-	bottom_txtbox:addspacing(30).
-	
-	GLOBAL steer_txt IS bottom_txtbox:ADDLABEL("<size=18>    </size>").
-	SET steer_txt:STYLe:WIDTH TO 55.
-	SET steer_txt:STYLE:MARGIN:top TO 40.
-	SET steer_txt:STYLE:ALIGN TO "Left".
-	SET steer_txt:STYLE:FONT TO hudfont.
-	
-	
-	GLOBAL mode_txt IS bottom_txtbox:ADDLABEL("<size=18>    </size>").
+
+	GLOBAL bottom_textbox IS bottom_data_box:ADDVLAYOUT().
+	SET bottom_textbox:STYLe:WIDTH TO 150.
+	SET bottom_textbox:STYLE:ALIGN TO "Left".
+	SET bottom_textbox:STYLE:HSTRETCH TO TRUE.
+
+	GLOBAL mode_txt IS bottom_textbox:ADDLABEL("<size=18>    </size>").
 	SET mode_txt:STYLe:WIDTH TO 75.
-	SET mode_txt:STYLE:ALIGN TO "Left".
+	SET mode_txt:STYLE:MARGIN:left TO 50.
 	SET mode_txt:STYLE:MARGIN:top TO 13.
 	SET mode_txt:STYLE:FONT TO hudfont.
 	
+	GLOBAL steer_txt IS bottom_textbox:ADDLABEL("<size=18>    </size>").
+	SET steer_txt:STYLe:WIDTH TO 55.
+	SET steer_txt:STYLE:MARGIN:left TO 20.
+	SET steer_txt:STYLE:MARGIN:top TO 13.
+	SET steer_txt:STYLE:FONT TO hudfont.
+	
+	
 
-	GLOBAL mode_dist_text IS  bottom_txtbox:ADDLABEL( "<size=18>"+"</size>" ).
+	GLOBAL mode_dist_text IS  bottom_data_box:ADDLABEL( "<size=18>"+"</size>" ).
+	SET steer_txt:STYLe:WIDTH TO 75.
 	SET mode_dist_text:STYLE:MARGIN:top TO 13.
 	SET mode_dist_text:STYLE:FONT TO hudfont.
 
@@ -937,7 +940,7 @@ FUNCTION reset_hud_bg_brightness {
 
 
 FUNCTION update_hud_gui {
-	PARAMETER iphase.
+	PARAMETER phase.
 	PARAMETER css_flag.
 	PARAMETER pipper_pos.
 	PARAMETER altt.
@@ -957,13 +960,18 @@ FUNCTION update_hud_gui {
 
 	SET steer_txt:text TO "<size=18>" + steer_str + "</size>".
 	
-	SET mode_txt:text TO "<size=18>" + hud_guid_labels(iphase) + "</size>".
+	SET mode_txt:text TO "<size=18>" + hud_guid_labels(phase) + "</size>".
 
 	// set the pipper to an intermediate position between the desired and the current position so the transition is smoother
 	LOCAL smooth_fac IS 0.5.
 	
 	LOCAL pipper_pos_cur IS LIST(diamond:STYLE:margin:h, diamond:STYLE:margin:v).
 	
+	local altt_format is altitude_format(altt, phase).
+	local dist_format is distance_format(dist, phase).
+
+	set_vspd_slider_limits(phase).
+
 	SET diamond:STYLE:margin:h TO pipper_pos_cur[0] + smooth_fac*(pipper_pos[0] - pipper_pos_cur[0]).
 	SET diamond:STYLE:margin:v TO pipper_pos_cur[1] + smooth_fac*(pipper_pos[1] - pipper_pos_cur[1]).
 	
@@ -972,11 +980,11 @@ FUNCTION update_hud_gui {
 	SET hdg_text:text TO "<size=18>" + ROUND(hdgval, 0)  + "</size>".
 	
 	SET spd_text:text TO "<size=18>M"+ ROUND(spd,1) + "</size>".
-	SET alt_text:text TO "<size=18>" + ROUND(altt,1) + "</size>".
+	SET alt_text:text TO "<size=18>" + altt_format + "</size>".
 	
 	SET nz_text:text TO "<size=18>" + ROUND(cur_nz,1) + " G</size>".
 	
-	SET mode_dist_text:text TO "<size=18>" + ROUND(dist, 0) + "</size>".
+	SET mode_dist_text:text TO "<size=18>" + dist_format + "</size>".
 		
 	SET spdbk_slider:VALUE TO spdbk_val.
 	
@@ -1009,6 +1017,25 @@ FUNCTION diamond_deviation_debug {
 	
 
 	RETURN LIST(diamond_horiz,diamond_vert).
+
+}
+
+//set slider limits based on phase
+FUNCTION set_vspd_slider_limits {
+	PARAMETEr iphase.
+	
+	IF (iphase>=34) {
+		SET vspd_slider:MIN TO -40.
+		SET vspd_slider:MAX TO +40.
+	} ELSE IF (iphase>=20) {
+		SET vspd_slider:MIN TO -100.
+		SET vspd_slider:MAX TO +100.
+
+	} ELSE IF (iphase>=10) {
+		SET vspd_slider:MIN TO -200.
+		SET vspd_slider:MAX TO +200.
+
+	}
 
 }
 
@@ -1051,14 +1078,14 @@ FUNCTION hud_guid_labels{
 	IF (iphase>=30) {
 		//a/l
 		IF (iphase=31) {
-			RETURN "CAPTR".
-		} ELSE IF (iphase=32) {
+			RETURN "CAPT ".
+		} ELSE IF (iphase=32 OR iphase=33) {
 			RETURN "OGS  ".
-		} ELSE IF (iphase=33) {
-			RETURN "FLARE ".
 		} ELSE IF (iphase=34) {
-			RETURN "FNLFL".
+			RETURN "FLARE ".
 		} ELSE IF (iphase=35) {
+			RETURN "FNLFL".
+		} ELSE IF (iphase=36) {
 			RETURN "ROLLOUT".
 		}
 		
@@ -1088,4 +1115,91 @@ FUNCTION hud_guid_labels{
 		}
 	}
 
+}
+
+
+FUNCTION altitude_format {
+	PARAMETER altt. 	//takes altitude in metres
+	PARAMETER iphase.
+	
+
+	//also calculate in km 
+	LOCAL alttkm IS altt/1000.
+	
+	//accurate to 0.5 km
+	IF (iphase < 30) {
+		LOCAL altout IS FLOOR(alttkm).
+		LOCAL dec IS alttkm - altout.
+		IF (dec > 0.5) {
+			SET altout TO altout + 0.5.
+		}
+		RETURN altout.
+	} ELSE {
+		//show full digits, floored to nearest ten or hundred depending
+		LOCAL altout IS altt.
+		//accurate to 100m
+		IF (altt >= 1000 ) {
+			SET altout TO FLOOR(altt/100)*100.
+		//accurate to 10m
+		} ELSE IF (altt >= 100) {
+			SET altout TO FLOOR(altt/10)*10.
+		} ELSE {
+			SET altout TO FLOOR(altout).
+		}
+		RETURN altout.
+	}
+}
+
+
+FUNCTION distance_format {
+	PARAMETER dist.	//expected in km
+	PARAMETER iphase.
+	
+	IF (iphase>=30) {
+		//simply round to the single decimal point
+		RETURN ROUND(dist,1).
+	} ELSE {
+		IF (dist > 100) {
+			//floor down to 10km
+			LOCAL distout IS 10*ROUND(dist/10,0).
+			RETURN distout.
+		} ELSE {
+			//floor down to the unit
+			RETURN FLOOR(dist).
+		}
+	}
+
+}
+
+FUNCTION hud_decluttering {
+	PARAMETER iphase.
+
+	if (iphase >= 23) {
+		//hide g indicator and change nose marker 
+		nz_text:HIDE().
+		SET  pointbox:style:BG to "Shuttle_entrysim/src/gui_images/bg_marker_round.png".
+	}
+
+	if (iphase >= 30) { 
+		//hide attitude angles
+		hudrll_text:HIDE().
+		hudpch_text:HIDE().
+	}
+
+	if (iphase >= 33) { 
+		//remove trim indicator, heading, vertical speed and attitude angles
+		//also move altitude and speed indicators
+		flaptrim_slider:HIDE().
+		vspd_slider:HIDE().
+		hdg_text:HIDE().
+		mode_dist_text:HIDE().
+		
+		SET spdbox:STYLe:MARGIN:left TO 80.
+		SET altbox:STYLe:MARGIN:left TO 88.
+	}
+
+	if (iphase >= 35) { 
+		//hide pipper
+		SET diamond:IMAGE TO "Shuttle_entrysim/src/gui_images/diamond_empty.png".
+	}
 }

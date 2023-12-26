@@ -132,6 +132,7 @@ FUNCTION taemg_wrapper {
 					//flags
 					"ohalrt", taemg_internal["ohalrt"],	//taem automatic downmode flag 
 					"mep", taemg_internal["mep"], 		//min entry point flag 
+					"itran", taemg_internal["itran"], 	//phase transition flag 
 					"tg_end", taemg_internal["tg_end"], 	//termination flag 
 					"al_end", taemg_internal["al_end"], 	//termination flag 
 					"geardown", taemg_internal["geardown"],	
@@ -386,6 +387,7 @@ global taemg_internal is lexicon(
 								"igi", 1,			//glideslope selector from input, based on headwind 	//deprecated
 								"igs", 1,			//glideslope selector based on weight 
 								"iphase", 0,	//phase counter 
+								"itran", FALSE,		//signal that a phase transition has occured
 								"ireset", TRUE,		//initially true
 								"isr", 0,		// pre-final roll fader
 								"mep", FALSE,	//minimum entry point flag
@@ -481,7 +483,8 @@ function taemg_dump {
 // 4=alpha tran,	5=nz hold,	6=alpha recovery
 
 //a/l phases (p_mode):
-// 1= pitch capture,	2=steep gs,	3=pull up,	4=shallow gs, final flare 5=rollout
+// 1= pitch capture,	2 and 3=steep gs,	4=pull up,	5=shallow gs, final flare 6=rollout	
+// we have the ogs phase twice because of hud decluttering below h_ref2 ft
 
 //a/l flare modes (f_mode):
 // 1= open-loop pullup, 2= closed-loop circular pullup, 3= exponential decay onto shallow gs
@@ -766,7 +769,7 @@ FUNCTION tgcomp {
 			set taemg_internal["href"] to taemg_internal["pbhc"][0] + (taemg_constants["tggs"][taemg_internal["igs"]] + (taemg_internal["cubic_c3"] + drpred1 * taemg_internal["cubic_c4"]) * drpred1) * drpred1.
 			set dhdrrf to - midval( taemg_constants["tggs"][taemg_internal["igs"]] + drpred1 * (2 * taemg_internal["cubic_c3"] + 3 * taemg_internal["cubic_c4"] * drpred1), taemg_constants["pbgc"][taemg_internal["igs"]], taemg_constants["tggs"][taemg_internal["igs"]]).
 		}
-	} else if (taemg_internal["p_mode"] >= 4) {
+	} else if (taemg_internal["p_mode"] >= 5) {
 		//a/l inner gs
 		set taemg_internal["href"] to (taemg_internal["xaim"] - taemg_input["x"]) * taemg_internal["tgsh"].
 
@@ -774,7 +777,7 @@ FUNCTION tgcomp {
 		local dhdrrf_exp is -constant:e^(taemg_input["h"] / taemg_constants["sigma_exp_hdfnlfl"]).
 
 		set dhdrrf to MAX(dhdrrf_base, dhdrrf_exp).
-	} else if (taemg_internal["p_mode"] = 3) {
+	} else if (taemg_internal["p_mode"] = 4) {
 		//a/l pullup
 		if (taemg_internal["f_mode"] < 3) {
 			//flare circle
@@ -834,6 +837,11 @@ FUNCTION tgcomp {
 //transition logic bw phases 
 FUNCTION tgtran {
 	PARAMETER taemg_input.	
+
+	//my addition: signal when a phase transition occurs to the hud
+	if (taemg_internal["itran"]) {
+		set taemg_internal["itran"] to FALSE.
+	}
 	
 	//a/l transitions
 	if (taemg_internal["tg_end"]) {
@@ -845,19 +853,27 @@ FUNCTION tgtran {
 				set taemg_internal["al_capt_count"] TO taemg_internal["al_capt_count"] - 1.
 				if (taemg_internal["al_capt_count"] <= 0) {
 					set taemg_internal["p_mode"] to 2.
-					return.
+					set taemg_internal["itran"] to TRUE.
 				}
 			}
-		}
-		
-		//toggle open-loop flare
-		if (taemg_internal["p_mode"] = 2) and (taemg_input["h"] <= taemg_constants["hflare"]) {
-			set taemg_internal["p_mode"] to 3.
-			set taemg_internal["f_mode"] to 1.
 			return.
 		}
 		
-		if (taemg_internal["p_mode"] = 3) {
+		//for hud decluttering 
+		if (taemg_internal["p_mode"] = 2) and (taemg_input["h"] < taemg_constants["h_ref2"]) {
+			set taemg_internal["p_mode"] to 3.
+			set taemg_internal["itran"] to TRUE.
+			return.
+		}
+		
+		if (taemg_internal["p_mode"] = 3) and (taemg_input["h"] <= taemg_constants["hflare"]) {
+			set taemg_internal["p_mode"] to 4.
+			set taemg_internal["f_mode"] to 1.
+			set taemg_internal["itran"] to TRUE.
+			return.
+		}
+		
+		if (taemg_internal["p_mode"] = 4) {
 			//toggle closed-loop flare
 			if (taemg_internal["f_mode"] = 1) and (taemg_input["h"] <= taemg_constants["hcloop"]) {
 				set taemg_internal["f_mode"] to 2.
@@ -873,22 +889,24 @@ FUNCTION tgtran {
 			//toggle shallow gs and final flare 
 			if (taemg_internal["f_mode"] = 3) {
 				if (abs(taemg_internal["herrexp"]) <= taemg_constants["al_fnlfl_herrexpmin"]) or (taemg_input["h"] <= taemg_constants["hfnlfl"]) {
-					set taemg_internal["p_mode"] to 4.
+					set taemg_internal["p_mode"] to 5.
 					//command gear down 
 					set taemg_internal["geardown"] to TRUE.
+					set taemg_internal["itran"] to TRUE.
 					return.
 				}
 			}
 		}
 		
 		//toggle rollout
-		if (taemg_internal["p_mode"] = 4) and (taemg_input["wow"]) {
-			set taemg_internal["p_mode"] to 5.
+		if (taemg_internal["p_mode"] = 5) and (taemg_input["wow"]) {
+			set taemg_internal["p_mode"] to 6.
+			set taemg_internal["itran"] to TRUE.
 			return.
 		}
 		
 		//braking and termination
-		if (taemg_internal["p_mode"] = 5) {
+		if (taemg_internal["p_mode"] = 6) {
 			if (taemg_input["surfv_h"] <= taemg_constants["surfv_h_brakes"] ) {
 				set taemg_internal["brakeson"] to TRUE.
 			}
@@ -919,6 +937,7 @@ FUNCTION tgtran {
 			) or (taemg_input["h"] < taemg_constants["h_ref2"]) {
 					set taemg_internal["tg_end"] to TRUE.
 					set taemg_internal["p_mode"] to 1.
+					set taemg_internal["itran"] to TRUE.
 					SET taemg_internal["al_capt_count"] TO CEILING(taemg_constants["al_capt_interv_s"] / taemg_input["dtg"]).
 				}
 			return.
@@ -927,6 +946,7 @@ FUNCTION tgtran {
 		//transition to pre-final based on distance or altitude if on a low energy profile
 		if (taemg_internal["rpred"] < taemg_internal["rpred3"]) or (taemg_input["h"] < taemg_constants["hmin3"]) {
 			set taemg_internal["iphase"] to 3.
+			set taemg_internal["itran"] to TRUE.
 			set taemg_internal["phic"] to taemg_internal["phic_at"].
 			set taemg_internal["philim"] to taemg_constants["philm3"].
 			set taemg_internal["dnzul"] to taemg_constants["dnzuc2"].
@@ -942,6 +962,7 @@ FUNCTION tgtran {
 		//transition from s-turn to acq when below an energy band
 		if (taemg_internal["iphase"] = 0) and (taemg_internal["eow"] < taemg_internal["en"] + enbias) {
 			set taemg_internal["iphase"] to 1.
+			set taemg_internal["itran"] to TRUE.
 			set taemg_internal["philim"] to taemg_constants["philm1"].
 			return.
 		} else if (taemg_internal["iphase"] = 1) {
@@ -953,6 +974,7 @@ FUNCTION tgtran {
 				//if above energy, transition to s-turn 
 				if (taemg_internal["eow"] > taemg_internal["es"]) {
 					set taemg_internal["iphase"] to 0.
+					set taemg_internal["itran"] to TRUE.
 					set taemg_internal["philim"] to taemg_constants["philm0"].
 					//direction of s-turn 
 					set taemg_internal["ysturn"] to -taemg_internal["ysgn"].
@@ -985,6 +1007,7 @@ FUNCTION tgtran {
 			//transition to hac heading when close to the hac radius 
 			if (taemg_internal["rcir"] < taemg_constants["p2trnc1"] * taemg_internal["rturn"]) {
 				SET taemg_internal["iphase"] to 2.
+				set taemg_internal["itran"] to TRUE.
 				set taemg_internal["philim"] to taemg_constants["philm2"].
 			}
 			
@@ -1011,7 +1034,7 @@ FUNCTION tgnzc {
 	local hdreqg is taemg_constants["hdreqg"].
 	
 	
-	if (taemg_internal["p_mode"] >= 4) {
+	if (taemg_internal["p_mode"] >= 5) {
 		set hdreqg to 0.
 	}
 
@@ -1032,10 +1055,6 @@ FUNCTION tgnzc {
 	local hderrc is taemg_internal["hdrefc"] - taemg_input["hdot"].
 	
 	set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * (taemg_internal["gdh"] * hderrc).
-	
-	if (taemg_internal["p_mode"] >= 5) {
-		set taemg_internal["hdrefc"] to taemg_input["hdot"]. 
-	}
 	
 	//qbar profile varies within an upper and a lower profile
 	
@@ -1195,8 +1214,8 @@ FUNCTION tgphic {
 			set philimit to taemg_constants["philm4"].
 		}
 			
-		//if a/l and rollout, turn the roll command into a yaw command	
-		if (taemg_internal["p_mode"] = 5)	{
+		//if a/l and final flare or rollout, turn the roll command into a yaw command	
+		if (taemg_internal["p_mode"] >= 5)	{
 			set taemg_internal["phic_at"] to 0.
 			set taemg_internal["betac_at"] to midval ( taemg_internal["phic"], -philimit, philimit).
 			return.
