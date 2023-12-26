@@ -218,7 +218,7 @@ global taemg_constants is lexicon (
 									"h_ref2", 5000,			//ft alt to force transition to a/l
 									"hali", LIST(0, 10018, 10018),		//ft altitude at a/l for reference profiles
 									//"hdreqg", 0.1,				//hdreq computation gain 		//OTT
-									"hdreqg", 0.19,				//hdreq computation gain 		//OTT
+									"hdreqg", 0.12,				//hdreq computation gain 		//OTT
 									"hftc", LIST(0, 12018, 12018),		//ft altitude of a/l steep gs at nominal entry pt
 									"machad", 0.75,		//mach to use air data (used in gcomp appendix)
 									"mxqbwt", 0.0007368421,		// psf/lb max l/d dyn press for nominal weight		//deprecated 
@@ -329,19 +329,20 @@ global taemg_constants is lexicon (
 									"rtanmin", 328,				//ft my own addition, empirical
 									
 									//A/L guidance stuff 
-									"tgsh", TAN(4),			//tangent of shallow gs
+									"tgsh", TAN(2.8),			//tangent of shallow gs
 									"xaim", 2000,			//ft aim point distance from threshold		
 									"hflare", 2000,			//ft transition to open loop flare
 									"hcloop", 1700,			//ft transition to closed loop flare
-									"rflare", 16000,		//ft flare circle radius
-									"hdecay", 29,			//ft exponential decay gain
+									"rflare", 17000,		//ft flare circle radius
+									"hdecay", 10,			//ft exponential decay gain
 									"sigma_exp", 500,		//ft exp decay characteristic distance
 									"al_capt_herrlim", 50, 	//ft altitude error for steep gs capture
-									"al_capt_gammalim", 2, 	//deg fpa error for steep gs capture
+									"al_capt_gammalim", 1, 	//deg fpa error for steep gs capture
+									"al_capt_interv_s", 4, 	//s time interval for errors to be within tolerance to toggle capture
 									"al_fnlfl_herrexpmin", 1, //ft alt delta on exponential decay for final flare toggle
 									"hfnlfl", 200,			//ft alt at which to force transition to final flare
-									"sigma_exp_hdfnlfl", 20,			//ft exp decay for hdot during final flare
-									"philm5", 10, 				//deg bank lim for flare and beyond
+									"sigma_exp_hdfnlfl", 40,			//ft exp decay for hdot during final flare
+									"philm5", 15, 				//deg bank lim for flare and beyond
 									"surfv_h_brakes", 140,		//ft/s trigger for braking outside executive
 									"surfv_h_exit", 15		//ft/s trigger for termination
 									
@@ -431,6 +432,7 @@ global taemg_internal is lexicon(
 								"al_end", FALSE,		//termination flag 
 								"p_mode", 0,		//a/l mode flag 
 								"f_mode", 0,		//a/l flare mode flag during p_mode=3
+								"al_capt_count", 0,		//a/l iteration counter for capture
 								"geardown", FALSE,	//flag to command gear down to outside executive
 								"brakeson", FALSE,	//flag to command brakes on to outside executive
 								"tgstp", 0,			//steep gs tangent (set to tggs)
@@ -836,10 +838,15 @@ FUNCTION tgtran {
 	//a/l transitions
 	if (taemg_internal["tg_end"]) {
 		//capture steep gs when errors small enough
+		//CAREFUL: gamma is negative but gsstp is positive!
 		if (taemg_internal["p_mode"] = 1) {
-			if (abs(taemg_internal["herror"]) < taemg_constants["al_capt_herrlim"] and abs(taemg_input["gamma"] - taemg_internal["gsstp"]) < taemg_constants["al_capt_gammalim"] ) or (taemg_input["h"] < taemg_constants["h_ref2"]) {
-				set taemg_internal["p_mode"] to 2.
-				return.
+			if (abs(taemg_internal["herror"]) < taemg_constants["al_capt_herrlim"] and abs(taemg_input["gamma"] + taemg_internal["gsstp"]) < taemg_constants["al_capt_gammalim"] ) or (taemg_input["h"] < taemg_constants["h_ref2"]) {
+				//measure the capture condition for enough time and then switch
+				set taemg_internal["al_capt_count"] TO taemg_internal["al_capt_count"] - 1.
+				if (taemg_internal["al_capt_count"] <= 0) {
+					set taemg_internal["p_mode"] to 2.
+					return.
+				}
 			}
 		}
 		
@@ -911,7 +918,8 @@ FUNCTION tgtran {
 				and (abs(taemg_input["gamma"] - taemg_constants["gamsgs"][taemg_internal["igs"]]) < (taemg_input["h"] * taemg_constants["gamma_coef1"] - taemg_constants["gamma_coef2"]))
 			) or (taemg_input["h"] < taemg_constants["h_ref2"]) {
 					set taemg_internal["tg_end"] to TRUE.
-					set taemg_internal["p_mode"] to 2.
+					set taemg_internal["p_mode"] to 1.
+					SET taemg_internal["al_capt_count"] TO CEILING(taemg_constants["al_capt_interv_s"] / taemg_input["dtg"]).
 				}
 			return.
 		}
@@ -924,7 +932,7 @@ FUNCTION tgtran {
 			set taemg_internal["dnzul"] to taemg_constants["dnzuc2"].
 			set taemg_internal["dnzll"] to taemg_constants["dnzlc2"].
 			//moved from init so we have an updated value of dtg
-			SET taemg_internal["isr"] TO taemg_constants["rftc"] / taemg_input["dtg"].
+			SET taemg_internal["isr"] TO CEILING(taemg_constants["rftc"] / taemg_input["dtg"]).
 			return.
 		}
 		
@@ -1000,25 +1008,22 @@ FUNCTION tgnzc {
 	
 	set taemg_internal["gdh"] to 0.55.
 
-	set taemg_internal["hdreqg"] to 0.0005.
-
-	local dhdrefg is 0.3.
+	local hdreqg is taemg_constants["hdreqg"].
 	
 	
 	if (taemg_internal["p_mode"] >= 4) {
-		set taemg_internal["hdreqg"] to 0.
-		set dhdrefg to 0.8.
+		set hdreqg to 0.
 	}
 
 	local hdherrcmax is 90.
 		
 	//unlimited normal accel commanded to stay on profile
-	local hdrefc_n is taemg_internal["hdref"] + clamp(taemg_constants["hdreqg"] * taemg_internal["herror"], -hdherrcmax, hdherrcmax) .
+	local hdrefc_n is taemg_internal["hdref"] + clamp(hdreqg * taemg_internal["herror"], -hdherrcmax, hdherrcmax) .
 
 	if (taemg_internal["hdrefc"] = 0) {
 		set taemg_internal["hdrefc"] to hdrefc_n.
 	} else {
-		local dhdrefc is dhdrefg * (hdrefc_n - taemg_internal["hdrefc"]). 
+		local dhdrefc is (hdrefc_n - taemg_internal["hdrefc"]) / 2. 
 		set taemg_internal["hdrefc"] to taemg_internal["hdrefc"] + dhdrefc.
 	}
 	

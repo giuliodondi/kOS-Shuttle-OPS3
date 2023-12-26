@@ -412,11 +412,11 @@ FUNCTION dap_hdot_nz_controller_factory{
 	}).
 	
 	this:add("set_taem_pid_gains", {
-		local kc is 0.003.
+		local kc is 0.004.
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * 6.
+		set this:hdot_nz_pid:Kd to kc * 2.9.
 	}).
 
 	this:add("set_landing_pid_gains", {
@@ -424,7 +424,7 @@ FUNCTION dap_hdot_nz_controller_factory{
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * 10.
+		set this:hdot_nz_pid:Kd to kc * 7.
 	}).
 	
 
