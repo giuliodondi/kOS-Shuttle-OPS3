@@ -412,19 +412,19 @@ FUNCTION dap_hdot_nz_controller_factory{
 	}).
 	
 	this:add("set_taem_pid_gains", {
-		local kc is 0.0035.
+		local kc is 0.004.
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * 3.5.
+		set this:hdot_nz_pid:Kd to kc * 2.9.
 	}).
 
 	this:add("set_landing_pid_gains", {
-		local kc is 0.0015.
+		local kc is 0.003.
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * 5.5.
+		set this:hdot_nz_pid:Kd to kc * 4.8.
 	}).
 	
 
@@ -806,13 +806,15 @@ FUNCTION aerosurfaces_control_factory {
 	this:ADD("pitch_control", average_value_factory(5)).
 	
 	this:ADD("update", {
+		parameter auto_flag.
+
 		 //read off the gimbal angle to get the pitch control input 
 		this:pitch_control:update(this:gimbal:PITCHANGLE).
 
 		LOCAL flap_incr IS 0.
 		
 		If auto_flag {
-			LOCAL controlavg IS aerosurfaces_control["pitch_control"]:average().
+			LOCAL controlavg IS this:pitch_control:average().
 			SET flap_incr TO FLAPPID:UPDATE(TIME:SECONDS,controlavg).
 		} ELSE {
 			SET flap_incr TO SHIP:CONTROL:PILOTPITCHTRIM.
@@ -822,9 +824,9 @@ FUNCTION aerosurfaces_control_factory {
 		
 		if (this:flap_engaged) {
 			SET this:flap_defl TO CLAMP(this:flap_defl + flap_incr,-1,1).
-		} else {
-			SET this:flap_defl TO 0.
 		}
+
+		this:deflect().
 	}).
 
 	this["activate"]().
