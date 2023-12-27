@@ -16,9 +16,6 @@ RUNPATH("0:/Shuttle_OPS3/src/ops3_control_utility.ks").
 
 RUNPATH("0:/Shuttle_OPS3/src/taem_guid.ks").
 
-RUNPATH("0:/Shuttle_OPS3/vessel_dir").
-RUNPATH("0:/Shuttle_OPS3/VESSELS/" + vessel_dir + "/aerosurfaces_control").
-
 GLOBAL quit_program IS FALSE.
 
 IF (DEFINED tgtrwy) {UNSET tgtrwy.}
@@ -114,7 +111,7 @@ FUNCTION ops3_taem_test {
 			SET steerdir TO dap:update().
 		
 			flaptrim_control(TRUE, aerosurfaces_control).
-			aerosurfaces_control["deflect"]().
+			aerosurfaces_control:deflect().
 			
 		}
 	).
@@ -186,12 +183,13 @@ FUNCTION ops3_taem_test {
 		SET dap:tgt_hdot tO taemg_out["hdrefc"].
 		SET dap:tgt_roll tO taemg_out["phic_at"].
 		SET dap:tgt_yaw tO taemg_out["betac_at"].
-		
-		SET aerosurfaces_control["spdbk_defl"] TO taemg_out["dsbc_at"].
+
+		IF (RCS) and (rwystate["mach"] < 0.9) {
+			RCS OFF.
+		}
 
 		if (NOT GEAR) and (taemg_out["geardown"]) {
 			GEAR ON.
-			dap:set_landing_pid_gains().
 		}
 		
 		if (NOT BRAKES) and (taemg_out["brakeson"]) {
@@ -200,6 +198,7 @@ FUNCTION ops3_taem_test {
 
 		if (taemg_in["wow"]) {
 			set dap:pitch_channel_engaged to FALSE.
+			set aerosurfaces_control:flap_engaged to FALSE.
 		}
 		
 		
@@ -214,6 +213,10 @@ FUNCTION ops3_taem_test {
 
 		if (taemg_out["itran"]) {
 			hud_decluttering(taemg_out["guid_id"]).
+			//at flare transition, change gains 
+			if (taemg_out["guid_id"] >= 34) {
+				dap:set_landing_pid_gains().
+			}
 		}
 		
 		update_hud_gui(
@@ -223,7 +226,6 @@ FUNCTION ops3_taem_test {
 			rwystate["h"],
 			taemg_out["rpred"] / 1000,
 			rwystate["rwy_rel_crs"],
-			ADDONS:FAR:MACH,
 			lvlh_pch,
 			lvlh_rll,
 		    aerosurfaces_control["spdbk_defl"],
