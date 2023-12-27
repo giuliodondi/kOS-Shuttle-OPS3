@@ -937,61 +937,69 @@ FUNCTION reset_hud_bg_brightness {
 	
 }
 
-
+fUNCTION get_hud_datalex {
+	RETURN LEXICON(
+					"phase", 0,
+					"css_flag", 0,
+					"pipper_deltas", 0,
+					"altitude", 0,
+					"hdot", 0,
+					"distance", 0,
+					"delaz", 0,
+					"cur_pch", 0,
+					"cur_roll", 0,
+					"spdbk_val", 0,
+					"flapval", 0,
+					"cur_nz", 0
+	).
+}
 
 FUNCTION update_hud_gui {
-	PARAMETER phase.
-	PARAMETER css_flag.
-	PARAMETER pipper_pos.
-	PARAMETER altt.
-	PARAMETEr dist.
-	PARAMETER hdgval.
-	PARAMETER spd.
-	PARAMETER pch.
-	PARAMETER rll.
-	PARAMETER spdbk_val.
-	PARAMETER flapval.
-	PARAMETER cur_nz.
+	PARAMETER hud_datalex.
 	
 	LOCAL steer_str IS "AUTO".
-	IF (css_flag) {
+	IF (hud_datalex["css_flag"]) {
 		SET steer_str TO "CSS ".
 	}
 
 	SET steer_txt:text TO "<size=18>" + steer_str + "</size>".
 	
-	SET mode_txt:text TO "<size=18>" + hud_guid_labels(phase) + "</size>".
+	SET mode_txt:text TO "<size=18>" + hud_guid_labels(hud_datalex["phase"]) + "</size>".
 
 	// set the pipper to an intermediate position between the desired and the current position so the transition is smoother
 	LOCAL smooth_fac IS 0.5.
 	
 	LOCAL pipper_pos_cur IS LIST(diamond:STYLE:margin:h, diamond:STYLE:margin:v).
 	
-	local altt_format is altitude_format(altt, phase).
-	local dist_format is distance_format(dist, phase).
+	local altt_format is altitude_format(hud_datalex["altitude"], hud_datalex["phase"]).
+	local dist_format is distance_format(hud_datalex["distance"], hud_datalex["phase"]).
 
-	set_vspd_slider_limits(phase).
+	local spd_format is speed_format(hud_datalex["phase"]).
 
-	SET diamond:STYLE:margin:h TO pipper_pos_cur[0] + smooth_fac*(pipper_pos[0] - pipper_pos_cur[0]).
-	SET diamond:STYLE:margin:v TO pipper_pos_cur[1] + smooth_fac*(pipper_pos[1] - pipper_pos_cur[1]).
+	set_vspd_slider_limits(hud_datalex["phase"]).
+
+	LOCAL pipper_deltas IS diamond_deviation_phase(hud_datalex["pipper_deltas"], hud_datalex["phase"]).
+
+	SET diamond:STYLE:margin:h TO pipper_pos_cur[0] + smooth_fac*(pipper_deltas[0] - pipper_pos_cur[0]).
+	SET diamond:STYLE:margin:v TO pipper_pos_cur[1] + smooth_fac*(pipper_deltas[1] - pipper_pos_cur[1]).
 	
-	SET vspd_slider:VALUE TO CLAMP(-SHIP:VERTICALSPEED,vspd_slider:MIN,vspd_slider:MAX).
+	SET vspd_slider:VALUE TO CLAMP(-hud_datalex["hdot"],vspd_slider:MIN,vspd_slider:MAX).
 	
-	SET hdg_text:text TO "<size=18>" + ROUND(hdgval, 0)  + "</size>".
+	SET hdg_text:text TO "<size=18>" + ROUND(hud_datalex["delaz"], 0)  + "</size>".
 	
-	SET spd_text:text TO "<size=18>M"+ ROUND(spd,1) + "</size>".
+	SET spd_text:text TO "<size=18>"+ spd_format + "</size>".
 	SET alt_text:text TO "<size=18>" + altt_format + "</size>".
 	
-	SET nz_text:text TO "<size=18>" + ROUND(cur_nz,1) + " G</size>".
+	SET nz_text:text TO "<size=18>" + ROUND(hud_datalex["cur_nz"],1) + " G</size>".
 	
 	SET mode_dist_text:text TO "<size=18>" + dist_format + "</size>".
 		
-	SET spdbk_slider:VALUE TO spdbk_val.
+	SET spdbk_slider:VALUE TO hud_datalex["spdbk_val"].
 	
-	SET flaptrim_slider:VALUE TO flapval.
+	SET flaptrim_slider:VALUE TO hud_datalex["flapval"].
 	
-	SET hudrll_text:text TO "<size=12>" + ROUND(rll,0) + "</size>".
-	SET hudpch_text:text TO "<size=12>" + ROUND(pch,0) + "</size>".
+	SET hudrll_text:text TO "<size=12>" + ROUND(hud_datalex["cur_roll"],0) + "</size>".
+	SET hudpch_text:text TO "<size=12>" + ROUND(hud_datalex["cur_pch"],0) + "</size>".
 
 }
 
@@ -1041,8 +1049,21 @@ FUNCTION set_vspd_slider_limits {
 
 //scales the deltas by the right amount for display
 //accounting for the diamond window width
-FUNCTION diamond_deviation_taem {
+FUNCTION diamond_deviation_phase {
 	PARAMETER deltas.
+	PARAMETER iphase.
+
+	LOCAL vmult iS 0.
+	LOCAL hmult iS 0.
+	
+	//the vertical multiplier needs to be negative
+	IF (iphase<20) {
+		SET vmult TO -0.07.
+		SET hmult TO 0.03.
+	} ELSE {
+		SET vmult TO -0.013.
+		SET hmult TO 0.02.
+	}
 	
 	LOCAL hmargin IS diamond_central_x.
 	LOCAL vmargin IS diamond_central_y.
@@ -1050,10 +1071,6 @@ FUNCTION diamond_deviation_taem {
 	LOCAL vdelta IS deltas[1].
 	LOCAL hdelta IS deltas[0].
 	
-	//the vertical multiplier needs to be negative
-	LOCAL vmult iS -0.013.
-	
-	LOCAL hmult iS 0.01.
 	
 	LOCAL horiz IS hmult*hdelta.
 	LOCAL vert IS  vmult*vdelta.
@@ -1069,7 +1086,6 @@ FUNCTION diamond_deviation_taem {
 	
 
 	RETURN LIST(diamond_horiz,diamond_vert).
-
 }
 
 FUNCTION hud_guid_labels{
@@ -1170,6 +1186,17 @@ FUNCTION distance_format {
 	}
 
 }
+
+FUNCTION speed_format {
+	PARAMETER iphase.
+
+	if (iphase <= 22) { 
+		return "M" + ROUND(ADDONS:FAR:MACH, 1).
+	} else {
+		return ROUND(SHIP:VELOCITY:SURFACE:MAG, 0).
+	}
+}
+	
 
 FUNCTION hud_decluttering {
 	PARAMETER iphase.
