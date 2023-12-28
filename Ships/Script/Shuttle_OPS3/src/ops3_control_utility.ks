@@ -517,9 +517,9 @@ FUNCTION dap_hdot_nz_controller_factory{
 		this:measure_cur_state().
 		
 		//gains suitable for manoeivrable steerign in atmosphere
-		LOCAL rollgain IS 2.
-		LOCAL pitchgain IS 0.3.
-		LOCAL yawgain IS 2.
+		LOCAL rollgain IS 2.5.
+		LOCAL pitchgain IS 0.5.
+		LOCAL yawgain IS 1.8.
 		
 		//required for continuous pilot input across several funcion calls
 		LOCAL time_gain IS ABS(this:iteration_dt/0.03).

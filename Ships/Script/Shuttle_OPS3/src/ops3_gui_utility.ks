@@ -967,7 +967,7 @@ FUNCTION update_hud_gui {
 	SET mode_txt:text TO "<size=18>" + hud_guid_labels(hud_datalex["phase"]) + "</size>".
 
 	// set the pipper to an intermediate position between the desired and the current position so the transition is smoother
-	LOCAL smooth_fac IS 0.5.
+	LOCAL smooth_fac IS 0.25.
 	
 	LOCAL pipper_pos_cur IS LIST(diamond:STYLE:margin:h, diamond:STYLE:margin:v).
 	
