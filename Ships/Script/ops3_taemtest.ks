@@ -204,8 +204,8 @@ FUNCTION ops3_taem_test {
             if (taemg_out["guid_id"] >= 36) {
                 set dap:pitch_channel_engaged to FALSE.
             }
-            //at flare transition, change gains 
-            else if (taemg_out["guid_id"] >= 34) {
+            //at final flare transition, change gains 
+            else if (taemg_out["guid_id"] >= 35) {
                 dap:set_landing_pid_gains().
                 set aerosurfaces_control:flap_engaged to FALSE.
             }

@@ -385,6 +385,8 @@ FUNCTION dap_hdot_nz_controller_factory{
 	}).
 	
 	this:add("nz_lims", LIST(-2.2, 2.2)).
+	this:add("delta_pch_lims", LIST(-3, 3)).
+	this:add("delta_roll_lims", LIST(-14, 14)).
 	
 	this:add("css_roll_lims", LIST(-55, 55)).
 	this:add("css_pitch_lims", LIST(-10, 20)).
@@ -420,11 +422,11 @@ FUNCTION dap_hdot_nz_controller_factory{
 	}).
 
 	this:add("set_landing_pid_gains", {
-		local kc is 0.003.
+		local kc is 0.0042.
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * 4.8.
+		set this:hdot_nz_pid:Kd to kc * 3.2.
 	}).
 	
 
@@ -485,17 +487,12 @@ FUNCTION dap_hdot_nz_controller_factory{
 		this:update_time().
 		this:measure_cur_state().
 		
-		
-		LOCAL roll_tol IS 14.
-		
 		if (this:pitch_channel_engaged) {
 			SET this:tgt_nz TO CLAMP(this:nz + (this:update_hdot_pid()) / COS(this:prog_roll), this:nz_lims[0], this:nz_lims[1]).
-			SET this:steer_pitch TO this:steer_pitch + this:update_nz_pid().
-		} else {
-			SET this:steer_pitch TO this:prog_pitch.
+			SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
 		}
 		
-		SET this:steer_roll TO this:prog_roll + CLAMP(this:tgt_roll - this:prog_roll,-roll_tol,roll_tol).
+		SET this:steer_roll TO this:prog_roll + CLAMP(this:tgt_roll - this:prog_roll,this:delta_roll_lims[0], this:delta_roll_lims[1]).
 		SET this:steer_yaw TO this:tgt_yaw.
 		
 		SET this:steer_roll TO CLAMP(this:steer_roll, this:css_roll_lims[0], this:css_roll_lims[1]).
