@@ -153,6 +153,23 @@ FUNCTION taemg_wrapper {
 
 //deprecated -> present in sts1 baseline and not in ott baseline - also disabled from ott
 global taemg_constants is lexicon (
+									//my addition: alpha upper and lower limit - simplified from level-C
+									"alpulc1", 3.4637,		//linear coef of upper alpha limit with mach
+									"alpulc2", 9.2353,		//° constant coef of upper alpha limit with mach
+									"alpulc3", 13.7,		//° max upper alpha limit
+									"alpulc4", 17.8,		//° min upper alpha limit							
+									"alpllcm1", 1.3,		// mach breakpoint for lower alpha limit vs mach 
+									"alpllcm2", 2.25,		// mach breakpoint for lower alpha limit vs mach 
+									"alpllc1", 1.4706,		//linear coef of lower alpha limit with mach 
+									"alpllc2", 1.5904,		//° constant coef of lower alpha limit with mach
+									"alpllc3", 2.3918,		//linear coef of lower alpha limit with mach 
+									"alpllc4", 0.4127,		//° constant coef of lower alpha limit with mach
+									"alpllc5", 4.84,		//linear coef of lower alpha limit with mach 
+									"alpllc6", -5.1031,		//° constant coef of lower alpha limit with mach
+									"alpllc7", 11.7,		//° max lower alpha limit
+									"alpllc8", 2.6,		//° min lower alpha limit
+									
+									
 									"cdeqd", 0.68113143,	//gain in qbd calculation
 									"cpmin", 0.707,		//cosphi min value 
 									"cqdg", 0.31886860,		//gain for qbd calculation 
@@ -359,6 +376,8 @@ global taemg_constants is lexicon (
 									"surfv_h_exit", 15,		//ft/s trigger for termination
 									
 									//GRTLS guidance stuff
+									"gralpul", 50,		//° grtls upper lim on aoa
+									"gralpll", 0,		//° grtls lower lim on aoa
 									"msw1", 3.2, 		//mach to switch from grtls phase 4 to taem phase 1
 									"msw3", 7.0, 		//upper mach to enable phase 4 s-turns
 									"nzsw1", 1.85,		//gs initial value of nzsw
@@ -401,6 +420,9 @@ global taemg_internal is lexicon(
 								"cubic_c4", 0,	//ft/ft^2 href curve fit cubic term
 								"pbhc", LIST(70000, 0), 		//ft href for drpred = pbrc[i]
 								"pbrc", LIST(0, 0), 		//ft ranges for different href segments
+								
+								"alpul", 0,		//° upper limit on aoa
+								"alpll", 0,		//° lower limit on aoa
 								
 								"delrng", 0,	//ft range error from altitude profile 
 								"dnzc", 0, 
@@ -716,6 +738,9 @@ FUNCTION tginit {
 		set taemg_internal["smnz1"] to taemg_constants["smnzc1"].
 		set taemg_internal["smnz2"] to taemg_constants["smnzc2"].
 		set taemg_internal["istp4"] to 1.
+		//for grtls they won't be touched until taem is triggered
+		 set taemg_internal["alpul"] to taemg_constants["gralpul"].
+		 set taemg_internal["alpll"] to taemg_constants["gralpll"].
 	}
 	
 	SET taemg_internal["tg_end"] TO FALSE.
@@ -1200,13 +1225,23 @@ FUNCTION tgnzc {
 		local eownzul is (taemg_constants["geul"] * taemg_internal["gdh"] * (taemg_internal["emax"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdul"] * taemg_internal["gdh"].
 		local eownzll is (taemg_constants["gell"] * taemg_internal["gdh"] * (taemg_internal["emin"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdll"] * taemg_internal["gdh"].
 		
+		//alpha limits for taem
+		set taemg_internal["alpul"] to midval(taemg_constants["alpulc1"] * taemg_input["mach"] + taemg_constants["alpulc2"], taemg_constants["alpulc3"], taemg_constants["alpulc4"]).
+		if (taemg_input["mach"] < taemg_constants["alpllcm1"]) {
+			set taemg_internal["alpll"] to midval(taemg_constants["alpllc1"] * taemg_input["mach"] + taemg_constants["alpllc2"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
+		} else if (taemg_input["mach"] < taemg_constants["alpllcm2"]) {
+			set taemg_internal["alpll"] to midval(taemg_constants["alpllc3"] * taemg_input["mach"] + taemg_constants["alpllc4"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
+		} else {
+			set taemg_internal["alpll"] to midval(taemg_constants["alpllc5"] * taemg_input["mach"] + taemg_constants["alpllc6"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
+		}
+		
 		//cascade of filters
 		//limit by eow
 		set taemg_internal["dnzcl"] to midval(taemg_internal["dnzcl"], eownzll, eownzul).
 		
 		//calculate commanded nz by limiting delta
 		local dnzcd is midval((taemg_internal["dnzcl"] - taemg_internal["nzc"]) * taemg_constants["cqg"], -taemg_constants["dnzcdl"], taemg_constants["dnzcdl"]).
-		//apply strucutral limits on nz cmd
+		//apply structural limits on nz cmd
 		set taemg_internal["nzc"] to midval(taemg_internal["nzc"] + dnzcd * taemg_input["dtg"], taemg_internal["dnzll"], taemg_internal["dnzul"]).
 
 		local dnz2ddh is 1 / (taemg_internal["gdh"] * taemg_constants["dnzcg"]).
