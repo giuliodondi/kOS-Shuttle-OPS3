@@ -96,6 +96,11 @@ FUNCTION taemg_wrapper {
 		set guid_id to  30 + taemg_internal["p_mode"].
 	} else {
 		set  guid_id to 20 + taemg_internal["iphase"].
+		
+		//set guid mode to s-turn during phase 4 
+		if (taemg_internal["iphase"] = 4) and (taemg_internal["istp4"] = 0) {
+			set  guid_id to 20.
+		}
 	}
 
 	//dsbc_at needs to be transformed to a 0-1 variable based on max deflection (halved)
@@ -355,6 +360,7 @@ global taemg_constants is lexicon (
 									
 									//GRTLS guidance stuff
 									"msw1", 3.2, 		//mach to switch from grtls phase 4 to taem phase 1
+									"msw3", 7.0, 		//upper mach to enable phase 4 s-turns
 									"nzsw1", 1.85,		//gs initial value of nzsw
 									"gralps", 1.6449,	//linear coef of alpha transition aoa vs mach
 									"gralpi",9.6482,	//° constant coef of alpha transition aoa vs mach
@@ -363,8 +369,8 @@ global taemg_constants is lexicon (
 									"hdtrn", -347.5,	//ft/s hdot for transition to phase 4
 									"smnzc1", 0.125,		//gs initial value of smnz1
 									"smnzc2", 0.258,		//gs initial value of smnz2
-									"smnzc3", 0.2,		//coefficient for smnz1
-									"smnzc4", 0.008,		//gs constant nz value for computing smnz2
+									"smnzc3", 0.7314,		//coefficient for smnz1
+									"smnzc4", 0.0086956,		//gs constant nz value for computing smnz2
 									"smnz2l", -0.05,
 									"grnzc1", 1.2,		//gs desired normal accel for nz hold 
 									"alprec", 50,		//° aoa during alpha recovery
@@ -380,6 +386,7 @@ global taemg_constants is lexicon (
 									"grsbl2", 65,			//lower grtls speedbrake limit
 									"machsbs", 19.5,			//linear coef for speedbrake
 									"machsbi", 2.6,			//constant coef for speedbrake
+									"grpsstrn", 1000,		//° pshac limit for s-turns, high so that s-turns are always performed
 									
 									
 									"dummy", 0			//can't be arsed to add commas all the time
@@ -571,11 +578,8 @@ function tgexec {
 	
 		if (taemg_internal["iphase"] = 4){
 			tgcomp(taemg_input).
-
 		}
-	}
-	
-	if (taemg_internal["iphase"] >= 4){
+		
 		if (taemg_internal["iphase"] = 5){
 			grnzc(taemg_input).
 		} else {
@@ -1062,14 +1066,19 @@ FUNCTION tgtran {
 		//my modification, turn off s-turn when below es
 		
 		//transition from s-turn to acq when below an energy band
-		if (taemg_internal["iphase"] = 0) and (taemg_internal["eow"] <= taemg_internal["est"]) {
+		if (taemg_internal["iphase"] = 0) and (taemg_internal["eow"] < taemg_internal["est"]) {
 			set taemg_internal["iphase"] to 1.
 			set taemg_internal["itran"] to TRUE.
 			set taemg_internal["philim"] to taemg_constants["philm1"].
 			return.
 		} else if (taemg_internal["iphase"] = 1) {
 			//check if we can still do an s-turn  to avoid geometry problems
-			if ((taemg_internal["psha"] < taemg_constants["psstrn"] and taemg_internal["drpred"] > taemg_constants["rminst"][taemg_internal["igs"]])) {
+			//refactoring if we came in from grtls
+			local pshalim is taemg_constants["psstrn"].
+			if (taemg_input["grtls"]) {
+				set pshalim to taemg_constants["grpsstrn"].	
+			}
+			if ((taemg_internal["psha"] < pshalim and taemg_internal["drpred"] > taemg_constants["rminst"][taemg_internal["igs"]])) {
 				
 				//moved es calculation to tgcomp
 				
@@ -1145,6 +1154,9 @@ FUNCTION tgnzc {
 	//try lag filtering 
 	set taemg_internal["hderrcl"]  to (1 - taemg_constants["hderr_lag_k"]) * taemg_internal["hderrc"] + taemg_constants["hderr_lag_k"] *  hderrcn.
 
+	//unlimited normal accel commanded to stay on profile
+	set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * taemg_internal["gdh"] * taemg_internal["hderrcl"].
+	
 	
 	//qbar profile varies within an upper and a lower profile
 	
@@ -1175,6 +1187,8 @@ FUNCTION tgnzc {
 	//limits on qbar
 	local qbnzul is - (taemg_constants["qbg1"] * (qbmnnz - taemg_internal["qbarf"]) - taemg_internal["qbd"]) * taemg_constants["qbg2"].
 	local qbnzll is - (taemg_constants["qbg1"] * (qbmxnz - taemg_internal["qbarf"]) - taemg_internal["qbd"]) * taemg_constants["qbg2"].
+
+	set taemg_internal["dnzcl"] to taemg_internal["dnzc"].
 
 	//my modification: transform energy nz filters into hdot error filters
 	//don't do energy filtering beyond acq phase
@@ -1208,9 +1222,16 @@ FUNCTION tgnzc {
 		
 	} else {
 		set taemg_internal["hderrc"] to taemg_internal["hderrcl"].
+		set taemg_internal["nzc"] to taemg_internal["dnzcl"].
 	}
 
 	set taemg_internal["hdrefc"] to taemg_input["hdot"] + taemg_internal["hderrc"].
+	
+	//apply strucutral limits on nz cmd
+	set taemg_internal["nzc"] to midval(taemg_internal["nzc"], taemg_internal["dnzll"], taemg_internal["dnzul"]).
+	
+	//my addition from 
+	set taemg_internal["nztotal"] to midval(taemg_internal["nzc"] + taemg_input["costh"] / taemg_input["cosphi"], -taemg_constants["nztotallim"], taemg_constants["nztotallim"]).
 }		
 									
 FUNCTION tgsbc {
@@ -1260,7 +1281,7 @@ FUNCTION tgphic {
 	
 	if (taemg_internal["iphase"] = 0) {
 		//s-turn bank constant in the right direction
-		set taemg_internal["phic"] to taemg_internal["ysturn"] * philimit.
+		set taemg_internal["phic"] to taemg_internal["ysturn"] * philimit.	
 	} else if (taemg_internal["iphase"] = 1) {
 		//acq bank proportional to heading error
 		set taemg_internal["phic"] to taemg_constants["gphi"] * taemg_internal["dpsac"].
@@ -1334,15 +1355,21 @@ FUNCTION tgphic {
 function grtrn {
 	PARAMETER taemg_input.	
 	
+	//my addition: signal when a phase transition occurs to the hud
+	if (taemg_internal["itran"]) {
+		set taemg_internal["itran"] to FALSE.
+	}
+	
 	if (taemg_internal["iphase"] = 6) {
 		if (taemg_input["nz"] > taemg_internal["nzsw"] + taemg_internal["dgrnz"]) {
 			set taemg_internal["iphase"] to 5.
+			set taemg_internal["itran"] to TRUE.
 		}
 		return.
 	}
-	taemg_internal["gralpr"]
+	
 	//alpha recovery aoa profile
-	set  to midval(taemg_constants["gralps"] * taemg_input["mach"] + taemg_constants["gralpi"], taemg_constants["gralpl"], taemg_constants["gralpu"]).
+	set taemg_internal["gralpr"] to midval(taemg_constants["gralps"] * taemg_input["mach"] + taemg_constants["gralpi"], taemg_constants["gralpl"], taemg_constants["gralpu"]).
 	//skip amaxld limitation
 	set taemg_internal["gralpr"] to taemg_internal["gralpr"] / abs(taemg_input["cosphi"]).
 	
@@ -1352,6 +1379,7 @@ function grtrn {
 			and (taemg_input["alpha"] > taemg_internal["gralpr"])
 		) {
 			set taemg_internal["iphase"] to 4.
+			set taemg_internal["itran"] to TRUE.
 			SET taemg_internal["qbarf"] TO taemg_input["qbar"].
 			
 			//removed call to tgcomp
@@ -1362,6 +1390,7 @@ function grtrn {
 	if (taemg_internal["iphase"] = 4) and (taemg_input["mach"] < taemg_constants["msw1"]) { 
 		//the idea is to maintain the s-turn status when transitioning from grtls to taem
 		set taemg_internal["iphase"] to taemg_internal["istp4"].
+		set taemg_internal["itran"] to TRUE.
 	}
 }
 
@@ -1369,12 +1398,14 @@ function grtrn {
 function grnzc {
 	PARAMETER taemg_input.	
 	
-	set taemg_internal["smnz1"] to taemg_internal["smnz1"] * taemg_constants["smnzc3"].
-	set taemg_internal["smnz2"] to MAX(taemg_internal["smnz2"] - taemg_constants["smnzc4"], taemg_constants["smnz2l"]).
+	//correct coefficients for different iteration time 
+	set taemg_internal["smnz1"] to taemg_internal["smnz1"] * (taemg_constants["smnzc3"]^taemg_input["dtg"]).
+	set taemg_internal["smnz2"] to MAX(taemg_internal["smnz2"] - (taemg_constants["smnzc4"] * taemg_input["dtg"]), taemg_constants["smnz2l"]).
 	
 	// constant value minus linear and exponential terms that ramp down with time 
-	
+	//remmeber that nzc is increment over equilibrium
 	set taemg_internal["nzc"] to taemg_constants["grnzc1"] - taemg_internal["smnz1"] - taemg_internal["smnz2"] + taemg_internal["dgrnz"].
+	set taemg_internal["nztotal"] to midval(taemg_internal["nzc"] + 1, -taemg_constants["nztotallim"], taemg_constants["nztotallim"]).
 }
 
 // alpha recovery and transition aoa command
@@ -1444,7 +1475,33 @@ function grphic {
 		return.
 	}
 	
+	if (taemg_internal["istp4"] = 0) {
+		//grtls s-turn termination check
+		if (taemg_internal["eow"] < taemg_internal["est"]) {
+			set taemg_internal["istp4"] to 1.
+		}	
+	} else if (taemg_internal["istp4"] = 1) {
+		if (taemg_internal["eow"] >= taemg_internal["est"]) and (taemg_input["mach"] < taemg_constants["msw3"]) and (taemg_internal["psha"] < taemg_constants["grpsstrn"]) {
+			//direction of s-turn 
+			set taemg_internal["istp4"] to 0.
+			set taemg_internal["ysturn"] to -taemg_internal["ysgn"].
+			local spsi is taemg_internal["ysturn"] * unfixangle(taemg_input["psd"]).
+			
+			if (spsi < 0) and (taemg_internal["psha"] < 90) {
+				set taemg_internal["ysturn"] to -taemg_internal["ysturn"].
+			}
+		}
+	}
 	
-	taemg_internal["istp4"]
+	//these are equations 1.4 and 1.5 of grphic from the level-c document
+	//to me they make sense after the if block so that a roll command is generated for either case
+	if (taemg_internal["istp4"] = 0) {
+		//higher s-turn bank angle
+		set taemg_internal["phic"] to taemg_internal["ysturn"] * taemg_internal["philim"].
+	} else if (taemg_internal["istp4"] = 1) {
+		//acq bank proportional to heading error
+		set taemg_internal["phic"] to taemg_constants["gphi"] * taemg_internal["dpsac"].
+	}
 	
+	set taemg_internal["phic_at"] to midval ( taemg_internal["phic"], -taemg_internal["philim"], taemg_internal["philim"]).
 }
