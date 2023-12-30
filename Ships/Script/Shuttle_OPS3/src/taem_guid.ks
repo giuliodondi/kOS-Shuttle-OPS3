@@ -122,6 +122,8 @@ FUNCTION taemg_wrapper {
 					
 					//commands
 					"alpcmd", taemg_internal["alpcmd"],			//grtls commanded alpha 
+					"alpll", taemg_internal["alpll"],			//lower alpha limit
+					"alpul", taemg_internal["alpul"],			//upper alpha limit
 					"hdrefc", taemg_internal["hdrefc"] / mt2ft, 	//ft/s reference hdot commanded
 					"phic_at", taemg_internal["phic_at"], 	//deg commanded roll 
 					"betac_at", taemg_internal["betac_at"], 	//deg commanded yaw 
