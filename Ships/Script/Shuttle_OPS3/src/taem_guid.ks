@@ -160,8 +160,8 @@ global taemg_constants is lexicon (
 									"dr3", 8000,		//ft delta range val for rpred3
 									"dsbcm", 1.5,		//mach at which speedbrake modulation starts 
 									"dsblim", 98.6,	//deg dsbc max value 
-									//dsbsup", 65,	//deg fixed spdbk deflection at supersonic 		//ott
-									"dsbsup", 98.6,	//deg fixed spdbk deflection at supersonic 
+									"dsbsup", 65,	//deg fixed spdbk deflection at supersonic 		//ott
+									//"dsbsup", 98.6,	//deg fixed spdbk deflection at supersonic 
 									"dsbil", 20,	//deg min spdbk deflection 
 									"dsbnom", 65,		//deg nominal spdbk deflection
 									"dshply", 4000,		//ft delta range value in shplyk  	//deprecated
@@ -197,7 +197,7 @@ global taemg_constants is lexicon (
 									"gamma_error", 4,			//deg fpa error band 	//deprecated
 									"gamsgs", LIST(0, -24, -22),	//deg a/l steep glideslope angle	//maybe put 24 here	
 									"gdhc", 0.55, 			//  constant for computing gdh 		//ott
-									"gdhll", 0.05, 			//gdh lower limit 	//OTT
+									"gdhll", 0.1, 			//gdh lower limit 	//OTT
 									"gdhs", 0.9e-5,		//1/ft	slope for computing gdh 		//ott
 									"gdhul", 0.5,			//gdh upper lim 
 									"gehdll", 0.02, 		//g/fps  gain used in computing eownzll
@@ -219,7 +219,7 @@ global taemg_constants is lexicon (
 									"h_ref2", 5000,			//ft alt to force transition to ogs		//modified from OTT
 									"hali", LIST(0, 10018, 10018),		//ft altitude at a/l for reference profiles
 									//"hdreqg", 0.1,				//hdreq computation gain 		//OTT
-									"hdreqg", 0.12,				//hdreq computation gain 		//OTT
+									"hdreqg", 0.3,				//hdreq computation gain 		//OTT
 									"hftc", LIST(0, 12018, 12018),		//ft altitude of a/l steep gs at nominal entry pt
 									"machad", 0.75,		//mach to use air data (used in gcomp appendix)
 									"mxqbwt", 0.0007368421,		// psf/lb max l/d dyn press for nominal weight		//deprecated 
@@ -1030,7 +1030,7 @@ FUNCTION tgnzc {
 
 	//do not correct for altitude error after flare
 	if (taemg_internal["p_mode"] < 5) {
-		set hderrcn to hderrcn + midval(taemg_constants["hdreqg"] * taemg_internal["herror"], -taemg_constants["hdherrcmax"], taemg_constants["hdherrcmax"]) .
+		set hderrcn to hderrcn + midval(taemg_internal["gdh"] * taemg_constants["hdreqg"] * taemg_internal["herror"], -taemg_constants["hdherrcmax"], taemg_constants["hdherrcmax"]) .
 	}
 
 	//filter changes to hderrc
