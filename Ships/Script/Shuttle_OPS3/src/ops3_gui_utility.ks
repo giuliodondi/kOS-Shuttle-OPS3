@@ -1115,6 +1115,12 @@ FUNCTION hud_guid_labels{
 			RETURN "HDG  ".
 		} ELSE IF (iphase=23) {
 			RETURN "PRFNL".
+		} ELSE IF (iphase=24) {
+			RETURN "ALPTRN".
+		} ELSE IF (iphase=25) {
+			RETURN "NZHOLD".
+		} ELSE IF (iphase=26) {
+			RETURN "ALPREC".
 		} 
 	} ELSE IF (iphase>=10) {
 		//entry

@@ -79,8 +79,11 @@ FUNCTION taemg_wrapper {
 										"costh", COS(taemg_input["theta"]), 	//cosine of roll 
 										"weight", taemg_input["m"] * kg2slug, 	//slugs mass 
 										"gamma", taemg_input["gamma"], 	//deg earth relative fpa  
+										"alpha", taemg_input["alpha"], 	//deg angle of attack 
+										"nz", taemg_input["nz"], 	//gs load factor 
 										"ovhd", taemg_input["ovhd"],  		// ovhd/straight-in flag , it's a 2-elem list, one for each value of rwid 			//changed into a simple flag
-										"rwid", taemg_input["rwid"]		//runway id flag  (only needed to detect a runway change, the runway number is fine)
+										"rwid", taemg_input["rwid"],		//runway id flag  (only needed to detect a runway change, the runway number is fine)
+										"grtls", taemg_input["grtls"]		//grtls flag
 								).
 
 	tgexec(tg_input).
@@ -113,6 +116,7 @@ FUNCTION taemg_wrapper {
 					
 					
 					//commands
+					"alpcmd", taemg_internal["alpcmd"],			//grtls commanded alpha 
 					"hdrefc", taemg_internal["hdrefc"] / mt2ft, 	//ft/s reference hdot commanded
 					"phic_at", taemg_internal["phic_at"], 	//deg commanded roll 
 					"betac_at", taemg_internal["betac_at"], 	//deg commanded yaw 
@@ -347,7 +351,38 @@ global taemg_constants is lexicon (
 									"philm5", 15, 				//deg bank lim for flare and beyond
 									"phi_beta_gain", 2, 			//deg/s rate to open speedbrakes during rollout
 									"surfv_h_brakes", 140,		//ft/s trigger for braking outside executive
-									"surfv_h_exit", 15		//ft/s trigger for termination
+									"surfv_h_exit", 15,		//ft/s trigger for termination
+									
+									//GRTLS guidance stuff
+									"msw1", 3.2, 		//mach to switch from grtls phase 4 to taem phase 1
+									"nzsw1", 1.85,		//gs initial value of nzsw
+									"gralps", 1.6449,	//linear coef of alpha transition aoa vs mach
+									"gralpi",9.6482,	//° constant coef of alpha transition aoa vs mach
+									"gralpl", 14,	//° min alpha transition aoa
+									"gralpu", 17.55,	//° max alpha transition aoa
+									"hdtrn", -347.5,	//ft/s hdot for transition to phase 4
+									"smnzc1", 0.125,		//gs initial value of smnz1
+									"smnzc2", 0.258,		//gs initial value of smnz2
+									"smnzc3", 0.2,		//coefficient for smnz1
+									"smnzc4", 0.008,		//gs constant nz value for computing smnz2
+									"smnz2l", -0.05,
+									"grnzc1", 1.2,		//gs desired normal accel for nz hold 
+									"alprec", 50,		//° aoa during alpha recovery
+									"hdnom", -1558, 	//Nominal maximum sink rate during alpha recovery
+									"dhdnz", 0.002, 		//Gain on max sink rate difference to compute DGRNZ
+									"dhdll", -0.3, 			//Lower limit on DGRNZ
+									"dhdul", 0.2,			//Upper limit on DGRNZ
+									"grall", -1,			//° limit on dgralp
+									"gralu", 1,			//° limit on dgralp
+									"sbq", 20,			//qbar to trigger speedbrake deflection
+									"del1sb", 3.125,		//speedbrake open rate
+									"grsbl1", 80.6,			//upper grtls speedbrake limit
+									"grsbl2", 65,			//lower grtls speedbrake limit
+									"machsbs", 19.5,			//linear coef for speedbrake
+									"machsbi", 2.6,			//constant coef for speedbrake
+									
+									
+									"dummy", 0			//can't be arsed to add commas all the time
 									
 ).
 
@@ -379,6 +414,7 @@ global taemg_internal is lexicon(
 								"emax", 0,			//energy/weight to constrain nzc above nominal ref
 								"emin", 0,			//energy/weight to constrain nzc below nominal ref
 								"es", 0, 		//ft energy/weight at which the s-turn is initiated 
+								"est", 0, 		//ft energy/weight at which the s-turn is terminated		//my addition from grtls 
 								"gdhfit", LIST(0, 0), 		// coefficients for hdot gain for nzc	//my addition
 								"gdh", 0, 		// hdot gain for nzc
 								"gddh", 0, 		// hddot gain for nzc
@@ -393,7 +429,7 @@ global taemg_internal is lexicon(
 								"iel", 0,			//energy reference profile selector flag
 								"igi", 1,			//glideslope selector from input, based on headwind 	//deprecated
 								"igs", 1,			//glideslope selector based on weight 
-								"iphase", 0,	//phase counter 
+								"iphase", -1,	//phase counter 
 								"itran", FALSE,		//signal that a phase transition has occured
 								"ireset", TRUE,		//initially true
 								"isr", 0,		// pre-final roll fader
@@ -454,7 +490,24 @@ global taemg_internal is lexicon(
 								"herrexp", 0,		//ft flare exponential error 
 								"nzc1", 0, 		//nzc hdot error contribution
 								"nzc2h", 0, 		//nzc h error contribution
-								"nzc2i", 0 		//nzc h error integral contribution
+								"nzc2i", 0, 		//nzc h error integral contribution
+								
+								
+								// GRTLS stuff 
+								"dgrnz", 0,			//gs phase 5 nzc increment based on maximum hdot
+								"dgrnzt", 0,			//gs phase 5 target nzc
+								"nzsw", 0, 			//gs Nz level at which Phase 6 to Phase 5 transition occurs
+								"smnz1", 0, 		//gs exponential nz lead term
+								"smnz2", 0, 		//gs linear nz lead term
+								"gralpr", 0,		//° reference aoa
+								"alpcmd", 0, 		//° commanded alpha
+								"hdmax", 0, 		//ft/s maximum negative hdot reached during alpha recovery
+								"igra", 0,			//alpha transition aoa index
+								"dsbc_at1", 0,		//incremented speedbrake command
+								"istp4", 1,		//phase 4 s-turn variable, will match phase at taem transition 
+								
+								
+								"dummy", 0			//can't be arsed to add commas all the time
 ).
 
 function taemg_dump {
@@ -496,6 +549,10 @@ function taemg_dump {
 //a/l flare modes (f_mode):
 // 1= open-loop pullup, 2= closed-loop circular pullup, 3= exponential decay onto shallow gs
 
+
+//grtls phases (iphase) 
+// 6= alpha recovery,	5=nz hold,	4=alpha transition and s-turns
+
 function tgexec {
 	PARAMETER taemg_input.
 
@@ -507,15 +564,41 @@ function tgexec {
 	
 	gtp(taemg_input).
 	
-	tgcomp(taemg_input).
+	if (taemg_internal["iphase"] >= 4) {
+		
+		//refactoring of this block to remove call to tgnzc
+		grtrn(taemg_input).
 	
-	tgtran(taemg_input).
-	
-	tgnzc(taemg_input).
+		if (taemg_internal["iphase"] = 4){
+			tgcomp(taemg_input).
 
-	tgsbc(taemg_input).
+		}
+	}
 	
-	tgphic(taemg_input).
+	if (taemg_internal["iphase"] >= 4){
+		if (taemg_internal["iphase"] = 5){
+			grnzc(taemg_input).
+		} else {
+			gralpc(taemg_input).
+		}
+		
+		grsbc(taemg_input).
+		
+		grphic(taemg_input).
+	
+	} else {
+		tgcomp(taemg_input).
+	
+		tgtran(taemg_input).
+		
+		tgnzc(taemg_input).
+
+		tgsbc(taemg_input).
+		
+		tgphic(taemg_input).
+	}
+		
+		
 
 }
 
@@ -542,7 +625,23 @@ FUNCTION tginit {
 	SET taemg_internal["rwid0"] TO taemg_input["rwid"].
 	SET taemg_internal["ovhd0"] TO taemg_input["ovhd"].
 	
-	SET taemg_internal["iphase"] TO 1.	
+	//requirements:
+	//on first pass, set to 1 if normal taem and 6 if grtls 
+	//after first pass, we only want to reset the phase if we're in an s-turn
+	//don't reset phase during phases 2 and 3 i.e. after hac turn 
+	//and don't reset during grtls phases 6 through 4
+	local firstpassflag is (taemg_internal["iphase"] = -1).
+	if (firstpassflag) {
+		if (taemg_input["grtls"]) {
+			SET taemg_internal["iphase"] TO 6.
+		} else {
+			SET taemg_internal["iphase"] TO 1.	
+		}
+	} else {
+		if (taemg_internal["iphase"] < 2) {
+			SET taemg_internal["iphase"] TO 1.
+		}
+	}
 	
 	SET taemg_internal["rf"] TO taemg_constants["rf0"].
 	SET taemg_internal["rturn"] TO taemg_internal["rf"].	//i added this bc I don't see rturn being initialised anywhere	- or should it be initialised to zero??
@@ -606,6 +705,13 @@ FUNCTION tginit {
 	} else {
 		//else it's on our same side
 		SET taemg_internal["ysgn"] TO SIGN(taemg_input["y"]). 
+	}
+	
+	if (firstpassflag) {
+		set taemg_internal["nzsw"] to taemg_constants["nzsw1"].
+		set taemg_internal["smnz1"] to taemg_constants["smnzc1"].
+		set taemg_internal["smnz2"] to taemg_constants["smnzc2"].
+		set taemg_internal["istp4"] to 1.
 	}
 	
 	SET taemg_internal["tg_end"] TO FALSE.
@@ -748,6 +854,8 @@ FUNCTION tgcomp {
 	
 	SET taemg_internal["emep"] TO taemg_constants["emep_c1"][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["emep_c2"][taemg_internal["iel"]].
 	SET taemg_internal["es"] TO taemg_constants["es_c1"][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["es_c2"][taemg_internal["iel"]].
+	
+	SET taemg_internal["est"] TO taemg_internal["en"] + 0.9 * (taemg_internal["es"] - taemg_internal["en"]).
 	
 	set taemg_internal["eowerror"] to taemg_internal["eow"] - taemg_internal["en"].
 	
@@ -954,7 +1062,7 @@ FUNCTION tgtran {
 		//my modification, turn off s-turn when below es
 		
 		//transition from s-turn to acq when below an energy band
-		if (taemg_internal["iphase"] = 0) and (taemg_internal["eow"] <= taemg_internal["es"]) {
+		if (taemg_internal["iphase"] = 0) and (taemg_internal["eow"] <= taemg_internal["est"]) {
 			set taemg_internal["iphase"] to 1.
 			set taemg_internal["itran"] to TRUE.
 			set taemg_internal["philim"] to taemg_constants["philm1"].
@@ -1179,7 +1287,7 @@ FUNCTION tgphic {
 			
 			set taemg_internal["phic"] to taemg_internal["ysgn"] * MAX(phip2c + taemg_constants["gr"] * rerrc + taemg_constants["grdot"] * (rdot - rdotrf), 0).
 		}
-	} else if (taemg_internal["iphase"] >= 3) {
+	} else if (taemg_internal["iphase"] = 3) {
 	
 		//prefinal bank proportional to lateral (y coord) deviation and rate relative to the centreline
 		local yerrc is -taemg_constants["gy"] * midval(taemg_input["y"], -taemg_constants["yerrlm"], taemg_constants["yerrlm"]).
@@ -1219,3 +1327,124 @@ FUNCTION tgphic {
 
 }								
 								
+								
+								
+								//GRTLS stuff 
+//grtls transitions								
+function grtrn {
+	PARAMETER taemg_input.	
+	
+	if (taemg_internal["iphase"] = 6) {
+		if (taemg_input["nz"] > taemg_internal["nzsw"] + taemg_internal["dgrnz"]) {
+			set taemg_internal["iphase"] to 5.
+		}
+		return.
+	}
+	taemg_internal["gralpr"]
+	//alpha recovery aoa profile
+	set  to midval(taemg_constants["gralps"] * taemg_input["mach"] + taemg_constants["gralpi"], taemg_constants["gralpl"], taemg_constants["gralpu"]).
+	//skip amaxld limitation
+	set taemg_internal["gralpr"] to taemg_internal["gralpr"] / abs(taemg_input["cosphi"]).
+	
+	if (taemg_internal["iphase"] = 5) { 
+		if (
+			(taemg_input["hdot"] > taemg_constants["hdtrn"])
+			and (taemg_input["alpha"] > taemg_internal["gralpr"])
+		) {
+			set taemg_internal["iphase"] to 4.
+			SET taemg_internal["qbarf"] TO taemg_input["qbar"].
+			
+			//removed call to tgcomp
+		}
+		return.
+	}
+	
+	if (taemg_internal["iphase"] = 4) and (taemg_input["mach"] < taemg_constants["msw1"]) { 
+		//the idea is to maintain the s-turn status when transitioning from grtls to taem
+		set taemg_internal["iphase"] to taemg_internal["istp4"].
+	}
+}
+
+//nz command during nz hold 
+function grnzc {
+	PARAMETER taemg_input.	
+	
+	set taemg_internal["smnz1"] to taemg_internal["smnz1"] * taemg_constants["smnzc3"].
+	set taemg_internal["smnz2"] to MAX(taemg_internal["smnz2"] - taemg_constants["smnzc4"], taemg_constants["smnz2l"]).
+	
+	// constant value minus linear and exponential terms that ramp down with time 
+	
+	set taemg_internal["nzc"] to taemg_constants["grnzc1"] - taemg_internal["smnz1"] - taemg_internal["smnz2"] + taemg_internal["dgrnz"].
+}
+
+// alpha recovery and transition aoa command
+function gralpc {
+	PARAMETER taemg_input.	
+	
+	if (taemg_internal["iphase"] = 6) {
+		set taemg_internal["alpcmd"] to taemg_constants["alprec"].
+		
+		if (taemg_input["hdot"] < taemg_internal["hdmax"]) {
+			set taemg_internal["hdmax"] to taemg_input["hdot"].
+		} else {
+			set taemg_internal["dgrnz"] to midval(( taemg_constants["hdnom"] - taemg_internal["hdmax"]) * taemg_constants["dhdnz"], taemg_constants["dhdll"], taemg_constants["dhdul"]).
+			set taemg_internal["dgrnzt"] to taemg_constants["grnzc1"] + taemg_internal["dgrnz"] + 1.
+		}
+	} else {
+		//igra = 0 : first pass, =1 : smooth transition to reference aoa, =2: reference aoa
+		if (taemg_internal["igra"] = 0) {
+			set taemg_internal["alpcmd"] to taemg_input["alpha"].
+			set taemg_internal["igra"] to 1.
+		} else if (taemg_internal["igra"] = 1) {
+			local dgralp is midval(taemg_internal["gralpr"] - taemg_input["alpha"],  taemg_constants["grall"], taemg_constants["gralu"]).
+			
+			set taemg_internal["alpcmd"] to taemg_internal["alpcmd"] - dgralp.
+			
+			if 
+				((dgralp < 0) and (taemg_internal["alpcmd"] <= taemg_internal["gralpr"]))
+				or ((dgralp > 0) and (taemg_internal["alpcmd"] >= taemg_internal["gralpr"]))
+			{
+				set taemg_internal["igra"] to 2.
+			}
+		}
+		
+		if (taemg_internal["igra"] = 2) {
+			set taemg_internal["alpcmd"] to taemg_internal["gralpr"].
+		}
+	}
+}
+
+//grtls speedbrake command 
+function grsbc {
+	PARAMETER taemg_input.
+	
+	//closed until qbar 20, then ramp up to grsbl1, then at mach 4 down to grsbl2
+	
+	if (taemg_input["qbar"] <= taemg_constants["sbq"]) {
+		set taemg_internal["dsbc_at"] to 0.
+		return.
+	}
+	
+	set taemg_internal["dsbc_at1"] to taemg_internal["dsbc_at1"] + taemg_constants["del1sb"].
+	local dsbc_at2 is midval(taemg_constants["machsbs"] * taemg_input["mach"] + taemg_constants["machsbi"], taemg_constants["grsbl1"], taemg_constants["grsbl2"]).
+	
+	set taemg_internal["dsbc_at"] to min(taemg_internal["dsbc_at1"], dsbc_at2).
+}
+
+//grtls lateral guidance 
+function grphic {
+	PARAMETER taemg_input.
+	
+	//my addition
+	set taemg_internal["betac_at"] to 0.
+	
+	//zero roll before  alpha tran 
+	if (taemg_internal["iphase"] > 4) {
+		set taemg_internal["phic_at"] to 0.
+		return.
+	}
+	
+	
+	taemg_internal["istp4"]
+	
+}
