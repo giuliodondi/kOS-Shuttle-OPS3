@@ -199,7 +199,7 @@ global taemg_constants is lexicon (
 									"gdhc", 0.55, 			//  constant for computing gdh 		//ott
 									"gdhll", 0.05, 			//gdh lower limit 	//OTT
 									"gdhs", 0.9e-5,		//1/ft	slope for computing gdh 		//ott
-									"gdhul", 0.45,			//gdh upper lim 
+									"gdhul", 0.5,			//gdh upper lim 
 									"gehdll", 0.02, 		//g/fps  gain used in computing eownzll
 									"gehdul", 0.02, 		//g/fps  gain used in computing eownzul
 									"gell", 0.02, 		//1/s  gain used in computing eownzll
@@ -339,7 +339,7 @@ global taemg_constants is lexicon (
 									"sigma_exp", 500,		//ft exp decay characteristic distance
 									"al_capt_herrlim", 50, 	//ft altitude error for steep gs capture
 									"al_capt_gammalim", 1, 	//deg fpa error for steep gs capture
-									"al_capt_interv_s", 4, 	//s time interval for errors to be within tolerance to toggle capture
+									"al_capt_interv_s", 3, 	//s time interval for errors to be within tolerance to toggle capture
 									"al_fnlfl_herrexpmin", 1, //ft alt delta on exponential decay for final flare toggle
 									"hfnlfl", 200,			//ft alt at which to force transition to final flare
 									"h0_hdfnlfl", 80,			//ft reference altitude for hdot exp decay during final flare
@@ -379,6 +379,7 @@ global taemg_internal is lexicon(
 								"emax", 0,			//energy/weight to constrain nzc above nominal ref
 								"emin", 0,			//energy/weight to constrain nzc below nominal ref
 								"es", 0, 		//ft energy/weight at which the s-turn is initiated 
+								"gdhfit", LIST(0, 0), 		// coefficients for hdot gain for nzc	//my addition
 								"gdh", 0, 		// hdot gain for nzc
 								"gddh", 0, 		// hddot gain for nzc
 								"hdreqg", 0, 		//gain for herror in nzc
@@ -1002,6 +1003,12 @@ FUNCTION tgtran {
 				SET taemg_internal["iphase"] to 2.
 				set taemg_internal["itran"] to TRUE.
 				set taemg_internal["philim"] to taemg_constants["philm2"].
+				
+				//my addition: calculate gdh coefficients to interpolate between gdhll at current altitude and gdhul at a/l interface
+				local gdhlin is (taemg_constants["gdhll"] - taemg_constants["gdhul"]) / (taemg_input["h"] - taemg_constants["hali"][taemg_internal["igs"]]).
+				set taemg_internal["gdhfit"][0] to taemg_constants["gdhul"] - gdhlin * taemg_constants["hali"][taemg_internal["igs"]].
+				set taemg_internal["gdhfit"][1] to gdhlin.
+				
 			}
 			
 		}
@@ -1017,7 +1024,7 @@ FUNCTION tgnzc {
 	
 	set taemg_internal["hderr"] to taemg_internal["hdref"] - taemg_input["hdot"].
 	
-	set taemg_internal["gdh"] to midval(taemg_constants["gdhc"] - taemg_constants["gdhs"] * taemg_input["h"], taemg_constants["gdhll"], taemg_constants["gdhul"]).
+	set taemg_internal["gdh"] to midval(taemg_internal["gdhfit"][0] + taemg_internal["gdhfit"][1] * taemg_input["h"], taemg_constants["gdhll"], taemg_constants["gdhul"]).
 
 	local hderrcn is taemg_internal["hderr"].
 
