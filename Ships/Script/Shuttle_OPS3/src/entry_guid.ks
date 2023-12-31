@@ -30,29 +30,34 @@ GLOBAL km2nmi IS 0.539957.	// nmi/km
 
 FUNCTION entryg_wrapper {
 	PARAMETER entryg_input.
-
-	LOCAL entryg_output IS egexec(
-								lexicon(
-										"dtegd", entryg_input["iteration_dt"],		//iteration delta-t
-										"alpha", entryg_input["alpha"],      //aoa
-										"delaz", entryg_input["delaz"],       //az error
-										"drag", entryg_input["drag"],        //drag accel (ft/s2) 
-										"egflg", entryg_input["egflg"],       //mode flag  
-										"hls", entryg_input["hls"]*mt2ft,		   //alt above rwy (ft)
-										"lod", entryg_input["lod"], 		//current l/d 
-										"rdot", entryg_input["hdot"]*mt2ft,        //alt rate (ft/s) 
-										"roll", entryg_input["roll"],	   //cur bank angle 
-										"trange", entryg_input["tgt_range"]*km2nmi,     //target range (nmi)
-										"ve", entryg_input["ve"]*mt2ft, 		   //earth rel velocity (ft/s)
-										"vi", entryg_input["vi"]*mt2ft,		   //inertial vel (ft/s)
-										"xlfac", entryg_input["xlfac"],      //load factor acceleration (ft/s2)
-										"mm304ph", entryg_input["roll0"],    	//preentry bank 
-										"mm304al", entryg_input["alpha0"],    	//preentry aoa ,
-										"ital", entryg_input["ital"]				//is tal abort flag
-								)
+	
+	LOCAL eg_input IS lexicon(
+							"dtegd", entryg_input["iteration_dt"],		//iteration delta-t
+							"alpha", entryg_input["alpha"],      //aoa
+							"delaz", entryg_input["delaz"],       //az error
+							"drag", entryg_input["drag"],        //drag accel (ft/s2) 
+							"egflg", entryg_input["egflg"],       //mode flag  
+							"hls", entryg_input["hls"]*mt2ft,		   //alt above rwy (ft)
+							"lod", entryg_input["lod"], 		//current l/d 
+							"rdot", entryg_input["hdot"]*mt2ft,        //alt rate (ft/s) 
+							"roll", entryg_input["roll"],	   //cur bank angle 
+							"trange", entryg_input["tgt_range"]*km2nmi,     //target range (nmi)
+							"ve", entryg_input["ve"]*mt2ft, 		   //earth rel velocity (ft/s)
+							"vi", entryg_input["vi"]*mt2ft,		   //inertial vel (ft/s)
+							"xlfac", entryg_input["xlfac"],      //load factor acceleration (ft/s2)
+							"mm304ph", entryg_input["roll0"],    	//preentry bank 
+							"mm304al", entryg_input["alpha0"],    	//preentry aoa ,
+							"ital", entryg_input["ital"]				//is tal abort flag
 	).
+
+	LOCAL entryg_output IS egexec(eg_input).
+	
+	if (entryg_input["debug"]) {
+		entryg_dump(eg_input).
+	}
 	
 	RETURN lexicon(
+								"guid_id", guid_id,					//counter to signal the current mode to the hud 
 								"alpha", entryg_output["alpcmd"],
 								"roll", entryg_output["rolcmd"],
 								"unl_roll", entryg_output["unl_roll"],
@@ -274,6 +279,33 @@ global entryg_internal is lexicon(
 									"xlod", 0,   	//limited l/d 
 									"zk", 0   	//rdot feedback gain 
 ).
+
+function entryg_dump {
+	parameter entryg_input.
+	
+	local entryg_dumplex is lexicon().
+	
+	for k in entryg_input:keys {
+		entryg_dumplex:add(k, entryg_input[k]). 
+	}
+	
+	for k in taemg_internal:keys {
+		LOCAL val IS taemg_internal[k].
+		
+		IF val:ISTYPE("List") {
+			LOCAL c_ IS 0.
+			for v_ in val {
+				LOCAL v_k IS k + "_" + c_.
+				entryg_dumplex:add(v_k, v_). 
+				set c_ to c_ + 1.
+			}
+		} ELSE {
+			entryg_dumplex:add(k, val). 
+		}
+	}
+	
+	log_data(entryg_dumplex,"0:/Shuttle_OPS3/LOGS/entry_dump", TRUE).
+}
 
 
 //egflg = 0,1 is normal mode, egflg=2 is canned mode for targeting (islect will never be > 2)
