@@ -352,7 +352,7 @@ global taemg_constants is lexicon (
 									"r1", 0, 			//ft/deg linear coeff of hac spiral 
 									"r2", 0.093, 			//ft/deg quadratic coeff of hac spiral 
 									"r2max", 115000,			//ft max range on hac to be subsonic with nominal qbar 
-									"philm4", 32, 				//deg bank lim for large bank command 
+									"philm4", 35, 				//deg bank lim for large bank command 
 									"philmc", 100, 				//deg bank lim for large bank command 
 									"qbmxs1", -400,				//psf slope of qbmxnz with mach < qbm1 
 									"hmin3", 7000,				//min altitude for prefinal
