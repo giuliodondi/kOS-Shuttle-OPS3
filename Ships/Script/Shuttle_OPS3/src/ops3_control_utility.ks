@@ -77,6 +77,7 @@ FUNCTION dap_controller_factory {
 	this:add("steer_roll",0).
 	
 	this:add("reset_steering",{
+		set this:cur_mode to "".
 		set this:steer_pitch to this:prog_pitch.
 		set this:steer_roll to this:prog_roll.
 		set this:steer_yaw to 0.
