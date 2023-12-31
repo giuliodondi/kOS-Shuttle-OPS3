@@ -87,7 +87,9 @@ FUNCTION taemg_wrapper {
 
 	tgexec(tg_input).
 	
-	taemg_dump(tg_input).
+	if (taemg_input["debug"]) {
+		taemg_dump(tg_input).
+	}
 	
 	//work out the guidance mode - needs to be consistent with the hud string mappings
 	local guid_id is 0.
@@ -123,6 +125,7 @@ FUNCTION taemg_wrapper {
 					"alpcmd", taemg_internal["alpcmd"],			//grtls commanded alpha 
 					"alpll", taemg_internal["alpll"],			//lower alpha limit
 					"alpul", taemg_internal["alpul"],			//upper alpha limit
+					"nztotal", taemg_internal["nztotal"], 	//g-units normal load factor
 					"hdrefc", taemg_internal["hdrefc"] / mt2ft, 	//ft/s reference hdot commanded
 					"phic_at", taemg_internal["phic_at"], 	//deg commanded roll 
 					"betac_at", taemg_internal["betac_at"], 	//deg commanded yaw 
@@ -162,13 +165,13 @@ global taemg_constants is lexicon (
 									"alpllcm1", 1.3,		// mach breakpoint for lower alpha limit vs mach 
 									"alpllcm2", 2.25,		// mach breakpoint for lower alpha limit vs mach 
 									"alpllc1", 1.4706,		//linear coef of lower alpha limit with mach 
-									"alpllc2", 1.5904,		//° constant coef of lower alpha limit with mach
+									"alpllc2", -1.0096,		//° constant coef of lower alpha limit with mach
 									"alpllc3", 2.3918,		//linear coef of lower alpha limit with mach 
-									"alpllc4", 0.4127,		//° constant coef of lower alpha limit with mach
+									"alpllc4", -2.1873,		//° constant coef of lower alpha limit with mach
 									"alpllc5", 4.84,		//linear coef of lower alpha limit with mach 
-									"alpllc6", -5.1031,		//° constant coef of lower alpha limit with mach
+									"alpllc6", -7.7031,		//° constant coef of lower alpha limit with mach
 									"alpllc7", 11.7,		//° max lower alpha limit
-									"alpllc8", 2.6,		//° min lower alpha limit
+									"alpllc8", 0,		//° min lower alpha limit
 									
 									
 									"cdeqd", 0.68113143,	//gain in qbd calculation
@@ -372,7 +375,7 @@ global taemg_constants is lexicon (
 									"h0_hdfnlfl", 80,			//ft reference altitude for hdot exp decay during final flare
 									"max_hdfnlfl", 0.1,			//ft maximum hdot during finalflare
 									"philm5", 15, 				//deg bank lim for flare and beyond
-									"phi_beta_gain", 2, 			//deg/s rate to open speedbrakes during rollout
+									"phi_beta_gain", 3, 			//gain for yaw during rollout
 									"surfv_h_brakes", 140,		//ft/s trigger for braking outside executive
 									"surfv_h_exit", 15,		//ft/s trigger for termination
 									

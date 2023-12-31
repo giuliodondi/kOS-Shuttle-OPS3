@@ -24,6 +24,8 @@ IF (STEERINGMANAGER:PITCHPID:HASSUFFIX("epsilon")) {
 FUNCTION dap_controller_factory {
 	LOCAL this IS lexicon().
 	
+	this:add("cur_mode", "").
+	
 	this:add("steering_dir", SHIP:FACINg).
 	
 	this:add("last_time", TIME:SECONDS).
@@ -41,6 +43,7 @@ FUNCTION dap_controller_factory {
 	this:add("prog_roll",0).
 	
 	this:add("lvlh_pitch",0).
+	this:add("lvlh_roll",0).
 	this:add("fpa",0).
 	
 	this:add("hdot", 0).
@@ -53,6 +56,7 @@ FUNCTION dap_controller_factory {
 		SET this:prog_yaw TO get_yaw_prograde().
 		
 		SET this:lvlh_pitch TO get_pitch_lvlh().
+		SET this:lvlh_roll TO get_roll_lvlh().
 		set this:fpa to get_surf_fpa().
 		
 		SET this:hdot to SHIP:VERTICALSPEED.
@@ -95,7 +99,7 @@ FUNCTION dap_controller_factory {
 		return -this:nz_pitch_pid:UPDATE(this:last_time, this:tgt_nz - this:nz ).
 	}).
 	
-	this:add("set_taem_pid_gains", {
+	this:add("set_taem_hdot_gains", {
 		local kc is 0.004.
 
 		set this:hdot_nz_pid:Kp to kc.
@@ -103,7 +107,7 @@ FUNCTION dap_controller_factory {
 		set this:hdot_nz_pid:Kd to kc * 2.9.
 	}).
 
-	this:add("set_landing_pid_gains", {
+	this:add("set_landing_hdot_gains", {
 		local kc is 0.0042.
 
 		set this:hdot_nz_pid:Kp to kc.
@@ -111,7 +115,8 @@ FUNCTION dap_controller_factory {
 		set this:hdot_nz_pid:Kd to kc * 3.2.
 	}).
 	
-	this:add("nz_lims", LIST(-2.2, 2.2)).
+	//should be consistent with taem nz limits
+	this:add("nz_lims", LIST(-2.5, 2.5)).
 	this:add("delta_pch_lims", LIST(-3, 3)).
 	this:add("delta_roll_lims", LIST(-14, 14)).
 	
@@ -120,11 +125,13 @@ FUNCTION dap_controller_factory {
 	this:add("pitch_lims", LIST(-10, 20)).
 	this:add("yaw_lims", LIST(0, 0)).
 	
+	this:add("auto_pitch_channel_engaged", TRUE).
 	
 	// CSS steering modes
 	
 	//control prograde pitch and roll
 	this:add("update_css_prograde", {
+		set this:cur_mode to "css_prograde".
 		this:measure_cur_state().
 		
 		LOCAL rollgain IS 1.0.
@@ -145,6 +152,7 @@ FUNCTION dap_controller_factory {
 	
 	//control prograde roll and lvlh pitch
 	this:add("update_css_lvlh", {
+		set this:cur_mode to "css_lvlh".
 		this:measure_cur_state().
 		
 		//gains suitable for manoeivrable steerign in atmosphere
@@ -176,6 +184,7 @@ FUNCTION dap_controller_factory {
 	
 	//steer directly to target prograde pitch and roll
 	this:add("update_auto_prograde", {
+		set this:cur_mode to "auto_prograde".
 		this:measure_cur_state().
 		
 		SET this:steer_roll TO this:prog_roll + CLAMP(this:tgt_roll - this:prog_roll, this:delta_roll_lims[0], this:delta_roll_lims[1]).
@@ -187,10 +196,14 @@ FUNCTION dap_controller_factory {
 	
 	//steer to target roll and keep target nz 
 	this:add("update_auto_nz", {
+		set this:cur_mode to "auto_nz".
 		this:measure_cur_state().
 		
+		if (this:auto_pitch_channel_engaged) {
+			SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
+		}
+		
 		SET this:steer_roll TO this:prog_roll + CLAMP(this:tgt_roll - this:prog_roll,this:delta_roll_lims[0], this:delta_roll_lims[1]).
-		SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
 		SET this:steer_yaw TO this:tgt_yaw.
 		
 		this:update_steering().
@@ -198,13 +211,15 @@ FUNCTION dap_controller_factory {
 	
 	//steer to target roll and keep target hdot 
 	this:add("update_auto_hdot", {
+		set this:cur_mode to "auto_hdot".
 		this:measure_cur_state().
 		
+		if (this:auto_pitch_channel_engaged) {
+			SET this:tgt_nz TO CLAMP(this:nz + (this:update_hdot_pid()) / COS(this:prog_roll), this:nz_lims[0], this:nz_lims[1]).
+			SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
+		}
+		
 		SET this:steer_roll TO this:prog_roll + CLAMP(this:tgt_roll - this:prog_roll,this:delta_roll_lims[0], this:delta_roll_lims[1]).
-		
-		SET this:tgt_nz TO CLAMP(this:nz + (this:update_hdot_pid()) / COS(this:prog_roll), this:nz_lims[0], this:nz_lims[1]).
-		SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
-		
 		SET this:steer_yaw TO this:tgt_yaw.
 		
 		this:update_steering().
@@ -263,7 +278,7 @@ FUNCTION dap_controller_factory {
 		PARAMETER line.
 		
 		
-		print "mode : " + this:mode + "    " at (0,line).
+		print "mode : " + this:cur_mode + "    " at (0,line).
 		
 		print "loop dt : " + round(this:iteration_dt(),3) + "    " at (0,line + 1).
 		

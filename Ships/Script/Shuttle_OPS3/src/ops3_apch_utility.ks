@@ -120,8 +120,6 @@ FUNCTION get_runway_rel_state {
 	LOCAL cur_hdot IS VDOT(cur_surfv, cur_pos:NORMALIZED).
 	
 	return LEXICON(
-			"time", cur_time, 
-			"dt", dt,
 			"x", ship_rwy_dist_mt*COS(pos_rwy_rel_angle),
 			"y", ship_rwy_dist_mt*SIN(pos_rwy_rel_angle),
 			"h", cur_h,
@@ -130,14 +128,8 @@ FUNCTION get_runway_rel_state {
 			"hdot", cur_hdot,
 			"surfv", cur_surfv:MAG,
 			"surfv_h", cur_surfv_h,
-			"fpa", ARCTAN2(cur_hdot, cur_surfv_h),
 			"rwy_rel_crs", vel_rwy_rel_angle,
-			"rwy_dist", ship_rwy_dist_mt,
-			"phi", get_roll_lvlh(),
-			"theta", get_pitch_lvlh(),
-			"mass", SHIP:MASS,
-			"qbar", SHIP:Q,
-			"mach", ADDONS:FAR:MACH
+			"rwy_dist", ship_rwy_dist_mt
 	).
 }
 
