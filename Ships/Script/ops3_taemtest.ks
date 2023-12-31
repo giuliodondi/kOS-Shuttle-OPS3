@@ -42,38 +42,31 @@ FUNCTION ops3_taem_test {
     SET CONFIG:IPU TO 1800. 
     
     
-    LOCAL dap IS dap_hdot_nz_controller_factory().
+    LOCAL dap IS dap_controller_factory().
     
-    SET dap:mode TO "atmo_pch_css".
-
     dap:set_taem_pid_gains().
     
     LOCAL aerosurfaces_control IS aerosurfaces_control_factory().
-    
     aerosurfaces_control["set_aoa_feedback"](50).
-    
-    LOCAL steerdir IS SHIP:FACING.
+
     
     dap:reset_steering().
-    LOCK STEERING TO steerdir.
-    SAS OFF.
+    LOCK STEERING TO dap:steering_dir.
+    
     
     LOCAL css_flag Is TRUE.
 
     ON (AG9) {
-        IF (dap:mode = "atmo_pch_css") {
-            SET dap:mode TO "atmo_hdot_auto".
-            dap:reset_hdot_auto().
-			SET css_flag to FALSE.
-        } ELSe IF (dap:mode = "atmo_hdot_auto") {
-            SET dap:mode TO "atmo_pch_css".
-			SET css_flag TO TRUE.
-        } 
+		set css_flag to (NOT css_flag).
         PRESERVE.
     }
+	
+	ON (SAS) {
+		SAS OFF.
+	}
     
     
-    
+  
     
     //Initialise log lexicon 
     GLOBAL loglex IS LEXICON(
@@ -106,18 +99,34 @@ FUNCTION ops3_taem_test {
 
 	GLOBAL hud_datalex IS get_hud_datalex().
     
-    
+    GLOBAL guid_id IS 0.
     
     local control_loop is loop_executor_factory(
         0.1,
         {
-            SET steerdir TO dap:update().
+			if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) OR (guid_id >= 36) {
+				//reentry, alpha recovery, alpha transition and rollout
+				if (css_flag) {
+					dap:update_css_prograde().
+				} else {
+					dap:update_auto_prograde().
+				}
+			} else {
+				if (css_flag) {
+					dap:update_css_lvlh().
+				} else {
+					 if (guid_id = 25) {
+						//nz hold
+						dap:update_auto_nz().
+					} else {
+						dap:update_auto_hdot().
+					}
+				}
+			}
             aerosurfaces_control:update(TRUE).
         }
     ).
     
-    //initialise with just the a/L end flag
-    LOCAL taemg_out is LEXICON("al_end", FALSE).
     //initialise as empty 
     LOCAL rwystate IS get_runway_rel_state(
             -SHIP:ORBIT:BODY:POSITION,
@@ -130,12 +139,9 @@ FUNCTION ops3_taem_test {
     until false{
         clearvecdraws().
         
-        if (quit_program OR taemg_out["al_end"]) {
+        if (quit_program) {
             break.
         }
-        
-        
-    
         
         set rwystate to get_runway_rel_state(
             -SHIP:ORBIT:BODY:POSITION,
@@ -173,11 +179,13 @@ FUNCTION ops3_taem_test {
         SET last_iter TO cur_iter.
         
         //call taem guidance here
-        SET taemg_out TO taemg_wrapper(
+        local taemg_out is taemg_wrapper(
                                         taemg_in                        
         ).
         
         build_taemg_guid_points(taemg_out, tgtrwy).
+		
+		set guid_id to taemg_out["guid_id"].
         
         SET aerosurfaces_control["spdbk_defl"] TO taemg_out["dsbc_at"].
         SET dap:tgt_hdot tO taemg_out["hdrefc"].
@@ -304,6 +312,10 @@ FUNCTION ops3_taem_test {
         //log_data(loglex,"0:/Shuttle_OPS3/LOGS/taem_log", TRUE).
         
         dap:print_debug(2).
+		
+		if (taemg_out["al_end"] = TRUE) {
+			set quit_program to TRUE.
+		}
         
         WAIt 0.
     }
