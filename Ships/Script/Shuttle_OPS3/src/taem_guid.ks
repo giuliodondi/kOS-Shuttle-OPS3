@@ -65,7 +65,6 @@ FUNCTION taemg_wrapper {
 										"wow", taemg_input["wow"],
 										"h", taemg_input["h"] * mt2ft,		//ft height above rwy
 										"hdot", taemg_input["hdot"] * mt2ft,	//ft/s vert speed
-										"hddot", taemg_input["hddot"] * mt2ft,	//ft/s vert acceleration
 										"x", taemg_input["x"] * mt2ft,		//ft x component on runway coord
 										"y", taemg_input["y"] * mt2ft,		//ft y component on runway coord
 										"surfv", taemg_input["surfv"] * mt2ft, 		//ft/s earth relative velocity mag 			//was v
@@ -448,7 +447,6 @@ global taemg_internal is lexicon(
 								"est", 0, 		//ft energy/weight at which the s-turn is terminated		//my addition from grtls 
 								"gdhfit", LIST(0, 0), 		// coefficients for hdot gain for nzc	//my addition
 								"gdh", 0, 		// hdot gain for nzc
-								"gddh", 0, 		// hddot gain for nzc
 								"hdreqg", 0, 		//gain for herror in nzc
 								"hderr", 0, 		//ft hdot error
 								"herror", 0, 		//ft altitude error
