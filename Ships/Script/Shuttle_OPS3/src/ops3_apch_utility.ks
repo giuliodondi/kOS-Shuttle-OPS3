@@ -100,9 +100,7 @@ FUNCTION get_runway_rel_state {
 	PARAMETER cur_pos.
 	PARAMETER cur_surfv.
 	PARAMETER rwy.
-	PARAMETER state_lex_prev IS LEXICON().
 	
-	local firstpass is (state_lex_prev:KEYS:LENGTH = 0).
 	
 	LOCAL rwy_heading IS rwy["heading"].
 	LOCAL rwy_ship_bng IS bearingg(cur_pos, rwy["end_pt"]).
@@ -121,14 +119,6 @@ FUNCTION get_runway_rel_state {
 	LOCAL cur_surfv_h IS cur_surfv_h_vec:MAG.
 	LOCAL cur_hdot IS VDOT(cur_surfv, cur_pos:NORMALIZED).
 	
-	local cur_time IS TIMe:SECONDS.
-	local dt is 0.
-	local hddot is 0.
-	if (NOT firstpass) {
-		set dt to MAX(0.05, cur_time - state_lex_prev["time"]).
-		set hddot to (cur_hdot - state_lex_prev["hdot"]) / dt.
-	}
-	
 	return LEXICON(
 			"time", cur_time, 
 			"dt", dt,
@@ -138,7 +128,6 @@ FUNCTION get_runway_rel_state {
 			"xdot", cur_surfv_h*COS(vel_rwy_rel_angle),
 			"ydot", cur_surfv_h*SIN(vel_rwy_rel_angle),
 			"hdot", cur_hdot,
-			"hddot", hddot,
 			"surfv", cur_surfv:MAG,
 			"surfv_h", cur_surfv_h,
 			"fpa", ARCTAN2(cur_hdot, cur_surfv_h),

@@ -127,13 +127,6 @@ FUNCTION ops3_taem_test {
         }
     ).
     
-    //initialise as empty 
-    LOCAL rwystate IS get_runway_rel_state(
-            -SHIP:ORBIT:BODY:POSITION,
-            SHIP:VELOCITY:SURFACE,
-            tgtrwy
-        ).
-    
     
     LOCAL last_iter Is TIMe:SECONDS.
     until false{
@@ -143,11 +136,10 @@ FUNCTION ops3_taem_test {
             break.
         }
         
-        set rwystate to get_runway_rel_state(
+        local rwystate is get_runway_rel_state(
             -SHIP:ORBIT:BODY:POSITION,
             SHIP:VELOCITY:SURFACE,
-            tgtrwy,
-            rwystate
+            tgtrwy
         ).
         
         LOCAL cur_iter IS TIMe:SECONDS.
