@@ -170,7 +170,7 @@ global taemg_constants is lexicon (
 									"alpllc4", -2.1873,		//° constant coef of lower alpha limit with mach
 									"alpllc5", 4.84,		//linear coef of lower alpha limit with mach 
 									"alpllc6", -7.7031,		//° constant coef of lower alpha limit with mach
-									"alpllc7", 11.7,		//° max lower alpha limit
+									"alpllc7", 7,		//° max lower alpha limit
 									"alpllc8", 0,		//° min lower alpha limit
 									
 									
@@ -1173,8 +1173,8 @@ FUNCTION tgnzc {
 
 	local hderrcn is taemg_internal["hderr"].
 
-	//do not correct for altitude error after flare
-	if (taemg_internal["p_mode"] < 5) {
+	//do not correct for altitude error during or after flare
+	if (taemg_internal["p_mode"] < 4) {
 		set hderrcn to hderrcn + midval(taemg_internal["gdh"] * taemg_constants["hdreqg"] * taemg_internal["herror"], -taemg_constants["hdherrcmax"], taemg_constants["hdherrcmax"]) .
 	}
 
