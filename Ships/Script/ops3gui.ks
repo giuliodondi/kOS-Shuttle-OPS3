@@ -14,15 +14,14 @@ RUNPATH("0:/Shuttle_OPS3/src/sample_traj_data.ks").
 
 GLOBAL quit_program IS FALSE.
 
+IF (DEFINED tgtrwy) {UNSET tgtrwy.}
+GLOBAL tgtrwy IS LEXICON().
+
 //initialise touchdown points for all landing sites
 define_td_points().
 
-make_main_GUI().
 
-//ths lexicon contains all the necessary guidance objects 
-IF (DEFINED tgtrwy) {UNSET tgtrwy.}
-GLOBAL tgtrwy IS refresh_runway_lex(ldgsiteslex[select_tgt:VALUE]).
-
+make_main_ops3_gui().
 
 
 
@@ -40,28 +39,9 @@ until false {
 		set sample_data_count to max(0, sample_data_count - 2).
 	}
 	
-	local rng_ is sample_data[sample_data_count][1].
-	local vel_ is sample_data[sample_data_count][0].
 	
-	local gui_data is lexicon(
-							"range",rng_,
-							"ve",vel_,
-							"xlfac",30.5,
-							"lod",1.5,
-							"drag",22,
-							"drag_ref",20,
-							"phase",5,
-							"hdot_ref",-75,
-							"pitch",40.2,
-							"roll",55.3,
-							"roll_ref",45.5,
-							"pitch_mod",true,
-							"roll_rev",true
-	).
-	update_traj_disp(gui_data).
 	
 	print sample_data_count at (0, 1).
-	print "rng: " + rng_ + " vel: " + vel_ at (0, 2).
 	
 
 	if (quit_program) {
@@ -70,5 +50,9 @@ until false {
 	
 	wait 0.01.
 }
+
+clear_ops3_disp().
+
+wait 1.
 
 close_all_GUIs().

@@ -25,7 +25,7 @@ GLOBAL tgtrwy IS LEXICON().
 define_td_points().
 
 //after the td points but before anything that modifies the default button selections
-make_main_entry_gui().
+make_main_ops3_gui().
 
 make_hud_gui().
 

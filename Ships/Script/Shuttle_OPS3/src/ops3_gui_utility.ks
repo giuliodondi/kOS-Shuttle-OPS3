@@ -175,26 +175,26 @@ FUNCTION update_deorbit_GUI {
 						//GLOBAL ENTRY GUI FUNCTIONS
 
 
-GLOBAL main_entry_gui_width IS 550.
-GLOBAL main_entry_gui_height IS 510.
+GLOBAL main_ops3_gui_width IS 550.
+GLOBAL main_ops3_gui_height IS 510.
 
-FUNCTION make_main_entry_gui {
+FUNCTION make_main_ops3_gui {
 	
 
 	//create the GUI.
-	GLOBAL main_entry_gui is gui(main_entry_gui_width,main_entry_gui_height).
-	SET main_entry_gui:X TO 170.
-	SET main_entry_gui:Y TO 670.
-	SET main_entry_gui:STYLe:WIDTH TO main_entry_gui_width.
-	SET main_entry_gui:STYLe:HEIGHT TO main_entry_gui_height.
-	SET main_entry_gui:STYLE:ALIGN TO "center".
-	SET main_entry_gui:STYLE:HSTRETCH  TO TRUE.
+	GLOBAL main_ops3_gui is gui(main_ops3_gui_width,main_ops3_gui_height).
+	SET main_ops3_gui:X TO 170.
+	SET main_ops3_gui:Y TO 670.
+	SET main_ops3_gui:STYLe:WIDTH TO main_ops3_gui_width.
+	SET main_ops3_gui:STYLe:HEIGHT TO main_ops3_gui_height.
+	SET main_ops3_gui:STYLE:ALIGN TO "center".
+	SET main_ops3_gui:STYLE:HSTRETCH  TO TRUE.
 
-	set main_entry_gui:skin:LABEL:TEXTCOLOR to guitextgreen.
+	set main_ops3_gui:skin:LABEL:TEXTCOLOR to guitextgreen.
 
 
 	// Add widgets to the GUI
-	GLOBAL title_box is main_entry_gui:addhbox().
+	GLOBAL title_box is main_ops3_gui:addhbox().
 	set title_box:style:height to 35. 
 	set title_box:style:margin:top to 0.
 
@@ -226,11 +226,11 @@ FUNCTION make_main_entry_gui {
 		PARAMETER pressed.
 		
 		IF pressed {
-			main_entry_gui:SHOWONLY(title_box).
-			SET main_entry_gui:STYLe:HEIGHT TO 50.
+			main_ops3_gui:SHOWONLY(title_box).
+			SET main_ops3_gui:STYLe:HEIGHT TO 50.
 		} ELSE {
-			SET main_entry_gui:STYLe:HEIGHT TO main_entry_gui_height.
-			for w in main_entry_gui:WIDGETS {
+			SET main_ops3_gui:STYLe:HEIGHT TO main_ops3_gui_height.
+			for w in main_ops3_gui:WIDGETS {
 				w:SHOW().
 			}
 		}
@@ -249,11 +249,11 @@ FUNCTION make_main_entry_gui {
 	SET quitb:ONCLICK TO quitcheck@.
 
 	
-	main_entry_gui:addspacing(7).
+	main_ops3_gui:addspacing(7).
 
 	//top popup menus,
 	//tgt selection, rwy selection, hac placement
-	GLOBAL popup_box IS main_entry_gui:ADDHLAYOUT().
+	GLOBAL popup_box IS main_ops3_gui:ADDHLAYOUT().
 	SET popup_box:STYLE:ALIGN TO "center".	
 	
 	popup_box:addspacing(10).
@@ -328,7 +328,7 @@ FUNCTION make_main_entry_gui {
 	}.	
 	
 	
-	GLOBAL toggles_box IS main_entry_gui:ADDHLAYOUT().
+	GLOBAL toggles_box IS main_ops3_gui:ADDHLAYOUT().
 	SET toggles_box:STYLE:WIDTH TO 300.
 	toggles_box:addspacing(55).	
 	SET toggles_box:STYLE:ALIGN TO "center".
@@ -346,9 +346,16 @@ FUNCTION make_main_entry_gui {
 	GLOBAL arbkb IS  toggles_box:ADDCHECKBOX("Auto Airbk",false).
 
 	select_random_rwy().
-	SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, select_rwy:VALUE).	
+	SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, select_rwy:VALUE).
 
-	main_entry_gui:SHOW().
+	GLOBAL ops3_disp IS main_ops3_gui:addvlayout().
+	SET ops3_disp:STYLE:WIDTH TO main_ops3_gui_width - 22.
+	SET ops3_disp:STYLE:HEIGHT TO 380.
+	SET ops3_disp:STYLE:ALIGN TO "center".
+	
+	set ops3_disp:style:BG to "Shuttle_OPS3/src/gui_images/ops3_disp_bg.png".
+
+	main_ops3_gui:SHOW().
 }
 
 //sets the runway choice between the availle options to a random one
@@ -374,7 +381,7 @@ FUNCTION is_apch_overhead {
 }
 
 FUNCTION close_global_GUI {
-	main_entry_gui:HIDE().
+	main_ops3_gui:HIDE().
 	IF (DEFINED(hud_gui)) {
 		hud_gui:HIDE.
 		hud_gui:DISPOSE.
@@ -394,37 +401,32 @@ FUNCTION make_entry_traj_GUI {
 	GLOBAL entry_traj_disp_counter IS 1.				   
 	GLOBAL entry_traj_disp_counter_p IS entry_traj_disp_counter.				   
 	
-	GLOBAL traj_disp IS main_entry_gui:addvlayout().
-	SET traj_disp:STYLE:WIDTH TO main_entry_gui_width - 22.
-	SET traj_disp:STYLE:HEIGHT TO 380.
-	SET traj_disp:STYLE:ALIGN TO "center".
 	
-	set traj_disp:style:BG to "Shuttle_OPS3/src/gui_images/entry_traj_bg.png".
 	
-	set main_entry_gui:skin:horizontalslider:BG to "Shuttle_OPS3/src/gui_images/brakeslider.png".
-	set main_entry_gui:skin:horizontalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/hslider_thumb.png".
-	set main_entry_gui:skin:horizontalsliderthumb:HEIGHT to 17.
-	set main_entry_gui:skin:horizontalsliderthumb:WIDTH to 20.
-	set main_entry_gui:skin:verticalslider:BG to "Shuttle_OPS3/src/gui_images/vspdslider2.png".
-	set main_entry_gui:skin:verticalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/vslider_thumb.png".
-	set main_entry_gui:skin:verticalsliderthumb:HEIGHT to 20.
-	set main_entry_gui:skin:verticalsliderthumb:WIDTH to 17.
+	set main_ops3_gui:skin:horizontalslider:BG to "Shuttle_OPS3/src/gui_images/brakeslider.png".
+	set main_ops3_gui:skin:horizontalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/hslider_thumb.png".
+	set main_ops3_gui:skin:horizontalsliderthumb:HEIGHT to 17.
+	set main_ops3_gui:skin:horizontalsliderthumb:WIDTH to 20.
+	set main_ops3_gui:skin:verticalslider:BG to "Shuttle_OPS3/src/gui_images/vspdslider2.png".
+	set main_ops3_gui:skin:verticalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/vslider_thumb.png".
+	set main_ops3_gui:skin:verticalsliderthumb:HEIGHT to 20.
+	set main_ops3_gui:skin:verticalsliderthumb:WIDTH to 17.
 	
-	GLOBAL traj_disp_titlebox IS traj_disp:ADDHLAYOUT().
-	SET traj_disp_titlebox:STYLe:WIDTH TO traj_disp:STYLE:WIDTH.
+	GLOBAL traj_disp_titlebox IS ops3_disp:ADDHLAYOUT().
+	SET traj_disp_titlebox:STYLe:WIDTH TO ops3_disp:STYLE:WIDTH.
 	SET traj_disp_titlebox:STYLe:HEIGHT TO 20.
 	GLOBAL traj_disp_title IS traj_disp_titlebox:ADDLABEL("").
 	SET traj_disp_title:STYLE:ALIGN TO "center".
 	
-	GLOBAL traj_disp_overlaiddata IS traj_disp:ADDVLAYOUT().
+	GLOBAL traj_disp_overlaiddata IS ops3_disp:ADDVLAYOUT().
 	SET traj_disp_overlaiddata:STYLE:ALIGN TO "Center".
-	SET traj_disp_overlaiddata:STYLe:WIDTH TO traj_disp:STYLE:WIDTH.
+	SET traj_disp_overlaiddata:STYLe:WIDTH TO ops3_disp:STYLE:WIDTH.
 	SET traj_disp_overlaiddata:STYLe:HEIGHT TO 1.
 	
-	GLOBAL traj_disp_mainbox IS traj_disp:ADDVLAYOUT().
+	GLOBAL traj_disp_mainbox IS ops3_disp:ADDVLAYOUT().
 	SET traj_disp_mainbox:STYLE:ALIGN TO "Center".
-	SET traj_disp_mainbox:STYLe:WIDTH TO traj_disp:STYLE:WIDTH.
-	SET traj_disp_mainbox:STYLe:HEIGHT TO traj_disp:STYLE:HEIGHT - 22.
+	SET traj_disp_mainbox:STYLe:WIDTH TO ops3_disp:STYLE:WIDTH.
+	SET traj_disp_mainbox:STYLe:HEIGHT TO ops3_disp:STYLE:HEIGHT - 22.
 	
 	
 	
@@ -693,7 +695,34 @@ function entry_traj_disp_y_convert {
 }
 
 
+FUNCTION clear_ops3_disp {
+	for w in ops3_disp:WIDGETS {
+		w:DISPOSE().
+	}
+}	
 
+FUNCTION make_taem_vsit_GUI {
+
+	GLOBAL taem_vsit_disp_counter IS 1.				   
+	GLOBAL taem_vsit_disp_counter_p IS taem_vsit_disp_counter.	
+
+	
+	GLOBAL vsit_disp IS main_ops3_gui:addvlayout().
+	SET vsit_disp:STYLE:WIDTH TO main_ops3_gui_width - 22.
+	SET vsit_disp:STYLE:HEIGHT TO 380.
+	SET vsit_disp:STYLE:ALIGN TO "center".
+	
+	set vsit_disp:style:BG to "Shuttle_OPS3/src/gui_images/entry_traj_bg.png".
+	
+	set main_ops3_gui:skin:horizontalslider:BG to "Shuttle_OPS3/src/gui_images/brakeslider.png".
+	set main_ops3_gui:skin:horizontalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/hslider_thumb.png".
+	set main_ops3_gui:skin:horizontalsliderthumb:HEIGHT to 17.
+	set main_ops3_gui:skin:horizontalsliderthumb:WIDTH to 20.
+	set main_ops3_gui:skin:verticalslider:BG to "Shuttle_OPS3/src/gui_images/vspdslider2.png".
+	set main_ops3_gui:skin:verticalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/vslider_thumb.png".
+	set main_ops3_gui:skin:verticalsliderthumb:HEIGHT to 20.
+	set main_ops3_gui:skin:verticalsliderthumb:WIDTH to 17.
+}
 
 
 //			HUD stuff

@@ -20,14 +20,14 @@ RUNPATH("0:/Shuttle_OPS3/VESSELS/" + vessel_dir + "/pitch_profile").
 
 GLOBAL quit_program IS FALSE.
 
+IF (DEFINED tgtrwy) {UNSET tgtrwy.}
+GLOBAL tgtrwy IS LEXICON().
+
 //initialise touchdown points for all landing sites
 define_td_points().
 
-make_main_entry_gui().
+make_main_ops3_gui().
 
-//ths lexicon contains all the necessary guidance objects 
-IF (DEFINED tgtrwy) {UNSET tgtrwy.}
-GLOBAL tgtrwy IS refresh_runway_lex(ldgsiteslex[select_tgt:VALUE]).
 
 make_entry_traj_GUI().
 
@@ -354,7 +354,8 @@ FUNCTION ops3_reentry_simulate {
 											"xlfac", xlfacft,
 											"roll0", roll_0,    
 											"alpha0", pitch_0,
-											"ital", tal_abort
+											"ital", tal_abort,
+											"debug", TRUE
 									)
 		).
 		
