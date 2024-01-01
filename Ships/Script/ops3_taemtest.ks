@@ -51,10 +51,23 @@ FUNCTION ops3_taem_test {
 
     
     dap:reset_steering().
-    LOCK STEERING TO dap:steering_dir.
+	LOCK STEERING TO dap:steering_dir.
     
     
     LOCAL css_flag Is TRUE.
+    LOCAL dap_engaged Is TRUE.
+	
+	ON (AG8) {
+		if (dap_engaged) {
+			set dap_engaged to false.
+			UNLOCK STEERING.
+		} else {
+			set dap_engaged to true.
+			set css_flag to FALSE.
+			LOCK STEERING TO dap:steering_dir.
+		}
+		preserve.
+    }
 
     ON (AG9) {
 		set css_flag to (NOT css_flag).
@@ -62,10 +75,6 @@ FUNCTION ops3_taem_test {
     }
 	
 	SAS OFF.
-	ON (SAS) {
-		SAS OFF.
-		PRESERVE.
-	}
     
 
 	GLOBAL hud_datalex IS get_hud_datalex().
