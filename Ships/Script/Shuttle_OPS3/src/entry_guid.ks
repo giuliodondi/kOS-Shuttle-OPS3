@@ -56,6 +56,9 @@ FUNCTION entryg_wrapper {
 		entryg_dump(eg_input).
 	}
 	
+	//work out the guidance mode - needs to be consistent with the hud string mappings
+	local guid_id is 10 + entryg_output["islect"].
+	
 	RETURN lexicon(
 								"guid_id", guid_id,					//counter to signal the current mode to the hud 
 								"alpha", entryg_output["alpcmd"],
@@ -289,8 +292,8 @@ function entryg_dump {
 		entryg_dumplex:add(k, entryg_input[k]). 
 	}
 	
-	for k in taemg_internal:keys {
-		LOCAL val IS taemg_internal[k].
+	for k in entryg_internal:keys {
+		LOCAL val IS entryg_internal[k].
 		
 		IF val:ISTYPE("List") {
 			LOCAL c_ IS 0.
