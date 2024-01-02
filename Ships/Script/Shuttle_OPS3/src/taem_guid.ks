@@ -385,7 +385,7 @@ global taemg_constants is lexicon (
 									"msw1", 3.2, 		//mach to switch from grtls phase 4 to taem phase 1
 									"msw3", 7.0, 		//upper mach to enable phase 4 s-turns
 									"nzsw1", 1.85,		//gs initial value of nzsw
-									"gralps", 1.6449,	//linear coef of alpha transition aoa vs mach
+									"gralps", 1.365,	//linear coef of alpha transition aoa vs mach
 									"gralpi",9.6482,	//° constant coef of alpha transition aoa vs mach
 									"gralpl", 14,	//° min alpha transition aoa
 									"gralpu", 17.55,	//° max alpha transition aoa

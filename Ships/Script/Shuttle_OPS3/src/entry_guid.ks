@@ -50,30 +50,33 @@ FUNCTION entryg_wrapper {
 							"ital", entryg_input["ital"]				//is tal abort flag
 	).
 
-	LOCAL entryg_output IS egexec(eg_input).
+	egexec(eg_input).
 	
 	if (entryg_input["debug"]) {
 		entryg_dump(eg_input).
 	}
 	
 	//work out the guidance mode - needs to be consistent with the hud string mappings
-	local guid_id is 10 + entryg_output["islect"].
+	local guid_id is 10 + entryg_internal["islect"].
 	
 	//i want to return a new lexicon of internal variables
 	return lexicon(
 								"guid_id", guid_id,					//counter to signal the current mode to the hud 
 								"alpcmd", entryg_internal["alpcmd"],
+								"aclam", entryg_internal["aclam"],		//my addition, required by the dap
+								"aclim", entryg_internal["aclim"],		//my addition, required by the dap
 								"rolcmd", entryg_internal["rolcmd"],
 								"spdbcmd", entryg_internal["spdbcmd"] / entryg_constants["dsblim"], 	//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
 								"drag_ref", entryg_internal["drefp"],
 								"drag", entryg_input["drag"],
 								"unl_roll", entryg_internal["rollc"][2],
 								"roll_ref", entryg_internal["rollc"][3],
+								"rlm", entryg_internal["rlm"],		//my addition, required by the dap
 								"hdot_ref", entryg_internal["rdtrf"]/mt2ft,
 								"islect", entryg_internal["islect"],
 								"roll_rev", entryg_internal["rrflag"],
 								"pitch_mod", entryg_internal["ict"],
-								"vcg", entryg_internal["vcg"]]/mt2ft,
+								"vcg", entryg_internal["vcg"]/mt2ft,
 								"eowd", entryg_internal["eowd"],
 								"eg_end", entryg_internal["eg_end"]
 	).
@@ -83,12 +86,12 @@ FUNCTION entryg_wrapper {
 //input constants
 
 global entryg_constants is lexicon (
-									"aclam1", 15.0,	//deg
-									"aclam2", 0.0025,	//deg-s/ft ??
+									"aclam1", 10,	//deg
+									"aclam2", 3.3e-3,	//deg / (ft/s)
 									"aclim1", 37,	//deg
-									"aclim2", 0,	//deg-s/ft ??
-									"aclim3", 7.6666667,	//deg
-									"aclim4", 0.00223333,	//deg-s/ft
+									"aclim2", 10,	//deg
+									"aclim3", -15.5,	//deg
+									"aclim4", 2.5e-3,	//deg / (ft/s)
 									"acn1", 50,	//time const for hdot feedback
 									"ak", -3.4573,	//temp control dD/dV factor
 									"ak1", -4.76,	//temp control dD/dV factor
@@ -170,12 +173,13 @@ global entryg_constants is lexicon (
 									"mm304alp0", 40,	//standard preentry aoa
 									"radeg", 57.29578,	//deg/rad radians to degrees
 									"rdmax", 12,	//max roll bias 
+									"rlmc0", 120,	//rlm max above verolc
 									"rlmc1", 70,	//rlm max
 									"rlmc2", 70,	//coeff in first rlm seg 
 									"rlmc3", 0,		//deg/ft/s
-									"rlmc4", 70,		//deg
-									"rlmc5", 0,		//deg/ft/s
-									"rlmc6", 70,		//deg	rlm min
+									"rlmc4", -370,		//deg
+									"rlmc5", 0.16,		//deg/ft/s
+									"rlmc6", 30,		//deg	rlm min
 									"rpt1", 22.4,	//nmi range bias
 									"va", 27637,	//ft/s initial vel for temp quadratic, dD/dV = 0
 									"valmod", 23000,	//ft/s modulation start flag for nonconvergence
@@ -190,7 +194,7 @@ global entryg_constants is lexicon (
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
 									"vnoalp", 20500,	//pch mod start velocity//	//took the value from the sts-1 paper
 									"vq", 10499,	//ft/s predicted end vel for const drag			//changed for consistency with vtran
-									"vrlmc", 2500,	//ft/s rlm seg switch vel
+									"vrlmc", 2750,	//ft/s rlm seg switch vel
 									"vsat", 25766.2,	//ft/s local circular orbit vel 
 									"vs1", 23283.5,		//ft/s eq glide ref vel 
 									"vrdt", 23000,	//ft/s hdot feedback start vel 
@@ -213,7 +217,7 @@ global entryg_constants is lexicon (
 									"egsbl1", 80.6,			//upper speedbrake limit
 									"egsbl2", 65,			//lower speedbrake limit
 									"vesbs1", -0.0806,			//linear coef for speedbrake
-									"vesbi1", 806			//constant coef for speedbrake
+									"vesbi1", 806,			//constant coef for speedbrake
 									"vesbs2", 0.0195,			//linear coef for speedbrake
 									"vesbi2", 2.6			//constant coef for speedbrake
 
@@ -223,6 +227,8 @@ global entryg_constants is lexicon (
 //internal variables
 //I made some variables local and removed them from this global lexicon
 global entryg_internal is lexicon(
+									"aclam", 0, 	//upper pitch limit
+									"aclim", 0,  	//lower pitch limit
 									"acmd1", 0,   	//scheduled aoa
 									"aldref", 0,   	//vertical l/d ref
 									"alpcmd", 0,   	//aoa cmd (deg)
@@ -277,6 +283,7 @@ global entryg_internal is lexicon(
 									"rdtrf", 0,   	//rdot ref corrected for cd 
 									"rk2rol", 0,   	//bank angle direction 
 									"rk2rlp", 0,   	//prev val 
+									"rlm", 0,		//roll limit
 									"rollc", list(0,0,0,0),	//1", roll angle command 2", unlimited roll command 3", roll ref //deg
 									"rolref", 0,	//deg 	//roll ref
 									"rpt", 0,   	//desired range at vq 
@@ -973,39 +980,32 @@ function egrolcmd {
 		//modification
 		set entryg_internal["rollc"][1] to (abs(entryg_internal["rollc"][2]) + midval(entryg_internal["rdealf"], almnxd, -almnxd)) * entryg_internal["rk2rol"].
 		
-		//calculate absolute limits for alpha modulation 
-		local aclam is min(entryg_constants["dlallm"], entryg_constants["aclam1"] + entryg_constants["aclam2"]*entryg_input["ve"]).
-		local aclim is min(entryg_constants["aclim1"] + entryg_constants["aclim2"]*entryg_input["ve"], entryg_constants["aclim3"] + entryg_constants["aclim4"]*entryg_input["ve"]).
-		
-		//the paper says apply the modulation on top of input alpha, to me makes more sense to apply it on top of "virgin" commanded alpha
-		//also i'm just using the top aclam alpha limit because the lower limit is incompatible with the 38/28 pitch profile 
-		set entryg_internal["alpcmd"] to min(aclam, entryg_internal["acmd1"] + entryg_internal["delalp"]).
+		//refactored pitch limits calculation
+		//apply pitch modulation
+		set entryg_internal["alpcmd"] to entryg_internal["acmd1"] + entryg_internal["delalp"].
 	}
+	
+	//calculate absolute pitch limits 
+	set entryg_internal["aclam"] to min(entryg_constants["dlallm"], entryg_constants["aclam1"] + entryg_constants["aclam2"]*entryg_input["ve"]).
+	set entryg_internal["aclim"] to midval(entryg_constants["aclim3"] + entryg_constants["aclim4"]*entryg_input["ve"], entryg_constants["aclim1"], entryg_constants["aclim2"]).
+	
+	//apply pitch limits in any case
+	set entryg_internal["alpcmd"] to midval(entryg_internal["alpcmd"], entryg_internal["aclam"], entryg_internal["aclim"]).
 	
 	//calculate absolute roll angle limits
-	local rlm is 0.
-	
-	if (entryg_input["ve"] > entryg_constants["vrlmc"]) {
-		set rlm to min(entryg_constants["rlmc1"], entryg_constants["rlmc2"] + entryg_constants["rlmc3"]*entryg_input["ve"]).	//entry 70°
-	} else {
-		set rlm to max(entryg_constants["rlmc6"], entryg_constants["rlmc4"] + entryg_constants["rlmc5"]*entryg_input["ve"]).	//taem 30°?? we should be out of this anyway
+	//refactored this block 
+	set entryg_internal["rlm"] to entryg_constants["rlmc0"].
+	if (entryg_input["ve"]  < entryg_constants["verolc"]) {
+		if (entryg_input["ve"] > entryg_constants["vrlmc"]) {
+			set entryg_internal["rlm"] to min(entryg_constants["rlmc1"], entryg_constants["rlmc2"] + entryg_constants["rlmc3"]*entryg_input["ve"]).	//entry 70°
+		} else {
+			set entryg_internal["rlm"] to max(entryg_constants["rlmc6"], entryg_constants["rlmc4"] + entryg_constants["rlmc5"]*entryg_input["ve"]).	//ramp down to 30° for taem
+		}
 	}
 	
-	//no more than 70° below mach 8 or so
-	if (abs(entryg_internal["rollc"][1]) > rlm) and (entryg_input["ve"]  < entryg_constants["verolc"]) {
-		set entryg_internal["rollc"][1] to rlm*sign(entryg_internal["rollc"][1]).
-	}
+	set entryg_internal["rollc"][1] to midval(entryg_internal["rollc"][1], -entryg_internal["rlm"], entryg_internal["rlm"]).
 	
-	//save a clamped roll command 
-	//use the 2xdelaz logic from the manual 
-	//do not roll more than 120°
-	//do not clamp during preentry (want to keep roll at 0° ideally)
-	//UPDATE: delaz clamping is not good for TAL, so disable it 
-	//if (entryg_internal["islect"] > 1) {
-	//	set entryg_internal["rolcmd"] to entryg_internal["rk2rol"] * CLAMP(ABS(entryg_internal["rollc"][1]), 2*ABS(entryg_input["delaz"]), 120).
-	//}
-	
-	set entryg_internal["rolcmd"] to entryg_internal["rk2rol"] * CLAMP(ABS(entryg_internal["rollc"][1]), 0, 120).
+	set entryg_internal["rolcmd"] to entryg_internal["rollc"][1].
 }
 
 //my addition : deflect speedbrake on a fixed mach schedule 
