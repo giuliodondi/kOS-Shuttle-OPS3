@@ -1189,7 +1189,6 @@ FUNCTION reset_hud_bg_brightness {
 fUNCTION get_hud_datalex {
 	RETURN LEXICON(
 					"phase", 0,
-					"css_flag", 0,
 					"pipper_deltas", 0,
 					"altitude", 0,
 					"hdot", 0,
@@ -1207,7 +1206,7 @@ FUNCTION update_hud_gui {
 	PARAMETER hud_datalex.
 	
 	LOCAL steer_str IS "AUTO".
-	IF (hud_datalex["css_flag"]) {
+	IF (is_css()) {
 		SET steer_str TO "CSS ".
 	}
 

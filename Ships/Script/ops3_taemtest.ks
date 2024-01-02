@@ -54,7 +54,6 @@ FUNCTION ops3_taem_test {
 	LOCK STEERING TO dap:steering_dir.
     
     
-    LOCAL css_flag Is TRUE.
     LOCAL dap_engaged Is TRUE.
 	
 	ON (AG8) {
@@ -63,16 +62,11 @@ FUNCTION ops3_taem_test {
 			UNLOCK STEERING.
 		} else {
 			set dap_engaged to true.
-			set css_flag to FALSE.
 			LOCK STEERING TO dap:steering_dir.
 		}
 		preserve.
     }
 
-    ON (AG9) {
-		set css_flag to (NOT css_flag).
-        PRESERVE.
-    }
 	
 	SAS OFF.
     
@@ -84,6 +78,7 @@ FUNCTION ops3_taem_test {
     local control_loop is loop_executor_factory(
         0.1,
         {
+			local css_flag is is_css().
 			if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) {
 				//reentry, alpha recovery, alpha transition
 				if (css_flag) {
@@ -115,7 +110,7 @@ FUNCTION ops3_taem_test {
 					}
 				}
 			}
-            aerosurfaces_control:update(TRUE).
+            aerosurfaces_control:update(is_autoflap(), is_autoairbk()).
         }
     ).
     
@@ -171,33 +166,22 @@ FUNCTION ops3_taem_test {
         
 		set guid_id to taemg_out["guid_id"].
 		
-
-        SET aerosurfaces_control["spdbk_defl"] TO taemg_out["dsbc_at"].
-		SET dap:tgt_roll tO taemg_out["phic_at"].
-        SET dap:tgt_yaw tO taemg_out["betac_at"].
-		SET dap:pitch_lims to LIST(taemg_out["alpll"], taemg_out["alpul"]).
+		IF (is_autoairbk()) {
+			SET aerosurfaces_control:spdbk_defl TO taemg_out["dsbc_at"].
+		}
 		
-		if (guid_id = 26) OR (guid_id = 24) {
-			SET dap:tgt_pitch tO taemg_out["alpcmd"].
-			SET hud_datalex["pipper_deltas"] TO LIST(
-													taemg_out["phic_at"] - dap:prog_roll, 
-													taemg_out["alpcmd"] -  dap:prog_pitch
-
-			).
-		} else if (guid_id = 25) {
-			SET dap:tgt_nz tO taemg_out["nztotal"].
-			SET hud_datalex["pipper_deltas"] TO LIST(
-													taemg_out["phic_at"] - dap:prog_roll, 
-													taemg_out["nztotal"] -  dap:nz
-
-			).
-		} else {
-			SET dap:tgt_hdot tO taemg_out["hdrefc"].
-			SET hud_datalex["pipper_deltas"] TO LIST(
-													taemg_out["phic_at"] - dap:prog_roll, 
-													taemg_out["hdrefc"] -  rwystate["hdot"]
-
-			).
+		SET dap:pitch_lims to LIST(taemg_out["alpll"], taemg_out["alpul"]).
+		IF (NOT is_css()) {
+			SET dap:tgt_roll tO taemg_out["phic_at"].
+			SET dap:tgt_yaw tO taemg_out["betac_at"].
+			
+			if (guid_id = 26) OR (guid_id = 24) {
+				SET dap:tgt_pitch tO taemg_out["alpcmd"].
+			} else if (guid_id = 25) {
+				SET dap:tgt_nz tO taemg_out["nztotal"].
+			} else {
+				SET dap:tgt_hdot tO taemg_out["hdrefc"].
+			}
 		}
 
 
@@ -219,12 +203,31 @@ FUNCTION ops3_taem_test {
 
 		//gui outputs
 		
+		if (guid_id = 26) OR (guid_id = 24) {
+			SET hud_datalex["pipper_deltas"] TO LIST(
+													taemg_out["phic_at"] - dap:prog_roll, 
+													taemg_out["alpcmd"] -  dap:prog_pitch
+
+			).
+		} else if (guid_id = 25) {
+			SET hud_datalex["pipper_deltas"] TO LIST(
+													taemg_out["phic_at"] - dap:prog_roll, 
+													taemg_out["nztotal"] -  dap:nz
+
+			).
+		} else {
+			SET hud_datalex["pipper_deltas"] TO LIST(
+													taemg_out["phic_at"] - dap:prog_roll, 
+													taemg_out["hdrefc"] -  rwystate["hdot"]
+
+			).
+		}
+		
 		if (taemg_out["itran"]) {
             hud_decluttering(guid_id).
 		}
 
 		SET hud_datalex["phase"] TO guid_id.
-		SET hud_datalex["css_flag"] TO css_flag.
 		
 		SET hud_datalex["altitude"] TO rwystate["h"].
 		SET hud_datalex["hdot"] TO rwystate["hdot"].

@@ -447,19 +447,24 @@ FUNCTION aerosurfaces_control_factory {
 	this:ADD("pitch_control", average_value_factory(5)).
 	
 	this:ADD("update", {
-		parameter auto_flag.
+		parameter auto_flaps.
+		parameter auto_airbk.
 
 		 //read off the gimbal angle to get the pitch control input 
 		this:pitch_control:update(this:gimbal:PITCHANGLE).
 
 		LOCAL flap_incr IS 0.
 		
-		If auto_flag {
+		If auto_flaps {
 			LOCAL controlavg IS this:pitch_control:average().
 			SET flap_incr TO this:flap_pid:UPDATE(TIME:SECONDS,controlavg).
 		} ELSE {
 			SET flap_incr TO SHIP:CONTROL:PILOTPITCHTRIM.
 			SET SHIP:CONTROL:PILOTPITCHTRIM TO 0.
+		}
+		
+		if (NOT auto_airbk) {
+			SET this:spdbk_defl TO THROTTLE.
 		}
 		
 		if (this:flap_engaged) {
