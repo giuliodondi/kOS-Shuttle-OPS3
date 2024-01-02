@@ -49,11 +49,13 @@ FUNCTION entryg_wrapper {
 							"mm304al", entryg_input["alpha0"],    	//preentry aoa ,
 							"ital", entryg_input["ital"]				//is tal abort flag
 	).
+	
+	local dump_overwrite is (entryg_internal["start"] = 0).
 
 	egexec(eg_input).
 	
 	if (entryg_input["debug"]) {
-		entryg_dump(eg_input).
+		entryg_dump(eg_input, dump_overwrite).
 	}
 	
 	//work out the guidance mode - needs to be consistent with the hud string mappings
@@ -307,6 +309,7 @@ global entryg_internal is lexicon(
 
 function entryg_dump {
 	parameter entryg_input.
+	parameter overwrite.
 	
 	local entryg_dumplex is lexicon().
 	
@@ -329,7 +332,7 @@ function entryg_dump {
 		}
 	}
 	
-	log_data(entryg_dumplex,"0:/Shuttle_OPS3/LOGS/entry_dump", TRUE).
+	log_data(entryg_dumplex,"0:/Shuttle_OPS3/LOGS/entry_dump", overwrite).
 }
 
 

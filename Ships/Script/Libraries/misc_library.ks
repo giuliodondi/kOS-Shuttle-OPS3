@@ -36,22 +36,30 @@ FUNCTION PRINTPLACE{
 
 
 //log handler function, takes a lexicon as imput
-//creates a log file, deleting the file by the same name if it exists
+//if the flag "initialise" is passed:
+//creates a log file, moving the file by the same name if it exists
 //then creates the column headers by dumping the lexicon keys
-//if the log file has already been created just logs the lexicon to file
+//else it just dumps the data
 FUNCTION log_data {
 	PARAMETER log_lex.
-	PARAMETER logname_string IS "".
-	PARAMETER overwrite IS FALSE.
-	
-	if not (defined logfileslist) {
-		GLOBAL logfileslist IS LISt().
-	}
+	PARAMETER logname_string.
+	PARAMETER initialise IS FALSE.
 	
 	LOCAL logfilename IS logname_string  + ".csv".
 	
-	if logfileslist:CONTAINS(logfilename) {
+	if (initialise) {
+		IF EXISTS(logfilename) {
+			MOVEPATH(logfilename,logname_string + "_old" + ".csv").
+		}
 		
+		LOCAL titlestr IS "".
+		
+		FOR key IN log_lex:KEYS {
+			SET titlestr TO titlestr + key + ",".
+		}
+		
+		log titlestr to logfilename.
+	} else {
 		LOCAL str IS "".
 		
 		//append to the string the numbers in sequence separated by four spaces
@@ -62,34 +70,49 @@ FUNCTION log_data {
 		str:remove(str:length - 1, 1).
 
 		LOG str TO logfilename.
-	
-	} ELSE { 
-		IF overwrite {
-			IF EXISTS(logfilename) {
-				MOVEPATH(logfilename,logname_string + "_old" + ".csv").
-			}
-		} ELSE {
-			local logcount is 0.
-			set logfilename to logname_string + "_" + logcount + ".csv".
-			until false {
-				set logfilename to logname_string + "_" + logcount + ".csv".
-				IF EXISTS(logfilename) {
-					set logcount to logcount + 1.
-				}
-				ELSE {break.}
-			}
-		}
-		
-		LOCAL titlestr IS "".
-		
-		FOR key IN log_lex:KEYS {
-			SET titlestr TO titlestr + key + ",".
-		}
-		
-		log titlestr to logfilename.
-		
-		logfileslist:add(logfilename).
 	}
+	
+	//keep for legacy but it's buggy
+	//if logfileslist:CONTAINS(logfilename) {
+	//	
+	//	LOCAL str IS "".
+	//	
+	//	//append to the string the numbers in sequence separated by four spaces
+	//	FOR val IN log_lex:VALUES {
+	//		SET str TO str + val + ",".
+	//	}
+	//	
+	//	str:remove(str:length - 1, 1).
+	//
+	//	LOG str TO logfilename.
+	//
+	//} ELSE { 
+	//	IF overwrite {
+	//		IF EXISTS(logfilename) {
+	//			MOVEPATH(logfilename,logname_string + "_old" + ".csv").
+	//		}
+	//	} ELSE {
+	//		local logcount is 0.
+	//		set logfilename to logname_string + "_" + logcount + ".csv".
+	//		until false {
+	//			set logfilename to logname_string + "_" + logcount + ".csv".
+	//			IF EXISTS(logfilename) {
+	//				set logcount to logcount + 1.
+	//			}
+	//			ELSE {break.}
+	//		}
+	//	}
+	//	
+	//	LOCAL titlestr IS "".
+	//	
+	//	FOR key IN log_lex:KEYS {
+	//		SET titlestr TO titlestr + key + ",".
+	//	}
+	//	
+	//	log titlestr to logfilename.
+	//	
+	//	logfileslist:add(logfilename).
+	//}
 }
 
 

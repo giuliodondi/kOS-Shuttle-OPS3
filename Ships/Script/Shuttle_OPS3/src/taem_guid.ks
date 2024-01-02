@@ -84,11 +84,11 @@ FUNCTION taemg_wrapper {
 										"rwid", taemg_input["rwid"],		//runway id flag  (only needed to detect a runway change, the runway number is fine)
 										"grtls", taemg_input["grtls"]		//grtls flag
 								).
-
-	tgexec(tg_input).
+	
+	local dump_overwrite is tgexec(tg_input).
 	
 	if (taemg_input["debug"]) {
-		taemg_dump(tg_input).
+		taemg_dump(tg_input, dump_overwrite).
 	}
 	
 	//work out the guidance mode - needs to be consistent with the hud string mappings
@@ -544,6 +544,7 @@ global taemg_internal is lexicon(
 
 function taemg_dump {
 	parameter taemg_input.
+	parameter overwrite.
 	
 	local taemg_dumplex is lexicon().
 	
@@ -566,7 +567,7 @@ function taemg_dump {
 		}
 	}
 	
-	log_data(taemg_dumplex,"0:/Shuttle_OPS3/LOGS/taem_dump", TRUE).
+	log_data(taemg_dumplex,"0:/Shuttle_OPS3/LOGS/taem_dump", overwrite).
 }
 
 
@@ -587,8 +588,11 @@ function taemg_dump {
 
 function tgexec {
 	PARAMETER taemg_input.
+	
+	local reset_flag is FALSE.
 
 	if (taemg_internal["ireset"] = TRUE) OR (taemg_input["rwid"] <> taemg_internal["rwid0"]) OR (taemg_input["ovhd"]<>taemg_internal["ovhd0"]) {
+		set reset_flag to TRUE.
 		tginit(taemg_input).
 	}
 	
@@ -627,7 +631,7 @@ function tgexec {
 		tgphic(taemg_input).
 	}
 		
-		
+	return reset_flag.
 
 }
 
