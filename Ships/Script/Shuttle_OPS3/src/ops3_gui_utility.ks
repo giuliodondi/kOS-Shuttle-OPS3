@@ -1444,7 +1444,7 @@ FUNCTION distance_format {
 FUNCTION speed_format {
 	PARAMETER iphase.
 
-	if (iphase <= 22) { 
+	if (iphase <= 21) { 
 		return "M" + ROUND(ADDONS:FAR:MACH, 1).
 	} else {
 		return ROUND(SHIP:VELOCITY:SURFACE:MAG, 0).
