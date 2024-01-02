@@ -44,6 +44,7 @@ FUNCTION entryg_wrapper {
 							"trange", entryg_input["tgt_range"]*km2nmi,     //target range (nmi)
 							"ve", entryg_input["ve"]*mt2ft, 		   //earth rel velocity (ft/s)
 							"vi", entryg_input["vi"]*mt2ft,		   //inertial vel (ft/s)
+							"mach", entryg_input["mach"],
 							"xlfac", entryg_input["xlfac"],      //load factor acceleration (ft/s2)
 							"mm304ph", entryg_input["roll0"],    	//preentry bank 
 							"mm304al", entryg_input["alpha0"],    	//preentry aoa ,
@@ -59,20 +60,23 @@ FUNCTION entryg_wrapper {
 	//work out the guidance mode - needs to be consistent with the hud string mappings
 	local guid_id is 10 + entryg_output["islect"].
 	
-	RETURN lexicon(
+	//i want to return a new lexicon of internal variables
+	return lexicon(
 								"guid_id", guid_id,					//counter to signal the current mode to the hud 
-								"alpha", entryg_output["alpcmd"],
-								"roll", entryg_output["rolcmd"],
-								"unl_roll", entryg_output["unl_roll"],
-								"roll_ref", entryg_output["rolref"],
-								"drag_ref", entryg_output["drefp"],
-								"drag", entryg_output["drag"],
-								"hdot_ref", entryg_output["hdot_ref"]/mt2ft,
-								"phase", entryg_output["islect"],
-								"roll_rev", entryg_output["rrflag"],
-								"pitch_mod", entryg_output["ict"],
-								"vcg", entryg_output["vcg"]/mt2ft,
-								"eg_end", entryg_output["eg_end"]
+								"alpcmd", entryg_internal["alpcmd"],
+								"rolcmd", entryg_internal["rolcmd"],
+								"spdbcmd", entryg_internal["spdbcmd"] / entryg_constants["dsblim"], 	//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
+								"drag_ref", entryg_internal["drefp"],
+								"drag", entryg_input["drag"],
+								"unl_roll", entryg_internal["rollc"][2],
+								"roll_ref", entryg_internal["rollc"][3],
+								"hdot_ref", entryg_internal["rdtrf"]/mt2ft,
+								"islect", entryg_internal["islect"],
+								"roll_rev", entryg_internal["rrflag"],
+								"pitch_mod", entryg_internal["ict"],
+								"vcg", entryg_internal["vcg"]]/mt2ft,
+								"eowd", entryg_internal["eowd"],
+								"eg_end", entryg_internal["eg_end"]
 	).
 }
 
@@ -201,7 +205,16 @@ global entryg_constants is lexicon (
 									"y1", 12,	//deg max heading err deadband before first reversal	//was 17.5 deg
 									"y2", 9.97,	//deg min heading error deadband 
 									"y3", 17.5,	//deg max heading err deadband after first reversal 
-									"zk1", 1	//s hdot feedback gain
+									"zk1", 1,	//s hdot feedback gain
+									
+									//my addition: speedbrake constants ported form taem
+									"dsblim", 98.6,	//deg dsbc max value 
+									"del1sb", 3.125,		//speedbrake open rate
+									"egsbl1", 80.6,			//upper grtls speedbrake limit
+									"egsbl2", 65,			//lower grtls speedbrake limit
+									"machsbl", 10,			//mach to start speedbrake schedule
+									"machsbs", 19.5,			//linear coef for speedbrake
+									"machsbi", 2.6			//constant coef for speedbrake
 
 ).
 
@@ -213,6 +226,8 @@ global entryg_internal is lexicon(
 									"aldref", 0,   	//vertical l/d ref
 									"alpcmd", 0,   	//aoa cmd (deg)
 									"rolcmd", 0,   	//roll cmd 	(deg)
+									"spdbcmd", 0,	//my addition: speedbrake cmd
+									"dsbc_at1", 0,	//speedbrake cmd ramp-up
 									"alpdot", 0,   	//aoa dot 
 									"a", list(0,0,0),   	//temp variable in computign range 
 									"cag", 0,   	//pseudoenergy / mass used in transition 
@@ -385,6 +400,9 @@ function egexec {
 	//roll command 
 	egrolcmd(entryg_input).
 	
+	//my addition : speedbrake command
+	egsbcmd(entryg_input).
+	
 	//transition checks 
 	if (entryg_internal["islect"] = 2) {
 		//nominal temp control termination 
@@ -426,23 +444,6 @@ function egexec {
 	if (entryg_input["ve"] < entryg_constants["v_taem"]) {
 		set entryg_internal["eg_end"] to TRUE.
 	}
-	
-	//i want to return a new lexicon of internal variables
-	return lexicon(
-								"alpcmd", entryg_internal["alpcmd"],
-								"rolcmd", entryg_internal["rolcmd"],
-								"drefp", entryg_internal["drefp"],
-								"drag", entryg_input["drag"],
-								"unl_roll", entryg_internal["rollc"][2],
-								"rolref", entryg_internal["rollc"][3],
-								"hdot_ref", entryg_internal["rdtrf"],
-								"islect", entryg_internal["islect"],
-								"rrflag", entryg_internal["rrflag"],
-								"ict", entryg_internal["ict"],
-								"vcg", entryg_internal["vcg"],
-								"eowd", entryg_internal["eowd"],
-								"eg_end", entryg_internal["eg_end"]
-	).
 }
 
 //scale height for hdot reference term
@@ -1005,4 +1006,21 @@ function egrolcmd {
 	//}
 	
 	set entryg_internal["rolcmd"] to entryg_internal["rk2rol"] * CLAMP(ABS(entryg_internal["rollc"][1]), 0, 120).
+}
+
+//my addition : deflect speedbrake on a fixed mach schedule 
+//logic adapted from taem grtls and implemented from the workbooks
+//in reality it was part of the DAP??
+function egsbcmd {
+	PARAMETER entryg_input.
+	
+	if (entryg_input["mach"] >= entryg_constants["machsbl"]) {
+		set entryg_internal["spdbcmd"] to 0.
+		return.
+	}
+	
+	set entryg_internal["dsbc_at1"] to entryg_internal["dsbc_at1"] + entryg_constants["del1sb"].
+	local dsbc_at2 is midval(entryg_constants["machsbs"] * entryg_input["mach"] + entryg_constants["machsbi"], entryg_constants["grsbl1"], entryg_constants["grsbl2"]).
+	
+	set entryg_internal["spdbcmd"] to min(entryg_internal["dsbc_at1"], dsbc_at2).
 }

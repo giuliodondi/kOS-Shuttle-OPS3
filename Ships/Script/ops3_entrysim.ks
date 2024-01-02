@@ -359,9 +359,9 @@ FUNCTION ops3_reentry_simulate {
 									)
 		).
 		
-		SET pitch_prof TO entryg_out["alpha"].
+		SET pitch_prof TO entryg_out["alpcmd"].
 		//simulate roll lag
-		LOCAL del_rol IS entryg_out["roll"] - roll_prof.
+		LOCAL del_rol IS entryg_out["rolcmd"] - roll_prof.
 		SET roll_prof TO roll_prof + SIGN(del_rol)* MIN(20, ABS(del_rol)).
 		
 		//log stuff to file and terminal before integrating
@@ -384,7 +384,7 @@ FUNCTION ops3_reentry_simulate {
 		SET loglex["unl_roll"] TO entryg_out["unl_roll"].
 		SET loglex["roll_ref"] TO entryg_out["roll_ref"].
 		SET loglex["l_d"] TO lod.
-		SET loglex["entry_phase"] TO entryg_out["phase"].
+		SET loglex["entry_phase"] TO entryg_out["islect"].
 		SET loglex["drag"] TO dragft.
 		SET loglex["drag_ref"] TO entryg_out["drag_ref"].
 		SET loglex["hdot_ref"] TO entryg_out["hdot_ref"].
@@ -407,7 +407,7 @@ FUNCTION ops3_reentry_simulate {
 								"lod",lod,
 								"drag",dragft,
 								"drag_ref",entryg_out["drag_ref"],
-								"phase",entryg_out["phase"],
+								"phase",entryg_out["islect"],
 								"hdot_ref",entryg_out["hdot_ref"],
 								"pitch",pitch_prof,
 								"roll",roll_prof,
