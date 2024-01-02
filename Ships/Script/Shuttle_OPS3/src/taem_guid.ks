@@ -146,6 +146,8 @@ FUNCTION taemg_wrapper {
 					"itran", taemg_internal["itran"], 	//phase transition flag 
 					"tg_end", taemg_internal["tg_end"], 	//termination flag 
 					"al_end", taemg_internal["al_end"], 	//termination flag 
+					"freezetgt", taemg_internal["freezetgt"],	
+					"freezeapch", taemg_internal["freezeapch"],	
 					"geardown", taemg_internal["geardown"],	
 					"brakeson", taemg_internal["brakeson"]
 	
@@ -504,6 +506,8 @@ global taemg_internal is lexicon(
 								"rcir", 0,		//ft ship-hac distance
 								"xa", 0,		//ft steep gs intercept, turned into a variable that is calculated from the a/l flare circle
 								
+								"freezetgt", FALSE,
+								"freezeapch", FALSE,
 								
 								//A/L guidance stuff 
 								"al_end", FALSE,		//termination flag 
@@ -1110,23 +1114,29 @@ FUNCTION tgtran {
 			if (taemg_input["grtls"]) {
 				set pshalim to taemg_constants["grpsstrn"].	
 			}
-			if ((taemg_internal["psha"] < pshalim and taemg_internal["drpred"] > taemg_constants["rminst"][taemg_internal["igs"]])) {
-				
-				//moved es calculation to tgcomp
-				
-				//if above energy, transition to s-turn 
-				if (taemg_internal["eow"] > taemg_internal["es"]) {
-					set taemg_internal["iphase"] to 0.
-					set taemg_internal["itran"] to TRUE.
-					set taemg_internal["philim"] to taemg_constants["philm0"].
-					//direction of s-turn 
-					set taemg_internal["ysturn"] to -taemg_internal["ysgn"].
-					local spsi is taemg_internal["ysturn"] * unfixangle(taemg_input["psd"]).
+			//slight refactoring 
+			if (taemg_internal["drpred"] > taemg_constants["rminst"][taemg_internal["igs"]]) {
+				if (taemg_internal["psha"] < pshalim) {
 					
-					if (spsi < 0) and (taemg_internal["psha"] < 90) {
-						set taemg_internal["ysturn"] to -taemg_internal["ysturn"].
+					//moved es calculation to tgcomp
+					
+					//if above energy, transition to s-turn 
+					if (taemg_internal["eow"] > taemg_internal["es"]) {
+						set taemg_internal["iphase"] to 0.
+						set taemg_internal["itran"] to TRUE.
+						set taemg_internal["philim"] to taemg_constants["philm0"].
+						//direction of s-turn 
+						set taemg_internal["ysturn"] to -taemg_internal["ysgn"].
+						local spsi is taemg_internal["ysturn"] * unfixangle(taemg_input["psd"]).
+						
+						if (spsi < 0) and (taemg_internal["psha"] < 90) {
+							set taemg_internal["ysturn"] to -taemg_internal["ysturn"].
+						}
 					}
 				}
+			} else {
+				set taemg_internal["freezetgt"] to TRUE.
+				set taemg_internal["freezeapch"] to TRUE.
 			}
 			
 			//a bit of confusion ensues bc the level-c ott document is ass

@@ -108,6 +108,8 @@ FUNCTION ops3_taem_test {
 						set aerosurfaces_control:flap_engaged to FALSE.
 					}
 				}
+			} else {
+				dap:measure_cur_state().
 			}
             aerosurfaces_control:update(is_autoflap(), is_autoairbk()).
         }
@@ -184,9 +186,19 @@ FUNCTION ops3_taem_test {
 		}
 
 
-        IF (RCS) and (ADDONS:FAR:MACH < 0.9) {
+        IF (ADDONS:FAR:MACH < 0.9) {
             RCS OFF.
-        }
+        } else {
+			RCS ON.
+		}
+		
+		if (guid_id <= 21) and taemg_internal["freezetgt"] {
+			freeze_target_site().
+		}
+		
+		if (guid_id <= 21) and taemg_internal["freezeapch"] {
+			freeze_apch().
+		}
 
         if (NOT GEAR) and (taemg_out["geardown"]) {
             GEAR ON.
