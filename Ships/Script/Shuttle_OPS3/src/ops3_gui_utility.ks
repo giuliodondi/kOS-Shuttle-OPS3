@@ -330,19 +330,44 @@ FUNCTION make_main_ops3_gui {
 	
 	GLOBAL toggles_box IS main_ops3_gui:ADDHLAYOUT().
 	SET toggles_box:STYLE:WIDTH TO 300.
-	toggles_box:addspacing(55).	
+	toggles_box:addspacing(20).	
 	SET toggles_box:STYLE:ALIGN TO "center".
 	
-	GLOBAL logb IS  toggles_box:ADDCHECKBOX("Log Data",false).
-	toggles_box:addspacing(20).	
+	GLOBAL steerb_box IS toggles_box:ADDHLAYOUT().
+	SET steerb_box:STYLE:WIDTH TO 145.
+	GLOBAL steerb_text IS steerb_box:ADDLABEL("Steering :").
+	set steerb_text:style:margin:v to -3.
+	GLOBAL steerb IS steerb_box:addpopupmenu().
+	set steerb:style:margin:v to -3.
+	SET steerb:STYLE:WIDTH TO 70.
+	SET steerb:STYLE:HEIGHT TO 25.
+	SET steerb:STYLE:ALIGN TO "center".
+	steerb:addoption("OFF").
+	steerb:addoption("CSS").
+	steerb:addoption("AUTO").
+	toggles_box:addspacing(20).
 	
-	GLOBAL autob IS toggles_box:ADDCHECKBOX("Auto steer",false).
-	toggles_box:addspacing(20).	
+	SET steerb:ONCHANGE to {
+		PARAMETER steering_.
+		
+		if (steering_ = "OFF") {
+			set steerb:STYLE:BG to "Shuttle_OPS3/src/gui_images/steering_off_btn.png".
+		} else {
+			set steerb:STYLE:BG to "Shuttle_OPS3/src/gui_images/default_btn.png". 
+		}
+	}.
+	
+	steerb:ONCHANGE(steerb:VALUE).	
+	WAIT 0.
 	
 	GLOBAL flptrmb IS  toggles_box:ADDCHECKBOX("Auto Flaps",false).
 	toggles_box:addspacing(20).	
 	
 	GLOBAL arbkb IS  toggles_box:ADDCHECKBOX("Auto Airbk",false).
+	toggles_box:addspacing(20).	
+	
+	GLOBAL logb IS  toggles_box:ADDCHECKBOX("Log Data",false).
+	
 
 	select_random_rwy().
 	SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, select_rwy:VALUE).
