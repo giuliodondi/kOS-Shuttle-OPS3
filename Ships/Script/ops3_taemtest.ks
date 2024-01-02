@@ -50,25 +50,21 @@ FUNCTION ops3_taem_test {
     aerosurfaces_control["set_aoa_feedback"](50).
 
     
-    dap:reset_steering().
-	LOCK STEERING TO dap:steering_dir.
-    
-    
-    LOCAL dap_engaged Is TRUE.
+    //dap:reset_steering().
+	//LOCK STEERING TO dap:steering_dir.
 	
-	ON (AG8) {
+    LOCAL dap_engaged Is is_dap_engaged().
+	ON (dap_engaged) {
 		if (dap_engaged) {
-			set dap_engaged to false.
-			UNLOCK STEERING.
-		} else {
-			set dap_engaged to true.
+			dap:reset_steering().
 			LOCK STEERING TO dap:steering_dir.
+			SAS OFF.
+		} else {
+			UNLOCK STEERING.
+			SAS ON.
 		}
 		preserve.
     }
-
-	
-	SAS OFF.
     
 
 	GLOBAL hud_datalex IS get_hud_datalex().
@@ -78,36 +74,39 @@ FUNCTION ops3_taem_test {
     local control_loop is loop_executor_factory(
         0.1,
         {
-			local css_flag is is_css().
-			if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) {
-				//reentry, alpha recovery, alpha transition
-				if (css_flag) {
-					dap:update_css_prograde().
-				} else {
-					dap:update_auto_prograde().
-				}
-			} else {
-				if (css_flag) {
-					local direct_pitch_flag is (guid_id >= 34).
-					dap:update_css_lvlh(direct_pitch_flag).
-				} else {
-					 if (guid_id = 25) {
-						//nz hold
-						dap:update_auto_nz().
+			set dap_engaged to is_dap_engaged().
+			if (dap_engaged) {
+				local css_flag is is_dap_css().
+				if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) {
+					//reentry, alpha recovery, alpha transition
+					if (css_flag) {
+						dap:update_css_prograde().
 					} else {
-						//hdot control
-						if (guid_id >= 35) {
-							dap:set_landing_hdot_gains().
-						} else {
-							dap:set_taem_hdot_gains().
-						}
-						
-						dap:update_auto_hdot().
+						dap:update_auto_prograde().
 					}
-				}
-				//lock flaps after touchdown or during flare
-				if (dap:wow) {
-					set aerosurfaces_control:flap_engaged to FALSE.
+				} else {
+					if (css_flag) {
+						local direct_pitch_flag is (guid_id >= 34).
+						dap:update_css_lvlh(direct_pitch_flag).
+					} else {
+						 if (guid_id = 25) {
+							//nz hold
+							dap:update_auto_nz().
+						} else {
+							//hdot control
+							if (guid_id >= 35) {
+								dap:set_landing_hdot_gains().
+							} else {
+								dap:set_taem_hdot_gains().
+							}
+							
+							dap:update_auto_hdot().
+						}
+					}
+					//lock flaps after touchdown or during flare
+					if (dap:wow) {
+						set aerosurfaces_control:flap_engaged to FALSE.
+					}
 				}
 			}
             aerosurfaces_control:update(is_autoflap(), is_autoairbk()).
@@ -171,7 +170,7 @@ FUNCTION ops3_taem_test {
 		}
 		
 		SET dap:pitch_lims to LIST(taemg_out["alpll"], taemg_out["alpul"]).
-		IF (NOT is_css()) {
+		IF (dap_engaged) AND (NOT is_dap_css()) {
 			SET dap:tgt_roll tO taemg_out["phic_at"].
 			SET dap:tgt_yaw tO taemg_out["betac_at"].
 			

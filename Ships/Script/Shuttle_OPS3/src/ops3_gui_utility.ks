@@ -333,31 +333,31 @@ FUNCTION make_main_ops3_gui {
 	toggles_box:addspacing(20).	
 	SET toggles_box:STYLE:ALIGN TO "center".
 	
-	GLOBAL steerb_box IS toggles_box:ADDHLAYOUT().
-	SET steerb_box:STYLE:WIDTH TO 145.
-	GLOBAL steerb_text IS steerb_box:ADDLABEL("Steering :").
-	set steerb_text:style:margin:v to -3.
-	GLOBAL steerb IS steerb_box:addpopupmenu().
-	set steerb:style:margin:v to -3.
-	SET steerb:STYLE:WIDTH TO 70.
-	SET steerb:STYLE:HEIGHT TO 25.
-	SET steerb:STYLE:ALIGN TO "center".
-	steerb:addoption("OFF").
-	steerb:addoption("CSS").
-	steerb:addoption("AUTO").
+	GLOBAL dap_b_box IS toggles_box:ADDHLAYOUT().
+	SET dap_b_box:STYLE:WIDTH TO 135.
+	GLOBAL dap_b_text IS dap_b_box:ADDLABEL("DAP :").
+	set dap_b_text:style:margin:v to -3.
+	GLOBAL dap_b IS dap_b_box:addpopupmenu().
+	set dap_b:style:margin:v to -3.
+	SET dap_b:STYLE:WIDTH TO 70.
+	SET dap_b:STYLE:HEIGHT TO 25.
+	SET dap_b:STYLE:ALIGN TO "center".
+	dap_b:addoption("OFF").
+	dap_b:addoption("CSS").
+	dap_b:addoption("AUTO").
 	toggles_box:addspacing(20).
 	
-	SET steerb:ONCHANGE to {
-		PARAMETER steering_.
+	SET dap_b:ONCHANGE to {
+		PARAMETER mode_.
 		
-		if (steering_ = "OFF") {
-			set steerb:STYLE:BG to "Shuttle_OPS3/src/gui_images/steering_off_btn.png".
+		if (mode_ = "OFF") {
+			set dap_b:STYLE:BG to "Shuttle_OPS3/src/gui_images/steering_off_btn.png".
 		} else {
-			set steerb:STYLE:BG to "Shuttle_OPS3/src/gui_images/default_btn.png". 
+			set dap_b:STYLE:BG to "Shuttle_OPS3/src/gui_images/default_btn.png". 
 		}
 	}.
 	
-	steerb:ONCHANGE(steerb:VALUE).	
+	dap_b:ONCHANGE(dap_b:VALUE).	
 	WAIT 0.
 	
 	GLOBAL flptrmb IS  toggles_box:ADDCHECKBOX("Auto Flaps",false).
@@ -404,8 +404,12 @@ FUNCTION is_apch_overhead {
 	}
 }
 
-FUNCTION is_css {
-	RETURN NOT autob:PRESSED.
+FUNCTION is_dap_engaged {
+	RETURN (NOT (dap_b:VALUE = "OFF")).
+}
+
+FUNCTION is_dap_css {
+	return (dap_b:VALUE = "CSS").
 }
 
 FUNCTION is_autoflap {
@@ -418,6 +422,15 @@ FUNCTION is_autoairbk {
 
 FUNCTION is_log {
 	RETURN logb:PRESSED.
+}
+
+FUNCTION freeze_target_site {
+	SET select_tgt:ENABLED to FALSE.
+}
+
+FUNCTION freeze_apch {
+	SET select_rwy:ENABLED to FALSE.
+	SET select_apch:ENABLED to FALSE.
 }
 
 
@@ -1230,9 +1243,15 @@ fUNCTION get_hud_datalex {
 FUNCTION update_hud_gui {
 	PARAMETER hud_datalex.
 	
-	LOCAL steer_str IS "AUTO".
-	IF (is_css()) {
-		SET steer_str TO "CSS ".
+	LOCAL steer_str IS "".
+	IF (is_dap_engaged) {
+		IF (is_dap_css()) {
+			SET steer_str TO "CSS ".
+		} ELSE {
+			SET steer_str TO "AUTO".
+		}
+	} ELSE {
+		SET steer_str TO "OFF ".
 	}
 
 	SET steer_txt:text TO "<size=18>" + steer_str + "</size>".
