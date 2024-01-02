@@ -26,7 +26,7 @@ define_td_points().
 
 //after the td points but before anything that modifies the default button selections
 make_main_ops3_gui().
-
+make_taem_vsit_GUI().
 make_hud_gui().
 
 ops3_taem_test().
@@ -244,6 +244,23 @@ FUNCTION ops3_taem_test {
         }
         
         update_hud_gui(hud_datalex).
+		
+		local gui_data is lexicon(
+								"rpred",taemg_out["rpred"],
+								"eow",taemg_out["eow"],
+								"herror", taemg_out["herror"],
+								"ottstin", taemg_out["ohalrt"],
+								"mep", taemg_out["mep"],
+								"tgthdot", taemg_out["hdref"],
+								"tgtnz", dap:tgt_nz,
+								"spdbkcmd", taemg_out["dsbc_at"],
+								"alpll", taemg_out["alpll"],
+								"alpul", taemg_out["alpul"],
+								"prog_pch", dap:prog_pitch,
+								"prog_roll", dap:prog_roll,
+								"prog_yaw", dap:prog_yaw
+		).
+		update_taem_vsit_disp(gui_data).
 		
 		//debug
         

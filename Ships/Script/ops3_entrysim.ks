@@ -388,7 +388,7 @@ FUNCTION ops3_reentry_simulate {
 		SET loglex["drag"] TO dragft.
 		SET loglex["drag_ref"] TO entryg_out["drag_ref"].
 		SET loglex["hdot_ref"] TO entryg_out["hdot_ref"].
-		log_data(loglex).
+		log_data(loglex, TRUE).
 		
 		PRINTPLACE("step : " + loglex["step"], 20,0,1).
 		PRINTPLACE("alt : " + round(hls,0), 20,0,2).

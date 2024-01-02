@@ -336,11 +336,10 @@ FUNCTION make_main_ops3_gui {
 	GLOBAL logb IS  toggles_box:ADDCHECKBOX("Log Data",false).
 	toggles_box:addspacing(20).	
 	
-	GLOBAL fbwb IS  toggles_box:ADDCHECKBOX("Fly-by-wire",false).
-	//SET fbwb:ONTOGGLE TO toggle_fbw@.
+	GLOBAL autob IS toggles_box:ADDCHECKBOX("Auto steer",false).
 	toggles_box:addspacing(20).	
 	
-	GLOBAL flptrm IS  toggles_box:ADDCHECKBOX("Auto Flaps",false).
+	GLOBAL flptrmb IS  toggles_box:ADDCHECKBOX("Auto Flaps",false).
 	toggles_box:addspacing(20).	
 	
 	GLOBAL arbkb IS  toggles_box:ADDCHECKBOX("Auto Airbk",false).
@@ -380,6 +379,23 @@ FUNCTION is_apch_overhead {
 	}
 }
 
+FUNCTION is_css {
+	RETURN NOT autob:PRESSED.
+}
+
+FUNCTION is_autoflap {
+	RETURN flptrmb:PRESSED.
+}
+
+FUNCTION is_autoairbk {
+	RETURN arbkb:PRESSED.
+}
+
+FUNCTION is_log {
+	RETURN logb:PRESSED.
+}
+
+
 FUNCTION close_global_GUI {
 	main_ops3_gui:HIDE().
 	IF (DEFINED(hud_gui)) {
@@ -391,6 +407,14 @@ FUNCTION close_global_GUI {
 
 FUNCTION close_all_GUIs{
 	CLEARGUIS().
+	if (defined(main_ops3_gui)) {
+		main_ops3_gui:DISPOSE().
+	}
+	IF (DEFINED(hud_gui)) {
+		hud_gui:HIDE.
+		hud_gui:DISPOSE.
+		
+	}
 }
 
 
@@ -400,17 +424,6 @@ FUNCTION make_entry_traj_GUI {
 
 	GLOBAL entry_traj_disp_counter IS 1.				   
 	GLOBAL entry_traj_disp_counter_p IS entry_traj_disp_counter.				   
-	
-	
-	
-	set main_ops3_gui:skin:horizontalslider:BG to "Shuttle_OPS3/src/gui_images/brakeslider.png".
-	set main_ops3_gui:skin:horizontalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/hslider_thumb.png".
-	set main_ops3_gui:skin:horizontalsliderthumb:HEIGHT to 17.
-	set main_ops3_gui:skin:horizontalsliderthumb:WIDTH to 20.
-	set main_ops3_gui:skin:verticalslider:BG to "Shuttle_OPS3/src/gui_images/vspdslider2.png".
-	set main_ops3_gui:skin:verticalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/vslider_thumb.png".
-	set main_ops3_gui:skin:verticalsliderthumb:HEIGHT to 20.
-	set main_ops3_gui:skin:verticalsliderthumb:WIDTH to 17.
 	
 	GLOBAL traj_disp_titlebox IS ops3_disp:ADDHLAYOUT().
 	SET traj_disp_titlebox:STYLe:WIDTH TO ops3_disp:STYLE:WIDTH.
@@ -705,23 +718,230 @@ FUNCTION make_taem_vsit_GUI {
 
 	GLOBAL taem_vsit_disp_counter IS 1.				   
 	GLOBAL taem_vsit_disp_counter_p IS taem_vsit_disp_counter.	
-
 	
-	GLOBAL vsit_disp IS main_ops3_gui:addvlayout().
-	SET vsit_disp:STYLE:WIDTH TO main_ops3_gui_width - 22.
-	SET vsit_disp:STYLE:HEIGHT TO 380.
-	SET vsit_disp:STYLE:ALIGN TO "center".
-	
-	set vsit_disp:style:BG to "Shuttle_OPS3/src/gui_images/entry_traj_bg.png".
-	
-	set main_ops3_gui:skin:horizontalslider:BG to "Shuttle_OPS3/src/gui_images/brakeslider.png".
-	set main_ops3_gui:skin:horizontalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/hslider_thumb.png".
-	set main_ops3_gui:skin:horizontalsliderthumb:HEIGHT to 17.
-	set main_ops3_gui:skin:horizontalsliderthumb:WIDTH to 20.
 	set main_ops3_gui:skin:verticalslider:BG to "Shuttle_OPS3/src/gui_images/vspdslider2.png".
 	set main_ops3_gui:skin:verticalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/vslider_thumb.png".
 	set main_ops3_gui:skin:verticalsliderthumb:HEIGHT to 20.
 	set main_ops3_gui:skin:verticalsliderthumb:WIDTH to 17.
+	
+	GLOBAL vsit_disp_titlebox IS ops3_disp:ADDHLAYOUT().
+	SET vsit_disp_titlebox:STYLe:WIDTH TO ops3_disp:STYLE:WIDTH.
+	SET vsit_disp_titlebox:STYLe:HEIGHT TO 20.
+	GLOBAL vsit_disp_title IS vsit_disp_titlebox:ADDLABEL("").
+	SET vsit_disp_title:STYLE:ALIGN TO "center".
+	
+	GLOBAL vsit_disp_overlaiddata IS ops3_disp:ADDHLAYOUT().
+	SET vsit_disp_overlaiddata:STYLE:ALIGN TO "Center".
+	SET vsit_disp_overlaiddata:STYLe:WIDTH TO ops3_disp:STYLE:WIDTH.
+	SET vsit_disp_overlaiddata:STYLe:HEIGHT TO 1.
+	SET vsit_disp_overlaiddata:style:vstretch to false.
+	SET vsit_disp_overlaiddata:style:hstretch to false.
+	
+	GLOBAL vsit_disp_mainbox IS ops3_disp:ADDVLAYOUT().
+	SET vsit_disp_mainbox:STYLE:ALIGN TO "Center".
+	SET vsit_disp_mainbox:STYLe:WIDTH TO ops3_disp:STYLE:WIDTH.
+	SET vsit_disp_mainbox:STYLe:HEIGHT TO ops3_disp:STYLE:HEIGHT - 22.
+	
+	GLOBAL vsit_disp_leftdatabox IS vsit_disp_overlaiddata:ADDVLAYOUT().
+	SET vsit_disp_leftdatabox:STYLE:ALIGN TO "left".
+	SET vsit_disp_leftdatabox:STYLE:WIDTH TO 75.
+    SET vsit_disp_leftdatabox:STYLE:HEIGHT TO 75.
+	set vsit_disp_leftdatabox:style:margin:h to 20.
+	set vsit_disp_leftdatabox:style:margin:v to 130.
+	
+	GLOBAL vsitleftdata1 IS vsit_disp_leftdatabox:ADDLABEL("R  XXX").
+	set vsitleftdata1:style:margin:v to -4.
+	GLOBAL vsitleftdata2 IS vsit_disp_leftdatabox:ADDLABEL("P  XXX").
+	set vsitleftdata2:style:margin:v to -4.
+	GLOBAL vsitleftdata3 IS vsit_disp_leftdatabox:ADDLABEL("Y  XXX").
+	set vsitleftdata3:style:margin:v to -4.
+	
+	GLOBAL vsit_disp_rightdatabox IS vsit_disp_overlaiddata:ADDVLAYOUT().
+	SET vsit_disp_rightdatabox:STYLE:ALIGN TO "left".
+	SET vsit_disp_rightdatabox:STYLE:WIDTH TO 200.
+    SET vsit_disp_rightdatabox:STYLE:HEIGHT TO 90.
+	set vsit_disp_rightdatabox:style:margin:h to 85.
+	set vsit_disp_rightdatabox:style:margin:v to 185.
+	
+	GLOBAL vsitrightdata0 IS vsit_disp_rightdatabox:ADDLABEL("OTT ST IN").
+	set vsitrightdata0:style:margin:h to 130.
+	set vsitrightdata0:style:margin:v to 20.
+	GLOBAL vsitrightdata1 IS vsit_disp_rightdatabox:ADDLABEL("NEP  /  MEP").
+	set vsitrightdata1:style:margin:h to 30.
+	set vsitrightdata1:style:margin:v to -4.
+	GLOBAL vsitrightdata2 IS vsit_disp_rightdatabox:ADDLABEL("ALPHA LIMS xx xx").
+	set vsitrightdata2:style:margin:v to -4.
+	GLOBAL vsitrightdata3 IS vsit_disp_rightdatabox:ADDLABEL("SPDBK CMD xxx"). 
+	set vsitrightdata3:style:margin:v to -2.
+	GLOBAL vsitrightdata4 IS vsit_disp_rightdatabox:ADDLABEL("REF HDOT xxx").
+	set vsitrightdata4:style:margin:v to -4.
+	GLOBAL vsitrightdata5 IS vsit_disp_rightdatabox:ADDLABEL("TGT NZ   xxxxx").
+	set vsitrightdata5:style:margin:v to -4.
+	
+	
+	
+	GLOBAL herror_sliderbox IS vsit_disp_overlaiddata:ADDVLAYOUT().
+	SET herror_sliderbox:STYLe:WIDTH TO 55.
+	set herror_sliderbox:style:margin:h to 0.
+	set herror_sliderbox:style:margin:v to 50.
+	SET herror_sliderbox:STYLE:ALIGN TO "Center".
+	GLOBAL herror_slider_label IS herror_sliderbox:ADDLABEL("H ERR").
+	set herror_slider_label:style:margin:h to 1.
+	set herror_slider_label:style:margin:v to 0.
+	GLOBAL herror_slider is herror_sliderbox:addvslider(0,-2,2).
+	SET herror_slider:STYLE:ALIGN TO "Center".
+	SET herror_slider:style:vstretch to false.
+	SET herror_slider:style:hstretch to false.
+	SET herror_slider:STYLE:WIDTH TO 20.
+	SET herror_slider:STYLE:HEIGHT TO 250.
+	set herror_slider:style:margin:h to 0.
+	set herror_slider:style:margin:v to 5.
+	
+	
+	GLOBAL vsit_disp_orbiter_box IS vsit_disp_mainbox:ADDVLAYOUT().
+	SET vsit_disp_orbiter_box:STYLE:ALIGN TO "Center".
+	SET vsit_disp_orbiter_box:STYLe:WIDTH TO 1.
+	SET vsit_disp_orbiter_box:STYLe:HEIGHT TO 1.
+	
+	GLOBAL vsit_disp_orbiter IS vsit_disp_orbiter_box:ADDLABEL().
+	SET vsit_disp_orbiter:IMAGE TO "Shuttle_OPS3/src/gui_images/orbiter_bug.png".
+	SET vsit_disp_orbiter:STYLe:WIDTH TO 22.
+	
+	reset_taem_vsit_disp().
+}
+
+
+function reset_taem_vsit_disp {
+	set_taem_vsit_disp_title().
+	set_taem_vsit_disp_bg().
+}
+
+function increment_taem_vsit_disp_counter {
+	set taem_vsit_disp_counter to taem_vsit_disp_counter + 1.
+}
+
+function set_taem_vsit_disp_title {
+	local text_ht is vsit_disp_titlebox:style:height*0.75.
+	
+	set vsit_disp_title:text to "<b><size=" + text_ht + "> VERT SIT " + taem_vsit_disp_counter + "</size></b>".
+}
+
+
+function set_taem_vsit_disp_bg {
+	set vsit_disp_mainbox:style:BG to "Shuttle_OPS3/src/gui_images/vsit" + taem_vsit_disp_counter + "_bg.png".
+}
+function set_taem_vsit_herror_slider {
+	parameter herror.
+	
+	local val is 0.
+	
+	local abs_herr is abs(herror).
+	
+	local first_range_val is 100.
+	local second_range_val is 1000.
+	
+	if (abs_herr < first_range_val) {
+		set val to abs_herr / first_range_val.
+	} else {
+		set val to 1 + (abs_herr - first_range_val) / (second_range_val - first_range_val).
+	}
+
+	return val * sign(herror).
+}
+
+function update_taem_vsit_disp {
+	parameter gui_data.
+
+	local eow_ is gui_data["eow"].
+
+	//check if we shoudl update entry traj counter 
+	if (taem_vsit_disp_counter = 1 and eow_ <= 30480) {
+		increment_taem_vsit_disp_counter().
+	}
+	
+	if (taem_vsit_disp_counter_p <> taem_vsit_disp_counter) {
+		set taem_vsit_disp_counter_p to taem_vsit_disp_counter.
+		reset_taem_vsit_disp().
+	}
+	
+	local orbiter_bug_pos is set_taem_vsit_disp_bug(v(taem_vsit_disp_x_convert(gui_data["rpred"]),taem_vsit_disp_y_convert(gui_data["eow"]), 0)).
+	SET vsit_disp_orbiter:STYLE:margin:v to orbiter_bug_pos[1].
+	SET vsit_disp_orbiter:STYLE:margin:h to orbiter_bug_pos[0].
+	
+	set herror_slider:value to CLAMP(set_taem_vsit_herror_slider(gui_data["herror"]),herror_slider:MIN,herror_slider:MAX).
+	
+	if (gui_data["ottstin"]) {
+		set vsitrightdata0:text TO "<color=#fff600>OTT ST IN</color>".
+	} else {
+		set vsitrightdata0:text TO "".
+	}
+	
+	if (gui_data["mep"]) {
+		set vsitrightdata1:text TO "         /  " + "<color=#fff600>MEP</color>".
+	} ELSE {
+		set vsitrightdata1:text TO "NEP  /".
+	}
+	
+	set vsitrightdata2:text to "ALPHA LIMS  " + round(gui_data["alpll"], 0) + "  " +  round(gui_data["alpul"], 0).
+	set vsitrightdata3:text to "SPDBK CMD  " + round(gui_data["spdbkcmd"], 1).
+	set vsitrightdata4:text to "REF HDOT  " + round(gui_data["tgthdot"], 0).
+	set vsitrightdata5:text to "TGT NZ    " + round(gui_data["tgtnz"], 1).
+	
+	set vsitleftdata1:text to "R  " + round(gui_data["prog_roll"], 0).
+	set vsitleftdata2:text to "P  " + round(gui_data["prog_pch"], 0).
+	set vsitleftdata3:text to "Y  " + round(gui_data["prog_yaw"], 0).
+}
+
+function set_taem_vsit_disp_bug {
+	parameter bug_pos.
+	
+	local bug_margin is 10.
+	
+	local bounds_x is list(10, vsit_disp_mainbox:STYLe:WIDTH - 32).
+	local bounds_y is list(vsit_disp_mainbox:STYLe:HEIGHT - 29, 0).
+	
+	//print "calc_x: " + bug_pos:X + " calc_y: " +  + bug_pos:Y  + "  " at (0, 4).
+	
+	local pos_x is 1.04693*bug_pos:X  - 8.133.
+	local pos_y is 395.55 - 1.1685*bug_pos:Y.
+	
+	//print "disp_x: " + pos_x + " disp_y: " + pos_y + "  " at (0, 5).
+	
+	set pos_x to clamp(pos_x, bounds_x[0], bounds_x[1] ).
+	set pos_y to clamp(pos_y, bounds_y[0], bounds_y[1]).
+	
+	//print "disp_x: " + pos_x + " disp_y: " + pos_y + "  " at (0, 6).
+	
+	return list(pos_x,pos_y).
+}
+
+function taem_vsit_disp_x_convert {
+	parameter rpred.
+	
+	local out is 0.
+	
+	if (taem_vsit_disp_counter=1) {
+		set out to (rpred / 55000 -  0.88235294117).
+	} else if (taem_vsit_disp_counter=2) {
+		set out to (rpred / 49720 + 0.02).
+	}	
+	
+	return out * 380.
+}
+
+
+function taem_vsit_disp_y_convert {
+	parameter eow.
+	
+	local out is 0.
+	
+	if (taem_vsit_disp_counter=1) {
+		set out to (eow / 55000  - 0.42857142857).
+	} else if (taem_vsit_disp_counter=2) {
+		set out to (eow / 33000).
+	}	
+	
+	return 50 + 300 * out.
 }
 
 
