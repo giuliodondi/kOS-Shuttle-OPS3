@@ -133,6 +133,10 @@ FUNCTION ops3_taem_test {
 		LOCAL cur_iter IS TIMe:SECONDS.
 		local guid_loop_dt is cur_iter - last_iter.
 		SET last_iter TO cur_iter.
+		
+		if (is_guid_reset()) {
+			taemg_reset().
+		}
         
         local taemg_in is LEXICON(
                                             "dtg", guid_loop_dt,

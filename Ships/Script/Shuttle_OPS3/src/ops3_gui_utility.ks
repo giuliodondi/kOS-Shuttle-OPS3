@@ -330,12 +330,12 @@ FUNCTION make_main_ops3_gui {
 	
 	GLOBAL toggles_box IS main_ops3_gui:ADDHLAYOUT().
 	SET toggles_box:STYLE:WIDTH TO 300.
-	toggles_box:addspacing(20).	
+	toggles_box:addspacing(5).	
 	SET toggles_box:STYLE:ALIGN TO "center".
 	
 	GLOBAL dap_b_box IS toggles_box:ADDHLAYOUT().
-	SET dap_b_box:STYLE:WIDTH TO 135.
-	GLOBAL dap_b_text IS dap_b_box:ADDLABEL("DAP :").
+	SET dap_b_box:STYLE:WIDTH TO 120.
+	GLOBAL dap_b_text IS dap_b_box:ADDLABEL("DAP").
 	set dap_b_text:style:margin:v to -3.
 	GLOBAL dap_b IS dap_b_box:addpopupmenu().
 	set dap_b:style:margin:v to -3.
@@ -345,7 +345,7 @@ FUNCTION make_main_ops3_gui {
 	dap_b:addoption("OFF").
 	dap_b:addoption("CSS").
 	dap_b:addoption("AUTO").
-	toggles_box:addspacing(20).
+	toggles_box:addspacing(15).
 	
 	SET dap_b:ONCHANGE to {
 		PARAMETER mode_.
@@ -361,10 +361,18 @@ FUNCTION make_main_ops3_gui {
 	WAIT 0.
 	
 	GLOBAL flptrmb IS  toggles_box:ADDCHECKBOX("Auto Flaps",false).
-	toggles_box:addspacing(20).	
+	toggles_box:addspacing(15).	
 	
 	GLOBAL arbkb IS  toggles_box:ADDCHECKBOX("Auto Airbk",false).
-	toggles_box:addspacing(20).	
+	toggles_box:addspacing(15).	
+	
+	GLOBAL reset_guidb is toggles_box:ADDBUTTON("RESET").
+	SET reset_guidb:STYLE:WIDTH TO 55.
+	SET reset_guidb:STYLE:HEIGHT TO 25.
+	set reset_guidb:style:margin:v to -3.
+	set reset_guidb:STYLE:BG to "Shuttle_OPS3/src/gui_images/steering_off_btn.png".
+	
+	toggles_box:addspacing(15).	
 	
 	GLOBAL logb IS  toggles_box:ADDCHECKBOX("Log Data",false).
 	
@@ -418,6 +426,10 @@ FUNCTION is_autoflap {
 
 FUNCTION is_autoairbk {
 	RETURN arbkb:PRESSED.
+}
+
+FUNCTION is_guid_reset {
+	return reset_guidb:TAKEPRESS.
 }
 
 FUNCTION is_log {

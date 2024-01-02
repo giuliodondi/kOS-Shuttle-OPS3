@@ -362,7 +362,7 @@ global taemg_constants is lexicon (
 									"rtanmin", 328,				//ft my own addition, empirical
 									
 									//A/L guidance stuff 
-									"tgsh", TAN(2.8),			//tangent of shallow gs
+									"tgsh", TAN(3.1),			//tangent of shallow gs
 									"xaim", 2000,			//ft aim point distance from threshold		
 									"hflare", 2000,			//ft transition to open loop flare
 									"hcloop", 1670,			//ft transition to closed loop flare
@@ -637,6 +637,10 @@ function tgexec {
 		
 	return reset_flag.
 
+}
+
+FUNCTION taemg_reset {
+	SET taemg_internal["ireset"] TO TRUE.
 }
 
 FUNCTION tginit {

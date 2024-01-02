@@ -81,12 +81,16 @@ until false {
 	print sample_data_count at (0, 1).
 	print "rpred: " + rpred + " eow: " + eow + " herror:" + herror + "   "at (0, 2).
 	
+	local reset_guid is is_guid_reset().
+	
+	print "reset_guid : " + reset_guid + "  " at (0, 4).
+	
 
 	if (quit_program) {
 		BREAK.
 	}
 	
-	wait 0.01.
+	wait 0.5.
 }
 
 clear_ops3_disp().
