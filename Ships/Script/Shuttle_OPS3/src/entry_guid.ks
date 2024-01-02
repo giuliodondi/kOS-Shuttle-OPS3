@@ -44,7 +44,6 @@ FUNCTION entryg_wrapper {
 							"trange", entryg_input["tgt_range"]*km2nmi,     //target range (nmi)
 							"ve", entryg_input["ve"]*mt2ft, 		   //earth rel velocity (ft/s)
 							"vi", entryg_input["vi"]*mt2ft,		   //inertial vel (ft/s)
-							"mach", entryg_input["mach"],
 							"xlfac", entryg_input["xlfac"],      //load factor acceleration (ft/s2)
 							"mm304ph", entryg_input["roll0"],    	//preentry bank 
 							"mm304al", entryg_input["alpha0"],    	//preentry aoa ,
@@ -210,11 +209,13 @@ global entryg_constants is lexicon (
 									//my addition: speedbrake constants ported form taem
 									"dsblim", 98.6,	//deg dsbc max value 
 									"del1sb", 3.125,		//speedbrake open rate
-									"egsbl1", 80.6,			//upper grtls speedbrake limit
-									"egsbl2", 65,			//lower grtls speedbrake limit
-									"machsbl", 10,			//mach to start speedbrake schedule
-									"machsbs", 19.5,			//linear coef for speedbrake
-									"machsbi", 2.6			//constant coef for speedbrake
+									"egsbl0", 0,			//upper speedbrake limit
+									"egsbl1", 80.6,			//upper speedbrake limit
+									"egsbl2", 65,			//lower speedbrake limit
+									"vesbs1", -0.0806,			//linear coef for speedbrake
+									"vesbi1", 806			//constant coef for speedbrake
+									"vesbs2", 0.0195,			//linear coef for speedbrake
+									"vesbi2", 2.6			//constant coef for speedbrake
 
 ).
 
@@ -227,7 +228,6 @@ global entryg_internal is lexicon(
 									"alpcmd", 0,   	//aoa cmd (deg)
 									"rolcmd", 0,   	//roll cmd 	(deg)
 									"spdbcmd", 0,	//my addition: speedbrake cmd
-									"dsbc_at1", 0,	//speedbrake cmd ramp-up
 									"alpdot", 0,   	//aoa dot 
 									"a", list(0,0,0),   	//temp variable in computign range 
 									"cag", 0,   	//pseudoenergy / mass used in transition 
@@ -1009,18 +1009,13 @@ function egrolcmd {
 }
 
 //my addition : deflect speedbrake on a fixed mach schedule 
-//logic adapted from taem grtls and implemented from the workbooks
+//logic adapted from taem grtls and implemented from the workbooks, modified to use ve instead of mach
 //in reality it was part of the DAP??
 function egsbcmd {
 	PARAMETER entryg_input.
 	
-	if (entryg_input["mach"] >= entryg_constants["machsbl"]) {
-		set entryg_internal["spdbcmd"] to 0.
-		return.
-	}
+	local dsbc_at1 is midval(entryg_constants["vesbs1"] * entryg_input["ve"] + entryg_constants["vesbi1"], entryg_constants["egsbl0"], entryg_constants["egsbl1"]).
+	local dsbc_at2 is midval(entryg_constants["vesbs2"] * entryg_input["ve"] + entryg_constants["vesbi2"], entryg_constants["egsbl1"], entryg_constants["egsbl2"]).
 	
-	set entryg_internal["dsbc_at1"] to entryg_internal["dsbc_at1"] + entryg_constants["del1sb"].
-	local dsbc_at2 is midval(entryg_constants["machsbs"] * entryg_input["mach"] + entryg_constants["machsbi"], entryg_constants["grsbl1"], entryg_constants["grsbl2"]).
-	
-	set entryg_internal["spdbcmd"] to min(entryg_internal["dsbc_at1"], dsbc_at2).
+	set entryg_internal["spdbcmd"] to min(dsbc_at1, dsbc_at2).
 }
