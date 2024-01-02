@@ -327,7 +327,7 @@ FUNCTION make_main_ops3_gui {
 		reset_hud_bg_brightness().
 	}.	
 	
-	
+	main_ops3_gui:addspacing(3).
 	GLOBAL toggles_box IS main_ops3_gui:ADDHLAYOUT().
 	SET toggles_box:STYLE:WIDTH TO 300.
 	toggles_box:addspacing(5).	
@@ -380,10 +380,12 @@ FUNCTION make_main_ops3_gui {
 	select_random_rwy().
 	SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, select_rwy:VALUE).
 
+	main_ops3_gui:addspacing(3).
 	GLOBAL ops3_disp IS main_ops3_gui:addvlayout().
 	SET ops3_disp:STYLE:WIDTH TO main_ops3_gui_width - 22.
 	SET ops3_disp:STYLE:HEIGHT TO 380.
 	SET ops3_disp:STYLE:ALIGN TO "center".
+	set ops3_disp:style:margin:h to 11.
 	
 	set ops3_disp:style:BG to "Shuttle_OPS3/src/gui_images/ops3_disp_bg.png".
 
