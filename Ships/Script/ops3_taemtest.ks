@@ -88,7 +88,8 @@ FUNCTION ops3_taem_test {
 				}
 			} else {
 				if (css_flag) {
-					dap:update_css_lvlh().
+					local direct_pitch_flag is (guid_id >= 34).
+					dap:update_css_lvlh(direct_pitch_flag).
 				} else {
 					 if (guid_id = 25) {
 						//nz hold
@@ -97,17 +98,16 @@ FUNCTION ops3_taem_test {
 						//hdot control
 						if (guid_id >= 35) {
 							dap:set_landing_hdot_gains().
-							set aerosurfaces_control:flap_engaged to FALSE.
 						} else {
 							dap:set_taem_hdot_gains().
 						}
 						
-						if (guid_id >= 36) {
-							set dap:auto_pitch_channel_engaged to FALSE.
-						}
-						
 						dap:update_auto_hdot().
 					}
+				}
+				//lock flaps after touchdown or during flare
+				if (dap:wow) {
+					set aerosurfaces_control:flap_engaged to FALSE.
 				}
 			}
             aerosurfaces_control:update(is_autoflap(), is_autoairbk()).
@@ -135,7 +135,7 @@ FUNCTION ops3_taem_test {
         
         local taemg_in is LEXICON(
                                             "dtg", guid_loop_dt,
-                                            "wow", measure_wow(),
+                                            "wow", dap:wow,
                                             "h", rwystate["h"],
                                             "hdot", rwystate["hdot"],
                                             "x", rwystate["x"], 

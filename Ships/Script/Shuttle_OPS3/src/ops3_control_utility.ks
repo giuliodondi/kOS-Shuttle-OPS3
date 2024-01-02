@@ -1,7 +1,7 @@
 STEERINGMANAGER:RESETPIDS().
 STEERINGMANAGER:RESETTODEFAULT().
 
-SET STEERINGMANAGER:MAXSTOPPINGTIME TO 5.
+SET STEERINGMANAGER:MAXSTOPPINGTIME TO 6.
 SET STEERINGMANAGER:PITCHTS TO 8.0.
 SET STEERINGMANAGER:YAWTS TO 3.
 SET STEERINGMANAGER:ROLLTS TO 2.
@@ -49,6 +49,8 @@ FUNCTION dap_controller_factory {
 	this:add("hdot", 0).
 	this:add("nz", 0).
 	
+	this:add("wow", FALSE).
+	
 	this:add("measure_cur_state", {
 		this:update_time().
 		SET this:prog_pitch TO get_pitch_prograde().
@@ -61,6 +63,8 @@ FUNCTION dap_controller_factory {
 		
 		SET this:hdot to SHIP:VERTICALSPEED.
 		SET this:nz to get_current_nz().
+		
+		SET this:wow to measure_wow().
 	}).
 	
 	this:measure_cur_state().
@@ -85,6 +89,7 @@ FUNCTION dap_controller_factory {
 		SET this:tgt_hdot TO this:hdot.
 		SET this:tgt_nz TO this:nz.
 		SET this:steering_dir TO SHIP:FACINg.
+		SET this:wow TO FALSE.
 	}).
 
 
@@ -119,14 +124,13 @@ FUNCTION dap_controller_factory {
 	//should be consistent with taem nz limits
 	this:add("nz_lims", LIST(-2.5, 2.5)).
 	this:add("delta_pch_lims", LIST(-3, 3)).
+	this:add("delta_lvlh_pch_lims", LIST(-8, 8)).
 	this:add("delta_roll_lims", LIST(-14, 14)).
 	
 	//these are meant to be set by guidance
 	this:add("roll_lims", LIST(-60, 60)).
 	this:add("pitch_lims", LIST(-10, 20)).
-	this:add("yaw_lims", LIST(0, 0)).
-	
-	this:add("auto_pitch_channel_engaged", TRUE).
+	this:add("yaw_lims", LIST(-5, 5)).
 	
 	// CSS steering modes
 	
@@ -136,7 +140,7 @@ FUNCTION dap_controller_factory {
 		this:measure_cur_state().
 		
 		LOCAL rollgain IS 1.0.
-		LOCAL pitchgain IS 0.4.
+		LOCAL pitchgain IS 0.5.
 		
 		//required for continuous pilot input across several funcion calls
 		LOCAL time_gain IS ABS(this:iteration_dt/0.07).
@@ -153,28 +157,37 @@ FUNCTION dap_controller_factory {
 	
 	//control prograde roll and lvlh pitch
 	this:add("update_css_lvlh", {
+		parameter direct_pitch.
 		set this:cur_mode to "css_lvlh".
 		this:measure_cur_state().
 		
 		//gains suitable for manoeivrable steerign in atmosphere
 		LOCAL rollgain IS 2.5.
-		LOCAL pitchgain IS 0.5.
-		LOCAL yawgain IS 1.8.
+		LOCAL yawgain IS 5.
 		
 		//required for continuous pilot input across several funcion calls
 		LOCAL time_gain IS ABS(this:iteration_dt/0.03).
 		
 		//measure input minus the trim settings
 		LOCAL deltaroll IS time_gain * rollgain * (SHIP:CONTROL:PILOTROLL - SHIP:CONTROL:PILOTROLLTRIM).
-		LOCAL deltapitch IS time_gain * pitchgain * (SHIP:CONTROL:PILOTPITCH - SHIP:CONTROL:PILOTPITCHTRIM).
-		LOCAL deltayaw IS time_gain * yawgain * (SHIP:CONTROL:PILOTYAW - SHIP:CONTROL:PILOTYAWTRIM).
+		LOCAL deltapitch IS time_gain * (SHIP:CONTROL:PILOTPITCH - SHIP:CONTROL:PILOTPITCHTRIM).
+		LOCAL deltayaw IS yawgain * (SHIP:CONTROL:PILOTYAW - SHIP:CONTROL:PILOTYAWTRIM).
 		
 		LOCAL cosroll IS MAX(ABS(COS(this:steer_roll)), 0.5).
 		
-		SET this:steer_lvlh_pitch TO this:steer_lvlh_pitch + deltapitch * cosroll.
-		
-		SET this:steer_pitch TO this:steer_lvlh_pitch / cosroll - (this:fpa /cosroll).
-		
+		IF (this:wow) {
+			SET this:steer_pitch TO this:prog_pitch.
+		} eLSE {
+			if (direct_pitch) {
+				LOCAL pitchgain IS 2.2.
+				SET this:steer_lvlh_pitch TO this:lvlh_pitch + pitchgain * deltapitch * cosroll.
+			} else {
+				LOCAL pitchgain IS 0.6.
+				SET this:steer_lvlh_pitch TO CLAMP(this:steer_lvlh_pitch + pitchgain * deltapitch * cosroll, this:lvlh_pitch + this:delta_lvlh_pch_lims[0], this:lvlh_pitch + this:delta_lvlh_pch_lims[1]).
+			}
+			SET this:steer_pitch TO this:steer_lvlh_pitch / cosroll - (this:fpa /cosroll).
+		}
+			
 		SET this:steer_roll TO this:prog_roll + deltaroll.
 		SET this:steer_yaw TO deltayaw.
 		
@@ -200,7 +213,7 @@ FUNCTION dap_controller_factory {
 		set this:cur_mode to "auto_nz".
 		this:measure_cur_state().
 		
-		if (this:auto_pitch_channel_engaged) {
+		IF (NOT this:wow) {
 			SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
 		}
 		
@@ -215,7 +228,7 @@ FUNCTION dap_controller_factory {
 		set this:cur_mode to "auto_hdot".
 		this:measure_cur_state().
 		
-		if (this:auto_pitch_channel_engaged) {
+		IF (NOT this:wow) {
 			SET this:tgt_nz TO CLAMP(this:nz + (this:update_hdot_pid()) / COS(this:prog_roll), this:nz_lims[0], this:nz_lims[1]).
 			SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
 		}
