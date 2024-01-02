@@ -340,6 +340,7 @@ FUNCTION ops3_reentry_simulate {
 		LOCAL entryg_out is entryg_wrapper(
 									lexicon(
 											"iteration_dt", sim_settings["deltat"],
+											"tgtsite", sim_input_target,
 											"alpha", pitch_prof,      
 											"delaz", delaz,      
 											"drag", dragft,

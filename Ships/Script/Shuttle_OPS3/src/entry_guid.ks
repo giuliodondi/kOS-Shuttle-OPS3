@@ -33,6 +33,7 @@ FUNCTION entryg_wrapper {
 	
 	LOCAL eg_input IS lexicon(
 							"dtegd", entryg_input["iteration_dt"],		//iteration delta-t
+							"tgtsite",  entryg_input["tgtsite"],      //name of the tgt site, my addition
 							"alpha", entryg_input["alpha"],      //aoa
 							"delaz", entryg_input["delaz"],       //az error
 							"drag", entryg_input["drag"],        //drag accel (ft/s2) 
@@ -212,6 +213,8 @@ global entryg_constants is lexicon (
 									"y3", 17.5,	//deg max heading err deadband after first reversal 
 									"zk1", 1,	//s hdot feedback gain
 									
+									"tgtsite0", 0,		//my addition, keep track of the tgt site to reset guidance
+									
 									//my addition: speedbrake constants ported form taem
 									"dsblim", 98.6,	//deg dsbc max value 
 									"del1sb", 3.125,		//speedbrake open rate
@@ -345,8 +348,8 @@ function egexec {
 
 	egscaleht(entryg_input).
 
-	//this also needs to be called at runway redesignation or if we reset guidance I guess
-	if entryg_internal["start"] = 0 {
+	//this also needs to be called whenever site is changed
+	if (entryg_internal["start"] = 0) or (entryg_input["tgtsite"] <> entryg_internal["tgtsite0"]) {
 		set entryg_input["dtegd"] to entryg_constants["dtegd"].
 		eginit(entryg_input).
 	}
@@ -475,6 +478,8 @@ function egscaleht {
 
 function eginit {
 	PARAMETER entryg_input.
+	
+	set entryg_internal["tgtsite0"] to entryg_input["tgtsite"].
 	
 	//might want to do a ve test if we resume entry halfway
 	set entryg_internal["islect"] to 1.
