@@ -515,9 +515,9 @@ FUNCTION make_entry_traj_GUI {
 	
 	GLOBAL traj_disp_rightdatabox IS traj_disp_overlaiddata:ADDVLAYOUT().
 	SET traj_disp_rightdatabox:STYLE:ALIGN TO "left".
-	SET traj_disp_rightdatabox:STYLE:WIDTH TO 125.
+	SET traj_disp_rightdatabox:STYLE:WIDTH TO 145.
     SET traj_disp_rightdatabox:STYLE:HEIGHT TO 115.
-	set traj_disp_rightdatabox:style:margin:h to 400.
+	set traj_disp_rightdatabox:style:margin:h to 380.
 	set traj_disp_rightdatabox:style:margin:v to 90.
 	
 	GLOBAL trajrightdata1 IS traj_disp_rightdatabox:ADDLABEL("HDT REF xxxxx").
@@ -600,14 +600,14 @@ function update_entry_traj_disp {
 	
 	
 	
-	set trajleftdata1:text TO "XLFAC     " + ROUND(gui_data["xlfac"],2).
+	set trajleftdata1:text TO "XLFAC     " + ROUND(gui_data["xlfac"],1).
 	set trajleftdata2:text TO "L/D          " + ROUND(gui_data["lod"],2).
-	set trajleftdata3:text TO "DRAG      " + ROUND(gui_data["drag"],2).
-	set trajleftdata4:text TO "D REF     " + ROUND(gui_data["drag_ref"],2).
+	set trajleftdata3:text TO "DRAG      " + ROUND(gui_data["drag"],1).
+	set trajleftdata4:text TO "D REF     " + ROUND(gui_data["drag_ref"],1).
 	set trajleftdata5:text TO "PHASE     " + ROUND(gui_data["phase"],0).
 	
-	set trajrightdata1:text TO "HDT REF    " + ROUND(gui_data["hdot_ref"],1).
-	set trajrightdata2:text TO "ALPCMD    " + ROUND(gui_data["pitch"],1).
+	set trajrightdata1:text TO "HDT REF    " + ROUND(gui_data["hdot_ref"],0).
+	set trajrightdata2:text TO "ALPCMD    " + ROUND(gui_data["pitch"],0).
 	
 	if (gui_data["pitch_mod"]) {
 		set trajrightdata3:text TO "<color=#fff600> ALP MODULN </color>".
@@ -615,8 +615,8 @@ function update_entry_traj_disp {
 		set trajrightdata3:text TO "".
 	}
 	
-	set trajrightdata4:text TO "ROLCMD     " + ROUND(gui_data["roll"],1).
-	set trajrightdata5:text TO "ROLREF     " + ROUND(gui_data["roll_ref"],1).
+	set trajrightdata4:text TO "ROLCMD     " + ROUND(gui_data["roll"],0).
+	set trajrightdata5:text TO "ROLREF     " + ROUND(gui_data["roll_ref"],0).
 	
 	if (gui_data["roll_rev"]) {
 		set trajrightdata6:text TO "<color=#fff600>ROLL REVERSAL</color>".
