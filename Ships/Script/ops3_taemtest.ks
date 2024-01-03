@@ -18,15 +18,14 @@ RUNPATH("0:/Shuttle_OPS3/src/taem_guid.ks").
 
 GLOBAL quit_program IS FALSE.
 
-IF (DEFINED tgtrwy) {UNSET tgtrwy.}
-GLOBAL tgtrwy IS LEXICON().
-
 //initialise touchdown points for all landing sites
 define_td_points().
 
+IF (DEFINED tgtrwy) {UNSET tgtrwy.}
+GLOBAL tgtrwy IS LEXICON().
+
 //after the td points but before anything that modifies the default button selections
 make_main_ops3_gui().
-make_taem_vsit_GUI().
 make_hud_gui().
 
 ops3_taem_test().
@@ -40,6 +39,8 @@ close_all_GUIs().
 
 FUNCTION ops3_taem_test {
     SET CONFIG:IPU TO 1800. 
+	
+	make_taem_vsit_GUI().
     
     
     LOCAL dap IS dap_controller_factory().
@@ -116,9 +117,13 @@ FUNCTION ops3_taem_test {
     ).
     
 	local debug_flag is true.
-    LOCAL last_iter Is TIMe:SECONDS.
+	
+	local guidance_timer IS timer_factory().
+	
     until false{
         clearvecdraws().
+		
+		guidance_timer:update().
         
         if (quit_program) {
             break.
@@ -130,16 +135,12 @@ FUNCTION ops3_taem_test {
             tgtrwy
         ).
 		
-		LOCAL cur_iter IS TIMe:SECONDS.
-		local guid_loop_dt is cur_iter - last_iter.
-		SET last_iter TO cur_iter.
-		
 		if (is_guid_reset()) {
 			taemg_reset().
 		}
         
         local taemg_in is LEXICON(
-                                            "dtg", guid_loop_dt,
+                                            "dtg", guidance_timer:last_dt,
                                             "wow", dap:wow,
                                             "h", rwystate["h"],
                                             "hdot", rwystate["hdot"],
