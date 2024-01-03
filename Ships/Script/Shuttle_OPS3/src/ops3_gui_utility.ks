@@ -323,8 +323,6 @@ FUNCTION make_main_ops3_gui {
 		}	
 		
 		select_random_rwy().
-
-		reset_hud_bg_brightness().
 	}.	
 	
 	main_ops3_gui:addspacing(3).
@@ -1015,7 +1013,6 @@ FUNCTION make_hud_gui {
 	SET hud_gui:STYLe:HEIGHT TO hudheight.
 	
 	recenter_hud().
-	reset_hud_bg_brightness().
 	SET hud_gui:skin:LABEL:TEXTCOLOR to guitextgreen.
 	hud_gui:SHOW.
 
@@ -1256,6 +1253,8 @@ fUNCTION get_hud_datalex {
 
 FUNCTION update_hud_gui {
 	PARAMETER hud_datalex.
+	
+	reset_hud_bg_brightness().
 	
 	LOCAL steer_str IS "".
 	IF (is_dap_engaged) {
