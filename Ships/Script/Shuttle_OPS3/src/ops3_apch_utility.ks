@@ -17,10 +17,6 @@ FUNCTION define_td_points {
 		//convert in kilometres
 		SET end_dist TO end_dist/1000.
 		
-		//multiply by a hard-coded value identifying the touchdown marks from the 
-		//runway halfway point
-		SET td_dist TO end_dist*0.8.
-		
 		LOCAL rwyslex IS LEXICON().
 		
 		LOCAL rwyno IS "".
