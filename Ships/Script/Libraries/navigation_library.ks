@@ -38,7 +38,7 @@ FUNCTION surfacevel {
 }
 
 //converts position and velocity into vertical speed
-FUNCTION hdot {
+FUNCTION vspd {
 	PARAMETER vel.
 	PARAMETER pos.
 
