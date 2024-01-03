@@ -177,6 +177,7 @@ FUNCTION ops3_taem_test {
 		}
 		
 		SET dap:pitch_lims to LIST(taemg_out["alpll"], taemg_out["alpul"]).
+		SET dap:roll_lims to LIST(-taemg_out["philim"], taemg_out["philim"]).
 		IF (dap_engaged) AND (NOT is_dap_css()) {
 			SET dap:tgt_roll tO taemg_out["phic_at"].
 			SET dap:tgt_yaw tO taemg_out["betac_at"].

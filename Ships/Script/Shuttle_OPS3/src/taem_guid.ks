@@ -129,6 +129,7 @@ FUNCTION taemg_wrapper {
 					"hdrefc", taemg_internal["hdrefc"] / mt2ft, 	//ft/s reference hdot commanded
 					"phic_at", taemg_internal["phic_at"], 	//deg commanded roll 
 					"betac_at", taemg_internal["betac_at"], 	//deg commanded yaw 
+					"philim", taemg_internal["philim"],		//deg phase-dependent roll limit
 					"dsbc_at", taemg_internal["dsbc_at"] / taemg_constants["dsblim"], 	//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
 					
 					//energy and other stuff
