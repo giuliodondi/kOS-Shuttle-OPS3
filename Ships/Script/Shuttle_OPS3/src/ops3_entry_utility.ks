@@ -62,6 +62,42 @@ FUNCTION deorbit_ei_calc {
 }
 
 
+//measure stuff needed by entry guidance
+//needs attitude as a list(cur_pitch, cur_roll).
+FUNCTION get_reentry_state {
+	PARAMETER cur_pos.
+	PARAMETER cur_latlng.
+	PARAMETER cur_surfv.
+	PARAMETER rwy.
+	PARAMETER cur_attitude.
+	
+	local hdot_ is vspd(cur_surfv,cur_pos).
+	
+	//for entry simulation to work correctly these two must be calculated with geoposition
+	LOCAL delaz IS az_error(cur_latlng, rwy["position"], cur_surfv).
+	LOCAL tgt_range IS greatcircledist( rwy["position"] , cur_latlng ).
+	
+	local hls is pos_rwy_alt(cur_pos, rwy).
+	
+	//should already be acceleration
+	LOCAL aeroacc IS aeroaccel_ld(cur_pos, cur_surfv, cur_attitude).
+		
+	//drag forces are alyways in imperial
+	LOCAL dragft IS aeroacc["drag"]*mt2ft.
+	LOCAL xlfacft IS aeroacc["load"]:MAG*mt2ft.
+	local lod is aeroacc["lift"]/aeroacc["drag"].
+
+	RETURN LEXICON(
+		"tgt_range", tgt_range,
+		"delaz", delaz,
+		"hls", hls,	
+		"hdot", hdot_,
+		"drag", dragft,
+		"xlfac", xlfacft,
+		"lod", lod
+	).
+}
+
 
 
 
