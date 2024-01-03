@@ -524,6 +524,27 @@ FUNCTION loop_executor_factory {
 }
 
 
+//timer object 
+FUNCTION timer_factory {
+	LOCAL this IS LEXICON().
+	
+	this:add("start_t", TIME:SECONDS).
+	this:add("last_sampled_t", TIME:SECONDS).
+	
+	this:add("last_dt", 0).
+	this:add("update_ticks", 0).
+	this:add("elapsed", 0).
+	
+	this:add("update", {
+		local last_t is this:last_sampled_t.
+		set this:last_sampled_t to TIME:SECONDS.
+		set this:last_dt to this:last_sampled_t - last_t.
+		set this:elapsed to this:last_sampled_t - this:start_t.
+		set this:update_ticks to this:update_ticks + 1.
+	}).
+}
+
+
 //given a lapse of time to wait, manages ksp warp
 FUNCTION warp_controller {
 	PARAMETER time_span.
