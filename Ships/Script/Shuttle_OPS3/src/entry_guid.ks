@@ -46,8 +46,8 @@ FUNCTION entryg_wrapper {
 							"ve", entryg_input["ve"]*mt2ft, 		   //earth rel velocity (ft/s)
 							"vi", entryg_input["vi"]*mt2ft,		   //inertial vel (ft/s)
 							"xlfac", entryg_input["xlfac"],      //load factor acceleration (ft/s2)
-							"mm304ph", entryg_input["roll0"],    	//preentry bank 
-							"mm304al", entryg_input["alpha0"],    	//preentry aoa ,
+							"mm304ph", entryg_constants["mm304phi0"],    	//preentry bank 
+							"mm304al", entryg_constants["mm304alp0"],    	//preentry aoa ,
 							"ital", entryg_input["ital"]				//is tal abort flag
 	).
 	
