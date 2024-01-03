@@ -542,6 +542,8 @@ FUNCTION timer_factory {
 		set this:elapsed to this:last_sampled_t - this:start_t.
 		set this:update_ticks to this:update_ticks + 1.
 	}).
+	
+	return this.
 }
 
 
