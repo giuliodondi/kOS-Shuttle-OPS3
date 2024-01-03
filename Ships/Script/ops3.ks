@@ -135,6 +135,10 @@ if (NOT grtls_flag) {
             tgtrwy,
 			LIST(dap:prog_pitch, dap:prog_roll)
 		).
+		
+		if (is_guid_reset()) {
+			entryg_reset().
+		}
 
 		//call entry guidance here
 		LOCAL entryg_out is entryg_wrapper(

@@ -459,6 +459,10 @@ function egexec {
 	}
 }
 
+FUNCTION entryg_reset {
+	SET entryg_internal["start"] TO 0.
+}
+
 //scale height for hdot reference term
 function egscaleht {
 	PARAMETER entryg_input.
