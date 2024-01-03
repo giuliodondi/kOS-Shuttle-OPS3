@@ -528,12 +528,20 @@ FUNCTION loop_executor_factory {
 FUNCTION timer_factory {
 	LOCAL this IS LEXICON().
 	
-	this:add("start_t", TIME:SECONDS).
-	this:add("last_sampled_t", TIME:SECONDS).
+	this:add("start_t", 0).
+	this:add("last_sampled_t", 0).
 	
 	this:add("last_dt", 0).
 	this:add("update_ticks", 0).
 	this:add("elapsed", 0).
+	
+	this:add("reset", {
+		set this:start_t tO TIME:SECONDS.
+		set this:last_sampled_t tO this:start_t.
+		set this:last_dt tO 0.
+		set this:update_ticks tO 0.
+		set this:elapsed tO 0.
+	}).
 	
 	this:add("update", {
 		local last_t is this:last_sampled_t.
@@ -542,6 +550,8 @@ FUNCTION timer_factory {
 		set this:elapsed to this:last_sampled_t - this:start_t.
 		set this:update_ticks to this:update_ticks + 1.
 	}).
+	
+	this:reset().
 	
 	return this.
 }
