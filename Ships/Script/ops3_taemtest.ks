@@ -73,7 +73,7 @@ FUNCTION ops3_taem_test {
     GLOBAL guid_id IS 0.
     
     local control_loop is loop_executor_factory(
-        0.1,
+        constants["control_loop_dt"],
         {
 			set dap_engaged to is_dap_engaged().
 			if (dap_engaged) {
@@ -357,7 +357,7 @@ FUNCTION ops3_taem_test {
 			set quit_program to TRUE.
 		}
         
-        WAIt 0.
+        WAIT constants["taem_loop_dt"].
     }
     
     
