@@ -1,3 +1,5 @@
+GLOBAL g0 IS 9.80665.
+
 STEERINGMANAGER:RESETPIDS().
 STEERINGMANAGER:RESETTODEFAULT().
 
@@ -47,7 +49,12 @@ FUNCTION dap_controller_factory {
 	this:add("fpa",0).
 	
 	this:add("hdot", 0).
-	this:add("nz", 0).
+	this:add("aero", LEXICON(
+							"nz", 0,
+							"drag", 0,
+							"load", 0,
+							"lod", 0,
+	)).
 	
 	this:add("wow", FALSE).
 	
@@ -62,8 +69,14 @@ FUNCTION dap_controller_factory {
 		set this:fpa to get_surf_fpa().
 		
 		SET this:hdot to SHIP:VERTICALSPEED.
-		SET this:nz to get_current_nz().
 		
+		//drag forces are alyways in imperial
+		LOCAL aeroacc IS cur_aeroaccel_ld().		
+		SET this:aero:nz to aeroacc["lift"] / g0.
+		SET this:aero:drag to aeroacc["drag"]*mt2ft.
+		SET this:aero:load to aeroacc["load"]:MAG*mt2ft.
+		SET this:aero:lod to aeroacc["lift"]/aeroacc["drag"].
+
 		SET this:wow to measure_wow().
 	}).
 	

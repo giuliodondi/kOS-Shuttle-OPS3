@@ -9,6 +9,9 @@ global trajbgblack IS RGB(5/255,8/255,8/255).
 GLOBAL guitextgreenhex IS "14ff15".
 GLOBAL guitextredhex IS "ff1514".
 
+//global and initialised by the gui toggle
+GLOBAL loglex IS LEXICON().
+
 
 						//DEORBIT GUI FUNCTIONS 
 						
@@ -374,6 +377,37 @@ FUNCTION make_main_ops3_gui {
 	
 	GLOBAL logb IS  toggles_box:ADDCHECKBOX("Log Data",false).
 	
+	SET logb:ONTOGGLE to {
+		PARAMETER activated.
+		
+		IF (activated) {
+			set loglex TO LEXICON(
+			                  "guid_id",1,
+			                  "loop_dt",0,
+			                  "rwy_alt",0,
+			                  "vel",0,
+			                  "surfv",0,
+			                  "mach",0,
+			                  "hdot",0,
+			                  "lat",0,
+			                  "long",0,
+							  "range", 0,
+			                  "delaz", 0,
+			                  "nz", 0,
+							  "drag", 0,
+			                  "eow",0,
+							  "prog_pch", 0,
+							  "prog_roll", 0,
+							  "prog_yaw", 0,
+							  "flap_defl", 0,
+							  "spdbk_defl", 0
+			).
+			log_data(loglex,"0:/Shuttle_OPS3/LOGS/ops3_log", TRUE).
+	
+		} ELSE {
+			set loglex TO LEXICON().
+		}
+	}
 
 	select_random_rwy().
 	SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, select_rwy:VALUE).

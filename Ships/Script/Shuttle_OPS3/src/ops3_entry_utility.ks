@@ -69,7 +69,6 @@ FUNCTION get_reentry_state {
 	PARAMETER cur_latlng.
 	PARAMETER cur_surfv.
 	PARAMETER rwy.
-	PARAMETER cur_attitude.
 	
 	local hdot_ is vspd(cur_surfv,cur_pos).
 	
@@ -78,23 +77,12 @@ FUNCTION get_reentry_state {
 	LOCAL tgt_range IS greatcircledist( rwy["position"] , cur_latlng ).
 	
 	local hls is pos_rwy_alt(cur_pos, rwy).
-	
-	//should already be acceleration
-	LOCAL aeroacc IS aeroaccel_ld(cur_pos, cur_surfv, cur_attitude).
-		
-	//drag forces are alyways in imperial
-	LOCAL dragft IS aeroacc["drag"]*mt2ft.
-	LOCAL xlfacft IS aeroacc["load"]:MAG*mt2ft.
-	local lod is aeroacc["lift"]/aeroacc["drag"].
 
 	RETURN LEXICON(
 		"tgt_range", tgt_range,
 		"delaz", delaz,
 		"hls", hls,	
-		"hdot", hdot_,
-		"drag", dragft,
-		"xlfac", xlfacft,
-		"lod", lod
+		"hdot", hdot_
 	).
 }
 

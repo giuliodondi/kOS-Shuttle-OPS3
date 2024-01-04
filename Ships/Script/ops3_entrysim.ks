@@ -319,9 +319,22 @@ FUNCTION ops3_reentry_simulate {
 			simstate["position"],
 			simstate["latlong"],
             ve,
-            tgt_rwy,
-			LIST(pitch_prof,roll_prof)
+            tgt_rwy
 		). 
+		
+		//should already be acceleration
+		LOCAL aerolex IS LEXICON(
+								"drag", 0,
+								"load", 0,
+								"lod", 0,
+		).
+		LOCAL aeroacc IS aeroaccel_ld(simstate["position"], ve, LIST(pitch_prof,roll_prof)).
+			
+		//drag forces are alyways in imperial
+		set aerolex["drag"] to aeroacc["drag"]*mt2ft.
+		set aerolex["xlfac"] to aeroacc["load"]:MAG*mt2ft.
+		set aerolex["lod"] to aeroacc["lift"]/aeroacc["drag"].
+		
 		
 		//call entry guidance here
 		LOCAL entryg_out is entryg_wrapper(
@@ -336,9 +349,9 @@ FUNCTION ops3_reentry_simulate {
 											"hdot", entry_state["hdot"],  
 											"alpha", pitch_prof,      
 											"roll", roll_prof,  
-											"drag", entry_state["drag"],
-											"xlfac", entry_state["xlfac"],     	
-											"lod", entry_state["lod"],
+											"drag", aerolex["drag"],
+											"xlfac", aerolex["xlfac"],     	
+											"lod", aerolex["lod"],
 											"egflg", 0, 
 											"ital", tal_abort,
 											"debug", TRUE
@@ -370,9 +383,9 @@ FUNCTION ops3_reentry_simulate {
 		SET loglex["roll"] TO roll_prof.
 		SET loglex["unl_roll"] TO entryg_out["unl_roll"].
 		SET loglex["roll_ref"] TO entryg_out["roll_ref"].
-		SET loglex["l_d"] TO entry_state["lod"].
+		SET loglex["l_d"] TO aerolex["lod"].
 		SET loglex["entry_phase"] TO entryg_out["islect"].
-		SET loglex["drag"] TO entry_state["drag"].
+		SET loglex["drag"] TO aerolex["drag"].
 		SET loglex["drag_ref"] TO entryg_out["drag_ref"].
 		SET loglex["hdot_ref"] TO entryg_out["hdot_ref"].
 		log_data(loglex,"0:/Shuttle_OPS3/LOGS/sim_log_" + sim_input_target).
@@ -390,9 +403,9 @@ FUNCTION ops3_reentry_simulate {
 								"iter", step_c,
 								"range",entry_state["tgt_range"],
 								"ve",ve:MAG,
-								"xlfac",entry_state["xlfac"],
-								"lod",entry_state["lod"],
-								"drag",entry_state["drag"],
+								"xlfac",aerolex["xlfac"],
+								"lod",aerolex["lod"],
+								"drag",aerolex["drag"],
 								"drag_ref",entryg_out["drag_ref"],
 								"phase",entryg_out["islect"],
 								"hdot_ref",entryg_out["hdot_ref"],

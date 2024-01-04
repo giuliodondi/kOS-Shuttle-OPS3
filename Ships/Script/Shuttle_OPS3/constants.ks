@@ -4,8 +4,10 @@
 //without cluttering the memory in case they fail
 
 GLOBAL constants is LEXICON(
+					"full_debug", TRUE,
 					"atmalt",140000,
 					"interfalt",122000,
+					"mach_rcs_off",0.9,
 					"control_loop_dt",0.1,
 					"entry_loop_dt",0.5,
 					"taem_loop_dt",0.0,
