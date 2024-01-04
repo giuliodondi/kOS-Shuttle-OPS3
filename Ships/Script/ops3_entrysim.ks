@@ -325,7 +325,7 @@ FUNCTION ops3_reentry_simulate {
 		LOCAL aerolex IS LEXICON(
 								"drag", 0,
 								"load", 0,
-								"lod", 0,
+								"lod", 0
 		).
 		LOCAL aeroacc IS aeroaccel_ld(simstate["position"], ve, LIST(pitch_prof,roll_prof)).
 			

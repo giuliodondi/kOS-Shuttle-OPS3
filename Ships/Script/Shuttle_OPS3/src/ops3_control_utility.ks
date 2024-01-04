@@ -53,7 +53,7 @@ FUNCTION dap_controller_factory {
 							"nz", 0,
 							"drag", 0,
 							"load", 0,
-							"lod", 0,
+							"lod", 0
 	)).
 	
 	this:add("wow", FALSE).
