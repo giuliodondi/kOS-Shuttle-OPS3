@@ -1,4 +1,6 @@
+@LAZYGLOBAL OFF.
 CLEARSCREEN.
+SET CONFIG:IPU TO 1800. 
 
 
 RUNPATH("0:/Libraries/misc_library").	
@@ -7,7 +9,7 @@ RUNPATH("0:/Libraries/navigation_library").
 RUNPATH("0:/Libraries/aerosim_library").	
 
 RUNPATH("0:/Shuttle_OPS3/landing_sites").
-RUNPATH("0:/Shuttle_OPS3/constants").
+RUNPATH("0:/Shuttle_OPS3/parameters").
 
 RUNPATH("0:/Shuttle_OPS3/src/ops3_entry_utility.ks").
 RUNPATH("0:/Shuttle_OPS3/src/ops3_gui_utility.ks").
@@ -152,7 +154,7 @@ FUNCTION calculate_simulation_ics {
 	}
 	
 	if (standard) {
-		local ei_calc is deorbit_ei_calc(sim_input["deorbit_apoapsis"], constants["interfalt"]/1000).
+		local ei_calc is deorbit_ei_calc(sim_input["deorbit_apoapsis"], parameters["interfalt"]/1000).
 
 
 
@@ -164,7 +166,7 @@ FUNCTION calculate_simulation_ics {
 		LOCAL ei_vec IS rodrigues(tgt_vec_proj, norm_vec, y).
 
 		//scale by entry interface altitude
-		LOCAL h IS BODy:RADIUS + constants["interfalt"].
+		LOCAL h IS BODy:RADIUS + parameters["interfalt"].
 		SET ei_vec TO ei_vec:NORMALIZED * h.
 
 		clearvecdraws().
@@ -201,7 +203,7 @@ FUNCTION calculate_simulation_ics {
 		LOCAL ei_vec IS rodrigues(tgt_vec_proj, norm_vec, y).
 		
 		//scale by entry interface altitude
-		LOCAL h IS BODy:RADIUS + constants["interfalt"].
+		LOCAL h IS BODy:RADIUS + parameters["interfalt"].
 		SET ei_vec TO ei_vec:NORMALIZED * h.
 		
 		clearvecdraws().
@@ -220,8 +222,8 @@ FUNCTION calculate_simulation_ics {
 		
 		print "sma " + ei_sma + " ecc " + ei_ecc at (0,10).
 		
-		LOCAL ei_vel IS orbit_alt_vel(constants["interfalt"] + BODY:RADIUS, ei_sma).
-		LOCAL ei_eta IS 180 + orbit_alt_eta(constants["interfalt"] + BODY:RADIUS, ei_sma, ei_ecc).
+		LOCAL ei_vel IS orbit_alt_vel(parameters["interfalt"] + BODY:RADIUS, ei_sma).
+		LOCAL ei_eta IS 180 + orbit_alt_eta(parameters["interfalt"] + BODY:RADIUS, ei_sma, ei_ecc).
 		LOCAL ei_fpa IS orbit_eta_fpa(ei_eta, ei_sma, ei_ecc).
 		
 		print "vel " + ei_vel + " eta " + ei_eta + " gamma " + ei_fpa at (0,11).
@@ -241,9 +243,6 @@ FUNCTION calculate_simulation_ics {
 
 
 FUNCTION ops3_reentry_simulate {
-	SET CONFIG:IPU TO 1800.					//	Required to run the script fast enough.
-	if  (defined logname) {UNSET logname.}
-	CLEARSCREEN.
 
 	
 	

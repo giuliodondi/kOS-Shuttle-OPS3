@@ -1,4 +1,6 @@
+@LAZYGLOBAL OFF.
 CLEARSCREEN.
+SET CONFIG:IPU TO 1800. 
 
 
 RUNPATH("0:/Libraries/misc_library").   
@@ -7,7 +9,7 @@ RUNPATH("0:/Libraries/navigation_library").
 RUNPATH("0:/Libraries/aerosim_library").    
 
 RUNPATH("0:/Shuttle_OPS3/landing_sites").
-RUNPATH("0:/Shuttle_OPS3/constants").
+RUNPATH("0:/Shuttle_OPS3/parameters").
 
 RUNPATH("0:/Shuttle_OPS3/src/ops3_entry_utility.ks").
 RUNPATH("0:/Shuttle_OPS3/src/ops3_gui_utility.ks").
@@ -38,17 +40,14 @@ close_all_GUIs().
 
 
 FUNCTION ops3_taem_test {
-    SET CONFIG:IPU TO 1800. 
 	
 	make_taem_vsit_GUI().
     
     
     LOCAL dap IS dap_controller_factory().
-    
-    dap:set_taem_hdot_gains().
-    
+       
     LOCAL aerosurfaces_control IS aerosurfaces_control_factory().
-    aerosurfaces_control["set_aoa_feedback"](50).
+    aerosurfaces_control["set_aoa_feedback"](parameters["taem_aoa_feedback"]).
 
     
     //dap:reset_steering().
@@ -73,9 +72,9 @@ FUNCTION ops3_taem_test {
     GLOBAL guid_id IS 0.
     
     local control_loop is loop_executor_factory(
-        constants["control_loop_dt"],
+        parameters["control_loop_dt"],
         {
-			IF (ADDONS:FAR:MACH < constants["mach_rcs_off"]) {
+			IF (ADDONS:FAR:MACH < parameters["mach_rcs_off"]) {
 				RCS OFF.
 			} else {
 				RCS ON.
@@ -310,7 +309,7 @@ FUNCTION ops3_taem_test {
 			set quit_program to TRUE.
 		}
         
-        WAIT constants["taem_loop_dt"].
+        WAIT parameters["taem_loop_dt"].
     }
     
     
