@@ -209,6 +209,10 @@ FUNCTION ops3_taem_test {
         if (NOT BRAKES) and (taemg_out["brakeson"]) {
             BRAKES ON.
         }
+		
+		IF (dap_engaged) and (taemg_out["dapoff"]) {
+			disengage_dap().
+		}
 
         if (taemg_out["itran"]) {
             dap:reset_steering().

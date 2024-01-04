@@ -10,9 +10,9 @@ GLOBAL parameters is LEXICON(
 					"mach_rcs_off",0.9,		//this must be 1 or less
 					"entry_aoa_feedback", 0,	//should be zero
 					"taem_aoa_feedback", 50,	//should be around 50 to help the dap keep stability
-					"control_loop_dt",0.1,	//this should be as low as feasible
-					"entry_loop_dt",0.5,	//this should be between 0.5 and 2
-					"taem_loop_dt",0.0,		//this should be zero
+					"control_loop_dt",0.1,	//DO NOT CHANGE
+					"entry_loop_dt",0.5,	//DO NOT CHANGE
+					"taem_loop_dt",0.0,		//DO NOT CHANGE
 					"game_resolution_width", 1920,		//to center the hud
 					"game_resolution_height", 1080		//to center the hud
 ).

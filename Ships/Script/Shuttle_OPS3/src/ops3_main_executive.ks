@@ -124,7 +124,7 @@ FUNCTION ops3_main_exec {
 			LOCAL entryg_out is entryg_wrapper(
 										lexicon(
 												"iteration_dt", guidance_timer:last_dt,
-												"tgtsite", ,
+												"tgtsite", get_selected_tgt(),
 												"tgt_range", entry_state["tgt_range"],
 												"delaz", entry_state["delaz"],   
 												"ve", ve:MAG,
@@ -273,7 +273,7 @@ FUNCTION ops3_main_exec {
 												"theta", dap:lvlh_pitch,
 												"gamma", dap:fpa,
 												"alpha", dap:prog_pitch,
-												"nz", dap:nz,
+												"nz", dap:aero:nz,
 												"ovhd", tgtrwy["overhead"],
 												"rwid", tgtrwy["name"],
 												"grtls", grtls_flag,
@@ -321,6 +321,10 @@ FUNCTION ops3_main_exec {
 			if (NOT BRAKES) and (taemg_out["brakeson"]) {
 				BRAKES ON.
 			}
+			
+			IF (dap_engaged) and (taemg_out["dapoff"]) {
+				disengage_dap().
+			}
 
 			if (taemg_out["itran"]) {
 				dap:reset_steering().
@@ -337,7 +341,7 @@ FUNCTION ops3_main_exec {
 			} else if (guid_id = 25) {
 				SET hud_datalex["pipper_deltas"] TO LIST(
 														taemg_out["phic_at"] - dap:prog_roll, 
-														taemg_out["nztotal"] -  dap:nz
+														taemg_out["nztotal"] -  dap:aero:nz
 
 				).
 			} else {
@@ -357,7 +361,7 @@ FUNCTION ops3_main_exec {
 			SET hud_datalex["altitude"] TO rwystate["h"].
 			SET hud_datalex["hdot"] TO rwystate["hdot"].
 			SET hud_datalex["distance"] TO taemg_out["rpred"] / 1000.
-			SET hud_datalex["cur_nz"] TO dap:nz.
+			SET hud_datalex["cur_nz"] TO dap:aero:nz.
 			SET hud_datalex["cur_pch"] TO dap:lvlh_pitch.
 			SET hud_datalex["cur_roll"] TO dap:lvlh_roll.
 			SET hud_datalex["flapval"] TO aerosurfaces_control["flap_defl"].
