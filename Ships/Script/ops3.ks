@@ -119,7 +119,7 @@ local control_loop is loop_executor_factory(
 
 local guidance_timer IS timer_factory().
 
-if (NOT grtls_flag) {
+if (NOT grtls_flag) AND (SHIP:VELOCITY:SURFACE:MAG > constants["surfv_skip_to_taem"]){
 	//entry guidance loop
 	
 	make_entry_traj_GUI().
@@ -251,6 +251,8 @@ if (NOT grtls_flag) {
 		
 		WAIT constants["entry_loop_dt"].
 	}
+	
+	clear_ops3_disp().
 }
 
 if (NOT quit_program) {
@@ -258,7 +260,6 @@ if (NOT quit_program) {
 	
 	aerosurfaces_control["set_aoa_feedback"](50).
 
-	clear_ops3_disp().
 	make_taem_vsit_GUI().
 	
 	until (quit_program) {
@@ -446,6 +447,8 @@ if (NOT quit_program) {
         
         WAIT constants["taem_loop_dt"].
 	}
+	
+	clear_ops3_disp().
 }
 
 
