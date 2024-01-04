@@ -150,7 +150,8 @@ FUNCTION taemg_wrapper {
 					"freezetgt", taemg_internal["freezetgt"],	
 					"freezeapch", taemg_internal["freezeapch"],	
 					"geardown", taemg_internal["geardown"],	
-					"brakeson", taemg_internal["brakeson"]
+					"brakeson", taemg_internal["brakeson"],
+					"dapoff", taemg_internal["dapoff"]
 	
 	).
 }
@@ -380,6 +381,7 @@ global taemg_constants is lexicon (
 									"philm5", 15, 				//deg bank lim for flare and beyond
 									"phi_beta_gain", 3, 			//gain for yaw during rollout
 									"surfv_h_brakes", 140,		//ft/s trigger for braking outside executive
+									"surfv_h_dapoff", 80,		//ft/s trigger for dap off outside executive
 									"surfv_h_exit", 15,		//ft/s trigger for termination
 									
 									//GRTLS guidance stuff
@@ -517,6 +519,7 @@ global taemg_internal is lexicon(
 								"al_capt_count", 0,		//a/l iteration counter for capture
 								"geardown", FALSE,	//flag to command gear down to outside executive
 								"brakeson", FALSE,	//flag to command brakes on to outside executive
+								"dapoff", FALSE,	//flag to command dap off to outside executive
 								"tgstp", 0,			//steep gs tangent (set to tggs)
 								"tgsh", 0,			//shallow gs tangent
 								"gsstp", 0,			//° steep glideslope
@@ -1066,7 +1069,11 @@ FUNCTION tgtran {
 			if (taemg_input["surfv_h"] <= taemg_constants["surfv_h_brakes"] ) {
 				set taemg_internal["brakeson"] to TRUE.
 			}
-
+			
+			if (taemg_input["surfv_h"] <= taemg_constants["surfv_h_dapoff"] ) {
+				set taemg_internal["dapoff"] to TRUE.
+			}
+			
 			if (taemg_input["surfv_h"] <= taemg_constants["surfv_h_exit"] ) {
 				set taemg_internal["al_end"] to TRUE.
 			}		

@@ -358,8 +358,7 @@ FUNCTION make_main_ops3_gui {
 		}
 	}.
 	
-	dap_b:ONCHANGE(dap_b:VALUE).	
-	WAIT 0.
+	disengage_dap().
 	
 	GLOBAL flptrmb IS  toggles_box:ADDCHECKBOX("Auto Flaps",false).
 	toggles_box:addspacing(15).	
@@ -457,6 +456,10 @@ FUNCTION reset_overhead_apch {
 	SET select_apch:INDEX TO 0.
 }
 
+FUNCTION get_selected_tgt {
+	return select_tgt:VALUE.
+}
+
 FUNCTION is_apch_overhead {
 	
 	IF (select_apch:VALUE = "Overhead") {
@@ -464,6 +467,12 @@ FUNCTION is_apch_overhead {
 	} ELSe IF (select_apch:VALUE = "Straight") {
 		RETURN FALSE.
 	}
+}
+
+FUNCTION disengage_dap {
+	SET dap_b:INDEX TO 0.
+	dap_b:ONCHANGE(dap_b:VALUE).	
+	WAIT 0.
 }
 
 FUNCTION is_dap_engaged {
@@ -1356,17 +1365,20 @@ FUNCTION diamond_deviation_debug {
 FUNCTION set_vspd_slider_limits {
 	PARAMETEr iphase.
 	
-	IF (iphase>=34) {
-		SET vspd_slider:MIN TO -40.
-		SET vspd_slider:MAX TO +40.
-	} ELSE IF (iphase>=20) {
-		SET vspd_slider:MIN TO -100.
-		SET vspd_slider:MAX TO +100.
-
-	} ELSE IF (iphase>=10) {
+	IF (iphase<20) {
+		//entry
 		SET vspd_slider:MIN TO -200.
 		SET vspd_slider:MAX TO +200.
-
+	} ELSE {
+		IF (iphase<= 24) OR (iphase>= 30) {
+			//taem, a_l and alpha tran
+			SET vspd_slider:MIN TO -100.
+			SET vspd_slider:MAX TO +100.
+		} ELSE {
+			//grtls alpha rec and nz-hold
+			SET vspd_slider:MIN TO -300.
+			SET vspd_slider:MAX TO +300.
+		}
 	}
 
 }
