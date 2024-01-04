@@ -100,7 +100,7 @@ FUNCTION dap_controller_factory {
 		set this:steer_yaw to 0.
 		set this:steer_lvlh_pitch TO this:lvlh_pitch.
 		SET this:tgt_hdot TO this:hdot.
-		SET this:tgt_nz TO this:nz.
+		SET this:tgt_nz TO this:aero:nz.
 		SET this:steering_dir TO SHIP:FACINg.
 		SET this:wow TO FALSE.
 	}).
@@ -115,7 +115,7 @@ FUNCTION dap_controller_factory {
 	this:add("nz_pitch_pid", PIDLOOP(4,0,5.7)).
 	SET this:nz_pitch_pid:SETPOINT TO 0.
 	this:add("update_nz_pid", {
-		return -this:nz_pitch_pid:UPDATE(this:last_time, this:tgt_nz - this:nz ).
+		return -this:nz_pitch_pid:UPDATE(this:last_time, this:tgt_nz - this:aero:nz ).
 	}).
 	
 	this:add("set_taem_hdot_gains", {
@@ -242,7 +242,7 @@ FUNCTION dap_controller_factory {
 		this:measure_cur_state().
 		
 		IF (NOT this:wow) {
-			SET this:tgt_nz TO CLAMP(this:nz + (this:update_hdot_pid()) / COS(this:prog_roll), this:nz_lims[0], this:nz_lims[1]).
+			SET this:tgt_nz TO CLAMP(this:aero:nz + (this:update_hdot_pid()) / COS(this:prog_roll), this:nz_lims[0], this:nz_lims[1]).
 			SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
 		}
 		
@@ -325,7 +325,7 @@ FUNCTION dap_controller_factory {
 		print "cur hdot : " + round(this:hdot,3) + "    " at (0,line + 14).
 		
 		print "tgt nz : " + round(this:tgt_nz,3) + "    " at (0,line + 16).
-		print "cur nz : " + round(this:nz,3) + "    " at (0,line + 17).
+		print "cur nz : " + round(this:aero:nz,3) + "    " at (0,line + 17).
 		
 	}).
 	

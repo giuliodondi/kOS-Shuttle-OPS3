@@ -295,7 +295,7 @@ FUNCTION ops3_taem_test {
 			SET loglex["delaz"] TO hud_datalex["delaz"].
 			SET loglex["nz"] TO dap:aero:nz.
 			SET loglex["drag"] TO dap:aero:drag.
-			SET loglex["eow"] TO taemg_out["eow"]
+			SET loglex["eow"] TO taemg_out["eow"].
 			SET loglex["prog_pch"] TO dap:prog_pitch.
 			SET loglex["prog_roll"] TO dap:prog_roll. 
 			SET loglex["prog_yaw"] TO dap:prog_yaw.
