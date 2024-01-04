@@ -407,19 +407,39 @@ FUNCTION make_main_ops3_gui {
 		} ELSE {
 			set loglex TO LEXICON().
 		}
-	}
+	}.
 
 	select_random_rwy().
 	SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, select_rwy:VALUE).
 
 	main_ops3_gui:addspacing(3).
-	GLOBAL ops3_disp IS main_ops3_gui:addvlayout().
-	SET ops3_disp:STYLE:WIDTH TO main_ops3_gui_width - 22.
-	SET ops3_disp:STYLE:HEIGHT TO 380.
-	SET ops3_disp:STYLE:ALIGN TO "center".
-	set ops3_disp:style:margin:h to 11.
+	GLOBAL ops3_main_display IS main_ops3_gui:addvlayout().
+	SET ops3_main_display:STYLE:WIDTH TO main_ops3_gui_width - 22.
+	SET ops3_main_display:STYLE:HEIGHT TO 382.
+	SET ops3_main_display:STYLE:ALIGN TO "center".
+	set ops3_main_display:style:margin:h to 11.
 	
-	set ops3_disp:style:BG to "Shuttle_OPS3/src/gui_images/ops3_disp_bg.png".
+	set ops3_main_display:style:BG to "Shuttle_OPS3/src/gui_images/ops3_disp_bg.png".
+	
+	GLOBAL ops3_main_display_titlebox IS ops3_main_display:ADDHLAYOUT().
+	SET ops3_main_display_titlebox:STYLe:WIDTH TO ops3_main_display:STYLE:WIDTH.
+	SET ops3_main_display_titlebox:STYLe:HEIGHT TO 1.
+	GLOBAL ops3_main_display_title IS ops3_main_display_titlebox:ADDLABEL("DISPLAY TITLE 1").
+	SET ops3_main_display_title:STYLE:ALIGN TO "center".
+	
+	GLOBAL ops3_main_display_clockbox IS ops3_main_display:ADDHLAYOUT().
+	SET ops3_main_display_clockbox:STYLe:WIDTH TO ops3_main_display:STYLE:WIDTH.
+	SET ops3_main_display_clockbox:STYLe:HEIGHT TO 1.
+	GLOBAL ops3_main_display_clock IS ops3_main_display_clockbox:ADDLABEL("MET 00:00:00:00").
+	SET ops3_main_display_clock:STYLE:ALIGN TO "right".
+	SET ops3_main_display_clock:STYLE:margin:h to 20.
+	
+	GLOBAL ops3_disp IS ops3_main_display:addvlayout().
+	SET ops3_disp:STYLE:WIDTH TO ops3_main_display:STYLE:WIDTH.
+	SET ops3_disp:STYLE:HEIGHT TO ops3_main_display:STYLE:HEIGHT - 2.
+	SET ops3_disp:STYLE:ALIGN TO "center".
+	
+	GLOBAL ops3_disp_vmargin IS 18.
 
 	main_ops3_gui:SHOW().
 }
@@ -502,18 +522,10 @@ FUNCTION close_all_GUIs{
 }
 
 
-
-
 FUNCTION make_entry_traj_GUI {
 
 	GLOBAL entry_traj_disp_counter IS 1.				   
 	GLOBAL entry_traj_disp_counter_p IS entry_traj_disp_counter.				   
-	
-	GLOBAL traj_disp_titlebox IS ops3_disp:ADDHLAYOUT().
-	SET traj_disp_titlebox:STYLe:WIDTH TO ops3_disp:STYLE:WIDTH.
-	SET traj_disp_titlebox:STYLe:HEIGHT TO 20.
-	GLOBAL traj_disp_title IS traj_disp_titlebox:ADDLABEL("").
-	SET traj_disp_title:STYLE:ALIGN TO "center".
 	
 	GLOBAL traj_disp_overlaiddata IS ops3_disp:ADDVLAYOUT().
 	SET traj_disp_overlaiddata:STYLE:ALIGN TO "Center".
@@ -523,10 +535,8 @@ FUNCTION make_entry_traj_GUI {
 	GLOBAL traj_disp_mainbox IS ops3_disp:ADDVLAYOUT().
 	SET traj_disp_mainbox:STYLE:ALIGN TO "Center".
 	SET traj_disp_mainbox:STYLe:WIDTH TO ops3_disp:STYLE:WIDTH.
-	SET traj_disp_mainbox:STYLe:HEIGHT TO ops3_disp:STYLE:HEIGHT - 22.
-	
-	
-	
+	SET traj_disp_mainbox:STYLe:HEIGHT TO ops3_disp:STYLE:HEIGHT - ops3_disp_vmargin.
+	SET traj_disp_mainbox:STYLE:margin:v to ops3_disp_vmargin.
 	
 	
 	GLOBAL traj_disp_leftdatabox IS traj_disp_overlaiddata:ADDVLAYOUT().
@@ -534,7 +544,7 @@ FUNCTION make_entry_traj_GUI {
 	SET traj_disp_leftdatabox:STYLE:WIDTH TO 125.
     SET traj_disp_leftdatabox:STYLE:HEIGHT TO 115.
 	set traj_disp_leftdatabox:style:margin:h to 20.
-	set traj_disp_leftdatabox:style:margin:v to 10.
+	set traj_disp_leftdatabox:style:margin:v to 10 + ops3_disp_vmargin.
 	
 	GLOBAL trajleftdata1 IS traj_disp_leftdatabox:ADDLABEL("XLFAC xxxxxx").
 	set trajleftdata1:style:margin:v to -4.
@@ -552,7 +562,7 @@ FUNCTION make_entry_traj_GUI {
 	SET traj_disp_rightdatabox:STYLE:WIDTH TO 145.
     SET traj_disp_rightdatabox:STYLE:HEIGHT TO 115.
 	set traj_disp_rightdatabox:style:margin:h to 380.
-	set traj_disp_rightdatabox:style:margin:v to 90.
+	set traj_disp_rightdatabox:style:margin:v to 90 + ops3_disp_vmargin.
 	
 	GLOBAL trajrightdata1 IS traj_disp_rightdatabox:ADDLABEL("HDT REF xxxxx").
 	set trajrightdata1:style:margin:v to -4.
@@ -601,6 +611,8 @@ function reset_entry_traj_disp {
 
 function update_entry_traj_disp {
 	parameter gui_data.
+	
+	SET ops3_main_display_clock:text TO "MET " + sectotime_simple(MISSIONTIME, true).
 
 	local vel_ is gui_data["ve"].
 
@@ -665,9 +677,9 @@ function increment_entry_entry_traj_disp_counter {
 }
 
 function set_entry_traj_disp_title {
-	local text_ht is traj_disp_titlebox:style:height*0.75.
+	local text_ht is ops3_main_display_titlebox:style:height*0.75.
 	
-	set traj_disp_title:text to "<b><size=" + text_ht + ">ENTRY TRAJ " + entry_traj_disp_counter + "</size></b>".
+	set ops3_main_display_title:text to "<b><size=" + text_ht + ">ENTRY TRAJ " + entry_traj_disp_counter + "</size></b>".
 }
 
 
@@ -784,12 +796,6 @@ FUNCTION make_taem_vsit_GUI {
 	set main_ops3_gui:skin:verticalsliderthumb:HEIGHT to 20.
 	set main_ops3_gui:skin:verticalsliderthumb:WIDTH to 17.
 	
-	GLOBAL vsit_disp_titlebox IS ops3_disp:ADDHLAYOUT().
-	SET vsit_disp_titlebox:STYLe:WIDTH TO ops3_disp:STYLE:WIDTH.
-	SET vsit_disp_titlebox:STYLe:HEIGHT TO 20.
-	GLOBAL vsit_disp_title IS vsit_disp_titlebox:ADDLABEL("").
-	SET vsit_disp_title:STYLE:ALIGN TO "center".
-	
 	GLOBAL vsit_disp_overlaiddata IS ops3_disp:ADDHLAYOUT().
 	SET vsit_disp_overlaiddata:STYLE:ALIGN TO "Center".
 	SET vsit_disp_overlaiddata:STYLe:WIDTH TO ops3_disp:STYLE:WIDTH.
@@ -800,14 +806,15 @@ FUNCTION make_taem_vsit_GUI {
 	GLOBAL vsit_disp_mainbox IS ops3_disp:ADDVLAYOUT().
 	SET vsit_disp_mainbox:STYLE:ALIGN TO "Center".
 	SET vsit_disp_mainbox:STYLe:WIDTH TO ops3_disp:STYLE:WIDTH.
-	SET vsit_disp_mainbox:STYLe:HEIGHT TO ops3_disp:STYLE:HEIGHT - 22.
+	SET vsit_disp_mainbox:STYLe:HEIGHT TO ops3_disp:STYLE:HEIGHT - ops3_disp_vmargin.
+	SET vsit_disp_mainbox:STYLE:margin:v to ops3_disp_vmargin.
 	
 	GLOBAL vsit_disp_leftdatabox IS vsit_disp_overlaiddata:ADDVLAYOUT().
 	SET vsit_disp_leftdatabox:STYLE:ALIGN TO "left".
 	SET vsit_disp_leftdatabox:STYLE:WIDTH TO 75.
     SET vsit_disp_leftdatabox:STYLE:HEIGHT TO 75.
 	set vsit_disp_leftdatabox:style:margin:h to 20.
-	set vsit_disp_leftdatabox:style:margin:v to 130.
+	set vsit_disp_leftdatabox:style:margin:v to 130 + ops3_disp_vmargin.
 	
 	GLOBAL vsitleftdata1 IS vsit_disp_leftdatabox:ADDLABEL("R  XXX").
 	set vsitleftdata1:style:margin:v to -4.
@@ -821,7 +828,7 @@ FUNCTION make_taem_vsit_GUI {
 	SET vsit_disp_rightdatabox:STYLE:WIDTH TO 200.
     SET vsit_disp_rightdatabox:STYLE:HEIGHT TO 90.
 	set vsit_disp_rightdatabox:style:margin:h to 85.
-	set vsit_disp_rightdatabox:style:margin:v to 185.
+	set vsit_disp_rightdatabox:style:margin:v to 185 + ops3_disp_vmargin.
 	
 	GLOBAL vsitrightdata0 IS vsit_disp_rightdatabox:ADDLABEL("OTT ST IN").
 	set vsitrightdata0:style:margin:h to 130.
@@ -843,7 +850,7 @@ FUNCTION make_taem_vsit_GUI {
 	GLOBAL herror_sliderbox IS vsit_disp_overlaiddata:ADDVLAYOUT().
 	SET herror_sliderbox:STYLe:WIDTH TO 55.
 	set herror_sliderbox:style:margin:h to 0.
-	set herror_sliderbox:style:margin:v to 50.
+	set herror_sliderbox:style:margin:v to 50 + ops3_disp_vmargin.
 	SET herror_sliderbox:STYLE:ALIGN TO "Center".
 	GLOBAL herror_slider_label IS herror_sliderbox:ADDLABEL("H ERR").
 	set herror_slider_label:style:margin:h to 1.
@@ -881,9 +888,9 @@ function increment_taem_vsit_disp_counter {
 }
 
 function set_taem_vsit_disp_title {
-	local text_ht is vsit_disp_titlebox:style:height*0.75.
+	local text_ht is ops3_main_display_titlebox:style:height*0.75.
 	
-	set vsit_disp_title:text to "<b><size=" + text_ht + "> VERT SIT " + taem_vsit_disp_counter + "</size></b>".
+	set ops3_main_display_title:text to "<b><size=" + text_ht + "> VERT SIT " + taem_vsit_disp_counter + "</size></b>".
 }
 
 
@@ -911,6 +918,8 @@ function set_taem_vsit_herror_slider {
 
 function update_taem_vsit_disp {
 	parameter gui_data.
+	
+	SET ops3_main_display_clock:text TO "MET " + sectotime_simple(MISSIONTIME, true).
 
 	local eow_ is gui_data["eow"].
 

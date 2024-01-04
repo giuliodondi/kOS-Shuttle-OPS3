@@ -24,7 +24,6 @@ define_td_points().
 make_main_ops3_gui().
 
 
-
 make_taem_vsit_GUI().
 
 local sample_data is sample_taem_data().
@@ -42,8 +41,6 @@ ON (AG9) {
 	set stinflag to (NOT stinflag).
 	PRESERVE.
 }
-
-
 
 until false {
 
@@ -89,7 +86,6 @@ until false {
 		BREAK.
 	}
 	
-	wait 0.5.
 }
 
 clear_ops3_disp().
