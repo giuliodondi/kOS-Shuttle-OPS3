@@ -30,7 +30,7 @@ make_entry_traj_GUI().
 
 gLOBAL sim_input_target IS "".
 gLOBAL tal_abort IS FALSE.
-GLOBAL ICS IS generate_simulation_ics("tal").
+GLOBAL ICS IS generate_simulation_ics("edwards").
 
 GLOBAL sim_settings IS LEXICON(
 					"deltat",2,
@@ -65,11 +65,11 @@ FUNCTION generate_simulation_ics {
 	if (name_ = "edwards") {
 		SET ics_lex to LEXICON(
 													"target", "Edwards",
-													"deorbit_apoapsis", 280,
+													"deorbit_apoapsis", 260,
 													"deorbit_periapsis", 0,
 													"deorbit_inclination", 40,
-													"entry_interf_dist", 7000,
-													"entry_interf_xrange", 300,
+													"entry_interf_dist", 6500,
+													"entry_interf_xrange", 600,
 													"entry_interf_offset", "right"
 							).
 		set standard to TRUE.
@@ -254,7 +254,8 @@ FUNCTION ops3_reentry_simulate {
 										"step",1,
 										"time",0,
 										"alt",0,
-										"speed",0,
+										"vel",0,
+										"surfv",0,
 										"hdot",0,
 										"range",0,
 										"az_err",0,
@@ -358,7 +359,8 @@ FUNCTION ops3_reentry_simulate {
 		SET loglex["step"] TO step_c.
 		SET loglex["time"] TO simstate["simtime"].
 		SET loglex["alt"] TO (entry_state["hls"])/1000.
-		SET loglex["speed"] TO vi:MAG.
+		SET loglex["vel"] TO vi:MAG.
+		SET loglex["surfv"] TO ve:MAG.
 		SET loglex["hdot"] TO entry_state["hdot"].
 		SET loglex["lat"] TO simstate["latlong"]:LAT.
 		SET loglex["long"] TO simstate["latlong"]:LNG.
@@ -387,7 +389,7 @@ FUNCTION ops3_reentry_simulate {
 		local gui_data is lexicon(
 								"iter", step_c,
 								"range",entry_state["tgt_range"],
-								"vi",vi:MAG,
+								"ve",ve:MAG,
 								"xlfac",entry_state["xlfac"],
 								"lod",entry_state["lod"],
 								"drag",entry_state["drag"],

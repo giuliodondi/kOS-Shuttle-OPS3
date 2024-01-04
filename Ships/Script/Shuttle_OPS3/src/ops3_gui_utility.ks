@@ -568,16 +568,16 @@ function reset_entry_traj_disp {
 function update_entry_traj_disp {
 	parameter gui_data.
 
-	local vel_ is gui_data["vi"].
+	local vel_ is gui_data["ve"].
 
 	//check if we shoudl update entry traj counter 
-	if (entry_traj_disp_counter = 1 and vel_ <= 5500) {
+	if (entry_traj_disp_counter = 1 and vel_ <= 5181) {
 		increment_entry_entry_traj_disp_counter().
-	} else if (entry_traj_disp_counter = 2 and vel_ <= 4330) {
+	} else if (entry_traj_disp_counter = 2 and vel_ <= 4267) {
 		increment_entry_entry_traj_disp_counter().
-	} else if (entry_traj_disp_counter = 3 and vel_ <= 3400) {
+	} else if (entry_traj_disp_counter = 3 and vel_ <= 3200) {
 		increment_entry_entry_traj_disp_counter().
-	} else if (entry_traj_disp_counter = 4 and vel_ <= 1950) {
+	} else if (entry_traj_disp_counter = 4 and vel_ <= 1890) {
 		increment_entry_entry_traj_disp_counter().
 	}
 	
@@ -586,7 +586,7 @@ function update_entry_traj_disp {
 		reset_entry_traj_disp().
 	}
 
-	local orbiter_bug_pos is set_entry_traj_disp_bug(v(entry_traj_disp_x_convert(gui_data["vi"], gui_data["drag"]),entry_traj_disp_y_convert(gui_data["vi"]), 0)).
+	local orbiter_bug_pos is set_entry_traj_disp_bug(v(entry_traj_disp_x_convert(gui_data["ve"], gui_data["drag"]),entry_traj_disp_y_convert(gui_data["ve"]), 0)).
 	SET traj_disp_orbiter:STYLE:margin:v to orbiter_bug_pos[1].
 	SET traj_disp_orbiter:STYLE:margin:h to orbiter_bug_pos[0].
 	
@@ -691,44 +691,20 @@ function entry_traj_disp_x_convert {
 	if (entry_traj_disp_counter=1) {
 		LOCAL vel3 IS vel2 * vel.
 		LOCAL drag3 IS drag2 * drag.
-		set out to  555.3926783243992 
-					+ 0.137078652046288 * vel 
-					- 94.72561947028342 * drag
-					- 3.344538192253144e-05 * vel2
-					+ 0.00906907118021625 * vel * drag
-					+ 1.8200934250524303 * drag2
-					+ 2.3076131838717373e-09 * vel3
-					- 3.512244427130015e-07 * vel2 * drag
-					- 5.082702175883116e-05 * vel * drag2
-					- 0.014714191410748175 * drag3.
+		set out to  1269.3735913802313 + -0.08206361592134565 * vel  + -153.9799520644858  * drag + -3.1466697000533627e-06 * vel2  + 0.01314221307938963 * vel * drag + 4.662789044310247  * drag2 + 7.728348100366489e-10 * vel3  + -4.161746084256363e-07 * vel2 * drag + -0.00015695195109508781 * vel * drag2 + -0.052420876333425334  * drag3.
+    
 	} else if (entry_traj_disp_counter=2) {
-		set out to - 38.0268152009462 
-					+ 0.09906578419425373 * vel 
-					- 12.707084859116666 * drag
-					+ 1.3305326295037778e-06 * vel2
-					+ 0.0011766877774739082 * vel * drag
-					- 0.014838331795402771 * drag2.
+		set out to -119.27311679936585 + 0.1310360825751968 * vel  + -14.509634466688668  * drag + -4.508956766569039e-07 * vel2  + 0.0014529141150055665 * vel * drag + -0.004804810480900542  * drag2.
+   
 	} else if (entry_traj_disp_counter=3) {
-		set out to - 531.1596833649385 
-					+ 0.2369508010818678 * vel
-					- 0.7771572651359938 * drag
-					- 2.1586890749936138e-07 * vel2
-					+ 0.00021100580946806138 * vel * drag
-					- 0.1132059499998106 * drag2.
+		set out to -149.89669862960386 + 0.20623953463938421 * vel  + -14.736386540438081  * drag + -4.726735117477343e-07 * vel2  + 0.00040459906559150603 * vel * drag + 0.07268485357148893  * drag2.
+   
 	} else if (entry_traj_disp_counter=4) {
-		set out to - 748.4063596835092 
-					+ 0.7408869827508833 * vel
-					- 13.833348494044804 * drag
-					- 8.626522934807035e-05 * vel2
-					+ 2.9372518671475292e-05 * vel * drag
-					+ 0.10761028181794845 * drag2.
+		set out to -947.0277680149138 + 0.9326046841966658 * vel  + -15.119041886140064  * drag + -0.00010680530051221382 * vel2  + -0.0022032464462389545 * vel * drag + 0.21019379999928509  * drag2.
+    
 	} else if (entry_traj_disp_counter=5) {
-		set out to - 776.3651212085673
-					+ 1.0608120994108508 * vel
-					- 0.0012408627622487007 * drag
-					- 0.000190689080882267 * vel2
-					- 0.0018267317853930109 * vel * drag
-					- 0.062043138111733405 * drag2.
+		set out to -454.1109719968744 + 0.920975633806626 * vel  + -3.5281349354281684  * drag + -0.00019912799779653323 * vel2  + -0.0007382687005499898 * vel * drag + -0.02196699999990539  * drag2.
+        
 	}
 	
 	return out.
@@ -741,19 +717,19 @@ function entry_traj_disp_y_convert {
 	local out is 0.
 	
 	if (entry_traj_disp_counter=1) {
-		set out to (-0.1187007912 * vel + 966.857 + 32.7).
+		set out to (0.00036443148 * vel - 1.88811953353).
 	} else if (entry_traj_disp_counter=2) {
-		set out to (-0.23731299972 * vel + 1342.6666 + 32.7).
+		set out to (0.0010940919 * vel - 4.66849015317).
 	} else if (entry_traj_disp_counter=3) {
-		set out to (-0.255413394 * vel + 1170 + 32.7).
+		set out to  (0.00093720712 * vel - 2.99906279288).
 	} else if (entry_traj_disp_counter=4) {
-		set out to (-0.171587932 * vel + 639 + 32.7).
+		set out to (0.00076335877 * vel - 1.4427480916).
 	} else if (entry_traj_disp_counter=5) {
-		set out to (-0.2568241552 * vel + 565.714 + 32.7).
+		set out to (0.00088495575 * vel - 0.67256637168).
 	}
 	
 	
-	return 400 - out.
+	return 59.5 + 280.2 * out.
 
 }
 
