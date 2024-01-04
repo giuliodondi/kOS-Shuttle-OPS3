@@ -68,8 +68,14 @@ ON (dap_engaged) {
 
 //main control loop
 local control_loop is loop_executor_factory(
-        0.1,
+        constants["control_loop_dt"],
         {
+			IF (ADDONS:FAR:MACH < constants["mach_rcs_off"]) {
+				RCS OFF.
+			} else {
+				RCS ON.
+			}
+			
 			set dap_engaged to is_dap_engaged().
 			if (dap_engaged) {
 				set css_flag to is_dap_css().
@@ -116,11 +122,9 @@ local guidance_timer IS timer_factory().
 if (NOT grtls_flag) {
 	//entry guidance loop
 	
-	LOCAL eg_exit_flag IS FALSE.
+	make_entry_traj_GUI().
 	
-	local initial_roll IS 
-	
-	UNTIL (quit_program or eg_exit_flag) {
+	UNTIL (quit_program) {
 		clearvecdraws().
 		
 		guidance_timer:update().
@@ -132,8 +136,7 @@ if (NOT grtls_flag) {
 			-SHIP:ORBIT:BODY:POSITION,
 			SHIP:GEOPOSITION,
             ve,
-            tgtrwy,
-			LIST(dap:prog_pitch, dap:prog_roll)
+            tgtrwy
 		).
 		
 		if (is_guid_reset()) {
@@ -153,16 +156,14 @@ if (NOT grtls_flag) {
 											"hdot", entry_state["hdot"],  
 											"alpha", dap:prog_pitch,      
 											"roll", dap:prog_roll,  
-											"drag", entry_state["drag"],
-											"xlfac", entry_state["xlfac"],     	
-											"lod", entry_state["lod"],
+											"drag", dap:aero:drag,
+											"xlfac", dap:aero:load,     	
+											"lod", dap:aero:lod,
 											"egflg", 0, 
 											"ital", tal_flag,
-											"debug", TRUE
+											"debug", constants["full_debug"]
 									)
 		).
-		
-		set eg_exit_flag to entryg_out["eg_end"].
 		
 		set guid_id to entryg_out["guid_id"].
 		
@@ -201,10 +202,10 @@ if (NOT grtls_flag) {
 		local gui_data is lexicon(
 								"iter", step_c,
 								"range",entry_state["tgt_range"],
-								"vi",vi:MAG,
-								"xlfac",entry_state["xlfac"],
-								"lod",entry_state["lod"],
-								"drag",entry_state["drag"],
+								"ve",ve:MAG,
+								"xlfac",dap:aero:load,
+								"lod",dap:aero:lod,
+								"drag",dap:aero:drag,
 								"drag_ref",entryg_out["drag_ref"],
 								"phase",entryg_out["islect"],
 								"hdot_ref",entryg_out["hdot_ref"],
@@ -216,21 +217,239 @@ if (NOT grtls_flag) {
 		).
 		update_entry_traj_disp(gui_data).
 		
+		if (constants["full_debug"]) {
+			dap:print_debug(2).
+		}
+		
+		if is_log() {
+			SET loglex["guid_id"] TO guid_id.
+			SET loglex["loop_dt"] TO guidance_timer:last_dt.
+			SET loglex["rwy_alt"] TO entry_state["hls"].
+			SET loglex["vel"] TO vi:MAG.
+			SET loglex["surfv"] TO vi:MAG. 
+			SET loglex["mach"] TO ADDONS:FAR:MACH. 
+			SET loglex["hdot"] TO entry_state["hdot"].
+			SET loglex["lat"] TO SHIP:GEOPOSITION:LAT.
+			SET loglex["long"] TO SHIP:GEOPOSITION:LNG.
+			SET loglex["range"] TO hud_datalex["distance"].
+			SET loglex["delaz"] TO hud_datalex["delaz"].
+			SET loglex["nz"] TO dap:aero:nz.
+			SET loglex["drag"] TO dap:aero:drag.
+			SET loglex["eow"] TO entryg_out["eowd"]
+			SET loglex["prog_pch"] TO dap:prog_pitch.
+			SET loglex["prog_roll"] TO dap:prog_roll. 
+			SET loglex["prog_yaw"] TO dap:prog_yaw.
+			SET loglex["flap_defl"] TO aerosurfaces_control["flap_defl"].
+			SET loglex["spdbk_defl"] TO aerosurfaces_control["spdbk_defl"].
+			
+			log_data(loglex,"0:/Shuttle_OPS3/LOGS/ops3_log").
+		}
+		
+		if (entryg_out["eg_end"] = TRUE) {
+			set quit_program to TRUE.
+		}
+		
+		WAIT constants["entry_loop_dt"].
 	}
+}
 
+if (NOT quit_program) {
+	//TAEM and A/L loop
+	
+	aerosurfaces_control["set_aoa_feedback"](50).
+
+	clear_ops3_disp().
+	make_taem_vsit_GUI().
+	
+	until (quit_program) {
+        clearvecdraws().
+		
+		guidance_timer:update().
+	
+		local rwystate is get_runway_rel_state(
+			-SHIP:ORBIT:BODY:POSITION,
+			SHIP:VELOCITY:SURFACE,
+			tgtrwy
+		).
+
+		if (is_guid_reset()) {
+			taemg_reset().
+		}
+
+		local taemg_in is LEXICON(
+											"dtg", guidance_timer:last_dt,
+											"wow", dap:wow,
+											"h", rwystate["h"],
+											"hdot", rwystate["hdot"],
+											"x", rwystate["x"], 
+											"y", rwystate["y"], 
+											"surfv", rwystate["surfv"],
+											"surfv_h", rwystate["surfv_h"],
+											"xdot", rwystate["xdot"], 
+											"ydot", rwystate["ydot"], 
+											"psd", rwystate["rwy_rel_crs"], 
+											"m", SHIP:MASS,
+											"mach",  ADDONS:FAR:MACH,
+											"qbar", SHIP:Q,
+											"phi",  dap:prog_roll,
+											"theta", dap:lvlh_pitch,
+											"gamma", dap:fpa,
+											"alpha", dap:prog_pitch,
+											"nz", dap:nz,
+											"ovhd", tgtrwy["overhead"],
+											"rwid", tgtrwy["name"],
+											"grtls", FALSE,
+											"debug", constants["full_debug"]
+									).
+
+		//call taem guidance here
+		local taemg_out is taemg_wrapper(
+										taemg_in                        
+		).
+		
+		set guid_id to taemg_out["guid_id"].
+		
+		IF (is_autoairbk()) {
+			SET aerosurfaces_control:spdbk_defl TO taemg_out["dsbc_at"].
+		}
+		
+		SET dap:pitch_lims to LIST(taemg_out["alpll"], taemg_out["alpul"]).
+		SET dap:roll_lims to LIST(-taemg_out["philim"], taemg_out["philim"]).
+		IF (dap_engaged) AND (NOT is_dap_css()) {
+			SET dap:tgt_roll tO taemg_out["phic_at"].
+			SET dap:tgt_yaw tO taemg_out["betac_at"].
+			
+			if (guid_id = 26) OR (guid_id = 24) {
+				SET dap:tgt_pitch tO taemg_out["alpcmd"].
+			} else if (guid_id = 25) {
+				SET dap:tgt_nz tO taemg_out["nztotal"].
+			} else {
+				SET dap:tgt_hdot tO taemg_out["hdrefc"].
+			}
+		}
+		
+		if (guid_id <= 21) and taemg_internal["freezetgt"] {
+			freeze_target_site().
+		}
+		
+		if (guid_id <= 21) and taemg_internal["freezeapch"] {
+			freeze_apch().
+		}
+
+        if (NOT GEAR) and (taemg_out["geardown"]) {
+            GEAR ON.
+        }
+        
+        if (NOT BRAKES) and (taemg_out["brakeson"]) {
+            BRAKES ON.
+        }
+
+        if (taemg_out["itran"]) {
+            dap:reset_steering().
+        }
+
+		//gui outputs
+		
+		if (guid_id = 26) OR (guid_id = 24) {
+			SET hud_datalex["pipper_deltas"] TO LIST(
+													taemg_out["phic_at"] - dap:prog_roll, 
+													taemg_out["alpcmd"] -  dap:prog_pitch
+
+			).
+		} else if (guid_id = 25) {
+			SET hud_datalex["pipper_deltas"] TO LIST(
+													taemg_out["phic_at"] - dap:prog_roll, 
+													taemg_out["nztotal"] -  dap:nz
+
+			).
+		} else {
+			SET hud_datalex["pipper_deltas"] TO LIST(
+													taemg_out["phic_at"] - dap:prog_roll, 
+													taemg_out["hdrefc"] -  rwystate["hdot"]
+
+			).
+		}
+		
+		if (taemg_out["itran"]) {
+            hud_decluttering(guid_id).
+		}
+
+		SET hud_datalex["phase"] TO guid_id.
+		
+		SET hud_datalex["altitude"] TO rwystate["h"].
+		SET hud_datalex["hdot"] TO rwystate["hdot"].
+		SET hud_datalex["distance"] TO taemg_out["rpred"] / 1000.
+		SET hud_datalex["cur_nz"] TO dap:nz.
+		SET hud_datalex["cur_pch"] TO dap:lvlh_pitch.
+		SET hud_datalex["cur_roll"] TO dap:lvlh_roll.
+		SET hud_datalex["flapval"] TO aerosurfaces_control["flap_defl"].
+		SET hud_datalex["spdbk_val"] TO aerosurfaces_control["spdbk_defl"].
+
+		if (guid_id >= 23) {
+			set hud_datalex["delaz"] to - rwystate["rwy_rel_crs"].
+		} else if (guid_id = 22) {
+            set hud_datalex["delaz"] to taemg_out["ysgn"] * taemg_out["psha"].
+        } else if (guid_id <= 21) {
+            set hud_datalex["delaz"] to taemg_out["dpsac"].
+        }
+        
+        update_hud_gui(hud_datalex).
+		
+		local gui_data is lexicon(
+								"rpred",taemg_out["rpred"],
+								"eow",taemg_out["eow"],
+								"herror", taemg_out["herror"],
+								"ottstin", taemg_out["ohalrt"],
+								"mep", taemg_out["mep"],
+								"tgthdot", taemg_out["hdref"],
+								"tgtnz", dap:tgt_nz,
+								"spdbkcmd", taemg_out["dsbc_at"],
+								"alpll", taemg_out["alpll"],
+								"alpul", taemg_out["alpul"],
+								"prog_pch", dap:prog_pitch,
+								"prog_roll", dap:prog_roll,
+								"prog_yaw", dap:prog_yaw
+		).
+		update_taem_vsit_disp(gui_data).
+		
+		if (constants["full_debug"]) {
+			dap:print_debug(2).
+		}
+		
+		if is_log() {
+			SET loglex["guid_id"] TO guid_id.
+			SET loglex["loop_dt"] TO guidance_timer:last_dt.
+			SET loglex["rwy_alt"] TO taemg_in["h"].
+			SET loglex["vel"] TO SHIP:VELOCITY:ORBIT.
+			SET loglex["surfv"] TO taemg_in["surfv"]. 
+			SET loglex["mach"] TO taemg_in["mach"]. 
+			SET loglex["hdot"] TO taemg_in["hdot"].
+			SET loglex["lat"] TO SHIP:GEOPOSITION:LAT.
+			SET loglex["long"] TO SHIP:GEOPOSITION:LNG.
+			SET loglex["range"] TO hud_datalex["distance"].
+			SET loglex["delaz"] TO hud_datalex["delaz"].
+			SET loglex["nz"] TO dap:aero:nz.
+			SET loglex["drag"] TO dap:aero:drag.
+			SET loglex["eow"] TO taemg_out["eow"]
+			SET loglex["prog_pch"] TO dap:prog_pitch.
+			SET loglex["prog_roll"] TO dap:prog_roll. 
+			SET loglex["prog_yaw"] TO dap:prog_yaw.
+			SET loglex["flap_defl"] TO aerosurfaces_control["flap_defl"].
+			SET loglex["spdbk_defl"] TO aerosurfaces_control["spdbk_defl"].
+			
+			log_data(loglex,"0:/Shuttle_OPS3/LOGS/ops3_log").
+		}
+		
+		if (taemg_out["al_end"] = TRUE) {
+			set quit_program to TRUE.
+		}
+        
+        WAIT constants["taem_loop_dt"].
+	}
 }
 
 
-guidance_timer:reset().
+control_loop:stop_execution().
 
-
-make_taem_vsit_GUI().
-
-
-
-
-
-
-
-
-aerosurfaces_control["set_aoa_feedback"](50).
+close_all_GUIs().
+clearscreen.
