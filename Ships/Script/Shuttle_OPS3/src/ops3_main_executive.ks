@@ -101,7 +101,9 @@ FUNCTION ops3_main_exec {
 		
 		make_entry_traj_GUI().
 		
-		UNTIL (quit_program) {
+		LOCAL eg_end_flag IS TRUE.
+		
+		UNTIL (quit_program OR eg_end_flag) {
 			clearvecdraws().
 			
 			guidance_timer:update().
@@ -163,9 +165,9 @@ FUNCTION ops3_main_exec {
 			SET hud_datalex["hdot"] TO entry_state["hdot"].
 			SET hud_datalex["distance"] TO entry_state["tgt_range"].
 			set hud_datalex["delaz"] to entry_state["delaz"].
-			SET hud_datalex["cur_nz"] TO dap:nz.
-			SET hud_datalex["cur_pch"] TO dap:lvlh_pitch.
-			SET hud_datalex["cur_roll"] TO dap:lvlh_roll.
+			SET hud_datalex["cur_nz"] TO dap:aero:nz.
+			SET hud_datalex["cur_pch"] TO dap:prog_pitch.
+			SET hud_datalex["cur_roll"] TO dap:prog_roll.
 			SET hud_datalex["flapval"] TO aerosurfaces_control["flap_defl"].
 			SET hud_datalex["spdbk_val"] TO aerosurfaces_control["spdbk_defl"].
 			
@@ -177,7 +179,6 @@ FUNCTION ops3_main_exec {
 			update_hud_gui(hud_datalex).
 			
 			local gui_data is lexicon(
-									"iter", step_c,
 									"range",entry_state["tgt_range"],
 									"ve",ve:MAG,
 									"xlfac",dap:aero:load,
@@ -186,8 +187,8 @@ FUNCTION ops3_main_exec {
 									"drag_ref",entryg_out["drag_ref"],
 									"phase",entryg_out["islect"],
 									"hdot_ref",entryg_out["hdot_ref"],
-									"pitch",pitch_prof,
-									"roll",roll_prof,
+									"pitch_cmd",entryg_out["alpcmd"],
+									"roll_cmd",entryg_out["rolcmd"],
 									"roll_ref",entryg_out["roll_ref"],
 									"pitch_mod",entryg_out["pitch_mod"],
 									"roll_rev",entryg_out["roll_rev"]
@@ -223,7 +224,7 @@ FUNCTION ops3_main_exec {
 			}
 			
 			if (entryg_out["eg_end"] = TRUE) {
-				set quit_program to TRUE.
+				set eg_end_flag to TRUE.
 			}
 			
 			WAIT parameters["entry_loop_dt"].
@@ -239,7 +240,9 @@ FUNCTION ops3_main_exec {
 
 		make_taem_vsit_GUI().
 		
-		until (quit_program) {
+		LOCAL al_end_flag Is FALSE.
+		
+		until (quit_program OR al_end_flag) {
 			clearvecdraws().
 			
 			guidance_timer:update().
@@ -423,7 +426,7 @@ FUNCTION ops3_main_exec {
 			}
 			
 			if (taemg_out["al_end"] = TRUE) {
-				set quit_program to TRUE.
+				set al_end_flag to TRUE.
 			}
 			
 			WAIT parameters["taem_loop_dt"].

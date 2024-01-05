@@ -22,9 +22,9 @@ FUNCTION ops3_deorbit_predict{
 
 	//calculate reference circular orbit apoapsis and optimal ei parameters
 	LOCAL ref_ap IS (cur_ap + cur_pe)/2.
-	Local ei_ref_data is deorbit_ei_calc(ref_ap, constants["interfalt"]/1000).
+	Local ei_ref_data is deorbit_ei_calc(ref_ap, parameters["interfalt"]/1000).
 
-	LOCAL ei_radius IS (constants["interfalt"] + SHIP:BODY:RADIUS).
+	LOCAL ei_radius IS (parameters["interfalt"] + SHIP:BODY:RADIUS).
 
 	UNTIL (deorbit_target_selected) {
 		print "Please select a deorbit target" AT (0,1).
@@ -69,7 +69,7 @@ FUNCTION ops3_deorbit_predict{
 			
 		} ELSE {
 		
-			IF SHIP:ORBIT:periapsis>=constants["interfalt"] {
+			IF SHIP:ORBIT:periapsis>=parameters["interfalt"] {
 				PRINT "Orbit does not have a manoeuvre node and does not re-enter the atmosphere".
 				RETURN.
 			}

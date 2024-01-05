@@ -77,7 +77,6 @@ FUNCTION make_global_deorbit_GUI {
 	SET select_tgt:ONCHANGE to { 
 		PARAMETER lex_key.	
 		SET tgtrwy TO ldgsiteslex[lex_key].		
-		SET reset_entry_flag TO TRUE.
 		SET deorbit_target_selected TO TRUE.
 	}.
 
@@ -662,7 +661,7 @@ function update_entry_traj_disp {
 	set trajleftdata5:text TO "PHASE     " + ROUND(gui_data["phase"],0).
 	
 	set trajrightdata1:text TO "HDT REF    " + ROUND(gui_data["hdot_ref"],0).
-	set trajrightdata2:text TO "ALPCMD    " + ROUND(gui_data["pitch"],0).
+	set trajrightdata2:text TO "ALPCMD    " + ROUND(gui_data["pitch_cmd"],0).
 	
 	if (gui_data["pitch_mod"]) {
 		set trajrightdata3:text TO "<color=#fff600> ALP MODULN </color>".
@@ -670,7 +669,7 @@ function update_entry_traj_disp {
 		set trajrightdata3:text TO "".
 	}
 	
-	set trajrightdata4:text TO "ROLCMD     " + ROUND(gui_data["roll"],0).
+	set trajrightdata4:text TO "ROLCMD     " + ROUND(gui_data["roll_cmd"],0).
 	set trajrightdata5:text TO "ROLREF     " + ROUND(gui_data["roll_ref"],0).
 	
 	if (gui_data["roll_rev"]) {

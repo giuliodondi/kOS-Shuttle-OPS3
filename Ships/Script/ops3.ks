@@ -6,7 +6,7 @@ RUNPATH("0:/Shuttle_OPS3/parameters").
 
 //hard-coded check to run the script only in atmosphere
 If (SHIP:ALTITUDE >= parameters["interfalt"]) {
-	PRINT "Not yet below Entry Interface (122km),  aborting." .
+	PRINT "Not yet below Entry Interface (" + round(parameters["interfalt"]/1000, 0) + "km),  aborting." .
 } ELSE {
 
 	RUNPATH("0:/Shuttle_OPS3/landing_sites").

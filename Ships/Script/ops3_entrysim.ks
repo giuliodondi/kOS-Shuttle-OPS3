@@ -408,8 +408,8 @@ FUNCTION ops3_reentry_simulate {
 								"drag_ref",entryg_out["drag_ref"],
 								"phase",entryg_out["islect"],
 								"hdot_ref",entryg_out["hdot_ref"],
-								"pitch",pitch_prof,
-								"roll",roll_prof,
+								"pitch_cmd",entryg_out["alpcmd"],
+								"roll_cmd",entryg_out["rolcmd"],
 								"roll_ref",entryg_out["roll_ref"],
 								"pitch_mod",entryg_out["pitch_mod"],
 								"roll_rev",entryg_out["roll_rev"]
