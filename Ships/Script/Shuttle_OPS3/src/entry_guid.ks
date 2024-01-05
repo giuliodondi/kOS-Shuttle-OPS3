@@ -176,7 +176,7 @@ global entryg_constants is lexicon (
 									"mm304alp0", 40,	//standard preentry aoa
 									"radeg", 57.29578,	//deg/rad radians to degrees
 									"rdmax", 12,	//max roll bias 
-									"rlmc0", 120,	//rlm max above verolc
+									"rlmc0", 90,	//rlm max above verolc
 									"rlmc1", 70,	//rlm max
 									"rlmc2", 70,	//coeff in first rlm seg 
 									"rlmc3", 0,		//deg/ft/s
@@ -224,8 +224,13 @@ global entryg_constants is lexicon (
 									"vesbs1", -0.0806,			//linear coef for speedbrake
 									"vesbi1", 806,			//constant coef for speedbrake
 									"vesbs2", 0.0195,			//linear coef for speedbrake
-									"vesbi2", 2.6			//constant coef for speedbrake
+									"vesbi2", 2.6,			//constant coef for speedbrake
+									
+									//other misc stuff added by me 
+									"drolcmdfil", 15,	//° roll cmd value band to apply filtering
+									"rolcmdfildt", 10,	//° roll cmd value filtering time const
 
+									"dummy", 0
 ).
 
 
@@ -289,7 +294,7 @@ global entryg_internal is lexicon(
 									"rk2rol", 0,   	//bank angle direction 
 									"rk2rlp", 0,   	//prev val 
 									"rlm", 0,		//roll limit
-									"rollc", list(0,0,0,0),	//1", roll angle command 2", unlimited roll command 3", roll ref //deg
+									"rollc", list(0,0,0,0),	//1: roll angle command,  2: unlimited roll command,  3: roll ref //deg
 									"rolref", 0,	//deg 	//roll ref
 									"rpt", 0,   	//desired range at vq 
 									"rrflag", FALSE,		//roll reversal flag
@@ -992,7 +997,7 @@ function egrolcmd {
 		local almnxd is ARCCOS(entryg_internal["lmn"]/entryg_internal["xlod"]).	// / entryg_constants["dtr"].
 		
 		//modification
-		//set entryg_internal["rollc"][1] to (abs(entryg_internal["rollc"][2]) + midval(entryg_internal["rdealf"], almnxd, -almnxd)) * entryg_internal["rk2rol"].
+		set entryg_internal["rollc"][1] to (abs(entryg_internal["rollc"][2]) + midval(entryg_internal["rdealf"], almnxd, -almnxd)) * entryg_internal["rk2rol"].
 		
 		//refactored pitch limits calculation
 		//apply pitch modulation
@@ -1021,11 +1026,8 @@ function egrolcmd {
 	LOCAL rollca IS ABS(entryg_internal["rollc"][1]).
 	LOCAL delrollc IS rollca - rollcpa.
 	
-	local thresh is 15.
-	local deltat is 10.
-	
-	IF (ABS(delrollc) < thresh) {
-		SET rollca TO rollcpa + delrollc * (entryg_input["dtegd"] / deltat).
+	IF (ABS(delrollc) < entryg_constants["drolcmdfil"]) {
+		SET rollca TO rollcpa + delrollc * (entryg_input["dtegd"] / entryg_constants["rolcmdfildt"]).
 	}
 	
 	set entryg_internal["rollc"][1] to midval(rollca * entryg_internal["rk2rol"], -entryg_internal["rlm"], entryg_internal["rlm"]).

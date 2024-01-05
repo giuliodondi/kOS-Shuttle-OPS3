@@ -3,7 +3,7 @@ GLOBAL g0 IS 9.80665.
 STEERINGMANAGER:RESETPIDS().
 STEERINGMANAGER:RESETTODEFAULT().
 
-SET STEERINGMANAGER:MAXSTOPPINGTIME TO 6.
+SET STEERINGMANAGER:MAXSTOPPINGTIME TO 5.5.
 SET STEERINGMANAGER:PITCHTS TO 8.0.
 SET STEERINGMANAGER:YAWTS TO 3.
 SET STEERINGMANAGER:ROLLTS TO 2.
@@ -138,7 +138,7 @@ FUNCTION dap_controller_factory {
 	this:add("nz_lims", LIST(-2.5, 2.5)).
 	this:add("delta_pch_lims", LIST(-3, 3)).
 	this:add("delta_lvlh_pch_lims", LIST(-8, 8)).
-	this:add("delta_roll_lims", LIST(-14, 14)).
+	this:add("delta_roll_lims", LIST(-8, 8)).
 	
 	//these are meant to be set by guidance
 	this:add("roll_lims", LIST(-60, 60)).
