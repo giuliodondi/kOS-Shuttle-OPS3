@@ -42,7 +42,7 @@ FUNCTION entryg_wrapper {
 							"lod", entryg_input["lod"], 		//current l/d 
 							"rdot", entryg_input["hdot"]*mt2ft,        //alt rate (ft/s) 
 							"roll", entryg_input["roll"],	   //cur bank angle 
-							"trange", entryg_input["tgt_range"]*km2nmi,     //target range (nmi)
+							"trange", entryg_input["tgt_range"]*km2nmi + entryg_constants["trangebias"],     //target range (nmi)
 							"ve", entryg_input["ve"]*mt2ft, 		   //earth rel velocity (ft/s)
 							"vi", entryg_input["vi"]*mt2ft,		   //inertial vel (ft/s)
 							"xlfac", entryg_input["xlfac"],      //load factor acceleration (ft/s2)
@@ -229,6 +229,7 @@ global entryg_constants is lexicon (
 									//other misc stuff added by me 
 									"drolcmdfil", 15,	//° roll cmd value band to apply filtering
 									"rolcmdfildt", 10,	//° roll cmd value filtering time const
+									"trangebias", 27,	//nm trange bias, positive value will force guidance closer to the target
 
 									"dummy", 0
 ).
