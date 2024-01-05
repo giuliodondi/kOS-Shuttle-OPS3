@@ -88,7 +88,10 @@ FUNCTION ops3_main_exec {
 				} else {
 					dap:measure_cur_state().
 				}
-				aerosurfaces_control:update(is_autoflap(), is_autoairbk()).
+				
+				if (guid_id > 11) {
+					aerosurfaces_control:update(is_autoflap(), is_autoairbk()).
+				}
 			}
 	).
 
