@@ -269,7 +269,7 @@ global taemg_constants is lexicon (
 									"philm0", 50,			//deg sturn roll cmd lim
 									"philm1", 50,			//deg acq roll cmd lim 
 									"philm2", 60,			//deg heading alignment roll cmd lim 
-									"philm3", 30, 			//deg prefinal roll cmd lim 
+									"philm3", 35, 			//deg prefinal roll cmd lim 
 									"philmsup", 30, 		//deg supersonic roll cmd lim 		//OTT
 									"phim", 0.95, 				//mach at which supersonic roll lim is removed
 									"phip2c", 30,			//deg constant for phase 3 roll cmd 	//deprecated
@@ -356,7 +356,7 @@ global taemg_constants is lexicon (
 									"r1", 0, 			//ft/deg linear coeff of hac spiral 
 									"r2", 0.093, 			//ft/deg quadratic coeff of hac spiral 
 									"r2max", 115000,			//ft max range on hac to be subsonic with nominal qbar 
-									"philm4", 35, 				//deg bank lim for large bank command 
+									//"philm4", 35, 				//deg bank lim for large bank command - deprecated
 									"philmc", 100, 				//deg bank lim for large bank command 
 									"qbmxs1", -400,				//psf slope of qbmxnz with mach < qbm1 
 									"hmin3", 7000,				//min altitude for prefinal
@@ -365,7 +365,7 @@ global taemg_constants is lexicon (
 									
 									//A/L guidance stuff 
 									"tgsh", TAN(3.1),			//tangent of shallow gs
-									"xaim", 2000,			//ft aim point distance from threshold		
+									"xaim", 2300,			//ft aim point distance from threshold		
 									"hflare", 2000,			//ft transition to open loop flare
 									"hcloop", 1670,			//ft transition to closed loop flare
 									"rflare", 17000,		//ft flare circle radius
@@ -378,7 +378,7 @@ global taemg_constants is lexicon (
 									"hfnlfl", 200,			//ft alt at which to force transition to final flare
 									"h0_hdfnlfl", 80,			//ft reference altitude for hdot exp decay during final flare
 									"max_hdfnlfl", 0.1,			//ft maximum hdot during finalflare
-									"philm5", 15, 				//deg bank lim for flare and beyond
+									"philm4", 15, 				//deg bank lim for flare and beyond
 									"phi_beta_gain", 3, 			//gain for yaw during rollout
 									"surfv_h_brakes", 140,		//ft/s trigger for braking outside executive
 									"surfv_h_dapoff", 80,		//ft/s trigger for dap off outside executive
@@ -1095,6 +1095,7 @@ FUNCTION tgtran {
 					set taemg_internal["tg_end"] to TRUE.
 					set taemg_internal["p_mode"] to 1.
 					set taemg_internal["itran"] to TRUE.
+					set taemg_internal["philim"] to taemg_constants["philm4"].
 					SET taemg_internal["al_capt_count"] TO CEILING(taemg_constants["al_capt_interv_s"] / taemg_input["dtg"]).
 				}
 			return.
@@ -1377,12 +1378,6 @@ FUNCTION tgphic {
 		//prefinal bank proportional to lateral (y coord) deviation and rate relative to the centreline
 		local yerrc is -taemg_constants["gy"] * midval(taemg_input["y"], -taemg_constants["yerrlm"], taemg_constants["yerrlm"]).
 		set taemg_internal["phic"] to yerrc - taemg_constants["gydot"] * taemg_input["ydot"].
-
-		if (taemg_internal["p_mode"] >= 4) {
-			set philimit to taemg_constants["philm5"].
-		} else if (abs(taemg_internal["phic"]) > taemg_constants["philm4"]) {
-			set philimit to taemg_constants["philm4"].
-		}
 			
 		//if a/l and final flare or rollout, turn the roll command into a yaw command	
 		if (taemg_internal["p_mode"] >= 5)	{
