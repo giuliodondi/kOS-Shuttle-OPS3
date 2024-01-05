@@ -968,6 +968,8 @@ function egrolcmd {
 	 //1", cos(bank cmd), 2", cos(unlimited bank), 3", cos(ref bank)
 	local arg is list(0, entryg_internal["lodv"]/entryg_internal["xlod"], entryg_internal["lodx"]/entryg_internal["xlod"], entryg_internal["aldref"]/entryg_internal["xlod"] ).
 	
+	local rollcpa IS ABS(entryg_internal["rollc"][1]).
+	
 	FROM {local i is 1.} UNTIL i > 3 STEP {set i to i + 1.} DO { 
 		//I think this limits the bank angle to +-90?
 		if (abs(arg[i]) >= 1) {
@@ -990,7 +992,7 @@ function egrolcmd {
 		local almnxd is ARCCOS(entryg_internal["lmn"]/entryg_internal["xlod"]).	// / entryg_constants["dtr"].
 		
 		//modification
-		set entryg_internal["rollc"][1] to (abs(entryg_internal["rollc"][2]) + midval(entryg_internal["rdealf"], almnxd, -almnxd)) * entryg_internal["rk2rol"].
+		//set entryg_internal["rollc"][1] to (abs(entryg_internal["rollc"][2]) + midval(entryg_internal["rdealf"], almnxd, -almnxd)) * entryg_internal["rk2rol"].
 		
 		//refactored pitch limits calculation
 		//apply pitch modulation
@@ -1015,7 +1017,18 @@ function egrolcmd {
 		}
 	}
 	
-	set entryg_internal["rollc"][1] to midval(entryg_internal["rollc"][1], -entryg_internal["rlm"], entryg_internal["rlm"]).
+	//my addition: fiter changes in roll cmd if they are below a threshold enough
+	LOCAL rollca IS ABS(entryg_internal["rollc"][1]).
+	LOCAL delrollc IS rollca - rollcpa.
+	
+	local thresh is 15.
+	local deltat is 10.
+	
+	IF (ABS(delrollc) < thresh) {
+		SET rollca TO rollcpa + delrollc * (entryg_input["dtegd"] / deltat).
+	}
+	
+	set entryg_internal["rollc"][1] to midval(rollca * entryg_internal["rk2rol"], -entryg_internal["rlm"], entryg_internal["rlm"]).
 	
 	set entryg_internal["rolcmd"] to entryg_internal["rollc"][1].
 }

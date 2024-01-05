@@ -101,7 +101,7 @@ FUNCTION ops3_main_exec {
 		
 		make_entry_traj_GUI().
 		
-		LOCAL eg_end_flag IS TRUE.
+		LOCAL eg_end_flag IS FALSE.
 		
 		UNTIL (quit_program OR eg_end_flag) {
 			clearvecdraws().
@@ -405,7 +405,7 @@ FUNCTION ops3_main_exec {
 				SET loglex["guid_id"] TO guid_id.
 				SET loglex["loop_dt"] TO guidance_timer:last_dt.
 				SET loglex["rwy_alt"] TO taemg_in["h"].
-				SET loglex["vel"] TO SHIP:VELOCITY:ORBIT.
+				SET loglex["vel"] TO SHIP:VELOCITY:ORBIT:MAG.
 				SET loglex["surfv"] TO taemg_in["surfv"]. 
 				SET loglex["mach"] TO taemg_in["mach"]. 
 				SET loglex["hdot"] TO taemg_in["hdot"].
