@@ -185,7 +185,7 @@ FUNCTION make_main_ops3_gui {
 
 	//create the GUI.
 	GLOBAL main_ops3_gui is gui(main_ops3_gui_width,main_ops3_gui_height).
-	SET main_ops3_gui:X TO 170.
+	SET main_ops3_gui:X TO 180.
 	SET main_ops3_gui:Y TO 670.
 	SET main_ops3_gui:STYLe:WIDTH TO main_ops3_gui_width.
 	SET main_ops3_gui:STYLe:HEIGHT TO main_ops3_gui_height.
