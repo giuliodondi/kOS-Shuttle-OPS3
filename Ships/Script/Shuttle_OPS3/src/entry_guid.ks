@@ -168,8 +168,8 @@ global entryg_constants is lexicon (
 									"dtegd", 1.92,	//s entry guidance computation interval
 									"dt2min", 0.008,	//ft/s3 min value of t2dot
 									"dtr", 0.0174532925,	//rad/deg 	degrees to radians
-									"eef4", 2.0e6,		//ft2/s2	final ref energy level in transition
-									"etran", 6.002262e7,	//ft2/s2	energy at start of transition
+									"eef4", 2.5e6,		//ft2/s2	final ref energy level in transition
+									"etran", 6.502262e7,	//ft2/s2	energy at start of transition
 									"e1", 0.01,		//ft/s2 	min of drefp and drefp-df in transition
 									"gs", 32.174,	//ft/s2 	earth gravity
 									"gs1", 0.02,	//1/s	roll cmd smoohing fac 
@@ -238,7 +238,7 @@ global entryg_constants is lexicon (
 									//other misc stuff added by me 
 									"drolcmdfil", 15,	//° roll cmd value band to apply filtering
 									"rolcmdfildt", 10,	//° roll cmd value filtering time const
-									"trangebias", 27,	//nm trange bias, positive value will force guidance closer to the target
+									"trangebias", 30,	//nm trange bias, positive value will force guidance closer to the target
 
 									"dummy", 0
 ).
