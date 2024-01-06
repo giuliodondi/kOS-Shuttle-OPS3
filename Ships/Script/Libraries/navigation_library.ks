@@ -418,6 +418,18 @@ function orbit_alt_eta {
 	
 	RETURN ARCCOS(limitarg(eta_)).
 }
+
+//calculates fpa at altitude
+//altitude must be measured from the body centre
+function orbit_alt_fpa {
+	parameter h.
+	parameter sma.
+	parameter ecc.
+	
+	LOCAL eta_ IS orbit_alt_eta(h, sma, ecc).
+
+	RETURN orbit_eta_fpa(eta_, sma, ecc).
+}
 	
 //calculates fpa at given eta
 function orbit_eta_fpa {
