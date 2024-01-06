@@ -204,8 +204,8 @@ global taemg_constants is lexicon (
 									"edelc1", 1,			//emax calc constant 		//deprecated
 									"edelc2", 1,			//emax calc constant  		//deprecated
 									"edelnz", list(0, 4000, 4000),			// -/ft/ft eow delta from nominal energy line slope for s-turn  	//OTT paper			//deprecated
-									"edelnzu", 4000,			//eow delta from nominal energy line for emax
-									"edelnzl", 4000,			//eow delta from nominal energy line for emin
+									"edelnzu", 2000,			//eow delta from nominal energy line for emax
+									"edelnzl", 2000,			//eow delta from nominal energy line for emin
 									
 									//"edrs", list(0, 0.69946182, 0.69946182),		// -/ ft^2/ft / ft^2/ft slope for s-turn energy line   	//OTT paper
 									//"emep_c1", list(0, list(0,-3263, 12088), list(0, -3263, 12088)),		//all in ft mep energy line y intercept  	//OTT paper
@@ -234,10 +234,10 @@ global taemg_constants is lexicon (
 									"gdhll", 0.1, 			//gdh lower limit 	//OTT
 									"gdhs", 0.9e-5,		//1/ft	slope for computing gdh 		//ott
 									"gdhul", 0.5,			//gdh upper lim 
-									"gehdll", 0.02, 		//g/fps  gain used in computing eownzll
-									"gehdul", 0.02, 		//g/fps  gain used in computing eownzul
-									"gell", 0.03, 		//1/s  gain used in computing eownzll
-									"geul", 0.03, 		//1/s  gain used in computing eownzul
+									"gehdll", 0.03, 		//g/fps  gain used in computing eownzll
+									"gehdul", 0.03, 		//g/fps  gain used in computing eownzul
+									"gell", 0.02, 		//1/s  gain used in computing eownzll
+									"geul", 0.02, 		//1/s  gain used in computing eownzul
 									"geownzc", 0.0005, 		//1/s  gain used to correct eow error
 									"gphi", 2.5, 		//heading err gain for phic 
 									"gr", 0.005,			//deg/ft gain on rcir in computing ha roll angle command 
@@ -328,6 +328,7 @@ global taemg_constants is lexicon (
 									"pewrr", 0.52,			//partial of en with respect to range at r2max 
 									"pqbwrr", 0.006,			//psf / ft partial of qbar with respect to range with constraints of e=en and mach = phim 
 									"pshars", 270,				//deg  psha reset value 
+									"psha3", 30, 			//deg my addition: min psha value to transition to prefinal
 									"psrf", 90,				//deg max psha for adjusting rf 
 									"psohal", 200, 			//deg min psha to issue ohalrt 
 									"psohqb", 0, 			//deg min psha for which qbmxnz is lowered 
@@ -367,10 +368,10 @@ global taemg_constants is lexicon (
 									//A/L guidance stuff 
 									"tgsh", TAN(3.1),			//tangent of shallow gs
 									"xaim", 2000,			//ft aim point distance from threshold		
-									"hflare", 2300,			//ft transition to open loop flare
-									"hcloop", 1670,			//ft transition to closed loop flare
-									"rflare", 16000,		//ft flare circle radius
-									"hdecay", 15,			//ft exponential decay gain
+									"hflare", 2000,			//ft transition to open loop flare
+									"hcloop", 1770,			//ft transition to closed loop flare
+									"rflare", 18000,		//ft flare circle radius
+									"hdecay", 2,			//ft exponential decay gain
 									"sigma_exp", 500,		//ft exp decay characteristic distance
 									"al_capt_herrlim", 50, 	//ft altitude error for steep gs capture
 									"al_capt_gammalim", 1, 	//deg fpa error for steep gs capture
@@ -378,7 +379,7 @@ global taemg_constants is lexicon (
 									"al_fnlfl_herrexpmin", 1, //ft alt delta on exponential decay for final flare toggle
 									"hfnlfl", 200,			//ft alt at which to force transition to final flare
 									"h0_hdfnlfl", 80,			//ft reference altitude for hdot exp decay during final flare
-									"max_hdfnlfl", 0.12,			//ft maximum hdot during finalflare
+									"max_hdfnlfl", 0.18,			//ft maximum hdot during finalflare
 									"philm4", 15, 				//deg bank lim for flare and beyond
 									"phi_beta_gain", 3, 			//gain for yaw during rollout
 									"surfv_h_brakes", 140,		//ft/s trigger for braking outside executive
@@ -1102,8 +1103,11 @@ FUNCTION tgtran {
 			return.
 		}
 		
-		//transition to pre-final based on distance or altitude if on a low energy profile
-		if (taemg_internal["rpred"] < taemg_internal["rpred3"]) or (taemg_input["h"] < taemg_constants["hmin3"]) {
+		//transition to pre-final based on distance, turn angle or altitude if on a low energy profile
+		if (
+			(taemg_internal["rpred"] < taemg_internal["rpred3"])
+			and (ABS(taemg_internal["psha"]) < taemg_constants["psha3"])
+		) or (taemg_input["h"] < taemg_constants["hmin3"]) {
 			set taemg_internal["iphase"] to 3.
 			set taemg_internal["itran"] to TRUE.
 			set taemg_internal["phic"] to taemg_internal["phic_at"].
@@ -1202,7 +1206,7 @@ FUNCTION tgnzc {
 	local hderrcn is taemg_internal["hderr"].
 
 	//do not correct for altitude error after flare
-	if (taemg_internal["p_mode"] <= 4) {
+	if (taemg_internal["p_mode"] < 4) {
 		set hderrcn to hderrcn + midval(taemg_internal["gdh"] * taemg_constants["hdreqg"] * taemg_internal["herror"], -taemg_constants["hdherrcmax"], taemg_constants["hdherrcmax"]) .
 	}
 
