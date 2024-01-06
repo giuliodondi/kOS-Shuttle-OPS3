@@ -1000,9 +1000,9 @@ function taem_vsit_disp_x_convert {
 	local out is 0.
 	
 	if (taem_vsit_disp_counter=1) {
-		set out to (rpred / 55000 -  0.88235294117).
+		set out to (rpred / 58000 -  0.84235294117).
 	} else if (taem_vsit_disp_counter=2) {
-		set out to (rpred / 49720 + 0.02).
+		set out to (rpred / 49720).
 	}	
 	
 	return out * 380.
@@ -1015,9 +1015,9 @@ function taem_vsit_disp_y_convert {
 	local out is 0.
 	
 	if (taem_vsit_disp_counter=1) {
-		set out to (eow / 55000  - 0.42857142857).
+		set out to (eow / 45000  - 0.44857142857).
 	} else if (taem_vsit_disp_counter=2) {
-		set out to (eow / 33000).
+		set out to (eow / 36000 + 0.03).
 	}	
 	
 	return 50 + 300 * out.
