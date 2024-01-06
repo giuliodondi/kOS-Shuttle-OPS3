@@ -508,3 +508,11 @@ FUNCTION aerosurfaces_control_factory {
 	
 	RETURN this.
 }
+
+FUNCTION shutdown_engines {
+	//shutdown engines, needed for airbrake control 
+	LISt ENGINES IN englist.
+	FOR e IN englist {
+			e:shutdown.
+	}
+}
