@@ -238,7 +238,7 @@ global entryg_constants is lexicon (
 									//other misc stuff added by me 
 									"drolcmdfil", 15,	//° roll cmd value band to apply filtering
 									"rolcmdfildt", 10,	//° roll cmd value filtering time const
-									"trangebias", 30,	//nm trange bias, positive value will force guidance closer to the target
+									"trangebias", 20,	//nm trange bias, positive value will force guidance closer to the target
 
 									"dummy", 0
 ).
