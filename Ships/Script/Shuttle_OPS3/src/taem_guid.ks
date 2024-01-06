@@ -270,7 +270,8 @@ global taemg_constants is lexicon (
 									"philm1", 50,			//deg acq roll cmd lim 
 									"philm2", 60,			//deg heading alignment roll cmd lim 
 									"philm3", 35, 			//deg prefinal roll cmd lim 
-									"philmsup", 30, 		//deg supersonic roll cmd lim 		//OTT
+									//"philmsup", 30, 		//deg supersonic roll cmd lim 		//OTT
+									"philmsup", 35, 		//deg supersonic roll cmd lim 		//OTT
 									"phim", 0.95, 				//mach at which supersonic roll lim is removed
 									"phip2c", 30,			//deg constant for phase 3 roll cmd 	//deprecated
 									"p2trnc1", 1.1, 		//phase 2 transition logic constant 
@@ -323,7 +324,7 @@ global taemg_constants is lexicon (
 									"eqlowu", 85000,			//ft upper eow of region for OVHD that qhat qbmxnz is lowered
 									//"eshfmx", 20000,			//ft max shift of en target at hac  	//OTT paper
 									"eshfmx", 10000,			//ft max shift of en target at hac 
-									"phils", -300,			//deg constant used to calculated philimit
+									"phils", -30,			//deg constant used to calculated philimit
 									"pewrr", 0.52,			//partial of en with respect to range at r2max 
 									"pqbwrr", 0.006,			//psf / ft partial of qbar with respect to range with constraints of e=en and mach = phim 
 									"pshars", 270,				//deg  psha reset value 
@@ -366,10 +367,10 @@ global taemg_constants is lexicon (
 									//A/L guidance stuff 
 									"tgsh", TAN(3.1),			//tangent of shallow gs
 									"xaim", 2000,			//ft aim point distance from threshold		
-									"hflare", 2000,			//ft transition to open loop flare
+									"hflare", 2300,			//ft transition to open loop flare
 									"hcloop", 1670,			//ft transition to closed loop flare
-									"rflare", 17000,		//ft flare circle radius
-									"hdecay", 2,			//ft exponential decay gain
+									"rflare", 16000,		//ft flare circle radius
+									"hdecay", 15,			//ft exponential decay gain
 									"sigma_exp", 500,		//ft exp decay characteristic distance
 									"al_capt_herrlim", 50, 	//ft altitude error for steep gs capture
 									"al_capt_gammalim", 1, 	//deg fpa error for steep gs capture
@@ -1201,7 +1202,7 @@ FUNCTION tgnzc {
 	local hderrcn is taemg_internal["hderr"].
 
 	//do not correct for altitude error after flare
-	if (taemg_internal["p_mode"] < 4) {
+	if (taemg_internal["p_mode"] <= 4) {
 		set hderrcn to hderrcn + midval(taemg_internal["gdh"] * taemg_constants["hdreqg"] * taemg_internal["herror"], -taemg_constants["hdherrcmax"], taemg_constants["hdherrcmax"]) .
 	}
 
@@ -1338,10 +1339,10 @@ FUNCTION tgphic {
 	PARAMETER taemg_input.	
 
 	// roll cmd limit depending on mach (limited above phim) and phase (through philim)
-	local philimit is midval(taemg_constants["philmsup"] + taemg_constants["phils"] * (taemg_input["mach"] - taemg_constants["phim"]), taemg_constants["philmsup"], taemg_internal["philim"]).
+	local philimit is midval(taemg_internal["philim"] + taemg_constants["phils"] * (taemg_input["mach"] - taemg_constants["phim"]), taemg_constants["philmsup"], taemg_internal["philim"]).
 	
 	//def moved here from tgtran
-	//previous command
+	//previous command\
 	LOCAL phi0 IS taemg_internal["phic"].
 	
 	if (taemg_internal["iphase"] = 0) {
