@@ -46,6 +46,7 @@ FUNCTION entryg_wrapper {
 							"ve", entryg_input["ve"]*mt2ft, 		   //earth rel velocity (ft/s)
 							"vi", entryg_input["vi"]*mt2ft,		   //inertial vel (ft/s)
 							"xlfac", entryg_input["xlfac"],      //load factor acceleration (ft/s2)
+							"cd", entryg_input["cd"],      //drag coef from FAR
 							"mm304ph", entryg_constants["mm304phi0"],    	//preentry bank 
 							"mm304al", entryg_constants["mm304alp0"],    	//preentry aoa ,
 							"ital", entryg_input["ital"]				//is tal abort flag
@@ -115,12 +116,23 @@ global entryg_constants is lexicon (
 									"calp0", list(5, 3.3, -74.7625, 30, 350 , -11.25, -511.25, 40),	//deg alpcmd constant term in ve 	//40-30 profile
 									"calp1", list(0, 3.3e-3, 0.0240833, 0, -0.04, 2.5e-3, 0.0525, 0),	//deg-s/ft 	alpcmd linear term in ve 	//40-30 profile
 									"calp2", list(0, 0, -1.38333e-6, 0, 1.25e-6, 0, -1.25e-6, 0),	//deg-s2/ft2 	alpcmd quadratic term in ve 	//40-30 profile
-									"cddot1", 1500,	//ft/s 	cd velocity coef 
-									"cddot2", 2000,	//ft/s 	cd velocity coef 
-									"cddot3", 0.15, 	// 	cd velocity coef 
-									"cddot4", 0.0783,	//cd alpha coef 
-									"cddot5", -8.165e-3,	// 1/deg	cd alpha coef 
-									"cddot6", 6.833e-4,		// 1/deg2	cd alpha coef 
+									
+									//original cd coefficients
+									//"cddot1", 1500,	//ft/s 	cd velocity coef 
+									//"cddot2", 2000,	//ft/s 	cd velocity coef 
+									//"cddot3", 0.15, 	// 	cd velocity coef 
+									//"cddot4", 0.0783,	//cd alpha coef 
+									//"cddot5", -8.165e-3,	// 1/deg	cd alpha coef 
+									//"cddot6", 6.833e-4,		// 1/deg2	cd alpha coef 
+									
+									//my own fitted coefficients from FAR
+									"cddot1", 1918.42,	//ft/s 	cd velocity coef 
+									"cddot2", 2195.26,	//ft/s 	cd velocity coef 
+									"cddot3", 0.24511, 	// 	cd velocity coef 
+									"cddot4", 0.08497,	//cd alpha coef 
+									"cddot5", -5.94487e-3,	// 1/deg	cd alpha coef 
+									"cddot6", 6.21138e-4,		// 1/deg2	cd alpha coef 
+									
 									"cddot7", 7.5e-5,	//s/ft cddot coef 
 									"cddot8", 13.666e-4,	//1/deg2	cddot coef
 									"cddot9", -8.165e-3,	//1/s cddot coef
@@ -156,7 +168,7 @@ global entryg_constants is lexicon (
 									"dtegd", 1.92,	//s entry guidance computation interval
 									"dt2min", 0.008,	//ft/s3 min value of t2dot
 									"dtr", 0.0174532925,	//rad/deg 	degrees to radians
-									"eef4", 2.0e-6,		//ft2/s2	final ref energy level in transition
+									"eef4", 2.0e6,		//ft2/s2	final ref energy level in transition
 									"etran", 6.002262e7,	//ft2/s2	energy at start of transition
 									"e1", 0.01,		//ft/s2 	min of drefp and drefp-df in transition
 									"gs", 32.174,	//ft/s2 	earth gravity
@@ -219,12 +231,9 @@ global entryg_constants is lexicon (
 									"dsblim", 98.6,	//deg dsbc max value 
 									"del1sb", 3.125,		//speedbrake open rate
 									"egsbl0", 0,			//upper speedbrake limit
-									"egsbl1", 80.6,			//upper speedbrake limit
-									"egsbl2", 65,			//lower speedbrake limit
-									"vesbs1", -0.0806,			//linear coef for speedbrake
-									"vesbi1", 806,			//constant coef for speedbrake
-									"vesbs2", 0.0195,			//linear coef for speedbrake
-									"vesbi2", 2.6,			//constant coef for speedbrake
+									"egsbl1", 65,			//upper speedbrake limit
+									"vesbs1", -0.217,			//linear coef for speedbrake
+									"vesbi1", 759.5,			//constant coef for speedbrake
 									
 									//other misc stuff added by me 
 									"drolcmdfil", 15,	//° roll cmd value band to apply filtering
@@ -248,6 +257,7 @@ global entryg_internal is lexicon(
 									"alpdot", 0,   	//aoa dot 
 									"a", list(0,0,0),   	//temp variable in computign range 
 									"cag", 0,   	//pseudoenergy / mass used in transition 
+									"cdcal", 0, 		//calculated cd 
 									"cq1", list(0,0,0),   	//degree 0 for temp control quadratic 
 									"cq2", list(0,0,0),   	//degree 1 for temp control quadratic 
 									"cq3", list(0,0,0),   	//degree 2 for temp control quadratic 
@@ -837,10 +847,19 @@ function eglodvcmd {
 	PARAMETER entryg_input.
 	
 	//this is a numerical equation for Cd(alpha,mach) is it not?
+	//comaprison bw the level-c and the entry paper 
+	//cddot1: k5 , cddot2: k6, cddot4 : k1, cddot5 : k2, cddot6:k3, cddot3 : k4
 	local a44 is constant:e^(-(entryg_input["ve"] - entryg_constants["cddot1"]) / entryg_constants["cddot2"]).
 	local cdcal is entryg_constants["cddot4"] + entryg_internal["alpcmd"]*(entryg_constants["cddot5"] + entryg_constants["cddot6"]* entryg_internal["alpcmd"]) + entryg_constants["cddot3"] * a44.
 	local cddotc is entryg_constants["cddot7"]*(entryg_input["drag"] + entryg_constants["gs"]*entryg_input["rdot"] / entryg_input["ve"])*a44 + entryg_internal["alpdot"]*(entryg_constants["cddot8"]*entryg_internal["alpcmd"] + entryg_constants["cddot9"]).
-	local c4 is entryg_internal["hs"]*cddotc/cdcal. 
+	
+	//my modification : use input cd from FAR if available
+	if (entryg_input["cd"] > 0) {
+		set entryg_internal["cdcal"] to entryg_input["cd"].
+	} else {
+		set entryg_internal["cdcal"] to cdcal.
+	}
+	local c4 is entryg_internal["hs"]*cddotc/entryg_internal["cdcal"]. 
 	
 	//limit drag values based on max allowable drag alfm
 	local d1 is min(entryg_internal["drefp"], entryg_constants["alfm"]).
@@ -860,7 +879,7 @@ function eglodvcmd {
 			}
 			
 			//delta alpha based on max drag allowable
-			set entryg_internal["delalp"] to midval(cdcal*(d1/d2 - 1)/c20, entryg_constants["dlaplm"], -entryg_constants["dlaplm"]).
+			set entryg_internal["delalp"] to midval(entryg_internal["cdcal"]*(d1/d2 - 1)/c20, entryg_constants["dlaplm"], -entryg_constants["dlaplm"]).
 			
 		}
 	}
@@ -1042,8 +1061,5 @@ function egrolcmd {
 function egsbcmd {
 	PARAMETER entryg_input.
 	
-	local dsbc_at1 is midval(entryg_constants["vesbs1"] * entryg_input["ve"] + entryg_constants["vesbi1"], entryg_constants["egsbl0"], entryg_constants["egsbl1"]).
-	local dsbc_at2 is midval(entryg_constants["vesbs2"] * entryg_input["ve"] + entryg_constants["vesbi2"], entryg_constants["egsbl1"], entryg_constants["egsbl2"]).
-	
-	set entryg_internal["spdbcmd"] to min(dsbc_at1, dsbc_at2).
+	set entryg_internal["spdbcmd"] to midval(entryg_constants["vesbs1"] * entryg_input["ve"] + entryg_constants["vesbi1"], entryg_constants["egsbl0"], entryg_constants["egsbl1"]).
 }
