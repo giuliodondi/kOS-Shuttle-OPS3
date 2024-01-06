@@ -215,14 +215,14 @@ global taemg_constants is lexicon (
 									//"es1", list(0, 4523, 4523),		//ft y-intercept of s-turn energy line   	//OTT paper
 									//"eow_spt", list(0, 76068, 76068), 	//ft range at which to change slope and y-intercept on the mep and nom energy line  	//OTT paper
 									
-									//my modification: single set of energy profiles, 3-point piecewise lines
-									"emep_c1", list(-15256.6, -31586, 10018),		//all in ft mep energy line y intercept 
-									"emep_c2", list(0.69517, 0.7871, 0.4404),		//all in ft^2/ft mep energy line slope
-									"en_c1", list(-6052, -52852, 15500),		//all ft^2/ft nom energy line y-intercept 
-									"en_c2", list(0.75, 1.01, 0.4404),		//all ft^2/ft nom energy line slope
-									"es_c1", list(9296.6, -74192.8, 15500),		//all ft^2/ft s-turn energy line y-intercept 		//my addition
-									"es_c2", list(0.8615, 1.32533, 0.57789),		//all ft^2/ft s-turn energy line slope			//my addition
-									"eow_spt", list(180000, 120000, -100000), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
+									//my modification: single set of energy profiles, n-point piecewise lines
+									"emep_c1", list(958, 10018),		//all in ft mep energy line y intercept 
+									"emep_c2", list(0.5155, 0.4404),		//all in ft^2/ft mep energy line slope
+									"en_c1", list(-3712, 15500),		//all ft^2/ft nom energy line y-intercept 
+									"en_c2", list(0.6005, 0.4404),		//all ft^2/ft nom energy line slope
+									"es_c1", list(911.6, 15500),		//all ft^2/ft s-turn energy line y-intercept 		//my addition
+									"es_c2", list(0.69946, 0.57789),		//all ft^2/ft s-turn energy line slope			//my addition
+									"eow_spt", list(120000, -100000), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
 									
 
 									"g", 32.174,					//ft/s^2 earth gravity 
@@ -365,7 +365,7 @@ global taemg_constants is lexicon (
 									
 									//A/L guidance stuff 
 									"tgsh", TAN(3.1),			//tangent of shallow gs
-									"xaim", 2300,			//ft aim point distance from threshold		
+									"xaim", 2000,			//ft aim point distance from threshold		
 									"hflare", 2000,			//ft transition to open loop flare
 									"hcloop", 1670,			//ft transition to closed loop flare
 									"rflare", 17000,		//ft flare circle radius
