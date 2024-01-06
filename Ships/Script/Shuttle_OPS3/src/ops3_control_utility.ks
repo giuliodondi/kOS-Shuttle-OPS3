@@ -127,11 +127,11 @@ FUNCTION dap_controller_factory {
 	}).
 
 	this:add("set_landing_hdot_gains", {
-		local kc is 0.0038.
+		local kc is 0.0036.
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * 3.9.
+		set this:hdot_nz_pid:Kd to kc * 4.2.
 	}).
 	
 	//should be consistent with taem nz limits

@@ -236,8 +236,8 @@ global taemg_constants is lexicon (
 									"gdhul", 0.5,			//gdh upper lim 
 									"gehdll", 0.02, 		//g/fps  gain used in computing eownzll
 									"gehdul", 0.02, 		//g/fps  gain used in computing eownzul
-									"gell", 0.02, 		//1/s  gain used in computing eownzll
-									"geul", 0.02, 		//1/s  gain used in computing eownzul
+									"gell", 0.03, 		//1/s  gain used in computing eownzll
+									"geul", 0.03, 		//1/s  gain used in computing eownzul
 									"geownzc", 0.0005, 		//1/s  gain used to correct eow error
 									"gphi", 2.5, 		//heading err gain for phic 
 									"gr", 0.005,			//deg/ft gain on rcir in computing ha roll angle command 
@@ -331,7 +331,7 @@ global taemg_constants is lexicon (
 									"psohal", 200, 			//deg min psha to issue ohalrt 
 									"psohqb", 0, 			//deg min psha for which qbmxnz is lowered 
 									//"psstrn", 200,			//deg max psha for s-turn //OTT
-									"psstrn", 300,			//deg max psha for s-turn 
+									"psstrn", 330,			//deg max psha for s-turn 
 									"qbref2", LISt(0, 185, 185),		//psf qbref at r2max 
 									"qbmsl1", -0.0288355,			//psf/slug slope of mxqbwt with mach 
 									"qbmsl2", -0.00570829,			//psf/slug slope of mxqbwt with mach 
@@ -377,7 +377,7 @@ global taemg_constants is lexicon (
 									"al_fnlfl_herrexpmin", 1, //ft alt delta on exponential decay for final flare toggle
 									"hfnlfl", 200,			//ft alt at which to force transition to final flare
 									"h0_hdfnlfl", 80,			//ft reference altitude for hdot exp decay during final flare
-									"max_hdfnlfl", 0.1,			//ft maximum hdot during finalflare
+									"max_hdfnlfl", 0.12,			//ft maximum hdot during finalflare
 									"philm4", 15, 				//deg bank lim for flare and beyond
 									"phi_beta_gain", 3, 			//gain for yaw during rollout
 									"surfv_h_brakes", 140,		//ft/s trigger for braking outside executive
@@ -1200,7 +1200,7 @@ FUNCTION tgnzc {
 
 	local hderrcn is taemg_internal["hderr"].
 
-	//do not correct for altitude error during or after flare
+	//do not correct for altitude error after flare
 	if (taemg_internal["p_mode"] < 4) {
 		set hderrcn to hderrcn + midval(taemg_internal["gdh"] * taemg_constants["hdreqg"] * taemg_internal["herror"], -taemg_constants["hdherrcmax"], taemg_constants["hdherrcmax"]) .
 	}
