@@ -10,47 +10,82 @@ FUNCTION define_td_points {
 		LOCAL sitename IS ldgsiteslex:KEYS[k].
 		
 		LOCAL site IS ldgsiteslex[sitename].
-	
-		LOCAL end_dist IS site["length"]/2.
-		LOCAL head IS site["heading"].
-		
-		//convert in kilometres
-		SET end_dist TO end_dist/1000.
 		
 		LOCAL rwyslex IS LEXICON().
 		
-		LOCAL rwyno IS "".
+		LOCAL rwydeflist IS LIST().
 		
-		SET rwyno TO ROUND(head/10,0).
+		IF (site:ISTYPE(LEXICON)) {
+			rwydeflist:ADD(site). 
+		} ELSE IF (site:ISTYPE(LIST)) {
+			SET rwydeflist TO site.
+		}
+		
+		FOR rwy IN rwydeflist {
+			initialise_rwy_guid_pts(
+				rwyslex,
+				sitename,
+				site["position"],
+				site["length"],
+				site["heading"],
+				site["elevation"]
+			).
+		}
 
-		rwyslex:ADD(
-					rwyno, 
-					LEXICON(
-						"name", sitename + rwyno,
-						"heading", head,
-						"end_pt", new_position(site["position"],end_dist,fixangle(head - 180))
-			)
-		).
-		
-		//now get the touchdown point for the opposite side of the runway
-		SET head TO fixangle(head + 180).
-		
-		SET rwyno TO ROUND(head/10,0).
-
-		rwyslex:ADD(
-					rwyno, 
-					LEXICON(
-						"name", sitename + rwyno,
-						"heading", head,
-						"end_pt", new_position(site["position"],end_dist,fixangle(head - 180))
-			)
-		).
-		
 		site:ADD("rwys", rwyslex).
 		
 		SET ldgsiteslex[ldgsiteslex:KEYS[k]] TO site.
 
 	}
+
+}
+
+
+FUNCTION initialise_rwy_guid_pts {
+	FUNCTION head2rwyno {
+		PARAMETER head.
+		RETURN FLOOR(head/10,0).
+	}
+
+	PARAMETER rwyslex.
+	PARAMETER sitename.
+	PARAMETER centre_pos.
+	PARAMETEr len.
+	PARAMETEr rwy_heading.
+	PARAMETEr elevation.
+	
+	local head is rwy_heading.
+	
+	LOCAL rwyno IS head2rwyno(head).
+		
+	IF rwyslex:HASKEY(rwyno) {
+		SET rwyno TO head2rwyno(fixangle(head + 10)).
+	}
+
+	rwyslex:ADD(
+				rwyno, 
+				LEXICON(
+					"name", sitename + rwyno,
+					"heading", head,
+					"elevation", elevation,
+					"end_pt", new_position(centre_pos, len/2000, fixangle(head - 180))
+		)
+	).
+	
+	//now get the touchdown point for the opposite side of the runway
+	SET head TO fixangle(head + 180).
+	
+	SET rwyno TO head2rwyno(fixangle(rwyno * 10 + 180)).
+
+	rwyslex:ADD(
+				rwyno, 
+				LEXICON(
+					"name", sitename + rwyno,
+					"heading", head,
+					"elevation", elevation,
+					"end_pt", new_position(centre_pos, len/2000, fixangle(head - 180))
+		)
+	).
 
 }
 
@@ -66,17 +101,10 @@ FUNCTION refresh_runway_lex {
 
 	RETURN LEXICON(
 							"name",siterwy["name"],
-							"position",site["position"],
-							"elevation",site["elevation"],
+							"position",siterwy["end_pt"],
+							"elevation",siterwy["elevation"],
 							"heading",siterwy["heading"],
-							"length",site["length"],
-							"end_pt",siterwy["end_pt"],
-							"glideslope",0,
-							"overhead",is_apch_overhead(),
-							"td_pt",LATLNG(0,0),
-							"hac_centre",LATLNG(0,0),
-							"hac_exit",LATLNG(0,0),
-							"hac_tan",LATLNG(0,0)
+							"overhead",is_apch_overhead()
 							
 	).
 }

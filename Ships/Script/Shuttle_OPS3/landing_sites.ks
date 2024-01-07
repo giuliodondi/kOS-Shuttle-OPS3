@@ -7,12 +7,20 @@ GLOBAL ldgsiteslex IS LEXICON(
 							"length",4519.1,
 							"heading",330.08
 						),
-						"Edwards",LEXICON(
-							"position",LATLNG(34.8972793,-117.9024972),
-							"elevation",761,
-							"length",5142,
-							"heading",58.24
-							
+						"Edwards", LIST(
+									LEXICON(
+										"position",LATLNG(34.8972793,-117.9024972),
+										"elevation",761,
+										"length",5142,
+										"heading",58.24
+									),
+									LEXICON(
+										"position",LATLNG(34.952505,-117.864571),
+										"elevation",762,
+										"length",7578,
+										"heading",64.4
+									)
+						
 						),
 						"Northrup",LEXICON(
 							"position",LATLNG(32.9455153,-106.41617762),
