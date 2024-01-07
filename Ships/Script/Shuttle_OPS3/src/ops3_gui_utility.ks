@@ -304,6 +304,7 @@ FUNCTION make_main_ops3_gui {
 	SET select_apch:ONCHANGE to { 
 		PARAMETER mode_.	
 		SET tgtrwy["overhead"] TO is_apch_overhead().
+		SET reset_guidb:PRESSED to TRUE.
 	}.
 	
 	SET select_rwy:ONCHANGE to { 
@@ -312,6 +313,7 @@ FUNCTION make_main_ops3_gui {
 		SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, rwy).
 		
 		reset_overhead_apch().
+		SET reset_guidb:PRESSED to TRUE.
 	}.
 	
 	SET select_tgt:ONCHANGE to {
@@ -327,6 +329,8 @@ FUNCTION make_main_ops3_gui {
 		select_random_rwy().
 		reset_overhead_apch().
 		SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, select_rwy:VALUE).
+		
+		SET reset_guidb:PRESSED to TRUE.
 	}.	
 	
 	main_ops3_gui:addspacing(3).
