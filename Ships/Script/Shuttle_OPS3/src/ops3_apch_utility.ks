@@ -15,9 +15,9 @@ FUNCTION define_td_points {
 		
 		LOCAL rwydeflist IS LIST().
 		
-		IF (site:ISTYPE(LEXICON)) {
+		IF (site:ISTYPE("LEXICON")) {
 			rwydeflist:ADD(site). 
-		} ELSE IF (site:ISTYPE(LIST)) {
+		} ELSE IF (site:ISTYPE("LIST")) {
 			SET rwydeflist TO site.
 		}
 		
@@ -25,16 +25,14 @@ FUNCTION define_td_points {
 			initialise_rwy_guid_pts(
 				rwyslex,
 				sitename,
-				site["position"],
-				site["length"],
-				site["heading"],
-				site["elevation"]
+				rwy["position"],
+				rwy["length"],
+				rwy["heading"],
+				rwy["elevation"]
 			).
 		}
-
-		site:ADD("rwys", rwyslex).
 		
-		SET ldgsiteslex[ldgsiteslex:KEYS[k]] TO site.
+		SET ldgsiteslex[sitename] TO LEXICON("rwys", rwyslex).
 
 	}
 
@@ -127,10 +125,10 @@ FUNCTION get_runway_rel_state {
 	
 	
 	LOCAL rwy_heading IS rwy["heading"].
-	LOCAL rwy_ship_bng IS bearingg(cur_pos, rwy["end_pt"]).
+	LOCAL rwy_ship_bng IS bearingg(cur_pos, rwy["position"]).
 	LOCAL ship_heading IS compass_for(cur_surfv,cur_pos).
 	
-	LOCAL ship_rwy_dist_mt IS greatcircledist(rwy["end_pt"],cur_pos) * 1000.
+	LOCAL ship_rwy_dist_mt IS greatcircledist(rwy["position"],cur_pos) * 1000.
 	
 	LOCAL pos_rwy_rel_angle IS unfixangle( rwy_ship_bng - rwy_heading).
 	LOCAL vel_rwy_rel_angle IS unfixangle( ship_heading - rwy_heading).
@@ -171,7 +169,7 @@ FUNCTION build_taemg_guid_points {
 	
 	LOCAL rwy_heading IS rwy["heading"].
 	
-	SET rwy["td_pt"] TO new_position(rwy["end_pt"], taemg_out["xaim"]/1000, rwy_heading).
+	SET rwy["td_pt"] TO new_position(rwy["position"], taemg_out["xaim"]/1000, rwy_heading).
 	
 	LOCAL hac_exit_az IS fixangle(rwy_heading + ARCTAN2(0, taemg_out["xhac"])).
 	

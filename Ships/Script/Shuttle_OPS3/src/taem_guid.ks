@@ -234,8 +234,8 @@ global taemg_constants is lexicon (
 									"gdhll", 0.1, 			//gdh lower limit 	//OTT
 									"gdhs", 0.9e-5,		//1/ft	slope for computing gdh 		//ott
 									"gdhul", 0.5,			//gdh upper lim 
-									"gehdll", 0.03, 		//g/fps  gain used in computing eownzll
-									"gehdul", 0.03, 		//g/fps  gain used in computing eownzul
+									"gehdll", 0.02, 		//g/fps  gain used in computing eownzll
+									"gehdul", 0.02, 		//g/fps  gain used in computing eownzul
 									"gell", 0.02, 		//1/s  gain used in computing eownzll
 									"geul", 0.02, 		//1/s  gain used in computing eownzul
 									"geownzc", 0.0005, 		//1/s  gain used to correct eow error
@@ -369,15 +369,15 @@ global taemg_constants is lexicon (
 									"tgsh", TAN(3.1),			//tangent of shallow gs
 									"xaim", 2100,			//ft aim point distance from threshold		
 									"hflare", 2000,			//ft transition to open loop flare
-									"hcloop", 1770,			//ft transition to closed loop flare
-									"rflare", 18000,		//ft flare circle radius
-									"hdecay", 2,			//ft exponential decay gain
-									"sigma_exp", 500,		//ft exp decay characteristic distance
+									"hcloop", 1670,			//ft transition to closed loop flare
+									"rflare", 17000,		//ft flare circle radius
+									"hdecay", 13,			//ft exponential decay gain
+									"xbar_exp", 1000,		//ft defines the tangent point bw the flare circle and the shallow exponential
 									"al_capt_herrlim", 50, 	//ft altitude error for steep gs capture
 									"al_capt_gammalim", 1, 	//deg fpa error for steep gs capture
 									"al_capt_interv_s", 3, 	//s time interval for errors to be within tolerance to toggle capture
 									"al_fnlfl_herrexpmin", 1, //ft alt delta on exponential decay for final flare toggle
-									"hfnlfl", 200,			//ft alt at which to force transition to final flare
+									"hfnlfl", 120,			//ft alt at which to force transition to final flare
 									"h0_hdfnlfl", 80,			//ft reference altitude for hdot exp decay during final flare
 									"max_hdfnlfl", 0.18,			//ft maximum hdot during finalflare
 									"philm4", 15, 				//deg bank lim for flare and beyond
@@ -528,11 +528,11 @@ global taemg_internal is lexicon(
 								"gssh", 0,			//° shallow glideslope
 								"hk", 0,			//ft altitude of flare circle centre
 								"xk", 0,			//ft x-coordinate of flare circle centre
-								"xexp", 0,			//ft x-coordinate of transition from flare circle to exp decay
+								"xctg", 0,			//ft x-coordinate of flare circle- offset shallow glideslope tangent
 								"herrexp", 0,		//ft flare exponential error 
-								"nzc1", 0, 		//nzc hdot error contribution
-								"nzc2h", 0, 		//nzc h error contribution
-								"nzc2i", 0, 		//nzc h error integral contribution
+								"xexp", 0, 			//ft tangent bw flare circle and shallow exponential
+								"hexp", 0, 			//ft height above shallow gs for shallow exponential
+								"sigma_exp", 0,		//ft exp decay characteristic
 								
 								
 								// GRTLS stuff 
@@ -662,12 +662,19 @@ FUNCTION tginit {
 	//flare circle coordinates
 	set taemg_internal["hk"] to taemg_constants["hcloop"] + taemg_constants["rflare"] * COS(taemg_internal["gsstp"]). 
 	
-	local he is taemg_internal["hk"] - taemg_constants["rflare"] * COS(taemg_internal["gssh"]) - taemg_constants["hdecay"].
-	set taemg_internal["xexp"] to - he/taemg_internal["tgsh"] + taemg_internal["xaim"].
-	set taemg_internal["xk"] to taemg_internal["xexp"] + taemg_constants["rflare"] * SIN(taemg_internal["gssh"]).
+	local hctg is taemg_internal["hk"] - taemg_constants["rflare"] * COS(taemg_internal["gssh"]) - taemg_constants["hdecay"].
+	set taemg_internal["xctg"] to - hctg/taemg_internal["tgsh"] + taemg_internal["xaim"].
+	set taemg_internal["xk"] to taemg_internal["xctg"] + taemg_constants["rflare"] * SIN(taemg_internal["gssh"]).
 	
 	set taemg_internal["xa"] TO taemg_internal["xk"] - taemg_constants["rflare"] * SIN(taemg_internal["gsstp"]) + taemg_constants["hcloop"] / taemg_internal["tgstp"].
 	
+	set taemg_internal["xexp"] TO taemg_internal["xctg"] - taemg_constants["xbar_exp"].
+	
+	local xfce is taemg_internal["xk"] - taemg_internal["xexp"].
+	local yfce is SQRT(taemg_constants["rflare"]^2 - xfce^2).
+	local he is taemg_internal["hk"] - yfce.
+	set taemg_internal["hexp"] to he - (taemg_internal["xaim"] - taemg_internal["xexp"]) * taemg_internal["tgsh"].
+	set taemg_internal["sigma_exp"] to taemg_internal["hexp"] / (xfce/yfce - taemg_internal["tgsh"]).
 	
 	SET taemg_internal["rwid0"] TO taemg_input["rwid"].
 	SET taemg_internal["ovhd0"] TO taemg_input["ovhd"].
@@ -937,7 +944,7 @@ FUNCTION tgcomp {
 		//final flare
 		set dhdrrf to - taemg_internal["tgsh"] * midval((taemg_input["h"]/taemg_constants["h0_hdfnlfl"])^2, 1, taemg_constants["max_hdfnlfl"]).
 	
-	} else if (taemg_internal["p_mode"] = 4) {
+	} else if (taemg_internal["p_mode"] >= 4) {
 		//a/l pullup
 		if (taemg_internal["f_mode"] < 3) {
 			//flare circle
@@ -947,12 +954,24 @@ FUNCTION tgcomp {
 			//dhref/dx clamped
 			set dhdrrf to - midval( xflarecir/yflarecir , taemg_internal["tgsh"], taemg_internal["tgstp"]).
 		} else {
+			//combine exponential decay with final flare 
+		
 			//exponential decay
-			set taemg_internal["herrexp"] to taemg_constants["hdecay"] * constant:e^((taemg_internal["xexp"] - taemg_input["x"])/taemg_constants["sigma_exp"]).
+			set taemg_internal["herrexp"] to taemg_internal["hexp"] * constant:e^((taemg_internal["xexp"] - taemg_input["x"])/taemg_internal["sigma_exp"]).
+			
+			
 			//add on top of shallow gs 
 			set taemg_internal["href"] to (taemg_internal["xaim"] - taemg_input["x"]) * taemg_constants["tgsh"] + taemg_internal["herrexp"].
+			
 			//dhref/dx clamped
-			set dhdrrf to - (taemg_internal["tgsh"] + taemg_internal["herrexp"]/taemg_constants["sigma_exp"]).
+			set dhdrrf to - (taemg_internal["tgsh"] + taemg_internal["herrexp"]/taemg_internal["sigma_exp"]).
+			
+			//final flare damping
+			if (taemg_internal["p_mode"] >= 5) {
+				set dhdrrf to dhdrrf * midval((taemg_input["h"]/taemg_constants["h0_hdfnlfl"])^2, 1, taemg_constants["max_hdfnlfl"]).
+			}
+			
+			
 		}
 	} else {
 		//a/l outer gs

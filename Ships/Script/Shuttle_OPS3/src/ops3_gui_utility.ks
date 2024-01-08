@@ -1255,7 +1255,7 @@ FUNCTION recenter_hud {
 FUNCTION reset_hud_bg_brightness {
 	IF NOT (DEFINED hud_gui) {RETURN.}
 
-	LOCAL tgt_lng IS tgtrwy["td_pt"]:LNG.
+	LOCAL tgt_lng IS tgtrwy["position"]:LNG.
 
 	LOCAL tgt_local_time IS local_time_seconds(tgt_lng).
 	
