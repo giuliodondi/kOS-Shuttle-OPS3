@@ -73,8 +73,8 @@ FUNCTION ops3_main_exec {
 								dap:update_auto_nz().
 							} else {
 								//hdot control
-								if (guid_id >= 35) {
-									dap:set_landing_hdot_gains().
+								if (guid_id = 34) {
+									dap:set_flare_hdot_gains().
 								} else {
 									dap:set_taem_hdot_gains().
 								}

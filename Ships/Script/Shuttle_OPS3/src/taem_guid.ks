@@ -367,7 +367,7 @@ global taemg_constants is lexicon (
 									
 									//A/L guidance stuff 
 									"tgsh", TAN(3.1),			//tangent of shallow gs
-									"xaim", 2000,			//ft aim point distance from threshold		
+									"xaim", 2100,			//ft aim point distance from threshold		
 									"hflare", 2000,			//ft transition to open loop flare
 									"hcloop", 1770,			//ft transition to closed loop flare
 									"rflare", 18000,		//ft flare circle radius
