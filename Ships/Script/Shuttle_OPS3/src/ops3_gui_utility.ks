@@ -1500,15 +1500,25 @@ FUNCTION altitude_format {
 	} ELSE {
 		//show full digits, floored to nearest ten or hundred depending
 		LOCAL altout IS altt.
-		//accurate to 100m
-		IF (altt >= 1000 ) {
+		
+		IF (iphase >= 33) {
+			//radar alt with more accuracy
+			SET altt to ALT:RADAR.
+			
+			//accurate to 10m
+			IF (altt >= 100) {
+				SET altout TO FLOOR(altt/10)*10.
+			} ELSE {
+				SET altout TO FLOOR(altout).
+			}
+			
+			set altout to altout + " R".
+		
+		} else {
+			//accurate to 100m
 			SET altout TO FLOOR(altt/100)*100.
-		//accurate to 10m
-		} ELSE IF (altt >= 100) {
-			SET altout TO FLOOR(altt/10)*10.
-		} ELSE {
-			SET altout TO FLOOR(altout).
 		}
+		
 		RETURN altout.
 	}
 }
