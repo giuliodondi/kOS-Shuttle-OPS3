@@ -616,6 +616,7 @@ function egrp {
 	set entryg_internal["vf"][entryg_internal["n_quad_seg"]] to entryg_input["ve"].
 	
 	if (entryg_internal["start"] = 1) {
+		//bc these should be initialised just once when we first call egrp
 		set entryg_internal["start"] to 2.
 		set k to 1.
 		
@@ -653,7 +654,13 @@ function egrp {
 		}
 	}
 	
-	set entryg_internal["rff1"] to entryg_constants["cnmfs"] * (entryg_internal["rf"][1] + entryg_internal["rf"][2]).
+	//from the level-c document : set temp control phase range to zero if ve < vb1
+	if (entryg_input["ve"] < entryg_constants["vb1"]) {
+		set entryg_internal["rff1"] to 0.
+	} else {
+		set entryg_internal["rff1"] to entryg_constants["cnmfs"] * (entryg_internal["rf"][1] + entryg_internal["rf"][2]).
+	}
+	
 	
 	//calculate drag d23 at vb1 
 	if (entryg_internal["t2dot"] > entryg_constants["dt2min"]) or (entryg_input["ve"] > (entryg_internal["vcg"] + entryg_constants["delv"])) {
@@ -892,7 +899,7 @@ function eglodvcmd {
 		set t1 to entryg_constants["gs"] * (1 - entryg_internal["ve2"]/entryg_internal["vsat2"]).
 	}
 	
-	//ANOTHER DISCREPANCY BW THE PAPERS !! - SIGN OF ALDREF
+	//changed sign of t1 term since we changed its sign
 	set entryg_internal["aldref"] to t1 / entryg_internal["drefp"] + (2*entryg_internal["rdtref"] + entryg_internal["c2"]*entryg_internal["hs"]) / entryg_input["ve"].
 	set entryg_internal["rdtrf"] to entryg_internal["rdtref"] + c4.
 	
