@@ -404,7 +404,7 @@ FUNCTION ops3_main_exec {
 				gui_data:ADD("xtrack_err",  taemg_out["rerrc"] / 50).
 			} else if (guid_id <= 21) {
 				set hud_datalex["delaz"] to taemg_out["dpsac"].
-				gui_data:ADD("hac_entry_t",  taemg_out["rtan"] / rwystate["surfv_h"]).
+				gui_data:ADD("hac_entry_t",  taemg_out["tth"]).
 			}
 			
 			update_hud_gui(hud_datalex).

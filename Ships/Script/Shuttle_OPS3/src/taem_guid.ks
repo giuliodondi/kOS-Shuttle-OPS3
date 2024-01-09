@@ -118,7 +118,7 @@ FUNCTION taemg_wrapper {
 					"yhac", taemg_internal["yhac"] / mt2ft, 	//ft y coordinate of hac centre
 					"xaim", taemg_internal["xaim"] / mt2ft, 	//ft x coordinate of touchdown aiming point
 					"rturn", taemg_internal["rturn"] / mt2ft, 	//ft hac radius
-					"rtan", taemg_internal["rtan"] / mt2ft,		//ft distance to hac tangent point
+					"tth", taemg_internal["tth"],		//ft time to hac entry
 					"rerrc", taemg_internal["rerrc"] / mt2ft, 	//ft xtrack error during hac turn
 					"yerrc", taemg_internal["yerrc"] / mt2ft, 	//ft xtrack error during a/l
 					"ysgn", taemg_internal["ysgn"], 	//ft hac turn direction (+1 is a right-handed hac)
@@ -514,6 +514,7 @@ global taemg_internal is lexicon(
 								"yhac", 0,		//ft x coord of hac centre
 								"rcir", 0,		//ft ship-hac distance
 								"rerrc", 0,		//ft radial hac turn error
+								"tth", 0,		//s time to hac entry, estimate
 								"xa", 0,		//ft steep gs intercept, turned into a variable that is calculated from the a/l flare circle
 								"yerrc", 0,		//ft xtrack error on prefinal and a/l
 								
@@ -891,6 +892,12 @@ FUNCTION gtp {
 		local rc IS SQRT(a_^2 + b_^2).
 		
 		SET taemg_internal["rtan"] tO arcac + rc.
+		
+		//my addition: estimate time to hac entry 
+		//hac entry point is offset by the tangent point by a distance that depends on p2trnc1
+		local rtan_entry IS taemg_internal["rturn"] * sqrt(taemg_constants["p2trnc1"]^2 - 1).
+
+		set taemg_internal["tth"] TO (taemg_internal["rtan"] - rtan_entry) / taemg_input["surfv_h"].
 	}
 	
 	set taemg_internal["rpred"] TO  taemg_internal["rpred2"] + taemg_internal["rtan"].
