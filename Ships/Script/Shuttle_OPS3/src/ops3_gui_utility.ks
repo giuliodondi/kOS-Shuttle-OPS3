@@ -809,6 +809,9 @@ FUNCTION make_taem_vsit_GUI {
 	set main_ops3_gui:skin:verticalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/vslider_thumb.png".
 	set main_ops3_gui:skin:verticalsliderthumb:HEIGHT to 20.
 	set main_ops3_gui:skin:verticalsliderthumb:WIDTH to 17.
+	set main_ops3_gui:skin:horizontalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/hslider_thumb.png".
+	set main_ops3_gui:skin:horizontalsliderthumb:HEIGHT to 17.
+	set main_ops3_gui:skin:horizontalsliderthumb:WIDTH to 20.
 	
 	GLOBAL vsit_disp_overlaiddata IS ops3_disp:ADDHLAYOUT().
 	SET vsit_disp_overlaiddata:STYLE:ALIGN TO "Center".
@@ -828,7 +831,32 @@ FUNCTION make_taem_vsit_GUI {
 	SET vsit_disp_leftdatabox:STYLE:WIDTH TO 75.
     SET vsit_disp_leftdatabox:STYLE:HEIGHT TO 75.
 	set vsit_disp_leftdatabox:style:margin:h to 20.
-	set vsit_disp_leftdatabox:style:margin:v to 130 + ops3_disp_vmargin.
+	set vsit_disp_leftdatabox:style:margin:v to ops3_disp_vmargin.
+	
+	GLOBAL vsit_disp_horiz_sliderbox IS vsit_disp_leftdatabox:ADDVLAYOUT().
+	SET vsit_disp_horiz_sliderbox:STYLe:WIDTH TO vsit_disp_leftdatabox:STYLE:WIDTH.
+	SET vsit_disp_horiz_sliderbox:STYLe:HEIGHT TO 1.
+	set vsit_disp_horiz_sliderbox:style:margin:h to 148.
+	
+	vsit_disp_leftdatabox:addspacing(129).
+	
+	GLOBAL horiz_slider_label IS vsit_disp_horiz_sliderbox:ADDLABEL("").
+	set horiz_slider_label:style:margin:h to 55.
+	set horiz_slider_label:style:margin:v to 8.
+	set horiz_slider_label:style:width to 120.
+	GLOBAL vsit_horiz_slider is vsit_disp_horiz_sliderbox:addhslider(1,0,1).
+	SET vsit_horiz_slider:STYLE:ALIGN TO "Center".
+	SET vsit_horiz_slider:style:vstretch to false.
+	SET vsit_horiz_slider:style:hstretch to false.
+	SET vsit_horiz_slider:STYLE:WIDTH TO 180.
+	set vsit_horiz_slider:style:margin:v to -3.
+	set vsit_horiz_slider:style:margin:h to 5.
+	
+	make_time2hac_slider().
+	
+	for w in vsit_disp_horiz_sliderbox:WIDGETS {
+		w:HIDE().
+	}
 	
 	GLOBAL vsitleftdata1 IS vsit_disp_leftdatabox:ADDLABEL("R  XXX").
 	set vsitleftdata1:style:margin:v to -4.
@@ -843,6 +871,7 @@ FUNCTION make_taem_vsit_GUI {
     SET vsit_disp_rightdatabox:STYLE:HEIGHT TO 90.
 	set vsit_disp_rightdatabox:style:margin:h to 85.
 	set vsit_disp_rightdatabox:style:margin:v to 185 + ops3_disp_vmargin.
+	
 	
 	GLOBAL vsitrightdata0 IS vsit_disp_rightdatabox:ADDLABEL("OTT ST IN").
 	set vsitrightdata0:style:margin:h to 130.
@@ -864,17 +893,17 @@ FUNCTION make_taem_vsit_GUI {
 	GLOBAL herror_sliderbox IS vsit_disp_overlaiddata:ADDVLAYOUT().
 	SET herror_sliderbox:STYLe:WIDTH TO 55.
 	set herror_sliderbox:style:margin:h to 0.
-	set herror_sliderbox:style:margin:v to 50 + ops3_disp_vmargin.
+	set herror_sliderbox:style:margin:v to 100 + ops3_disp_vmargin.
 	SET herror_sliderbox:STYLE:ALIGN TO "Center".
 	GLOBAL herror_slider_label IS herror_sliderbox:ADDLABEL("H ERR").
 	set herror_slider_label:style:margin:h to 1.
 	set herror_slider_label:style:margin:v to 0.
-	GLOBAL herror_slider is herror_sliderbox:addvslider(0,-2,2).
+	GLOBAL herror_slider is herror_sliderbox:addvslider(0,-1.85,1.85).
 	SET herror_slider:STYLE:ALIGN TO "Center".
 	SET herror_slider:style:vstretch to false.
 	SET herror_slider:style:hstretch to false.
 	SET herror_slider:STYLE:WIDTH TO 20.
-	SET herror_slider:STYLE:HEIGHT TO 250.
+	SET herror_slider:STYLE:HEIGHT TO 180.
 	set herror_slider:style:margin:h to 0.
 	set herror_slider:style:margin:v to 5.
 	
@@ -891,6 +920,21 @@ FUNCTION make_taem_vsit_GUI {
 	reset_taem_vsit_disp().
 }
 
+function make_time2hac_slider {
+	set vsit_horiz_slider:STYLe:BG to "Shuttle_OPS3/src/gui_images/hac_entry_slider.png".
+	SET vsit_horiz_slider:STYLE:HEIGHT TO 36.
+	SET vsit_horiz_slider:MIN TO 0.
+	SET vsit_horiz_slider:MAX TO 6.5.
+	set horiz_slider_label:text to "TIME TO HAC".
+}
+
+function make_xtrackerr_slider {
+	set vsit_horiz_slider:STYLe:BG to "Shuttle_OPS3/src/gui_images/xtrack_err_slider.png".
+	SET vsit_horiz_slider:STYLE:HEIGHT TO 25.
+	SET vsit_horiz_slider:MIN TO -18.5.
+	SET vsit_horiz_slider:MAX TO 18.5.
+	set horiz_slider_label:text to "XTRACK ERR ".
+}
 
 function reset_taem_vsit_disp {
 	set_taem_vsit_disp_title().
@@ -899,6 +943,10 @@ function reset_taem_vsit_disp {
 
 function increment_taem_vsit_disp_counter {
 	set taem_vsit_disp_counter to taem_vsit_disp_counter + 1.
+	//meant to be executed just once 
+	for w in vsit_disp_horiz_sliderbox:WIDGETS {
+		w:SHOW().
+	}
 }
 
 function set_taem_vsit_disp_title {
@@ -945,6 +993,13 @@ function update_taem_vsit_disp {
 	if (taem_vsit_disp_counter_p <> taem_vsit_disp_counter) {
 		set taem_vsit_disp_counter_p to taem_vsit_disp_counter.
 		reset_taem_vsit_disp().
+	}
+	
+	//horiz slider 
+	if (gui_data["guid_id"] <= 21) {
+		set vsit_horiz_slider:value to CLAMP(gui_data["hac_entry_t"],vsit_horiz_slider:MIN,vsit_horiz_slider:MAX).
+	} else {
+		set vsit_horiz_slider:value to CLAMP(gui_data["xtrack_err"],vsit_horiz_slider:MIN,vsit_horiz_slider:MAX).
 	}
 	
 	local orbiter_bug_pos is set_taem_vsit_disp_bug(v(taem_vsit_disp_x_convert(gui_data["rpred"]),taem_vsit_disp_y_convert(gui_data["eow"]), 0)).
@@ -1050,12 +1105,12 @@ FUNCTION make_hud_gui {
 	hud_gui:SHOW.
 
 
-	set hud_gui:skin:horizontalslider:BG to "Shuttle_entrysim/src/gui_images/brakeslider.png".
-	set hud_gui:skin:horizontalsliderthumb:BG to "Shuttle_entrysim/src/gui_images/hslider_thumb.png".
+	set hud_gui:skin:horizontalslider:BG to "Shuttle_OPS3/src/gui_images/brakeslider.png".
+	set hud_gui:skin:horizontalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/hslider_thumb.png".
 	set hud_gui:skin:horizontalsliderthumb:HEIGHT to 17.
 	set hud_gui:skin:horizontalsliderthumb:WIDTH to 20.
-	set hud_gui:skin:verticalslider:BG to "Shuttle_entrysim/src/gui_images/vspdslider2.png".
-	set hud_gui:skin:verticalsliderthumb:BG to "Shuttle_entrysim/src/gui_images/vslider_thumb.png".
+	set hud_gui:skin:verticalslider:BG to "Shuttle_OPS3/src/gui_images/vspdslider2.png".
+	set hud_gui:skin:verticalsliderthumb:BG to "Shuttle_OPS3/src/gui_images/vslider_thumb.png".
 	set hud_gui:skin:verticalsliderthumb:HEIGHT to 20.
 	set hud_gui:skin:verticalsliderthumb:WIDTH to 17.
 
@@ -1168,12 +1223,12 @@ FUNCTION make_hud_gui {
 	set pointbox:style:margin:left to 0.
 	SET pointbox:style:vstretch to false.
 	SET pointbox:style:hstretch to false.
-	SET  pointbox:style:BG to "Shuttle_entrysim/src/gui_images/bg_marker_square.png".
+	SET  pointbox:style:BG to "Shuttle_OPS3/src/gui_images/bg_marker_square.png".
 	
 	
 	
 	GLOBAL diamond IS pointbox:ADDLABEL().
-	SET diamond:IMAGE TO "Shuttle_entrysim/src/gui_images/diamond.png".
+	SET diamond:IMAGE TO "Shuttle_OPS3/src/gui_images/diamond.png".
 	SET diamond:STYLe:WIDTH TO 22.
 	SET diamond:STYLe:HEIGHT TO 22.
 	
@@ -1260,9 +1315,9 @@ FUNCTION reset_hud_bg_brightness {
 	LOCAL tgt_local_time IS local_time_seconds(tgt_lng).
 	
 	IF (tgt_local_time < 19800 OR tgt_local_time>66000) {
-		SET hud_gui:style:BG to "Shuttle_entrysim/src/gui_images/hudbackground_bright.png".
+		SET hud_gui:style:BG to "Shuttle_OPS3/src/gui_images/hudbackground_bright.png".
 	} ELSe {
-		SET hud_gui:style:BG to "Shuttle_entrysim/src/gui_images/hudbackground_dark.png".
+		SET hud_gui:style:BG to "Shuttle_OPS3/src/gui_images/hudbackground_dark.png".
 	}
 	
 	
@@ -1561,7 +1616,7 @@ FUNCTION hud_decluttering {
 	if (iphase >= 23) {
 		//hide g indicator and change nose marker 
 		nz_text:HIDE().
-		SET  pointbox:style:BG to "Shuttle_entrysim/src/gui_images/bg_marker_round.png".
+		SET  pointbox:style:BG to "Shuttle_OPS3/src/gui_images/bg_marker_round.png".
 	}
 
 	if (iphase >= 30) { 
@@ -1584,6 +1639,6 @@ FUNCTION hud_decluttering {
 
 	if (iphase >= 35) { 
 		//hide pipper
-		SET diamond:IMAGE TO "Shuttle_entrysim/src/gui_images/diamond_empty.png".
+		SET diamond:IMAGE TO "Shuttle_OPS3/src/gui_images/diamond_empty.png".
 	}
 }

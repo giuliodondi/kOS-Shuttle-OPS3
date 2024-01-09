@@ -118,6 +118,9 @@ FUNCTION taemg_wrapper {
 					"yhac", taemg_internal["yhac"] / mt2ft, 	//ft y coordinate of hac centre
 					"xaim", taemg_internal["xaim"] / mt2ft, 	//ft x coordinate of touchdown aiming point
 					"rturn", taemg_internal["rturn"] / mt2ft, 	//ft hac radius
+					"rtan", taemg_internal["rtan"] / mt2ft,		//ft distance to hac tangent point
+					"rerrc", taemg_internal["rerrc"] / mt2ft, 	//ft xtrack error during hac turn
+					"yerrc", taemg_internal["yerrc"] / mt2ft, 	//ft xtrack error during a/l
 					"ysgn", taemg_internal["ysgn"], 	//ft hac turn direction (+1 is a right-handed hac)
 					
 					
@@ -267,7 +270,7 @@ global taemg_constants is lexicon (
 									"phavgs", 13.33,		//deg slope for phavg 
 									"phavgul", 50, 			//deg upperl im for phavg 
 									"philm0", 50,			//deg sturn roll cmd lim
-									"philm1", 50,			//deg acq roll cmd lim 
+									"philm1", 45,			//deg acq roll cmd lim 
 									"philm2", 60,			//deg heading alignment roll cmd lim 
 									"philm3", 35, 			//deg prefinal roll cmd lim 
 									//"philmsup", 30, 		//deg supersonic roll cmd lim 		//OTT
@@ -510,7 +513,9 @@ global taemg_internal is lexicon(
 								"xaim", 0,		//ft touchdown aiming point
 								"yhac", 0,		//ft x coord of hac centre
 								"rcir", 0,		//ft ship-hac distance
+								"rerrc", 0,		//ft radial hac turn error
 								"xa", 0,		//ft steep gs intercept, turned into a variable that is calculated from the a/l flare circle
+								"yerrc", 0,		//ft xtrack error on prefinal and a/l
 								
 								"freezetgt", FALSE,
 								"freezeapch", FALSE,
@@ -1382,8 +1387,8 @@ FUNCTION tgphic {
 		set taemg_internal["phic"] to taemg_constants["gphi"] * taemg_internal["dpsac"].
 	} else if (taemg_internal["iphase"] = 2) {
 		
-		local rerrc is taemg_internal["rcir"] - taemg_internal["rturn"].
-		if (rerrc > taemg_constants["rerrlm"]) {
+		set taemg_internal["rerrc"] to taemg_internal["rcir"] - taemg_internal["rturn"].
+		if (taemg_internal["rerrc"] > taemg_constants["rerrlm"]) {
 			//if we're far outside the hac
 			//hac bank proportional to heading error
 			//apparently done to limit oscillations
@@ -1401,13 +1406,13 @@ FUNCTION tgphic {
 			
 			local rdotrf is -taemg_input["surfv_h"] * (taemg_constants["r1"] + 2 * taemg_constants["r2"] * taemg_internal["psha"]) * taemg_constants["rtd"] / taemg_internal["rturn"].
 			
-			set taemg_internal["phic"] to taemg_internal["ysgn"] * MAX(phip2c + taemg_constants["gr"] * rerrc + taemg_constants["grdot"] * (rdot - rdotrf), 0).
+			set taemg_internal["phic"] to taemg_internal["ysgn"] * MAX(phip2c + taemg_constants["gr"] * taemg_internal["rerrc"] + taemg_constants["grdot"] * (rdot - rdotrf), 0).
 		}
 	} else if (taemg_internal["iphase"] = 3) {
 	
 		//prefinal bank proportional to lateral (y coord) deviation and rate relative to the centreline
-		local yerrc is -taemg_constants["gy"] * midval(taemg_input["y"], -taemg_constants["yerrlm"], taemg_constants["yerrlm"]).
-		set taemg_internal["phic"] to yerrc - taemg_constants["gydot"] * taemg_input["ydot"].
+		set taemg_internal["yerrc"] to -taemg_constants["gy"] * midval(taemg_input["y"], -taemg_constants["yerrlm"], taemg_constants["yerrlm"]).
+		set taemg_internal["phic"] to taemg_internal["yerrc"] - taemg_constants["gydot"] * taemg_input["ydot"].
 			
 		//if a/l and final flare or rollout, turn the roll command into a yaw command	
 		if (taemg_internal["p_mode"] >= 5)	{

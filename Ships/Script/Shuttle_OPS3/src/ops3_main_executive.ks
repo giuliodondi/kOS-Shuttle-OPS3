@@ -363,6 +363,9 @@ FUNCTION ops3_main_exec {
 			
 			if (taemg_out["itran"]) {
 				hud_decluttering(guid_id).
+				if (guid_id = 22) {
+					make_xtrackerr_slider().
+				}
 			}
 
 			SET hud_datalex["phase"] TO guid_id.
@@ -375,18 +378,9 @@ FUNCTION ops3_main_exec {
 			SET hud_datalex["cur_roll"] TO dap:lvlh_roll.
 			SET hud_datalex["flapval"] TO aerosurfaces_control["flap_defl"].
 			SET hud_datalex["spdbk_val"] TO aerosurfaces_control["spdbk_defl"].
-
-			if (guid_id >= 23) {
-				set hud_datalex["delaz"] to - rwystate["rwy_rel_crs"].
-			} else if (guid_id = 22) {
-				set hud_datalex["delaz"] to taemg_out["ysgn"] * taemg_out["psha"].
-			} else if (guid_id <= 21) {
-				set hud_datalex["delaz"] to taemg_out["dpsac"].
-			}
-			
-			update_hud_gui(hud_datalex).
 			
 			local gui_data is lexicon(
+									"guid_id", guid_id,
 									"rpred",taemg_out["rpred"],
 									"eow",taemg_out["eow"],
 									"herror", taemg_out["herror"],
@@ -401,6 +395,20 @@ FUNCTION ops3_main_exec {
 									"prog_roll", dap:prog_roll,
 									"prog_yaw", dap:prog_yaw
 			).
+			
+			if (guid_id >= 23) {
+				set hud_datalex["delaz"] to - rwystate["rwy_rel_crs"].
+				gui_data:ADD("xtrack_err",  taemg_out["yerrc"]).
+			} else if (guid_id = 22) {
+				set hud_datalex["delaz"] to taemg_out["ysgn"] * taemg_out["psha"].
+				gui_data:ADD("xtrack_err",  taemg_out["rerrc"] / 50).
+			} else if (guid_id <= 21) {
+				set hud_datalex["delaz"] to taemg_out["dpsac"].
+				gui_data:ADD("hac_entry_t",  taemg_out["rtan"] / rwystate["surfv_h"]).
+			}
+			
+			update_hud_gui(hud_datalex).
+			
 			update_taem_vsit_disp(gui_data).
 			
 			if (parameters["full_debug"]) {
