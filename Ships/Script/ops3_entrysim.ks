@@ -73,7 +73,7 @@ FUNCTION generate_simulation_ics {
 													"deorbit_inclination", 40,
 													"entry_interf_dist", 6500,
 													"entry_interf_xrange", 500,
-													"entry_interf_offset", "left"
+													"entry_interf_offset", "right"
 							).
 		set standard to TRUE.
 	} else if (name_ = "3a") {

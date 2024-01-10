@@ -646,17 +646,26 @@ function update_entry_traj_disp {
 		reset_entry_traj_disp().
 	}
 
-	local orbiter_bug_pos is set_entry_traj_disp_bug(v(entry_traj_disp_x_convert(gui_data["ve"], gui_data["drag"]),entry_traj_disp_y_convert(gui_data["ve"]), 0)).
+	local orbiter_bug_pos is set_entry_traj_disp_bug(v(entry_traj_disp_x_convert(gui_data["ve"], gui_data["drag"]), entry_traj_disp_y_convert(gui_data["ve"]), 0)).
 	SET traj_disp_orbiter:STYLE:margin:v to orbiter_bug_pos[1].
 	SET traj_disp_orbiter:STYLE:margin:h to orbiter_bug_pos[0].
 	
 	LOCAL drag_err_delta IS 0.
 	IF (gui_data["phase"] > 1) {
-		SET drag_err_delta TO 40 * (gui_data["drag_ref"]/gui_data["drag"] - 1).
+		//SET drag_err_delta TO 40 * (gui_data["drag_ref"]/gui_data["drag"] - 1).
+		
+		local drefd_bug_pos is set_entry_drag_error_bug(v(entry_traj_disp_x_convert(gui_data["ve"], gui_data["drag_ref"]), entry_traj_disp_y_convert(gui_data["ve"]), 0)).
+		SET traj_disp_pred_bug_:STYLE:margin:h to drefd_bug_pos[0].
+		
+	} else {
+		SET traj_disp_pred_bug_:STYLE:margin:h to orbiter_bug_pos[0] - drag_err_delta + 5.
 	}
 	
 	SET traj_disp_pred_bug_:STYLE:margin:v to orbiter_bug_pos[1] + 10.
-	SET traj_disp_pred_bug_:STYLE:margin:h to orbiter_bug_pos[0] - drag_err_delta + 5.
+	
+	
+
+	
 	
 	
 	
@@ -732,11 +741,13 @@ function set_entry_drag_error_bug {
 	local bounds_x is list(10, traj_disp_mainbox:STYLe:WIDTH - 5).
 	local bounds_y is list(traj_disp_mainbox:STYLe:HEIGHT - 5, 0).
 	
-	local pos_x is 1.04693*bug_pos:X  - 8.133.
+	local pos_x is 1.04693*bug_pos:X  - 8.133 + 5.
 	local pos_y is 395.55 - 1.1685*bug_pos:Y + bias.
 	
 	set pos_x to clamp(pos_x, bounds_x[0], bounds_x[1] ).
 	set pos_y to clamp(pos_y, bounds_y[0], bounds_y[1]).
+	
+	return list(pos_x,pos_y).
 }
 
 function entry_traj_disp_x_convert {
