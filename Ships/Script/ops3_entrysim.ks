@@ -32,6 +32,7 @@ make_entry_traj_GUI().
 
 gLOBAL sim_input_target IS "".
 gLOBAL tal_abort IS FALSE.
+global tgt_rwy is "".
 GLOBAL ICS IS generate_simulation_ics("edwards").
 
 GLOBAL sim_settings IS LEXICON(
@@ -71,8 +72,8 @@ FUNCTION generate_simulation_ics {
 													"deorbit_periapsis", 0,
 													"deorbit_inclination", 40,
 													"entry_interf_dist", 6500,
-													"entry_interf_xrange", 600,
-													"entry_interf_offset", "right"
+													"entry_interf_xrange", 500,
+													"entry_interf_offset", "left"
 							).
 		set standard to TRUE.
 	} else if (name_ = "3a") {
@@ -111,7 +112,13 @@ FUNCTION calculate_simulation_ics {
 	PARAMETER sim_input.
 	PARAMETER standard.
 	
-	LOCAL tgt_pos IS ldgsiteslex[sim_input["target"]]["position"].
+	//pick the first runway position 
+	local firstrwyno is ldgsiteslex[sim_input["target"]]["rwys"]:keys[0].
+	
+	//taken from approach utility
+	set tgt_rwy to refresh_runway_lex(sim_input["target"], firstrwyno).
+
+	LOCAL tgt_pos IS tgt_rwy["position"].
 	
 	LOCAL tgt_vec IS pos2vec(tgt_pos).
 	
@@ -244,9 +251,6 @@ FUNCTION calculate_simulation_ics {
 
 FUNCTION ops3_reentry_simulate {
 
-	
-	
-	LOCAL tgt_rwy IS ldgsiteslex[sim_input_target].
 		
 	//Initialise log lexicon 
 	GLOBAL loglex IS LEXICON(
@@ -352,6 +356,7 @@ FUNCTION ops3_reentry_simulate {
 											"xlfac", aerolex["xlfac"],     	
 											"lod", aerolex["lod"],
 											"egflg", 0, 
+											"cd", 0,
 											"ital", tal_abort,
 											"debug", TRUE
 									)
