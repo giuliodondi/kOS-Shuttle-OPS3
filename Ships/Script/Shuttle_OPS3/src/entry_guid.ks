@@ -148,11 +148,11 @@ global entryg_constants is lexicon (
 									"cy0", -7.5,		//deg 	constant term heading err deadband
 									"cy1", 0.0062498,	//deg-s/ft 	linear term heading err deadband
 									"c17mp", 0.75,		//c17 mult fact when ict=1
-									"c21", 1 * 0.06,		//1/deg c20 cont val
-									"c22", 1 * -0.001,		//1/deg c20 const value in linear term
-									"c23", 1 * 4.25e-6,		//s/ft-deg 	c20 linear term
-									"c24", 1 * 0.01,	//1/deg  c20 const value 
-									"c25", 1 * 0.01,		//1/deg	c20 const value in linear term 		//altered to make alp moduln less violent
+									"c21", 2 * 0.06,		//1/deg c20 cont val
+									"c22", 2 * -0.001,		//1/deg c20 const value in linear term
+									"c23", 2 * 4.25e-6,		//s/ft-deg 	c20 linear term
+									"c24", 2 * 0.01,	//1/deg  c20 const value 
+									"c25", 2 * 0.01,		//1/deg	c20 const value in linear term 		//altered to make alp moduln less violent
 									"c26", 0,		//s/ft - deg 	c20 linear val 
 									"c27", 0,		//1/deg c20 const val 
 									"ddlim", 2,		//ft/s2	max drag for h feedback 
@@ -209,7 +209,7 @@ global entryg_constants is lexicon (
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
 									//"vnoalp", 20500,	//pch mod start velocity//	//took the value from the sts-1 paper
-									"vnoalp", 0,	//pch mod start velocity//	//turned off 
+									"vnoalp", 22500,	//pch mod start velocity//	//turned off 
 									"vq", 10499,	//ft/s predicted end vel for const drag			//changed for consistency with vtran
 									"vrlmc", 2750,	//ft/s rlm seg switch vel
 									"vsat", 25766.2,	//ft/s local circular orbit vel 
