@@ -76,7 +76,13 @@ FUNCTION make_global_deorbit_GUI {
 	}		
 	SET select_tgt:ONCHANGE to { 
 		PARAMETER lex_key.	
-		SET tgtrwy TO ldgsiteslex[lex_key].		
+		//pick the first runway position 
+		local firstrwyno is ldgsiteslex[lex_key]["rwys"]:keys[0].
+		
+		//taken from approach utility
+		set tgtrwy to refresh_runway_lex(lex_key, firstrwyno, TRUE).
+
+		
 		SET deorbit_target_selected TO TRUE.
 	}.
 
@@ -310,7 +316,7 @@ FUNCTION make_main_ops3_gui {
 	SET select_rwy:ONCHANGE to { 
 		PARAMETER rwy.	
 		
-		SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, rwy).
+		SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, rwy, is_apch_overhead()).
 		
 		reset_overhead_apch().
 		SET reset_guidb:PRESSED to TRUE.
@@ -328,7 +334,7 @@ FUNCTION make_main_ops3_gui {
 		
 		select_random_rwy().
 		reset_overhead_apch().
-		SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, select_rwy:VALUE).
+		SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, select_rwy:VALUE, is_apch_overhead()).
 		
 		SET reset_guidb:PRESSED to TRUE.
 	}.	

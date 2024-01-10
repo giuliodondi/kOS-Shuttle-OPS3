@@ -93,6 +93,7 @@ FUNCTION initialise_rwy_guid_pts {
 FUNCTION refresh_runway_lex {
 	PARAMETER tgt_site.
 	PARAMETER tgt_rwy_number.
+	PARAMETER overhead_apch.
 	
 	LOCAL site IS ldgsiteslex[tgt_site].
 	local siterwy is site["rwys"][tgt_rwy_number].
@@ -102,7 +103,7 @@ FUNCTION refresh_runway_lex {
 							"position",siterwy["end_pt"],
 							"elevation",siterwy["elevation"],
 							"heading",siterwy["heading"],
-							"overhead",is_apch_overhead()
+							"overhead", overhead_apch
 							
 	).
 }

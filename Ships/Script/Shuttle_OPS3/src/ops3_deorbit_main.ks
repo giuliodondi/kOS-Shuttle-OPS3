@@ -9,7 +9,10 @@ FUNCTION ops3_deorbit_predict{
 
 
 	IF (DEFINED tgtrwy) {UNSET tgtrwy.}
-	GLOBAL tgtrwy IS ldgsiteslex[ldgsiteslex:keys[0]].
+	GLOBAL tgtrwy IS LEXICON().
+	
+	//initialise touchdown points for all landing sites
+	define_td_points().
 
 
 	LOCAL cur_ap IS SHIP:ORBIT:aPOAPSIS/1000.
@@ -18,6 +21,7 @@ FUNCTION ops3_deorbit_predict{
 	//test for circular enough orbit
 	if (cur_ap - cur_pe)>10 {
 		print "Please circularize the orbit to within +-10km".
+		return.
 	}
 
 	//calculate reference circular orbit apoapsis and optimal ei parameters

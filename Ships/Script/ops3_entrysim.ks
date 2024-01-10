@@ -32,7 +32,7 @@ make_entry_traj_GUI().
 
 gLOBAL sim_input_target IS "".
 gLOBAL tal_abort IS FALSE.
-global tgt_rwy is "".
+global tgtrwy is "".
 GLOBAL ICS IS generate_simulation_ics("edwards").
 
 GLOBAL sim_settings IS LEXICON(
@@ -116,9 +116,9 @@ FUNCTION calculate_simulation_ics {
 	local firstrwyno is ldgsiteslex[sim_input["target"]]["rwys"]:keys[0].
 	
 	//taken from approach utility
-	set tgt_rwy to refresh_runway_lex(sim_input["target"], firstrwyno).
+	set tgtrwy to refresh_runway_lex(sim_input["target"], firstrwyno, TRUE).
 
-	LOCAL tgt_pos IS tgt_rwy["position"].
+	LOCAL tgt_pos IS tgtrwy["position"].
 	
 	LOCAL tgt_vec IS pos2vec(tgt_pos).
 	
@@ -294,8 +294,8 @@ FUNCTION ops3_reentry_simulate {
 	LOCAL simstate IS blank_simstate(ICS).
 	
 	
-	LOCAL tgtpos IS tgt_rwy["position"].
-	LOCAL tgtalt IS tgt_rwy["elevation"] + sim_end_conditions["altitude"].
+	LOCAL tgtpos IS tgtrwy["position"].
+	LOCAL tgtalt IS tgtrwy["elevation"] + sim_end_conditions["altitude"].
 	
 	//sample initial values for proper termination conditions check
 	SET simstate["altitude"] TO bodyalt(simstate["position"]).
@@ -322,7 +322,7 @@ FUNCTION ops3_reentry_simulate {
 			simstate["position"],
 			simstate["latlong"],
             ve,
-            tgt_rwy
+            tgtrwy
 		). 
 		
 		//should already be acceleration
