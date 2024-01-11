@@ -110,7 +110,7 @@ FUNCTION ops3_main_exec {
 				} else {
 					SET hud_datalex["pipper_deltas"] TO LIST(
 															dap:tgt_roll - dap:prog_roll, 
-															dap:tgt_hdot -  rwystate["hdot"]
+															dap:tgt_hdot -  dap:hdot
 
 					).
 				}
