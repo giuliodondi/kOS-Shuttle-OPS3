@@ -420,7 +420,7 @@ FUNCTION make_main_ops3_gui {
 	}.
 
 	select_random_rwy().
-	SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, select_rwy:VALUE).
+	SET tgtrwy TO refresh_runway_lex(select_tgt:VALUE, select_rwy:VALUE, is_apch_overhead()).
 
 	main_ops3_gui:addspacing(3).
 	GLOBAL ops3_main_display IS main_ops3_gui:addvlayout().
