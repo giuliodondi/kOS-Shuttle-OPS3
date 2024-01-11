@@ -230,8 +230,6 @@ global entryg_constants is lexicon (
 									//"zk1", 1,	//s hdot feedback gain		//OTT and STS-1
 									"zk1", 0,	//s hdot feedback gain		//try to disable it as in theory we shouldn't need it in ksp
 									
-									"tgtsite0", 0,		//my addition, keep track of the tgt site to reset guidance
-									
 									//my addition: speedbrake constants ported form taem
 									"dsblim", 98.6,	//deg dsbc max value 
 									"del1sb", 3.125,		//speedbrake open rate
@@ -345,7 +343,7 @@ global entryg_internal is lexicon(
 									"tran4f_alfm", FALSE,
 									"tran4f_drefp4", FALSE,
 									
-									
+									"tgtsite0", 0,		//my addition, keep track of the tgt site to reset guidance
 									
 									"dummy", 0
 ).
