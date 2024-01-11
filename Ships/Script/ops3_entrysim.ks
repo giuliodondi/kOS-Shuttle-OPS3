@@ -72,7 +72,7 @@ FUNCTION generate_simulation_ics {
 													"deorbit_periapsis", 0,
 													"deorbit_inclination", 40,
 													"entry_interf_dist", 6500,
-													"entry_interf_xrange", 500,
+													"entry_interf_xrange", 400,
 													"entry_interf_offset", "right"
 							).
 		set standard to TRUE.

@@ -138,7 +138,8 @@ global entryg_constants is lexicon (
 									"cddot9", -8.165e-3,	//1/s cddot coef
 									"cnmfs", 1.645788e-4,	//nmi/ft 	conversion from feet to nmi 
 									"crdeaf", 4,	//roll bias due to pitch modulation gain	//was 4
-									"ct16", list(0, 0.1354, -0.1, 0.006),	// s2/ft - nd - s2/ft	c16 coefs
+									//"ct16", list(0, 0.1354, -0.1, 0.006),	// s2/ft - nd - s2/ft	c16 coefs STS-1
+									"ct16", list(0, 0.1354, -0.1, 0.012),	// s2/ft - nd - s2/ft	c16 coefs
 									"ct17", list(0, 2*1.537e-2, -5.8146e-1),	//s/ft - nd 	c17 coefs
 									"ct16mn", 0.025,	//s2/ft		min c16
 									"ct16mx", 0.35,		//s2/ft 	max c16
@@ -148,16 +149,17 @@ global entryg_constants is lexicon (
 									"cy0", -7.5,		//deg 	constant term heading err deadband
 									"cy1", 0.0062498,	//deg-s/ft 	linear term heading err deadband
 									"c17mp", 0.75,		//c17 mult fact when ict=1
-									"c21", 2 * 0.06,		//1/deg c20 cont val
-									"c22", 2 * -0.001,		//1/deg c20 const value in linear term
-									"c23", 2 * 4.25e-6,		//s/ft-deg 	c20 linear term
-									"c24", 2 * 0.01,	//1/deg  c20 const value 
-									"c25", 2 * 0.01,		//1/deg	c20 const value in linear term 		//altered to make alp moduln less violent
+									"c21", 1.2 * 0.06,		//1/deg c20 cont val
+									"c22", 1.2 * -0.001,		//1/deg c20 const value in linear term
+									"c23", 1.2 * 4.25e-6,		//s/ft-deg 	c20 linear term
+									"c24", 1.2 * 0.01,	//1/deg  c20 const value 
+									"c25", 1.2 * 0.01,		//1/deg	c20 const value in linear term 		//altered to make alp moduln less violent
 									"c26", 0,		//s/ft - deg 	c20 linear val 
 									"c27", 0,		//1/deg c20 const val 
 									"ddlim", 2,		//ft/s2	max drag for h feedback 
 									"ddmin", 0.05,	//ft/s 	min drag error to toggle alpha mod
-									"delv", 2300,	//ft/s phase transfer vel bias 
+									//"delv", 2300,	//ft/s phase transfer vel bias - STS-1
+									"delv", 1000,	//ft/s phase transfer vel bias
 									"df", 21.0,	//ft/s2 final drag in transition phase
 									"dlallm", 43,	//deg max constant
 									"dlaplm", 2,		//deg delalp lim
@@ -209,7 +211,7 @@ global entryg_constants is lexicon (
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
 									//"vnoalp", 20500,	//pch mod start velocity//	//took the value from the sts-1 paper
-									"vnoalp", 22500,	//pch mod start velocity//	//turned off 
+									"vnoalp", 21500,	//pch mod start velocity//	//turned off 
 									"vq", 10499,	//ft/s predicted end vel for const drag			//changed for consistency with vtran
 									"vrlmc", 2750,	//ft/s rlm seg switch vel
 									"vsat", 25766.2,	//ft/s local circular orbit vel 
@@ -1090,7 +1092,7 @@ function egrolcmd {
 		local almnxd is ARCCOS(entryg_internal["lmn"]/entryg_internal["xlod"]).	// / entryg_constants["dtr"].
 		
 		//modification
-		set entryg_internal["rollc"][1] to (abs(entryg_internal["rollc"][2]) + midval(entryg_internal["rdealf"], almnxd, -almnxd)) * entryg_internal["rk2rol"].
+		//set entryg_internal["rollc"][1] to (abs(entryg_internal["rollc"][2]) + midval(entryg_internal["rdealf"], almnxd, -almnxd)) * entryg_internal["rk2rol"].
 		
 		//refactored pitch limits calculation
 		//apply pitch modulation
