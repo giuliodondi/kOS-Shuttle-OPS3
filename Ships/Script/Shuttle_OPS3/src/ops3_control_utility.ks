@@ -161,8 +161,8 @@ FUNCTION dap_controller_factory {
 		LOCAL deltaroll IS time_gain * rollgain*(SHIP:CONTROL:PILOTROLL - SHIP:CONTROL:PILOTROLLTRIM).
 		LOCAL deltapitch IS time_gain * pitchgain*(SHIP:CONTROL:PILOTPITCH - SHIP:CONTROL:PILOTPITCHTRIM).
 		
-		SET this:steer_pitch TO this:prog_pitch + deltapitch.
-		SET this:steer_roll TO this:prog_roll + deltaroll.
+		SET this:steer_pitch TO this:steer_pitch + deltapitch.
+		SET this:steer_roll TO this:steer_roll + deltaroll.
 		SET this:steer_yaw TO 0.
 		
 		this:update_steering().
