@@ -94,6 +94,32 @@ FUNCTION ops3_main_exec {
 				if (guid_id > 11) {
 					aerosurfaces_control:update(is_autoflap(), is_autoairbk()).
 				}
+				
+				if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) {
+					SET hud_datalex["pipper_deltas"] TO LIST(
+															dap:tgt_roll - dap:prog_roll, 
+															dap:tgt_pitch -  dap:prog_pitch
+
+					).
+				} else if (guid_id = 25) {
+					SET hud_datalex["pipper_deltas"] TO LIST(
+															dap:tgt_roll - dap:prog_roll, 
+															dap:tgt_nz -  dap:aero:nz
+
+					).
+				} else {
+					SET hud_datalex["pipper_deltas"] TO LIST(
+															dap:tgt_roll - dap:prog_roll, 
+															dap:tgt_hdot -  rwystate["hdot"]
+
+					).
+				}
+				
+				SET hud_datalex["cur_nz"] TO dap:aero:nz.
+				SET hud_datalex["cur_pch"] TO dap:prog_pitch.
+				SET hud_datalex["cur_roll"] TO dap:prog_roll.
+				
+				update_hud_gui(hud_datalex).
 			}
 	).
 
@@ -171,18 +197,11 @@ FUNCTION ops3_main_exec {
 			SET hud_datalex["hdot"] TO entry_state["hdot"].
 			SET hud_datalex["distance"] TO entry_state["tgt_range"].
 			set hud_datalex["delaz"] to entry_state["delaz"].
-			SET hud_datalex["cur_nz"] TO dap:aero:nz.
-			SET hud_datalex["cur_pch"] TO dap:prog_pitch.
-			SET hud_datalex["cur_roll"] TO dap:prog_roll.
+			
 			SET hud_datalex["flapval"] TO aerosurfaces_control["flap_defl"].
 			SET hud_datalex["spdbk_val"] TO aerosurfaces_control["spdbk_defl"].
 			
-			SET hud_datalex["pipper_deltas"] TO LIST(
-													entryg_out["rolcmd"] - dap:prog_roll, 
-													entryg_out["alpcmd"] -  dap:prog_pitch
-			).
 			
-			update_hud_gui(hud_datalex).
 			
 			local gui_data is lexicon(
 									"range",entry_state["tgt_range"],
@@ -341,26 +360,6 @@ FUNCTION ops3_main_exec {
 
 			//gui outputs
 			
-			if (guid_id = 26) OR (guid_id = 24) {
-				SET hud_datalex["pipper_deltas"] TO LIST(
-														taemg_out["phic_at"] - dap:prog_roll, 
-														taemg_out["alpcmd"] -  dap:prog_pitch
-
-				).
-			} else if (guid_id = 25) {
-				SET hud_datalex["pipper_deltas"] TO LIST(
-														taemg_out["phic_at"] - dap:prog_roll, 
-														taemg_out["nztotal"] -  dap:aero:nz
-
-				).
-			} else {
-				SET hud_datalex["pipper_deltas"] TO LIST(
-														taemg_out["phic_at"] - dap:prog_roll, 
-														taemg_out["hdrefc"] -  rwystate["hdot"]
-
-				).
-			}
-			
 			if (taemg_out["itran"]) {
 				hud_decluttering(guid_id).
 				if (guid_id = 22) {
@@ -373,9 +372,6 @@ FUNCTION ops3_main_exec {
 			SET hud_datalex["altitude"] TO rwystate["h"].
 			SET hud_datalex["hdot"] TO rwystate["hdot"].
 			SET hud_datalex["distance"] TO taemg_out["rpred"] / 1000.
-			SET hud_datalex["cur_nz"] TO dap:aero:nz.
-			SET hud_datalex["cur_pch"] TO dap:lvlh_pitch.
-			SET hud_datalex["cur_roll"] TO dap:lvlh_roll.
 			SET hud_datalex["flapval"] TO aerosurfaces_control["flap_defl"].
 			SET hud_datalex["spdbk_val"] TO aerosurfaces_control["spdbk_defl"].
 			
@@ -406,8 +402,6 @@ FUNCTION ops3_main_exec {
 				set hud_datalex["delaz"] to taemg_out["dpsac"].
 				gui_data:ADD("hac_entry_t",  taemg_out["tth"]).
 			}
-			
-			update_hud_gui(hud_datalex).
 			
 			update_taem_vsit_disp(gui_data).
 			
