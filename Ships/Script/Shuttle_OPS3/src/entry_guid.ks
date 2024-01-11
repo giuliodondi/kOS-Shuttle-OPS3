@@ -270,6 +270,8 @@ global entryg_internal is lexicon(
 									"c17", 0,   		//d(l/d) / dH
 									"c2", 0,   	//component of ref l/d 
 									"d23", 0,		//drag velocity profile is anchored at d23 at velocity vb1 - the phase 2/3 boundary
+									"d231", 0,		//initial value in the expansion of d23
+									"d23l", 0,		//lower limit on d23
 									"ddp", 0,   		//ddp prev 
 									"delalp", 0,   	//commanded alpha incr,   
 									"dlrdot", 0,   	//r feedback 
@@ -302,6 +304,8 @@ global entryg_internal is lexicon(
 									"rdtref", 0,   	//rdot ref 
 									"rdtrf1", 0,   	//rdot ref in phase 3 
 									"rdtrft", 0, 	//rdot ref but different?
+									"r23", 0,		//actual range to fly in phases 2 and 3
+									"r231", 0,		//predicted range to fly in phases 2 and 3 times d23
 									"req1", 0,   	//eq glide range x d23
 									"rer1", 0,   	//trans phase range 
 									"rf", list(0,0,0),   	//tmp control segments ranges x d23
@@ -714,12 +718,12 @@ function egrp {
 		}
 		
 		set entryg_internal["vcg"] to entryg_constants["vq"].
-		local d23l is entryg_constants["alfm"]*(entryg_internal["vsit2"] - entryg_internal["vb2"]) / (entryg_internal["vsit2"] - entryg_internal["vq2"]).
+		set entryg_internal["d23l"] to entryg_constants["alfm"]*(entryg_internal["vsit2"] - entryg_internal["vb2"]) / (entryg_internal["vsit2"] - entryg_internal["vq2"]).
 		
-		if (entryg_internal["d23"] > d23l) {
-			set entryg_internal["vcg"] to SQRT(entryg_internal["vsit2"] - d23l*(entryg_internal["vsit2"] - entryg_internal["vq2"]) / entryg_internal["d23"]).
+		if (entryg_internal["d23"] > entryg_internal["d23l"]) {
+			set entryg_internal["vcg"] to SQRT(entryg_internal["vsit2"] - entryg_internal["d23l"]*(entryg_internal["vsit2"] - entryg_internal["vq2"]) / entryg_internal["d23"]).
 		} else {
-			set entryg_internal["d23"] to d23l.
+			set entryg_internal["d23"] to entryg_internal["d23l"].
 		}
 		
 		//aux var
@@ -731,19 +735,19 @@ function egrp {
 		set entryg_internal["rcg"] to entryg_internal["rcg1"] - entryg_internal["a"][2] / entryg_internal["d23"].
 		
 		// phases 2-3 predicted tange * d23
-		local r231 is entryg_internal["rff1"] + entryg_internal["req1"].
+		set entryg_internal["r231"] to entryg_internal["rff1"] + entryg_internal["req1"].
 		//the actual range we must fly during phases 2 and 3
-		local r23 is entryg_input["trange"] - entryg_internal["rcg"] - entryg_internal["rpt"].
+		set entryg_internal["r23"] to  entryg_input["trange"] - entryg_internal["rcg"] - entryg_internal["rpt"].
 		
 		//first updated value of d23
-		local d231 is r231 / r23.
-		set entryg_internal["drdd"] to -r23 / d231.
+		set entryg_internal["d231"] to entryg_internal["r231"] / entryg_internal["r23"].
+		set entryg_internal["drdd"] to - entryg_internal["r23"] / entryg_internal["d231"].
 		
 		//second order expansion dor d23, e
-		if (d231 >= d23l) {
-			set entryg_internal["d23"] to d231 + entryg_internal["a"][2]*((1 - entryg_internal["d23"] / d231)^2) / (2*r23).
+		if (entryg_internal["d231"] >= entryg_internal["d23l"]) {
+			set entryg_internal["d23"] to entryg_internal["d231"] + entryg_internal["a"][2]*((1 - entryg_internal["d23"] / entryg_internal["d231"])^2) / (2*entryg_internal["r23"]).
 		} else {
-			set entryg_internal["d23"] to max(d231, entryg_constants["e1"]).
+			set entryg_internal["d23"] to max(entryg_internal["d231"], entryg_constants["e1"]).
 		}
 		
 		if (entryg_input["egflg"] > 1) {
