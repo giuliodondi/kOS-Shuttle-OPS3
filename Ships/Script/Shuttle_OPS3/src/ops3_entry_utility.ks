@@ -12,7 +12,8 @@ FUNCTION shuttle_steep_ei_fpa {
 FUNCTION shuttle_ei_range {
 	PARAMETER ei_fpa.
 	
-	return (ei_fpa/3 + 1.6638490566)*BODY:RADIUS/1000.
+	//return (ei_fpa/3 + 1.6638490566)*BODY:RADIUS/1000.
+	return (ei_fpa/3 + 1.58545457558)*BODY:RADIUS/1000. //less 500km
 }
 
 //need to be both in kilometres
@@ -77,12 +78,18 @@ FUNCTION get_reentry_state {
 	LOCAL tgt_range IS greatcircledist( rwy["position"] , cur_latlng ).
 	
 	local hls is pos_rwy_alt(cur_pos, rwy).
+	
+	LOCAL upvec IS -SHIP:ORBIT:BODY:POSITION:NORMALIZED.
+	LOCAL surfv_h IS VXCL(cur_pos,cur_surfv).
+	
+	local fpa is ARCTAN2(hdot_, surfv_h:MAG).
 
 	RETURN LEXICON(
 		"tgt_range", tgt_range,
 		"delaz", delaz,
 		"hls", hls,	
-		"hdot", hdot_
+		"hdot", hdot_,
+		"fpa", fpa
 	).
 }
 

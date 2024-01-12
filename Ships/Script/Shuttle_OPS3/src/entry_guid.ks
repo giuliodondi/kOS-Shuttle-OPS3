@@ -41,6 +41,7 @@ FUNCTION entryg_wrapper {
 							"hls", entryg_input["hls"]*mt2ft,		   //alt above rwy (ft)
 							"lod", entryg_input["lod"], 		//current l/d 
 							"rdot", entryg_input["hdot"]*mt2ft,        //alt rate (ft/s) 
+							"gamma", entryg_input["gamma"],			//deg current fpa
 							"roll", entryg_input["roll"],	   //cur bank angle 
 							"trange", entryg_input["tgt_range"]*km2nmi + entryg_constants["trangebias"],     //target range (nmi)
 							"ve", entryg_input["ve"]*mt2ft, 		   //earth rel velocity (ft/s)
@@ -124,22 +125,23 @@ global entryg_constants is lexicon (
 									//"cddot4", 0.0783,	//cd alpha coef 
 									//"cddot5", -8.165e-3,	// 1/deg	cd alpha coef 
 									//"cddot6", 6.833e-4,		// 1/deg2	cd alpha coef 
+									//"cddot7", 7.5e-5,	//s/ft cddot coef 
 									
 									//my own fitted coefficients from FAR
 									"cddot1", 1918.42,	//ft/s 	cd velocity coef 
 									"cddot2", 2195.26,	//ft/s 	cd velocity coef 
 									"cddot3", 0.24511, 	// 	cd velocity coef 
 									"cddot4", 0.08497,	//cd alpha coef 
-									"cddot5", -5.94487e-3,	// 1/deg	cd alpha coef 
-									"cddot6", 6.21138e-4,		// 1/deg2	cd alpha coef 
+									"cddot5", -1.594487e-2,	// 1/deg	cd alpha coef 
+									"cddot6", 9.71138e-4,		// 1/deg2	cd alpha coef 
+									"cddot7", 9.5e-5,	//s/ft cddot coef 
 									
-									"cddot7", 7.5e-5,	//s/ft cddot coef 
 									"cddot8", 13.666e-4,	//1/deg2	cddot coef
 									"cddot9", -8.165e-3,	//1/s cddot coef
 									"cnmfs", 1.645788e-4,	//nmi/ft 	conversion from feet to nmi 
 									"crdeaf", 4,	//roll bias due to pitch modulation gain	//was 4
 									//"ct16", list(0, 0.1354, -0.1, 0.006),	// s2/ft - nd - s2/ft	c16 coefs STS-1
-									"ct16", list(0, 0.1354, -0.1, 0.012),	// s2/ft - nd - s2/ft	c16 coefs
+									"ct16", list(0, 0.1854, -0.15, 0.015),	// s2/ft - nd - s2/ft	c16 coefs
 									"ct17", list(0, 2*1.537e-2, -5.8146e-1),	//s/ft - nd 	c17 coefs
 									"ct16mn", 0.025,	//s2/ft		min c16
 									"ct16mx", 0.35,		//s2/ft 	max c16
@@ -149,17 +151,16 @@ global entryg_constants is lexicon (
 									"cy0", -7.5,		//deg 	constant term heading err deadband
 									"cy1", 0.0062498,	//deg-s/ft 	linear term heading err deadband
 									"c17mp", 0.75,		//c17 mult fact when ict=1
-									"c21", 1.2 * 0.06,		//1/deg c20 cont val
-									"c22", 1.2 * -0.001,		//1/deg c20 const value in linear term
-									"c23", 1.2 * 4.25e-6,		//s/ft-deg 	c20 linear term
-									"c24", 1.2 * 0.01,	//1/deg  c20 const value 
-									"c25", 1.2 * 0.01,		//1/deg	c20 const value in linear term 		//altered to make alp moduln less violent
+									"c21", 1.5 * 0.06,		//1/deg c20 cont val
+									"c22", 1.5 * -0.001,		//1/deg c20 const value in linear term
+									"c23", 1.5 * 4.25e-6,		//s/ft-deg 	c20 linear term
+									"c24", 1.5 * 0.01,	//1/deg  c20 const value 
+									"c25", 1.5 * 0.01,		//1/deg	c20 const value in linear term 		//altered to make alp moduln less violent
 									"c26", 0,		//s/ft - deg 	c20 linear val 
 									"c27", 0,		//1/deg c20 const val 
 									"ddlim", 2,		//ft/s2	max drag for h feedback 
 									"ddmin", 0.05,	//ft/s 	min drag error to toggle alpha mod
-									//"delv", 2300,	//ft/s phase transfer vel bias - STS-1
-									"delv", 1000,	//ft/s phase transfer vel bias
+									"delv", 2300,	//ft/s phase transfer vel bias - STS-1
 									"df", 21.0,	//ft/s2 final drag in transition phase
 									"dlallm", 43,	//deg max constant
 									"dlaplm", 2,		//deg delalp lim
@@ -197,8 +198,7 @@ global entryg_constants is lexicon (
 									"rlmc4", -370,		//deg
 									"rlmc5", 0.16,		//deg/ft/s
 									"rlmc6", 30,		//deg	rlm min
-									//"rpt1", 22.4,	//nmi range bias	//OTT
-									"rpt1", 0,	//nmi range bias
+									"rpt1", 22.4,	//nmi range bias	//OTT
 									"va", 27637,	//ft/s initial vel for temp quadratic, dD/dV = 0
 									"valmod", 23000,	//ft/s modulation start flag for nonconvergence
 									"va1", 22000,	//ft/s matching point bw phase 2 quadratic segments
@@ -241,7 +241,7 @@ global entryg_constants is lexicon (
 									//other misc stuff added by me 
 									"drolcmdfil", 15,	//° roll cmd value band to apply filtering
 									"rolcmdfildt", 10,	//° roll cmd value filtering time const
-									"trangebias", 20,	//nm trange bias, positive value will force guidance closer to the target
+									"trangebias", 10,	//nm trange bias, positive value will force guidance closer to the target
 
 									"dummy", 0
 ).
@@ -929,12 +929,7 @@ function eglodvcmd {
 	local cdcal is entryg_constants["cddot4"] + entryg_internal["alpcmd"]*(entryg_constants["cddot5"] + entryg_constants["cddot6"]* entryg_internal["alpcmd"]) + entryg_constants["cddot3"] * a44.
 	local cddotc is entryg_constants["cddot7"]*(entryg_input["drag"] + entryg_constants["gs"]*entryg_input["rdot"] / entryg_input["ve"])*a44 + entryg_internal["alpdot"]*(entryg_constants["cddot8"]*entryg_internal["alpcmd"] + entryg_constants["cddot9"]).
 	
-	//my modification : use input cd from FAR if available
-	if (entryg_input["cd"] > 0) {
-		set entryg_internal["cdcal"] to entryg_input["cd"].
-	} else {
-		set entryg_internal["cdcal"] to cdcal.
-	}
+	set entryg_internal["cdcal"] to cdcal.
 	local c4 is entryg_internal["hs"]*cddotc/entryg_internal["cdcal"]. 
 	
 	//limit drag values based on max allowable drag alfm

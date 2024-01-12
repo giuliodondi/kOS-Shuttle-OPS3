@@ -36,7 +36,7 @@ global tgtrwy is "".
 GLOBAL ICS IS generate_simulation_ics("edwards").
 
 GLOBAL sim_settings IS LEXICON(
-					"deltat",2,
+					"deltat",0.5,
 					"integrator","rk3",
 					"log",FALSE
 	).
@@ -68,11 +68,11 @@ FUNCTION generate_simulation_ics {
 	if (name_ = "edwards") {
 		SET ics_lex to LEXICON(
 													"target", "Edwards",
-													"deorbit_apoapsis", 260,
-													"deorbit_periapsis", 0,
+													"deorbit_apoapsis", 300,
+													"deorbit_periapsis", 20,
 													"deorbit_inclination", 40,
 													"entry_interf_dist", 6500,
-													"entry_interf_xrange", 400,
+													"entry_interf_xrange", 300,
 													"entry_interf_offset", "right"
 							).
 		set standard to TRUE.
@@ -350,6 +350,7 @@ FUNCTION ops3_reentry_simulate {
 											"vi", vi:MAG,
 											"hls", entry_state["hls"],	
 											"hdot", entry_state["hdot"],  
+											"gamma", entry_state["fpa"], 
 											"alpha", pitch_prof,      
 											"roll", roll_prof,  
 											"drag", aerolex["drag"],
@@ -365,7 +366,7 @@ FUNCTION ops3_reentry_simulate {
 		SET pitch_prof TO entryg_out["alpcmd"].
 		//simulate roll lag
 		LOCAL del_rol IS entryg_out["rolcmd"] - roll_prof.
-		SET roll_prof TO roll_prof + SIGN(del_rol)* MIN(20, ABS(del_rol)).
+		SET roll_prof TO roll_prof + SIGN(del_rol)* MIN(10 * sim_settings["deltat"], ABS(del_rol)).
 		
 		//log stuff to file and terminal before integrating
 		
