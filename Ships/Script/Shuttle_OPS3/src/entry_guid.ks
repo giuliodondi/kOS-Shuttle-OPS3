@@ -198,7 +198,8 @@ global entryg_constants is lexicon (
 									"rlmc4", -370,		//deg
 									"rlmc5", 0.16,		//deg/ft/s
 									"rlmc6", 30,		//deg	rlm min
-									"rpt1", 22.4,	//nmi range bias	//OTT
+									//"rpt1", 22.4,	//nmi range bias	//OTT
+									"rpt1", -70,	//nmi range bias	//OTT
 									"va", 27637,	//ft/s initial vel for temp quadratic, dD/dV = 0
 									"valmod", 23000,	//ft/s modulation start flag for nonconvergence
 									"va1", 22000,	//ft/s matching point bw phase 2 quadratic segments
@@ -220,7 +221,8 @@ global entryg_constants is lexicon (
 									"vrr", 0, 		//velocity first reversal //ft/s 
 									"v_taem", 2500,	//ft/s entry-taem interface ref vel 
 									"vtrb0", 60000,	//ft/s initial value of vtrb
-									"vtran", 10500,	//ft/s nominal vel at start of transition 
+									//"vtran", 10500,	//ft/s nominal vel at start of transition STS-1
+									"vtran", 9000,	//ft/s nominal vel at start of transition
 									"vylmax", 23000,	//ft/s min vel to limit lmn by almn4
 									"ylmin", 1.72,	//deg yl bias used in test for lmn	
 									"ylmn2", 4.01,	//deg mon yl bias 
@@ -853,7 +855,8 @@ function egtran {
 	set entryg_internal["drdd"] to min(entryg_constants["cnmfs"] * 1/(c1 * entryg_internal["drefp"]) - entryg_internal["rer1"] / drefpt , entryg_constants["drddl"]).
 	
 	//update reference drag but ensure it doesn't exceed elevon higne moment limits through alim, I assume
-	set entryg_internal["drefp"] to entryg_internal["drefp"] + (entryg_input["trange"] - entryg_internal["rer1"] - entryg_constants["rpt1"]) / entryg_internal["drdd"].
+	//removed  - entryg_constants["rpt1"]
+	set entryg_internal["drefp"] to entryg_internal["drefp"] + (entryg_input["trange"] - entryg_internal["rer1"]) / entryg_internal["drdd"].
 	local dlim is entryg_constants["alim"] * entryg_input["drag"] / entryg_input["xlfac"].
 	if (entryg_internal["drefp"] > dlim) {
 		set entryg_internal["drefp"] to dlim.
