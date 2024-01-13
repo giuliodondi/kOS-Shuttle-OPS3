@@ -43,7 +43,7 @@ FUNCTION entryg_wrapper {
 							"rdot", entryg_input["hdot"]*mt2ft,        //alt rate (ft/s) 
 							"gamma", entryg_input["gamma"],			//deg current fpa
 							"roll", entryg_input["roll"],	   //cur bank angle 
-							"trange", entryg_input["tgt_range"]*km2nmi + entryg_constants["trangebias"],     //target range (nmi)
+							"trange", entryg_input["tgt_range"]*km2nmi,     //target range (nmi)
 							"ve", entryg_input["ve"]*mt2ft, 		   //earth rel velocity (ft/s)
 							"vi", entryg_input["vi"]*mt2ft,		   //inertial vel (ft/s)
 							"xlfac", entryg_input["xlfac"],      //load factor acceleration (ft/s2)
@@ -198,13 +198,16 @@ global entryg_constants is lexicon (
 									"rlmc4", -370,		//deg
 									"rlmc5", 0.16,		//deg/ft/s
 									"rlmc6", 30,		//deg	rlm min
-									//"rpt1", 22.4,	//nmi range bias	//OTT
-									"rpt1", -70,	//nmi range bias	//OTT
+									//"rpt1", 22.4,	//nmi phase 5 range bias during previous phases	//OTT
+									"rpt1", -5,	//nmi phase 5 range bias during previous phases	//OTT
+									"rpt2", 50,	//nmi phase 2 range bias - my addition
+									"rpt3", 20,	//nmi phase 3 range bias - my addition
 									"va", 27637,	//ft/s initial vel for temp quadratic, dD/dV = 0
 									"valmod", 23000,	//ft/s modulation start flag for nonconvergence
 									"va1", 22000,	//ft/s matching point bw phase 2 quadratic segments
 									"va2", 27637,	//ft/s initial vel dor temp quadratic dD/dV = 0
-									"vb1", 19000,	//ft/s phase 2/3 boundary vel 
+									//"vb1", 19000,	//ft/s phase 2/3 boundary vel STS-1
+									"vb1", 17000,	//ft/s phase 2/3 boundary vel
 									"vc16", 23000,	//ft/s vel to start c16 drag error term
 									"vc20", 2500,	//ft/s c20 vel break point
 									"velmn", 8000,	//ft/s	max vel for limiting lmn by almn3
@@ -222,7 +225,7 @@ global entryg_constants is lexicon (
 									"v_taem", 2500,	//ft/s entry-taem interface ref vel 
 									"vtrb0", 60000,	//ft/s initial value of vtrb
 									//"vtran", 10500,	//ft/s nominal vel at start of transition STS-1
-									"vtran", 9000,	//ft/s nominal vel at start of transition
+									"vtran", 9500,	//ft/s nominal vel at start of transition
 									"vylmax", 23000,	//ft/s min vel to limit lmn by almn4
 									"ylmin", 1.72,	//deg yl bias used in test for lmn	
 									"ylmn2", 4.01,	//deg mon yl bias 
@@ -243,7 +246,6 @@ global entryg_constants is lexicon (
 									//other misc stuff added by me 
 									"drolcmdfil", 15,	//° roll cmd value band to apply filtering
 									"rolcmdfildt", 10,	//° roll cmd value filtering time const
-									"trangebias", 10,	//nm trange bias, positive value will force guidance closer to the target
 
 									"dummy", 0
 ).
@@ -713,8 +715,11 @@ function egrp {
 	
 	//calculate drag d23 at vb1 
 	if (entryg_internal["t2dot"] > entryg_constants["dt2min"]) or (entryg_input["ve"] > (entryg_internal["vcg"] + entryg_constants["delv"])) {
+		local r23_bias is entryg_constants["rpt2"].
+	
 		if (entryg_input["ve"] < entryg_constants["vb1"]) {
 			set entryg_internal["vb2"] to entryg_internal["ve2"].
+			set r23_bias to entryg_constants["rpt3"].
 		}
 		
 		set entryg_internal["vcg"] to entryg_constants["vq"].
@@ -737,7 +742,8 @@ function egrp {
 		// phases 2-3 predicted tange * d23
 		set entryg_internal["r231"] to entryg_internal["rff1"] + entryg_internal["req1"].
 		//the actual range we must fly during phases 2 and 3
-		set entryg_internal["r23"] to  entryg_input["trange"] - entryg_internal["rcg"] - entryg_internal["rpt"].
+		//added phase-dependent bias 
+		set entryg_internal["r23"] to  entryg_input["trange"] - entryg_internal["rcg"] - entryg_internal["rpt"] + r23_bias.
 		
 		//first updated value of d23
 		set entryg_internal["d231"] to entryg_internal["r231"] / entryg_internal["r23"].
