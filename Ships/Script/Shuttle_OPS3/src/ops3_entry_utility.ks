@@ -6,14 +6,14 @@
 FUNCTION shuttle_steep_ei_fpa {
 	PARAMETER ei_vel.
 	
-	return 162.2908 - 0.03742578*ei_vel + 0.000002114297*ei_vel^2.
+	return 162.4208 - 0.03742578*ei_vel + 0.000002114297*ei_vel^2.
 }
 
 FUNCTION shuttle_ei_range {
 	PARAMETER ei_fpa.
 	
 	//return (ei_fpa/3 + 1.6638490566)*BODY:RADIUS/1000.
-	return (ei_fpa/3 + 1.58545457558)*BODY:RADIUS/1000. //less 500km
+	return (ei_fpa/3 + 1.60545457558)*BODY:RADIUS/1000. //less 500km
 }
 
 //need to be both in kilometres

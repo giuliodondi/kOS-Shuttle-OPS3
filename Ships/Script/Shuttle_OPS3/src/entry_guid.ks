@@ -100,7 +100,8 @@ global entryg_constants is lexicon (
 									"acn1", 50,	//time const for hdot feedback
 									"ak", -3.4573,	//temp control dD/dV factor
 									"ak1", -4.76,	//temp control dD/dV factor
-									"alfm", 33.0,	//ft/s2 	desired const drag 
+									//"alfm", 33.0,	//ft/s2 	desired const drag STS-1
+									"alfm", 28,	//ft/s2 	desired const drag
 									"alim", 70.84,	//ft/s2 max accel in transition
 									"almn1", 0.7986355,	//max l/d cmd outside heading err deadband
 									"almn2", 0.9659258,	//max l/d cmd inside heading err deadband
@@ -141,7 +142,7 @@ global entryg_constants is lexicon (
 									"cnmfs", 1.645788e-4,	//nmi/ft 	conversion from feet to nmi 
 									"crdeaf", 4,	//roll bias due to pitch modulation gain	//was 4
 									//"ct16", list(0, 0.1354, -0.1, 0.006),	// s2/ft - nd - s2/ft	c16 coefs STS-1
-									"ct16", list(0, 0.1854, -0.15, 0.015),	// s2/ft - nd - s2/ft	c16 coefs
+									"ct16", list(0, 0.27, -0.2, 0.015),	// s2/ft - nd - s2/ft	c16 coefs
 									"ct17", list(0, 2*1.537e-2, -5.8146e-1),	//s/ft - nd 	c17 coefs
 									"ct16mn", 0.025,	//s2/ft		min c16
 									"ct16mx", 0.35,		//s2/ft 	max c16
@@ -193,18 +194,16 @@ global entryg_constants is lexicon (
 									"rdmax", 12,	//max roll bias 
 									"rlmc0", 90,	//rlm max above verolc
 									"rlmc1", 70,	//rlm max
-									"rlmc2", 70,	//coeff in first rlm seg 
-									"rlmc3", 0,		//deg/ft/s
-									"rlmc4", -370,		//deg
-									"rlmc5", 0.16,		//deg/ft/s
+									"rlmc2", -47,	//coeff in first rlm seg 
+									"rlmc3", 0.03,		//deg/ft/s
+									"rlmc4", -47,		//deg
+									"rlmc5", 0.03,		//deg/ft/s
 									"rlmc6", 30,		//deg	rlm min
 									//"rpt1", 22.4,	//nmi phase 5 range bias during previous phases	//OTT
-									"rpt1", -5,	//nmi phase 5 range bias during previous phases	//OTT
-									"rpt2", 50,	//nmi phase 2 range bias - my addition
-									"rpt3", 20,	//nmi phase 3 range bias - my addition
+									"rpt1", 8,	//nmi phase 5 range bias during previous phases	//OTT
 									"va", 27637,	//ft/s initial vel for temp quadratic, dD/dV = 0
 									"valmod", 23000,	//ft/s modulation start flag for nonconvergence
-									"va1", 22000,	//ft/s matching point bw phase 2 quadratic segments
+									"va1", 22000,	//ft/s matching point bw phase 2 quadratic segments	STS-1
 									"va2", 27637,	//ft/s initial vel dor temp quadratic dD/dV = 0
 									//"vb1", 19000,	//ft/s phase 2/3 boundary vel STS-1
 									"vb1", 17000,	//ft/s phase 2/3 boundary vel
@@ -223,9 +222,9 @@ global entryg_constants is lexicon (
 									"vrdt", 23000,	//ft/s hdot feedback start vel 
 									"vrr", 0, 		//velocity first reversal //ft/s 
 									"v_taem", 2500,	//ft/s entry-taem interface ref vel 
+									"r_taem", 45,	//nm my addition: force transition below this range
 									"vtrb0", 60000,	//ft/s initial value of vtrb
-									//"vtran", 10500,	//ft/s nominal vel at start of transition STS-1
-									"vtran", 9500,	//ft/s nominal vel at start of transition
+									"vtran", 10500,	//ft/s nominal vel at start of transition STS-1
 									"vylmax", 23000,	//ft/s min vel to limit lmn by almn4
 									"ylmin", 1.72,	//deg yl bias used in test for lmn	
 									"ylmn2", 4.01,	//deg mon yl bias 
@@ -449,7 +448,8 @@ function egexec {
 		//but there is more logic to only switch when the bank command is the same to avoid discontinuities
 		//controlled by variable gs2 inside drefp3
 		if (entryg_internal["islect"] = 2) and (entryg_input["ve"] < entryg_constants["va"]) and (entryg_internal["drefp"] < entryg_internal["drefp3"]) {
-			set entryg_internal["islect"] to 3.
+			//disabled, use alternate
+			//set entryg_internal["islect"] to 3.
 			set entryg_internal["tran3f_nom"] to TRUE.
 		}
 		
@@ -506,7 +506,7 @@ function egexec {
 	
 	//entry guidance termination 
 	//check this regardless of the value of islect
-	if (entryg_input["ve"] < entryg_constants["v_taem"]) {
+	if (entryg_input["ve"] < entryg_constants["v_taem"] OR entryg_input["trange"] <= entryg_constants["r_taem"]) {
 		set entryg_internal["eg_end"] to TRUE.
 	}
 }
@@ -715,11 +715,9 @@ function egrp {
 	
 	//calculate drag d23 at vb1 
 	if (entryg_internal["t2dot"] > entryg_constants["dt2min"]) or (entryg_input["ve"] > (entryg_internal["vcg"] + entryg_constants["delv"])) {
-		local r23_bias is entryg_constants["rpt2"].
 	
 		if (entryg_input["ve"] < entryg_constants["vb1"]) {
 			set entryg_internal["vb2"] to entryg_internal["ve2"].
-			set r23_bias to entryg_constants["rpt3"].
 		}
 		
 		set entryg_internal["vcg"] to entryg_constants["vq"].
@@ -743,7 +741,7 @@ function egrp {
 		set entryg_internal["r231"] to entryg_internal["rff1"] + entryg_internal["req1"].
 		//the actual range we must fly during phases 2 and 3
 		//added phase-dependent bias 
-		set entryg_internal["r23"] to  entryg_input["trange"] - entryg_internal["rcg"] - entryg_internal["rpt"] + r23_bias.
+		set entryg_internal["r23"] to  entryg_input["trange"] - entryg_internal["rcg"] - entryg_internal["rpt"].
 		
 		//first updated value of d23
 		set entryg_internal["d231"] to entryg_internal["r231"] / entryg_internal["r23"].
@@ -780,15 +778,15 @@ function egref {
 			set hdtrf[i] to -entryg_internal["hs"] * (2* dref[i] / entryg_input["ve"] - entryg_internal["cq2"][i] - 2*entryg_internal["cq3"][i]*entryg_input["ve"]).
 		}
 		
-		//the test to switch to the single quadratic #1
-		if (entryg_input["ve"] > entryg_constants["va1"]) {
-			local drf is dref[2] -  dref[1].
-			set drf to drf*(drf + (hdtrf[1] - hdtrf[2])*entryg_constants["gs1"]).
-			
-			if (drf < 0) {
-				set entryg_internal["n_quad_seg"] to 1.
-			}
-		}
+		//bank angle smothing between quadratics, but it doesn't work all that well, disable it 
+		//if (entryg_input["ve"] > entryg_constants["va1"]) {
+		//	local drf is dref[2] -  dref[1].
+		//	set drf to drf*(drf + (hdtrf[1] - hdtrf[2])*entryg_constants["gs1"]).
+		//	
+		//	if (drf < 0) {
+		//		set entryg_internal["n_quad_seg"] to 1.
+		//	}
+		//}
 		
 		set entryg_internal["drefp"] to entryg_internal["d23"] * dref[entryg_internal["n_quad_seg"]].
 		set entryg_internal["rdtref"] to entryg_internal["d23"] * hdtrf[entryg_internal["n_quad_seg"]].
@@ -803,11 +801,12 @@ function egref {
 		set entryg_internal["drefp3"] to entryg_internal["drefp1"] + entryg_constants["gs2"] * (entryg_internal["rdtref"] - entryg_internal["rdtrf1"]).
 		
 		//use phase 3 parameters and turn off roll smoothing, this happens at the nominal phase 2-3 transition
-		if (entryg_internal["drefp3"] > entryg_internal["drefp"]) or (entryg_input["ve"] < entryg_constants["vb1"]) {
-			set entryg_internal["drefp"] to entryg_internal["drefp1"].
-			set entryg_internal["rdtref"] to entryg_internal["rdtrf1"].
-			set entryg_internal["c2"] to 0.
-		}
+		//also disable this 
+		//if (entryg_internal["drefp3"] > entryg_internal["drefp"]) or (entryg_input["ve"] < entryg_constants["vb1"]) {
+		//	set entryg_internal["drefp"] to entryg_internal["drefp1"].
+		//	set entryg_internal["rdtref"] to entryg_internal["rdtrf1"].
+		//	set entryg_internal["c2"] to 0.
+		//}
 	}
 	
 	//test value for drefp for transition to phase 4
@@ -861,8 +860,7 @@ function egtran {
 	set entryg_internal["drdd"] to min(entryg_constants["cnmfs"] * 1/(c1 * entryg_internal["drefp"]) - entryg_internal["rer1"] / drefpt , entryg_constants["drddl"]).
 	
 	//update reference drag but ensure it doesn't exceed elevon higne moment limits through alim, I assume
-	//removed  - entryg_constants["rpt1"]
-	set entryg_internal["drefp"] to entryg_internal["drefp"] + (entryg_input["trange"] - entryg_internal["rer1"]) / entryg_internal["drdd"].
+	set entryg_internal["drefp"] to entryg_internal["drefp"] + (entryg_input["trange"] - entryg_internal["rer1"] - entryg_constants["rpt1"]) / entryg_internal["drdd"].
 	local dlim is entryg_constants["alim"] * entryg_input["drag"] / entryg_input["xlfac"].
 	if (entryg_internal["drefp"] > dlim) {
 		set entryg_internal["drefp"] to dlim.
