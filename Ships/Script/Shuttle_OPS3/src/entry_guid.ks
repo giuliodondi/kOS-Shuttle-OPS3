@@ -170,8 +170,8 @@ global entryg_constants is lexicon (
 									"dlallm", 43,	//deg max constant
 									"dlaplm", 2,		//deg delalp lim
 									"dlrdotl", 150,		//ft/s???? clamp value for rdot feedback 
-									"d23c", 17.5,	//ft/s2 etg canned d23
-									"d230", 17.5,	//ft/s2 initial d23 value
+									"d23c", 15.5,	//ft/s2 etg canned d23
+									"d230", 15.5,	//ft/s2 initial d23 value
 									"drddl", -1.5,	//nmi/s2/ft	minimum value of drdd
 									"dtegd", 1.92,	//s entry guidance computation interval
 									"dt2min", 0.008,	//ft/s3 min value of t2dot
@@ -209,8 +209,7 @@ global entryg_constants is lexicon (
 									"valmod", 23000,	//ft/s modulation start flag for nonconvergence
 									"va1", 22000,	//ft/s matching point bw phase 2 quadratic segments	STS-1
 									"va2", 27637,	//ft/s initial vel dor temp quadratic dD/dV = 0
-									//"vb1", 19000,	//ft/s phase 2/3 boundary vel STS-1
-									"vb1", 17000,	//ft/s phase 2/3 boundary vel
+									"vb1", 19000,	//ft/s phase 2/3 boundary vel STS-1
 									"vc16", 23000,	//ft/s vel to start c16 drag error term
 									"vc20", 2500,	//ft/s c20 vel break point
 									"velmn", 8000,	//ft/s	max vel for limiting lmn by almn3
@@ -795,10 +794,9 @@ function egref {
 		set entryg_internal["drefp"] to entryg_internal["d23"] * dref[entryg_internal["n_quad_seg"]].
 		set entryg_internal["rdtref"] to entryg_internal["d23"] * hdtrf[entryg_internal["n_quad_seg"]].
 		set entryg_internal["c2"] to entryg_internal["d23"] * entryg_internal["cq2"][entryg_internal["n_quad_seg"]].
-	}
-	
-	//eq glide 
-	if (entryg_input["ve"] < entryg_constants["va"]) {
+	} else {
+		//my modification: do this only below vb1
+		//eq glide 
 		local aldco is (1 - entryg_internal["vb2"] / entryg_internal["vsit2"] ) / entryg_internal["d23"].
 		set entryg_internal["drefp1"] to (1 - entryg_internal["ve2"] / entryg_internal["vsit2"] ) / aldco.
 		set entryg_internal["rdtrf1"] to -2*entryg_internal["hs"]/(entryg_input["ve"] * aldco).
