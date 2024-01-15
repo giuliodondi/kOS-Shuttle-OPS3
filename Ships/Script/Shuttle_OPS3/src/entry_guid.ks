@@ -91,17 +91,19 @@ FUNCTION entryg_wrapper {
 //input constants
 
 global entryg_constants is lexicon (
-									"aclam1", 10,	//deg
+									"aclam1", 9,	//deg
 									"aclam2", 3.3e-3,	//deg / (ft/s)
 									"aclim1", 37,	//deg
 									"aclim2", 10,	//deg
-									"aclim3", -15.5,	//deg
+									"aclim3", -19.5,	//deg
 									"aclim4", 2.5e-3,	//deg / (ft/s)
+									
 									"acn1", 50,	//time const for hdot feedback
-									"ak", -3.4573,	//temp control dD/dV factor
-									"ak1", -4.76,	//temp control dD/dV factor
+									//"ak", -3.4573,	//temp control dD/dV factor	STS_1
+									"ak", -3.5,	//temp control dD/dV factor	
+									"ak1", -5.5,	//temp control dD/dV factor
 									//"alfm", 33.0,	//ft/s2 	desired const drag STS-1
-									"alfm", 28,	//ft/s2 	desired const drag
+									"alfm", 29,	//ft/s2 	desired const drag
 									"alim", 70.84,	//ft/s2 max accel in transition
 									"almn1", 0.7986355,	//max l/d cmd outside heading err deadband
 									"almn2", 0.9659258,	//max l/d cmd inside heading err deadband
@@ -114,10 +116,11 @@ global entryg_constants is lexicon (
 									//"calp1", list(0, 3.333333e-3, 0.0283333, 0, -0.045, 2.5e-3, 0.0575, 0),	//deg-s/ft 	alpcmd linear term in ve 	//38-28 profile
 									//"calp2", list(0, 0, -1.66667e-6, 0, 1.25e-6, 0, -1.25e-6, 0),	//deg-s2/ft2 	alpcmd quadratic term in ve 	//38-28 profile
 									
-									"valp", list(0, 500, 7500, 8500, 16000, 17000, 20000, 21000),	//ft/s alpcmd vs ve boundaries 	//38-28 profile
-									"calp0", list(5, 3.3, -74.7625, 30, 350 , -11.25, -511.25, 40),	//deg alpcmd constant term in ve 	//40-30 profile
-									"calp1", list(0, 3.3e-3, 0.0240833, 0, -0.04, 2.5e-3, 0.0525, 0),	//deg-s/ft 	alpcmd linear term in ve 	//40-30 profile
-									"calp2", list(0, 0, -1.38333e-6, 0, 1.25e-6, 0, -1.25e-6, 0),	//deg-s2/ft2 	alpcmd quadratic term in ve 	//40-30 profile
+									//3B profile
+									"valp", list(0, 0, 7500, 8500, 18000, 19000, 22000, 23000),	//ft/s alpcmd vs ve boundaries 	//38-28 profile
+									"calp0", list(5, 5.385, -77.44, 30, 350.4, -16.25, -646.55, 40),	//deg alpcmd constant term in ve 	//40-30 profile
+									"calp1", list(0, 0.003077, 0.02522, 0, -0.0358, 0.0025, 0.05975, 0),	//deg-s/ft 	alpcmd linear term in ve 	//40-30 profile
+									"calp2", list(0, 0, -0.148e-5, 0, 0.1e-5, 0, -0.13e-5, 0),	//deg-s2/ft2 	alpcmd quadratic term in ve 	//40-30 profile
 									
 									//original cd coefficients
 									//"cddot1", 1500,	//ft/s 	cd velocity coef 
@@ -162,12 +165,13 @@ global entryg_constants is lexicon (
 									"ddlim", 2,		//ft/s2	max drag for h feedback 
 									"ddmin", 0.05,	//ft/s 	min drag error to toggle alpha mod
 									"delv", 2300,	//ft/s phase transfer vel bias - STS-1
-									"df", 21.0,	//ft/s2 final drag in transition phase
+									//"df", 21.0,	//ft/s2 final drag in transition phase	STS-1
+									"df", 19.09,	//ft/s2 final drag in transition phase	STS-1
 									"dlallm", 43,	//deg max constant
 									"dlaplm", 2,		//deg delalp lim
 									"dlrdotl", 150,		//ft/s???? clamp value for rdot feedback 
-									"d23c", 19.8,	//ft/s2 etg canned d23
-									"d230", 19.8,	//ft/s2 initial d23 value
+									"d23c", 17.5,	//ft/s2 etg canned d23
+									"d230", 17.5,	//ft/s2 initial d23 value
 									"drddl", -1.5,	//nmi/s2/ft	minimum value of drdd
 									"dtegd", 1.92,	//s entry guidance computation interval
 									"dt2min", 0.008,	//ft/s3 min value of t2dot
@@ -801,12 +805,11 @@ function egref {
 		set entryg_internal["drefp3"] to entryg_internal["drefp1"] + entryg_constants["gs2"] * (entryg_internal["rdtref"] - entryg_internal["rdtrf1"]).
 		
 		//use phase 3 parameters and turn off roll smoothing, this happens at the nominal phase 2-3 transition
-		//also disable this 
-		//if (entryg_internal["drefp3"] > entryg_internal["drefp"]) or (entryg_input["ve"] < entryg_constants["vb1"]) {
-		//	set entryg_internal["drefp"] to entryg_internal["drefp1"].
-		//	set entryg_internal["rdtref"] to entryg_internal["rdtrf1"].
-		//	set entryg_internal["c2"] to 0.
-		//}
+		if (entryg_internal["drefp3"] > entryg_internal["drefp"]) or (entryg_input["ve"] < entryg_constants["vb1"]) {
+			set entryg_internal["drefp"] to entryg_internal["drefp1"].
+			set entryg_internal["rdtref"] to entryg_internal["rdtrf1"].
+			set entryg_internal["c2"] to 0.
+		}
 	}
 	
 	//test value for drefp for transition to phase 4
