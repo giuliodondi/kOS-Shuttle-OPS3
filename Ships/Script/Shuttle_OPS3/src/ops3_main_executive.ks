@@ -56,8 +56,8 @@ FUNCTION ops3_main_exec {
 				set dap_engaged to is_dap_engaged().
 				if (dap_engaged) {
 					set css_flag to is_dap_css().
-					if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) {
-						//reentry, alpha recovery, alpha transition
+					if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) OR (guid_id = 36) {
+						//reentry, alpha recovery, alpha transition, slapdown/rollout
 						if (css_flag) {
 							dap:update_css_prograde().
 						} else {

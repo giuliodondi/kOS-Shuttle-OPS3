@@ -385,7 +385,8 @@ global taemg_constants is lexicon (
 									"h0_hdfnlfl", 80,			//ft reference altitude for hdot exp decay during final flare
 									"max_hdfnlfl", 0.18,			//ft maximum hdot during finalflare
 									"philm4", 15, 				//deg bank lim for flare and beyond
-									"phi_beta_gain", 3, 			//gain for yaw during rollout
+									"alpcmd_rlt", -3.4,			//aoa command for slapdown and rollout
+									"phi_beta_gain", 2, 			//gain for yaw during rollout
 									"surfv_h_brakes", 140,		//ft/s trigger for braking outside executive
 									"surfv_h_dapoff", 80,		//ft/s trigger for dap off outside executive
 									"surfv_h_exit", 15,		//ft/s trigger for termination
@@ -1235,6 +1236,12 @@ FUNCTION tgtran {
 // my modification - vertical guidance now is commanded hdot and not nz, but do it here regardless
 FUNCTION tgnzc {
 	PARAMETER taemg_input.	
+	
+	//rollout logic
+	if (taemg_internal["p_mode"] >= 6) {
+		set taemg_internal["alpcmd"] to taemg_constants["alpcmd_rlt"].
+		RETURN.
+	}
 	
 	set taemg_internal["hderr"] to taemg_internal["hdref"] - taemg_input["hdot"].
 	

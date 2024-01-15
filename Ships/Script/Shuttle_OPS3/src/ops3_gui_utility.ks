@@ -1254,8 +1254,8 @@ FUNCTION make_hud_gui {
 	//GLOBAL diamond_vmargin IS pointbox:STYLE:HEIGHT*0.447.
 	
 	//define central position as global constants.
-	GLOBAL diamond_central_x IS pointbox:STYLe:WIDTH*0.4785.
-	GLOBAL diamond_central_y IS pointbox:STYLE:HEIGHT*0.450.
+	GLOBAL diamond_central_x IS pointbox:STYLe:WIDTH*0.4783.
+	GLOBAL diamond_central_y IS pointbox:STYLE:HEIGHT*0.449.
 	
 	SET diamond:STYLE:margin:h TO diamond_central_x.
 	SET diamond:STYLE:margin:v TO diamond_central_y.
