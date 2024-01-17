@@ -36,7 +36,7 @@ global tgtrwy is "".
 GLOBAL ICS IS generate_simulation_ics("edwards").
 
 GLOBAL sim_settings IS LEXICON(
-					"deltat",0.5,
+					"deltat",2,
 					"integrator","rk3",
 					"log",FALSE
 	).

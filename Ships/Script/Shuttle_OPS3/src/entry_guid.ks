@@ -103,7 +103,7 @@ global entryg_constants is lexicon (
 									"ak", -3.5,	//temp control dD/dV factor	
 									"ak1", -5.5,	//temp control dD/dV factor
 									//"alfm", 33.0,	//ft/s2 	desired const drag STS-1
-									"alfm", 29,	//ft/s2 	desired const drag
+									"alfm", 33,	//ft/s2 	desired const drag
 									"alim", 70.84,	//ft/s2 max accel in transition
 									"almn1", 0.7986355,	//max l/d cmd outside heading err deadband
 									"almn2", 0.9659258,	//max l/d cmd inside heading err deadband
@@ -177,7 +177,8 @@ global entryg_constants is lexicon (
 									"dt2min", 0.008,	//ft/s3 min value of t2dot
 									"dtr", 0.0174532925,	//rad/deg 	degrees to radians
 									"eef4", 2.5e6,		//ft2/s2	final ref energy level in transition
-									"etran", 6.502262e7,	//ft2/s2	energy at start of transition
+									//"etran", 6.502262e7,	//ft2/s2	energy at start of transition	STS-1
+									"etran", 7.002262e7,	//ft2/s2	energy at start of transition
 									"e1", 0.01,		//ft/s2 	min of drefp and drefp-df in transition
 									"gs", 32.174,	//ft/s2 	earth gravity
 									"gs1", 0.02,	//1/s	roll cmd smoohing fac 
@@ -205,10 +206,13 @@ global entryg_constants is lexicon (
 									"rlmc6", 30,		//deg	rlm min
 									//"rpt1", 22.4,	//nmi phase 5 range bias during previous phases	//OTT
 									"rpt1", 8,	//nmi phase 5 range bias during previous phases	//OTT
-									"va", 27637,	//ft/s initial vel for temp quadratic, dD/dV = 0
+									//"va", 27637,	//ft/s initial vel for temp quadratic, dD/dV = 0	STS-1
+									"va", 29000,	//ft/s initial vel for temp quadratic, dD/dV = 0	
 									"valmod", 23000,	//ft/s modulation start flag for nonconvergence
-									"va1", 22000,	//ft/s matching point bw phase 2 quadratic segments	STS-1
-									"va2", 27637,	//ft/s initial vel dor temp quadratic dD/dV = 0
+									//"va1", 22000,	//ft/s matching point bw phase 2 quadratic segments	STS-1
+									"va1", 23500,	//ft/s matching point bw phase 2 quadratic segments	STS-1
+									//"va2", 27637,	//ft/s initial vel dor temp quadratic dD/dV = 0		STS-1
+									"va2", 17000,	//ft/s initial vel dor temp quadratic dD/dV = 0
 									"vb1", 19000,	//ft/s phase 2/3 boundary vel STS-1
 									"vc16", 23000,	//ft/s vel to start c16 drag error term
 									"vc20", 2500,	//ft/s c20 vel break point
@@ -227,7 +231,8 @@ global entryg_constants is lexicon (
 									"v_taem", 2500,	//ft/s entry-taem interface ref vel 
 									"r_taem", 45,	//nm my addition: force transition below this range
 									"vtrb0", 60000,	//ft/s initial value of vtrb
-									"vtran", 10500,	//ft/s nominal vel at start of transition STS-1
+									//"vtran", 10500,	//ft/s nominal vel at start of transition STS-1
+									"vtran", 9000,	//ft/s nominal vel at start of transition
 									"vylmax", 23000,	//ft/s min vel to limit lmn by almn4
 									"ylmin", 1.72,	//deg yl bias used in test for lmn	
 									"ylmn2", 4.01,	//deg mon yl bias 
