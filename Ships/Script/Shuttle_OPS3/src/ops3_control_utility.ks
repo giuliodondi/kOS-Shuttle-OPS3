@@ -152,8 +152,8 @@ FUNCTION dap_controller_factory {
 		set this:cur_mode to "css_prograde".
 		this:measure_cur_state().
 		
-		LOCAL rollgain IS 2.5.
-		LOCAL pitchgain IS 1.5.
+		LOCAL rollgain IS 0.5.
+		LOCAL pitchgain IS 0.5.
 		
 		//required for continuous pilot input across several funcion calls
 		LOCAL time_gain IS ABS(this:iteration_dt/0.07).

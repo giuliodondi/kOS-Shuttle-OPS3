@@ -185,11 +185,10 @@ FUNCTION ops3_main_exec {
 			
 			SET dap:pitch_lims to LIST(entryg_out["aclim"], entryg_out["aclam"]).
 			SET dap:roll_lims to LIST(-entryg_out["rlm"], entryg_out["rlm"]).
-			IF (dap_engaged) AND (NOT css_flag) {
-				SET dap:tgt_pitch tO entryg_out["alpcmd"].
-				SET dap:tgt_roll tO entryg_out["rolcmd"].
-				SET dap:tgt_yaw tO 0.
-			}
+			
+			SET dap:tgt_pitch tO entryg_out["alpcmd"].
+			SET dap:tgt_roll tO entryg_out["rolcmd"].
+			SET dap:tgt_yaw tO 0.
 			
 			
 			//gui outputs
@@ -322,18 +321,18 @@ FUNCTION ops3_main_exec {
 			
 			SET dap:pitch_lims to LIST(taemg_out["alpll"], taemg_out["alpul"]).
 			SET dap:roll_lims to LIST(-taemg_out["philim"], taemg_out["philim"]).
-			IF (dap_engaged) AND (NOT is_dap_css()) {
-				SET dap:tgt_roll tO taemg_out["phic_at"].
-				SET dap:tgt_yaw tO taemg_out["betac_at"].
-				
-				if (guid_id = 26) OR (guid_id = 24) OR (guid_id = 36) {
-					SET dap:tgt_pitch tO taemg_out["alpcmd"].
-				} else if (guid_id = 25) {
-					SET dap:tgt_nz tO taemg_out["nztotal"].
-				} else {
-					SET dap:tgt_hdot tO taemg_out["hdrefc"].
-				}
+
+			SET dap:tgt_roll tO taemg_out["phic_at"].
+			SET dap:tgt_yaw tO taemg_out["betac_at"].
+			
+			if (guid_id = 26) OR (guid_id = 24) OR (guid_id = 36) {
+				SET dap:tgt_pitch tO taemg_out["alpcmd"].
+			} else if (guid_id = 25) {
+				SET dap:tgt_nz tO taemg_out["nztotal"].
+			} else {
+				SET dap:tgt_hdot tO taemg_out["hdrefc"].
 			}
+
 			
 			if (guid_id <= 21) and taemg_internal["freezetgt"] {
 				freeze_target_site().
