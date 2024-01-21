@@ -68,7 +68,7 @@ FUNCTION make_global_deorbit_GUI {
 	GLOBAL select_tgtbox IS popup_box:ADDHLAYOUT().
 	GLOBAL tgt_label IS select_tgtbox:ADDLABEL("<size=15>Target : </size>").
 	GLOBAL select_tgt IS select_tgtbox:addpopupmenu().
-	SET select_tgt:STYLE:WIDTH TO 100.
+	SET select_tgt:STYLE:WIDTH TO 120.
 	SET select_tgt:STYLE:HEIGHT TO 25.
 	SET select_tgt:STYLE:ALIGN TO "center".
 	FOR site IN ldgsiteslex:KEYS {
@@ -1000,10 +1000,7 @@ function update_taem_vsit_disp {
 	
 	SET ops3_main_display_clock:text TO "MET " + sectotime_simple(MISSIONTIME, true).
 
-	local eow_ is gui_data["eow"].
-
-	//check if we shoudl update entry traj counter 
-	if (taem_vsit_disp_counter = 1 and eow_ <= 30480) {
+	if (taem_vsit_disp_counter = 1 and gui_data["rpred"] <= 61000) {
 		increment_taem_vsit_disp_counter().
 	}
 	
