@@ -37,10 +37,10 @@ GLOBAL ldgsiteslex IS LEXICON(
 							
 						),
 						"Mataveri",LEXICON(
-							"position",LATLNG(-27.176167,-109.402237),
-							"elevation",100,
-							"length",3654,
-							"heading",348.48
+							"position",LATLNG(-27.160261,-109.41134),
+							"elevation",90,
+							"length",3766,
+							"heading",355.17
 							
 						),
 						"Istres",LEXICON(
