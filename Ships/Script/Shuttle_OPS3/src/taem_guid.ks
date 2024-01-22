@@ -248,7 +248,7 @@ global taemg_constants is lexicon (
 									"gsbe", 1.5, 			//deg/psf-s 	spdbk prop. gain on qberr 
 									"gsbi", 0.1, 		//deg/psf-s gain on qberr integral in computing spdbk cmd
 									"gy", 0.075,			//deg/ft gain on y in computing pfl roll angle cmd 
-									"gydot", 0.50,		//deg/fps gain on ydot on computing pfl roll angle cmd 
+									"gydot", 0.45		//deg/fps gain on ydot on computing pfl roll angle cmd 
 									"h_error", 1000,		//ft altitude error bound	//deprecated
 									"hdherrcmax", 50,		//ft/s max herror correction to ref. hdot //my addition
 									"hderr_lag_k", 0.7,		//ft/s lag filter gain for hderr feedback	//my addition

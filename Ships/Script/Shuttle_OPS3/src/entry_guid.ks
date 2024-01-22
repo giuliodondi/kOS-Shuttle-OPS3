@@ -979,7 +979,8 @@ function eglodvcmd {
 	
 	//changed sign of t1 term since we changed its sign
 	set entryg_internal["aldref"] to t1 / entryg_internal["drefp"] + (2*entryg_internal["rdtref"] + entryg_internal["c2"]*entryg_internal["hs"]) / entryg_input["ve"].
-	set entryg_internal["rdtrf"] to entryg_internal["rdtref"] + c4.
+	//my modification: limit delta given by c4 if we resume entry halfway 
+	set entryg_internal["rdtrf"] to entryg_internal["rdtref"] + midval(c4, entryg_internal["rdtref"], -entryg_internal["rdtref"]).
 	
 	//hdot feedback
 	if (entryg_input["ve"] < entryg_constants["vrdt"]) {
