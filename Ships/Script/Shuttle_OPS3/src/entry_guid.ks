@@ -1061,7 +1061,7 @@ function eglodvcmd {
 		//added condition on abs(delaz) plus flag to track reversal start and end
 		if (dlzrl > 0) and (ABS(entryg_input["delaz"]) >= yl) {
 			set entryg_internal["rk2rol"] to -entryg_internal["rk2rol"].
-			set entryg_internal["idbchg"] to TRUE.
+			//moved it to the else block so delaz limits are changed after the roll is complete
 			
 			if (entryg_internal["rrflag"] = FALSE) {
 				SET entryg_internal["rrflag"] TO TRUE.
@@ -1069,6 +1069,7 @@ function eglodvcmd {
 			
 		} else if (entryg_internal["rrflag"]) and (ABS(entryg_input["delaz"]) < yl) {
 			SET entryg_internal["rrflag"] TO FALSE.
+			set entryg_internal["idbchg"] to TRUE.
 		}
 	}
 }
