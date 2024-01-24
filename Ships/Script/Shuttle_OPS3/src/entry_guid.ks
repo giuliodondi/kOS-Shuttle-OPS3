@@ -103,7 +103,7 @@ global entryg_constants is lexicon (
 									"ak", -3.5,	//temp control dD/dV factor	
 									"ak1", -5.5,	//temp control dD/dV factor
 									//"alfm", 33.0,	//ft/s2 	desired const drag STS-1
-									"alfm", 28,	//ft/s2 	desired const drag
+									"alfm", 30,	//ft/s2 	desired const drag
 									"alim", 70.84,	//ft/s2 max accel in transition
 									"almn1", 0.7986355,	//max l/d cmd outside heading err deadband
 									"almn2", 0.9659258,	//max l/d cmd inside heading err deadband
@@ -184,7 +184,7 @@ global entryg_constants is lexicon (
 									"gs1", 0.02,	//1/s	roll cmd smoohing fac 
 									"gs2", 0.02,	//1/s	roll cmd smoohing fac 
 									//"gs3", 0.03767,	//1/s	roll cmd smoohing fac 	STS-1
-									"gs3", 0	//1/s	roll cmd smoohing fac 
+									"gs3", 0,	//1/s	roll cmd smoohing fac 
 									"gs4", 0.03,	//1/s	roll cmd smoohing fac 
 									"hsmin", 20500,	//ft 	min scale height 
 									"hs01", 18075,	//ft scale height term 
@@ -620,11 +620,16 @@ function egcomn {
 	set entryg_internal["cag"] to 2* entryg_constants["gs"]*entryg_internal["hs"] + entryg_internal["ve2"].
 	
 	if (entryg_internal["islect"] < 5) {
-		//calculate constant drag level to reach phase 5 at range rtp
+		
 		local t2old is entryg_internal["t2"].
-		set entryg_internal["t2"] to entryg_constants["cnmfs"] * (entryg_internal["ve2"] - entryg_internal["vq2"]) / (2*( entryg_input["trange"] - entryg_internal["rpt"])).
-		//my addition- limit t2, effectively disables early transition to phase 4
-		set entryg_internal["t2"] to min(entryg_internal["t2"], entryg_constants["alfm"]).
+		
+		//calculate constant drag level to reach phase 5 at range rtp
+		//my modification: only update t2 before phase 4 so it's constant
+		if (entryg_internal["islect"] < 4) {
+			set entryg_internal["t2"] to entryg_constants["cnmfs"] * (entryg_internal["ve2"] - entryg_internal["vq2"]) / (2*( entryg_input["trange"] - entryg_internal["rpt"])).
+			//my addition- limit t2, effectively disables early transition to phase 4
+			set entryg_internal["t2"] to min(entryg_internal["t2"], entryg_constants["alfm"]).
+		}
 		
 		set entryg_internal["t2dot"] to (entryg_internal["t2"] - t2old) / entryg_input["dtegd"].
 		
@@ -884,7 +889,7 @@ function egtran {
 	
 	//my addition
 	//in any case do not exceed the previous constant drag
-	set entryg_internal["drefp"] to min(entryg_internal["drefp"], entryg_constants["alfm"]).
+	set entryg_internal["drefp"] to min(entryg_internal["drefp"], entryg_internal["t2"]).
 	
 	set entryg_internal["rdtref"] to -entryg_internal["hs"]*entryg_input["ve"]*(2*entryg_internal["drefp"] - c1*entryg_internal["ve2"]) / entryg_internal["cag"].
 	
