@@ -11,15 +11,22 @@ FUNCTION shuttle_steep_ei_fpa {
 
 FUNCTION shuttle_ei_range {
 	PARAMETER ei_fpa.
+	PARAMETER ei_incl.
+	
+	//heuristic, 10km for every degree off from 40°
+	LOCAL incl_corr IS (ei_incl - 40) * 10.
 	
 	//return (ei_fpa/3 + 1.6638490566)*BODY:RADIUS/1000.
-	return (ei_fpa/3 + 1.60545457558)*BODY:RADIUS/1000. //less 500km
+	return (ei_fpa/3 + 1.60545457558)*BODY:RADIUS/1000 + incl_corr. //less 500km plus inclination correction
 }
 
 //need to be both in kilometres
 FUNCTION deorbit_ei_calc {
 	PARAMETER ap.
+	PARAMETER incl.
 	PARAMETER ei_alt.
+	
+	LOCAL ei_incl IS ABS(incl).
 	
 	local ei_calc is lexicon(
 					"ei_eta",0,
@@ -27,7 +34,8 @@ FUNCTION deorbit_ei_calc {
 					"ei_fpa",0,
 					"ei_range",0,
 					"ap",ap,
-					"pe",0
+					"pe",0,
+					"incl", ei_incl
 	).
 	
 	LOCAL ei_h IS ei_alt*1000 + BODY:RADIUS.
@@ -57,7 +65,7 @@ FUNCTION deorbit_ei_calc {
 	}
 	
 	set ei_calc["pe"] to pe_guess.
-	set ei_calc["ei_range"] to shuttle_ei_range(ei_calc["ei_fpa"]).
+	set ei_calc["ei_range"] to shuttle_ei_range(ei_calc["ei_fpa"], ei_incl).
 	
 	return ei_calc.
 }

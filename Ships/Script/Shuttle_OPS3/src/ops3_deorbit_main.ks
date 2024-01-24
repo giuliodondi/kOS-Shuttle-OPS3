@@ -17,6 +17,7 @@ FUNCTION ops3_deorbit_predict{
 
 	LOCAL cur_ap IS SHIP:ORBIT:aPOAPSIS/1000.
 	LOCAL cur_pe IS SHIP:ORBIT:aPOAPSIS/1000.
+	LOCAL cur_orb_incl IS SHIP:ORBIT:INCLINATION.
 
 	//test for circular enough orbit
 	if (cur_ap - cur_pe)>10 {
@@ -26,7 +27,7 @@ FUNCTION ops3_deorbit_predict{
 
 	//calculate reference circular orbit apoapsis and optimal ei parameters
 	LOCAL ref_ap IS (cur_ap + cur_pe)/2.
-	Local ei_ref_data is deorbit_ei_calc(ref_ap, parameters["interfalt"]/1000).
+	Local ei_ref_data is deorbit_ei_calc(ref_ap, cur_orb_incl, parameters["interfalt"]/1000).
 
 	LOCAL ei_radius IS (parameters["interfalt"] + SHIP:BODY:RADIUS).
 
