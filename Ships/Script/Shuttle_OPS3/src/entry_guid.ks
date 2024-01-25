@@ -103,7 +103,7 @@ global entryg_constants is lexicon (
 									"ak", -3.5,	//temp control dD/dV factor	
 									"ak1", -5.5,	//temp control dD/dV factor
 									//"alfm", 33.0,	//ft/s2 	desired const drag STS-1
-									"alfm", 30,	//ft/s2 	desired const drag
+									"alfm", 33,	//ft/s2 	desired const drag
 									"alim", 70.84,	//ft/s2 max accel in transition
 									"almn1", 0.7986355,	//max l/d cmd outside heading err deadband
 									"almn2", 0.9659258,	//max l/d cmd inside heading err deadband
