@@ -381,7 +381,81 @@ DECLARE FUNCTION rk4 {
 }
 
 
+//		coasting integrators, more accurate gravity but no other forces
 
+//assumes KSP position vector
+FUNCTION accurate_g {
+	PARAMETEr pos.
+	
+	LOCAL pos_inv IS 1/pos:MAG.
+	
+	//central body potential
+	LOCAL G_c IS -BODY:MU*pos*(pos_inv^3).
+	
+
+	LOCAL G_corr IS V(0,0,0).
+	
+
+	//unnormalised, dimensionful coefficients
+	LOCAL J2 IS -1.7555283e+25	.
+	
+	//assumes KSP vectors
+	LOCAL xx IS pos:X.
+	LOCAL yy IS pos:Z.
+	LOCAL zz IS pos:Y.
+	
+	LOCAL r7 IS pos_inv^2.
+	LOCAL r5 IS r7^2*pos_inv.
+	SET r7 TO r5*r7.
+	
+	LOCAL xlam IS 1.5*J2.
+	LOCAL xltb IS xlam*(r5 - 5*r7*zz^2).
+	
+	SET G_corr:X TO -xltb*xx.
+	SET G_corr:Z TO -xltb*yy.
+	SET G_corr:Y TO -xltb*zz - 2*xlam*zz*r5.
+	
+	RETURN G_c + G_corr.
+}	
+
+
+FUNCTION coast_rk4 {
+	PARAMETER dt.
+	PARAMETER state.
+	
+	LOCAL pos IS state["position"].
+	LOCAL vel IS state["velocity"].
+	
+	set state["simtime"] to state["simtime"] + dt.
+	
+	LOCAL out IS LIST().
+	
+	//RK4
+	LOCAL p1 IS pos.
+	LOCAL v1 IS vel.
+	LOCAL a1 IS accurate_g(p1).
+	 
+	LOCAL  p2 IS  pos + 0.5 * v1 * dt.
+	LOCAL  v2 IS vel + 0.5 * a1 * dt.
+	LOCAL a2 IS accurate_g(p2).
+	 
+	LOCAL  p3 IS pos + 0.5 * v2 * dt.
+	LOCAL  v3 IS vel + 0.5 * a2 * dt.
+	LOCAL a3 IS accurate_g(p3).
+	 
+	LOCAL  p4 IS pos + v3 * dt.
+	LOCAL  v4 IS vel + a3 * dt.
+	LOCAL a4 IS accurate_g(p4).
+	 
+	SET pos TO pos + (dt / 6) * (v1 + 2 * v2 + 2 * v3 + v4).
+	SET vel TO vel + (dt / 6) * (a1 + 2 * a2 + 2 * a3 + a4).
+
+	
+	SET state["position"] TO pos.
+	SET state["velocity"] TO vel.
+	
+	RETURN state.
+}
 
 
 

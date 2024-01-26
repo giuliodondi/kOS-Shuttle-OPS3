@@ -1,149 +1,134 @@
 clearscreen.
 close_all_GUIs().
+SET CONFIG:IPU TO 1000. 
 
 make_global_deorbit_GUI().
+	
+	
+ops3_deorbit_predict().
+
+close_all_GUIs().
+
 
 
 FUNCTION ops3_deorbit_predict{
 	GLOBAL quit_program IS FALSE.
 
+	if (ALLNODES:LENGTH>1) {
+		print "Can handle at most one manoeuvre node".
+		return.
+	}
 
 	IF (DEFINED tgtrwy) {UNSET tgtrwy.}
 	GLOBAL tgtrwy IS LEXICON().
 	
 	//initialise touchdown points for all landing sites
 	define_td_points().
-
-
-	LOCAL cur_ap IS SHIP:ORBIT:aPOAPSIS/1000.
-	LOCAL cur_pe IS SHIP:ORBIT:aPOAPSIS/1000.
-	LOCAL cur_orb_incl IS SHIP:ORBIT:INCLINATION.
-
-	//test for circular enough orbit
-	if (cur_ap - cur_pe)>10 {
-		print "Please circularize the orbit to within +-10km".
-		return.
-	}
-
-	//calculate reference circular orbit apoapsis and optimal ei parameters
-	LOCAL ref_ap IS (cur_ap + cur_pe)/2.
-	Local ei_ref_data is deorbit_ei_calc(ref_ap, cur_orb_incl, parameters["interfalt"]/1000).
-
-	LOCAL ei_radius IS (parameters["interfalt"] + SHIP:BODY:RADIUS).
-
+	
 	UNTIL (deorbit_target_selected) {
 		print "Please select a deorbit target" AT (0,1).
+		WAIT 0.1.
 	}
+	
+	freeze_target_site().
 
 	UNTIL FALSE {
-
-		SET shipvec TO - SHIP:ORBIT:BODY:POSITION.
-		SET normvec TO VCRS(-SHIP:ORBIT:BODY:POSITION,SHIP:VELOCITY:ORBIT).
-
-		LOCAL node_ IS 0.
-		LOCAL entry_orbit IS 0.
+		clearscreen.
+		clearvecdraws().
+	
+		LOCAL simstate IS current_simstate().
 		
-		//orbital parameters of the orbit that leads to entry interface 
-		//can be either the curent orbit or the orbit after the node
-		LOCAL entry_orb_sma IS 0.
-		LOCAL entry_orb_ecc IS 0.
-		LOCAL entry_orb_start_eta IS 0.
-		LOCAL time2EI IS 0.
+		LOCAL deorbit_base_dt IS 60.
+		//should cover half a revolution at a timestep of 30
+		LOCAL max_steps IS 90.
 		
-		
-		LOCAL cur_orb_sma IS SHIP:ORBIT:SEMIMAJORAXIS.
-		LOCAL cur_orb_ecc IS SHIP:ORBIT:ECCENTRICITY.
-		LOCAL cur_orb_eta IS SHIP:ORBIT:TRUEANOMALY.
-
-		//if there is a manoeuvre node
+		LOCAL ei_ETA IS 0.
+	
 		IF HASNODE {
+			//predict trajectory from now up to the manoeuvre node 
+			//then add the delta-v increment 
 			
-			SET lastnode TO ALLNODES[ALLNODES:LENGTH - 1].
+			LOCAL lastnode IS ALLNODES[0].
 			
-			SET time2EI TO time2EI + lastnode:ETA + burnDT(lastnode:deltav:MAG)/2.
-				
-			//position vector of the manoeuvre node
-			LOCAL eta1 IS t_to_eta(cur_orb_eta, time2EI, cur_orb_sma, cur_orb_ecc) - cur_orb_eta.
-				
-			SET shipvec TO rodrigues(shipvec,normvec,eta1).
+			LOCAL node_dv IS lastnode:deltav.
 			
-			SET entry_orb_sma TO lastnode:orbit:semimajoraxis.
-			SET entry_orb_ecc TO lastnode:orbit:eccentricity.
-			SET entry_orb_start_eta TO lastnode:orbit:trueanomaly.
-
+			LOCAL node_dt IS burnDT(node_dv:MAG).
 			
-		} ELSE {
+			LOCAL node_ETA IS lastnode:ETA + node_dt/2.
+			
+			LOCAL patch1_steps IS CEILING(node_ETA/deorbit_base_dt).
+			
+			LOCAL patch1_dt IS node_ETA/patch1_steps.
+			
+			FROM {local s is 1.} UNTIL (s > patch1_steps) STEP {set s to s+1.} DO {
+				SET simstate TO coast_rk4(patch1_dt, simstate).
+			}
+			
+			SET simstate["velocity"] TO simstate["velocity"] + node_dv.
+			
+			local burn_pos IS shift_pos(simstate["position"], node_ETA).
+			
+			arrow_body(burn_pos,"burn").
+			
+			SET ei_ETA tO ei_ETA + node_ETA.
+			
+			print "patch 1 steps: " + patch1_steps at (0,2).
+			print "time to node: " + round(node_ETA, 1) at (0,3).
+			print "node burn dt: " + round(node_dt, 1) at (0,4).
+			print "node burn Dv: " + round(node_dv:MAG, 1) at (0,5).
 		
+		} ELSE {
 			IF SHIP:ORBIT:periapsis>=parameters["interfalt"] {
 				PRINT "Orbit does not have a manoeuvre node and does not re-enter the atmosphere".
 				RETURN.
 			}
-			
-			SET entry_orb_sma TO cur_orb_sma.
-			SET entry_orb_ecc TO cur_orb_ecc.
-			SET entry_orb_start_eta TO cur_orb_eta.
-			
 		}
 		
-		print "ei_radius: " + round(ei_radius, 0) + "   "  at (0, 8).
-		print "entry_orb_sma: " + round(entry_orb_sma, 0) + "   "  at (0, 9).
-		print "entry_orb_ecc: " + round(entry_orb_ecc, 3) + "   "  at (0, 10).
+		//now simulate until below entry interface 
 		
+		LOCAL ei_simstate IS simstate.
+		local step_c is 0.
+		UNTIL((ei_simstate["altitude"]< parameters["interfalt"]) OR (step_c >= max_steps)) {
+			SET step_c TO step_c + 1.
+			
+			SET ei_simstate TO clone_simstate(coast_rk4(deorbit_base_dt, simstate)).
 		
-		//true anomaly of entry point
-		LOCAL entry_eta IS 0.
-		IF entry_orb_ecc>0 {		
-				set entry_eta to orbit_alt_eta(ei_radius, entry_orb_sma, entry_orb_ecc).
-				//we will cross the target altitude at 2 different points in the orbit
-				//we are interested in the descending one i.e. before periapsis 
-				//therefore compute the eta of the ascending one and subtract tit from 360
-				//exploiting the symmetry of the ellipse
-				
-				SET entry_eta TO 360- entry_eta.
+			SET ei_simstate["altitude"] TO bodyalt(ei_simstate["position"]).
+			SET ei_simstate["surfvel"] TO surfacevel(ei_simstate["velocity"],ei_simstate["position"]).
+			
+			SET ei_ETA tO ei_ETA + deorbit_base_dt. 
 		}
 		
-		LOCAL eta2ei IS fixangle(entry_eta - entry_orb_start_eta).
-		print "cur_eta" + entry_orb_start_eta at (1,1).
-		print "entry_eta" + entry_eta at (1,2).
+		//entry interface calculations
+		LOCAL ei_orb_elems IS state_vector_orb_elems(ei_simstate["position"], ei_simstate["velocity"]).
+		Local ei_ref_data is deorbit_ei_calc(ei_orb_elems["ap"], ei_orb_elems["incl"], ei_simstate["altitude"]/1000).
 		
-		//find the vector corresponding to entry interface
-		SET shipvec TO rodrigues(shipvec,normvec,eta2ei):NORMALIZED*ei_radius.
+		LOCAL ei_fpa IS get_fpa(ei_simstate["position"], ei_simstate["velocity"]).
 		
-		//time from periapsis of current patch to the current true anomaly
-		LOCAL t_cur_eta IS eta_to_dt(entry_orb_start_eta,entry_orb_sma,entry_orb_ecc).
-		//time from periapsis of next patch to the entry true anomaly
-		LOCAL t_entry IS eta_to_dt(entry_eta,entry_orb_sma,entry_orb_ecc).
-		//time to entry interface
-		SET time2EI TO time2EI + ( t_entry - t_cur_eta).
+		//shift ei state forwards by the time to ei 
+		LOCAL ei_posvec IS shift_pos(ei_simstate["position"], ei_ETA).
 		
-		//transform the entry interface to coordinates and
-		//rotate it backwards by the time to entry,
-		LOCAL ei_pos IS shift_pos(shipvec,time2EI).
-		LOCAL ei_posvec IS pos2vec(ei_pos):NORMALIZED*ei_radius.
-
-		//find flight-path angle at entry interface
-		LOCAL entry_fpa IS -orbit_alt_fpa(ei_radius, entry_orb_sma, entry_orb_ecc).
-		LOCAL entry_vel IS orbit_alt_vel(ei_radius, entry_orb_sma).
+		LOCAL ei_normvec IS VCRS(ei_simstate["position"], ei_simstate["velocity"]).
+		LOCAL normvec_rot IS shift_pos(ei_normvec,ei_ETA):NORMALIZED.
+		LOCAL ei_vel_vec IS VCRS(normvec_rot,ei_posvec):NORMALIZED*ei_simstate["velocity"]:MAG.
+		SET ei_vel_vec TO rodrigues(ei_vel_vec,-normvec_rot,ei_fpa).
 		
-		LOCAL normvec_rot IS pos2vec(shift_pos(normvec,time2EI)):NORMALIZED.
-		LOCAL entry_vel_vec IS VCRS(normvec_rot,ei_posvec):NORMALIZED*entry_vel.
-		SET entry_vel_vec TO rodrigues(entry_vel_vec,-normvec_rot,entry_fpa).
 		
-		LOCAL tgt_range IS downrangedist(tgtrwy["position"], ei_posvec).
-		
-		LOCAL ei_delaz IS az_error(ei_pos,tgtrwy["position"],entry_vel_vec).
+		LOCAL ei_range IS downrangedist(tgtrwy["position"], ei_posvec).
+		LOCAL ei_delaz IS az_error(ei_posvec, tgtrwy["position"], ei_simstate["velocity"]).
 		
 		local ei_data is lexicon(
-						"ei_vel",entry_vel,
-						"ei_fpa",entry_fpa,
-						"ei_range",tgt_range,
+						"ei_vel", ei_vel_vec:MAG,
+						"ei_fpa", ei_fpa,
+						"ei_range", ei_range,
 						"ei_delaz", ei_delaz
 		).
+		 
+		update_deorbit_GUI(ei_ETA, ei_data, ei_ref_data).
 		
-		update_deorbit_GUI(time2EI, ei_data, ei_ref_data).
 		
-		clearvecdraws().
-		arrow_body(ei_posvec,"ei_posvec").
+		
+		arrow_body(ei_posvec,"entry_interface").
 		
 		if (quit_program) {
 			BREAK.
@@ -154,12 +139,8 @@ FUNCTION ops3_deorbit_predict{
 
 	clearvecdraws().
 	clearscreen.
-	
-	close_all_GUIs().
-
 }
 
 
 
 
-ops3_deorbit_predict().

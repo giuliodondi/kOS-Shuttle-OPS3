@@ -102,15 +102,19 @@ FUNCTION shift_pos {
 	PARAMETER pos.
 	PARAMETER dt.
 	
+	local return_vec IS TRUE.
 	IF pos:ISTYPE("geocoordinates") {
 		SET pos TO pos2vec(pos).
+		SET return_vec TO FALSE.
 	}
 	
 	LOCAL out IS R(0, BODY:angularvel:mag * dt* constant:RadToDeg, 0)*pos.
 	
-	RETURN vec2pos(out).
-
-
+	IF (return_vec) {
+		RETURN out.
+	} ELSE {
+		RETURN vec2pos(out).
+	}
 }
 
 
@@ -323,6 +327,49 @@ FUNCTION get_orbit_azimuth {
 
 
 //ORBITAL MECHANICS FUNCTIONS
+
+// compute all the keplerian orbital elements given the state vector in KSP frame 
+function state_vector_orb_elems {
+	parameter posvec.
+	parameter velvec.
+	
+	LOCAL rad_vel IS VDOT(velvec, posvec:NORMALIZEd).
+	
+	LOCAL horiz_vel IS SQRT(velvec:MAG ^ 2 - rad_vel ^ 2 ).
+	
+	LOCAL ang_mom_vec IS - VCRS(posvec, velvec).	//left-handed
+	
+	LOCAL incl IS ARCCOS(limitarg(ang_mom_vec:Y / ang_mom_vec:MAG)).
+	
+	LOCAL north_pole_vec IS V(0, 1, 0).
+	
+	LOCAL nodevec IS - VCRS(north_pole_vec, ang_mom_vec):NORMALIZED.
+	
+	LOCAL lan_ IS signed_angle(SOLARPRIMEVECTOR, nodevec, north_pole_vec, 1).
+	
+	LOCAL ecc_vec IS - VCRS(velvec, ang_mom_vec) / BODY:MU - posvec:NORMALIZED.
+	LOCAL ecc_ IS ecc_vec:MAG.
+	
+	LOCAL periarg IS signed_angle(ecc_vec, nodevec, ang_mom_vec, 1).
+	
+	LOCAL eta_ IS signed_angle(posvec, ecc_vec, ang_mom_vec, 1).
+	
+	LOCAL sma_ IS 1/(2/posvec:MAG - velvec:MAG^2/BODY:MU).
+	
+	LOCAL ap IS (sma_*(1 + ecc_) - BODY:RADIUS)/1000.
+	LOCAL pe IS (sma_*(1 - ecc_) - BODY:RADIUS)/1000.
+	
+	RETURN LEXICON(
+			"ap", ap,
+			"pe", pe,
+			"ecc_", ecc_,
+			"incl", incl,
+			"lan_", lan_,
+			"periarg", periarg,
+			"eta_", eta_
+	).
+
+}
 
 // compute sma given ap and pe in kilometres
 FUNCTION orbit_appe_sma {
@@ -538,12 +585,24 @@ FUNCTION get_pitch_lvlh {
 function get_surf_fpa {
 	LOCAL surfv IS SHIP:srfprograde:vector.
 	
-	LOCAL upvec IS -SHIP:ORBIT:BODY:POSITION:NORMALIZED.
-	LOCAL surfv_h IS VXCL(upvec,surfv).
+	LOCAL upvec IS -SHIP:ORBIT:BODY:POSITION.
 	
-	LOCAL hdot_ IS VDOT(surfv, upvec).
+	return get_fpa(upvec, surfv).
+}
+
+//calculate generic fpa 
+FUNCTION get_fpa {
+	PARAMETER pos.
+	parameter vel.
 	
-	RETURN ARCTAN2(hdot_, surfv_h:MAG).
+	LOCAL pos_norm IS pos:NORMALIZED.
+	
+	LOCAL vel_h IS VXCL(pos_norm,vel).
+	
+	LOCAL v_rad IS VDOT(vel, pos_norm).
+	
+	RETURN ARCTAN2(v_rad, vel_h:MAG).
+	
 }
 
 //returns the vehicle azimuth angle, north is 0 and east is 90
