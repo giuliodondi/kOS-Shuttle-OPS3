@@ -1000,7 +1000,7 @@ function update_taem_vsit_disp {
 	
 	SET ops3_main_display_clock:text TO "MET " + sectotime_simple(MISSIONTIME, true).
 
-	if (taem_vsit_disp_counter = 1 and gui_data["rpred"] <= 61000) {
+	if (taem_vsit_disp_counter = 1 and gui_data["rpred"] <= 53340) {
 		increment_taem_vsit_disp_counter().
 	}
 	
@@ -1073,7 +1073,7 @@ function taem_vsit_disp_x_convert {
 	local out is 0.
 	
 	if (taem_vsit_disp_counter=1) {
-		set out to (rpred / 70000 -  0.84235294117).
+		set out to (rpred / 75000 -  0.66235294117).
 	} else if (taem_vsit_disp_counter=2) {
 		set out to (rpred / 49720).
 	}	
@@ -1088,7 +1088,7 @@ function taem_vsit_disp_y_convert {
 	local out is 0.
 	
 	if (taem_vsit_disp_counter=1) {
-		set out to (eow / 54500  - 0.46257142857).
+		set out to (eow / 55000  - 0.38257142857).
 	} else if (taem_vsit_disp_counter=2) {
 		set out to (eow / 36000 + 0.03).
 	}	
