@@ -229,7 +229,7 @@ FUNCTION ops3_main_exec {
 				SET loglex["loop_dt"] TO guidance_timer:last_dt.
 				SET loglex["rwy_alt"] TO entry_state["hls"].
 				SET loglex["vel"] TO vi:MAG.
-				SET loglex["surfv"] TO vi:MAG. 
+				SET loglex["surfv"] TO ve:MAG. 
 				SET loglex["mach"] TO ADDONS:FAR:MACH. 
 				SET loglex["hdot"] TO entry_state["hdot"].
 				SET loglex["lat"] TO SHIP:GEOPOSITION:LAT.
