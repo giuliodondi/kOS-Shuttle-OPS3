@@ -102,19 +102,13 @@ FUNCTION shift_pos {
 	PARAMETER pos.
 	PARAMETER dt.
 	
-	local return_vec IS TRUE.
 	IF pos:ISTYPE("geocoordinates") {
 		SET pos TO pos2vec(pos).
-		SET return_vec TO FALSE.
 	}
 	
 	LOCAL out IS R(0, BODY:angularvel:mag * dt* constant:RadToDeg, 0)*pos.
 	
-	IF (return_vec) {
-		RETURN out.
-	} ELSE {
-		RETURN vec2pos(out).
-	}
+	RETURN vec2pos(out).
 }
 
 
