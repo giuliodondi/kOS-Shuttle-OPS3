@@ -112,7 +112,7 @@ FUNCTION ops3_deorbit_predict{
 		
 		
 		LOCAL ei_range IS downrangedist(tgtrwy["position"], ei_posvec).
-		LOCAL ei_delaz IS az_error(ei_posvec, tgtrwy["position"], ei_simstate["velocity"]).
+		LOCAL ei_delaz IS az_error(ei_posvec, tgtrwy["position"], ei_vel_vec).
 		
 		local ei_data is lexicon(
 						"ei_vel", ei_vel_vec:MAG,
