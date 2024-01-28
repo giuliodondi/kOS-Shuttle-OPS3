@@ -1,4 +1,6 @@
-# kOS-Shuttle-OPS3
+[![License: CC BY 4.0](https://licensebuttons.net/l/by/4.0/80x15.png)](https://creativecommons.org/licenses/by/4.0/)
+
+# Kerbal Space Program Space Shuttle OPS3 Entry Guidance
 Real Entry and Landing guidance for the Space Shuttle in KSP / RO
 
 # Work In Progress, not yet functional
@@ -14,10 +16,28 @@ Only designed to be compatible with my fork of Space Shuttle System (https://git
 - [SPACE SHUTTLE ORBITER OPERATIONAL LEVEL C FUNCTIONAL SUBSYSTEM SOFTWARE REQUIREMENTS GUIDANCE, NAVIGATION AND CONTROL PART A - ENTRY THROUGH LANDING GUIDANCE](https://www.ibiblio.org/apollo/Shuttle/sts83-0001-34%20-%20Guidance%20Entry%20Through%20Landing.pdf)
 
 
+# Installation
+
+WIP
+
+
+# Setup
+
+WIP
+
+
+# Deorbit planning
+
+
 # Entry guidance
 
+
+![drag_prof](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/drag_vel.png)
 
 - Mach 12 / 1000km
 - Mach 10 / 750 km
 - Mach 5 / 250 km
 - Mach 3 / 100 km
+
+
+# TAEM / Landing guidance
