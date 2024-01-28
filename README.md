@@ -28,6 +28,7 @@ WIP
 
 # Deorbit planning
 
+![main_gui](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/deorbit_gui.png)
 
 # Entry guidance
 
