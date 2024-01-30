@@ -48,12 +48,29 @@ Rules of thumb:
 - Make small adjustments until you converge to a good burn
 
 
-# Entry guidance
+# The main Entry script
+
+The main script to run is **ops3.ks**. You need to run it below entry interface, until then it will exit without doing anything. The script will take you from Entry Interface all the way to wheels stop on the runway.  
+You interact with the script using two GUIS. The **Main GUI** is a panel of buttons and a data display:
 
 ![main_gui](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/ops3_gui.png)
 
+- _Target_ is the target site, **select and double-check this immediately after starting the program**
+- _Runway_ is the runway you will land on. There are always at least two runways even if there is a single strip of tarmac (one for each side). The choice is automatic upon selecting the landing site, but you can override it here
+- _Apch mode_ is a parameter used by TAEM guidance, by default is set to Overhead. Leave it be for now.
+- _DAP_ selects the digital autopilot modes. **As long as you leave it OFF the program will not send any steering commands**. More on autopilot modes later on.
+- _Auto Flaps_ will enable pitch trimming by moving the elevons and body flap. **99.9% of the time you want this enabled**.
+- _Auto Airbk_ will toggle between manual (off) and automatic (on) rudder speedbrake functionality. **Also leave this on during Entry** and don't worry about it until TAEM
+- _RESET_ allows you to completely reset the guidance algorithms during either Entry or TAEM. The program will also actuate this every time you change target, runway or approach.
+- _Log Data_ will log some telemetry data to the file **Ships/Script/Shuttle_OPS3/LOGS/ops3_log.csv**
+- the _Display_ will show different things depending on the flight phase. There will be plenty more about this later on.
+
+The other GUI to look at is the **HUD**:
 ![hud](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/hud.png)
 
+## Digital Autopilot modes
+
+# Entry guidance
 
 <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/drag_vel.png" width="800">
 
@@ -73,6 +90,10 @@ Rules of thumb:
 ![vsit_disp](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/vsit_displays.png)
 
 <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/vsit_low.png" width="350">
+
+# GRTLS guidance
+
+WIP
 
 # Approach & Landing guidance
 
