@@ -43,6 +43,7 @@ Rules of thumb:
 - Start from a near-circular orbit if you can
 - Adjust velocity at EI by changing the retrograde deltaV
 - Adjust range and FPA together by changing the radial deltaV and moving the node forward and backward
+- Make small adjustments as it takes a second or two for the tool to predict the new trajectory
 - Expect the ref. velocity at EI to also change a little as you do this
 - Make small adjustments until you converge to a good burn
 
