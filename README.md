@@ -55,18 +55,38 @@ You interact with the script using two GUIS. The **Main GUI** is a panel of butt
 
 ![main_gui](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/ops3_gui.png)
 
+- the _☒_ button is to recenter the HUD, _X_ will interrupt the program
 - _Target_ is the target site, **select and double-check this immediately after starting the program**
-- _Runway_ is the runway you will land on. There are always at least two runways even if there is a single strip of tarmac (one for each side). The choice is automatic upon selecting the landing site, but you can override it here
+- _Runway_ is the runway you will land on. There are always at least two runways even if there is a single strip of tarmac (one for each side). The choice is random upon selecting the landing site, but you can override it here
 - _Apch mode_ is a parameter used by TAEM guidance, by default is set to Overhead. Leave it be for now.
 - _DAP_ selects the digital autopilot modes. **As long as you leave it OFF the program will not send any steering commands**. More on autopilot modes later on.
-- _Auto Flaps_ will enable pitch trimming by moving the elevons and body flap. **99.9% of the time you want this enabled**.
-- _Auto Airbk_ will toggle between manual (off) and automatic (on) rudder speedbrake functionality. **Also leave this on during Entry** and don't worry about it until TAEM
+- _Auto Flaps_ will enable pitch trimming by moving the elevons and body flap. **99.9% of the time you want this ON**.
+- _Auto Airbk_ will toggle between manual (off) and automatic (on) rudder speedbrake functionality. **Also leave this ON during Entry** and don't worry about it until TAEM
 - _RESET_ allows you to completely reset the guidance algorithms during either Entry or TAEM. The program will also actuate this every time you change target, runway or approach.
 - _Log Data_ will log some telemetry data to the file **Ships/Script/Shuttle_OPS3/LOGS/ops3_log.csv**
 - the _Display_ will show different things depending on the flight phase. There will be plenty more about this later on.
 
-The other GUI to look at is the **HUD**:
+The other GUI to look at is the **HUD**:  
 ![hud](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/hud.png)
+
+- the HUD background is either transparent or darkened based on the current time of the day at your position, to provide best visibility
+- _AZ ERROR_ is the compass angle between your current trajectory and the target. When it's zero you're flying directly towards the site. Positive values mean the target is to your right
+- _FLAP TRIM_ is an indicator of the current trim setting, from minimum (-1) to maximum (+1). The deflection angle of each control surface is proportional to this
+- _VERT SPEED_ indicates your current vertical speed at a glance
+  - During Reentry the scale is 200 m/s
+  - during TAEM and Landing it's 100m/s
+  - during GRTLS alpha recovery and NZ Hold it's 300 m/s, during Alpha transition it's like TAEM
+- _MACH_ will indicate your Mach number until TAEM HDG phase, afterwards it will display the true airspeed in m/s
+- _LOAD FACTOR_ is the vertical component of the total aerodynamic force, along the gravity vector, in units of G-force
+- The central square indicator indicates the Shuttle's nose. After the A/L interface it changes ot a circle
+- _BANK_ is intuitively the angle of roll. Actually, it's the angle between the lift vector and the local vertical, since the Shuttle is supposed to fly at zero sideslip angle at all times
+- _AOA_ is the angle between the nose and the surface velocity vector
+- the _GUIDANCE PIPPER_ indicates the values of Bank and AoA that the guidance algorithm wants you to have right now. If it's centered on the nose indicator, you're following the guidance commands perfectly
+- _GUID PHASE_ indicates the status of the underlying guidance algorithms. More on this later
+- _DISTANCE_ is in km. During reentry it's the distance to the guidance point, during TAEM it indicates the total groundtrack prediction all the way to the runway
+- _SPEEDBRAKE_ indicates the speedbrake deflection from 0 to 1. The actual maximum deflection is 47° either side
+- _STEER MODE_ is a repeater of the DAP mode you selected in the main GUI
+
 
 ## Digital Autopilot modes
 
