@@ -28,7 +28,24 @@ WIP
 
 # Deorbit planning
 
+Entry Interface is the point at which reentry begins, defined as 122km (400kft) altitude. The goal of deorbit planning is to reach this point at the right conditions for a proper reentry.  
+The critical parameters to control are velocity, range, and flight-path-angle (FPA), the angle of descent with respect to the horizontal. All these depend on the initial orbit and the placement/magnitude of the deorbit burn.
+
+First, you need to place a deorbit manoeuvre node on the last orbital pass before the landing site, it's crucial that you use a surface-relative trajectory tool like Principia or Trajectories to pick the right orbital pass. The node need only be created coarsely at this stage, plan a periapsis of near 0km a bit downrange from the landing site.
+
+Then run **ops3_deorbit.ks** to fire up the planning tool. Choose carefully the landing site (it will be frozen after this).  
+The tool will predict your state at Entry Interface which you will use to adjust your deorbit burn. The _Ref__ numbers are your desired parameters, the actual parameters will be red if they're too far off from the reference numbers, you should try to get all numbers in the green.
+
 ![main_gui](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/deorbit_gui.png)
+
+
+Rules of thumb:
+- Start from a near-circular orbit if you can
+- Adjust velocity at EI by changing the retrograde deltaV
+- Adjust range and FPA together by changing the radial deltaV and moving the node forward and backward
+- Expect the ref. velocity at EI to also change a little as you do this
+- Make small adjustments until you converge to a good burn
+
 
 # Entry guidance
 
