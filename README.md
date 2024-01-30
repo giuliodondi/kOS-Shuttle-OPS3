@@ -34,7 +34,7 @@ The critical parameters to control are velocity, range, and flight-path-angle (F
 First, you need to place a deorbit manoeuvre node on the last orbital pass before the landing site, it's crucial that you use a surface-relative trajectory tool like Principia or Trajectories to pick the right orbital pass. The node need only be created coarsely at this stage, plan a periapsis of near 0km a bit downrange from the landing site.
 
 Then run **ops3_deorbit.ks** to fire up the planning tool. Choose carefully the landing site (it will be frozen after this).  
-The tool will predict your state at Entry Interface which you will use to adjust your deorbit burn. The _Ref__ numbers are your desired parameters, the actual parameters will be red if they're too far off from the reference numbers, you should try to get all numbers in the green.
+The tool will predict your state at Entry Interface which you will use to adjust your deorbit burn. The _Ref_ numbers are your desired parameters, the actual parameters will be red if they're too far off from the reference numbers, you should try to get all numbers in the green.
 
 ![main_gui](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/deorbit_gui.png)
 
@@ -87,8 +87,20 @@ The other GUI to look at is the **HUD**:
 - _SPEEDBRAKE_ indicates the speedbrake deflection from 0 to 1. The actual maximum deflection is 47° either side
 - _STEER MODE_ is a repeater of the DAP mode you selected in the main GUI
 
-
 ## Digital Autopilot modes
+
+There are two DAP modes: 
+- **CSS** or _Control Stick Steering_ : it's a fly-by-wire control mode where you can control by hand (with keyboard or joystick) the target values of Angle of Attack and Bank, the DAP will take care to send the proper steering commands to the kOS steering manager
+- **AUTO** where everything is taken care of by kOS. Beneath the program, there are several DAP AUTO modes that control one target quantity or the other depending on the flight phase. More on this later, but externally you won't notice the difference anyways.
+- The **OFF** setting is the completely-manual vanilla KSP steering you may be used to, without any augmentation whatsoever
+
+The entire point of having a DAP is that the Shuttle is yaw-unstable through most of the reentry regime, and may be on the edge of stability at landing depending on centre-of-gravity and trimming.  
+Additionally, some guidance modes require the Shuttle to control quantities (such as vertical speed or load factor) that are several steps removed from the manual elevon control inputs, making it very hard to do this by hand.
+
+The program is able to take the Shuttle from Entry Interface all the way to wheels stop completely automatically with the DAP set to AUTO. It's also possible to fly a complete reentry in CSS but there are a couple quirks, more on this later.
+
+I do not advise you to disengage the DAP at all above Mach 2, if you do you definitely need the KSP SAS and RCS and even so you might lose control very quickly.
+
 
 # Entry guidance
 
