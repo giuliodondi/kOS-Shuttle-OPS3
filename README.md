@@ -104,8 +104,20 @@ I do not advise you to disengage the DAP at all above Mach 2, if you do you defi
 
 # Entry guidance
 
-This algorithm guides the Shuttle from Entry Interface (122km altitude, Mach 27/28) all the way to TAEM interface (30/35km altitude, 80km from the site, Mach 2.5).
-The Shuttle is a glider, so guidance must manage drag to ensure that the Shuttle makes it to TAEM Interface with the proper energy. At the same time, there are limits on the drag that is safe to experience at any one time, which define a **reentry corridor**. Entry guidance will continuously calculate a drag profile that meets the range requirement while threading through the corridor.
+This algorithm guides the Shuttle from Entry Interface (122km altitude, Mach 27/28) all the way to TAEM interface (30/35km altitude, 80km from the site, Mach 2.5).  
+
+The Shuttle is a glider, so guidance must manage drag to ensure that the Shuttle makes it to TAEM Interface with the proper energy. The Shuttle generates drag by managing its descent into the atmosphere. But it cannot just pitch down to descend, as thermal considerations force the Angle of Attack to stay close to a rigid profile, the profile being an equation of AoA vs surface-relative velocity.
+Entry guidance thus manages atmospheric drag by modulating the bank angle, given the value of pitch. At the same time, there are limits on the drag that is safe to experience at any one time, which define a **reentry corridor**. Entry guidance will continuously calculate a drag profile that meets the range requirement while threading through the corridor.
+
+In a nutshell: Entry guidance is a fancy algorithm that calculates a few interesting numbers:
+- the reference drag profile you need to reach the target
+- the reference vertical speed to track the drag profile
+- the vertical Lift-to-Drag (LOD) you need given the drag and vertical speed errors (with respect to the reference values just calculated)
+- the AoA value from the profile and the corresponding Bank angle that satisfies the vertical LOD value just calculated
+  
+These last two angle values are the steering commands sent to the DAP, and to the HUD pipper.
+
+## The detailed workings
 
 Both the corridor and the profiles are defined as curves in the velocity-drag profile. More precisely it's surface-relative velocity and drag acceleration. All drag units from here on are ft/s^2 to be consistent with all the existing real-world documents and data.
 
