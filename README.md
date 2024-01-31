@@ -97,14 +97,34 @@ There are two DAP modes:
 The entire point of having a DAP is that the Shuttle is yaw-unstable through most of the reentry regime, and may be on the edge of stability at landing depending on centre-of-gravity and trimming.  
 Additionally, some guidance modes require the Shuttle to control quantities (such as vertical speed or load factor) that are several steps removed from the manual elevon control inputs, making it very hard to do this by hand.
 
-The program is able to take the Shuttle from Entry Interface all the way to wheels stop completely automatically with the DAP set to AUTO. It's also possible to fly a complete reentry in CSS but there are a couple quirks, more on this later.
+The program is able to take the Shuttle from Entry Interface all the way to wheels stop completely automatically with the DAP set to AUTO. It's also possible to fly a complete reentry in CSS but there are a couple quirks to keep in ming dring both entry and TAEM, more on this later.
 
 I do not advise you to disengage the DAP at all above Mach 2, if you do you definitely need the KSP SAS and RCS and even so you might lose control very quickly.
 
 
 # Entry guidance
 
+This algorithm guides the Shuttle from Entry Interface (122km altitude, Mach 27/28) all the way to TAEM interface (30/35km altitude, 80km from the site, Mach 2.5).
+The Shuttle is a glider, so guidance must manage drag to ensure that the Shuttle makes it to TAEM Interface with the proper energy. At the same time, there are limits on the drag that is safe to experience at any one time, which define a **reentry corridor**. Entry guidance will continuously calculate a drag profile that meets the range requirement while threading through the corridor.
+
+Both the corridor and the profiles are defined as curves in the velocity-drag profile. More precisely it's surface-relative velocity and drag acceleration. All drag units from here on are ft/s^2 to be consistent with all the existing real-world documents and data.
+
 <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/drag_vel.png" width="800">
+
+In this plot, the Shuttle will move from left to right along the drag profile curves, and hopefully stay within the corridor boundaries:
+- The top curve is the _high drag_ or _hard_ limit. This is the envelope of all constraints the Shuttle is subject to (thermal, load factor, dynamic pressure). If the boundary is crossed, it doesn't mean instant death, but rather there is no guarantee that nothing catastrophic will happen
+- The bottom curve is the _low drag_ or _soft_ limit. The Shuttle only crosses this when it's in a low energy condition, nothing catastrophic will happen but the Shuttle might not make TAEM Interface with the proper energy
+  
+The central curves instead show the _drag profile_. This is a piecewise curve made of several segments, each of which defines the **Mode** of the Entry guidance algorithm. The curves show high, nominal and low energy situations, and show how Guidance adjusts the profile to satisfy range to the site while still respecting the corridor:
+- First is **Temperature Control**, the union of two quadratic curves (drag ∝ velocity^2), it lasts from Entry interface until about Mach 19 (5700 m/s)
+- The next one is **Equilibrium Glide**, drag is modulated to balance lift, centrigufal force and gravity. It lasts until somewhere between Mach 11 and Mach 17 depending on the Shuttle's energy.
+- The next one is **Constant Drag**, which is a constant value determined by Guidance to reach the last segment with the proper energy. If you're high on energy, Guidance might switch to constant drag early, in the nominal case this phase should not last very long before the last phase
+- The final phase is **Transition** which is a linear drag vs. energy-over-Weight profile. Strictly speaking this is not a drag-velocity profile, but it's close enough since most of your energy is kinetic anyways.
+
+Now it's time to talk about the actual flow of the algorithm through Reentry and the various phases. Remember that the current guidance phase is displayed on the HUD:
+
+- The first phase is **Pre-entry (PREEN, aka Phase 1)**, from program activation until the total aerodynamic acceleration reaches about 0.1G. The Shuttle will keep wings level throughout this phase, if the DAP is AUTO, of course. Pre-entry always transitions to Temp control
+- The second phase is **Temperature Control (TEMP, aka Phase 2)**, and the third phase is ** Both the quadratic and equilibrium glide profile segments are adjusted as you see in the velocity-drag
 
 
 ![traj_disp](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/entry_traj_displays.png)
