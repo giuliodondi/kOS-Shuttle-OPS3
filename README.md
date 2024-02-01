@@ -127,33 +127,122 @@ In this plot, the Shuttle will move from left to right along the drag profile cu
 - The top curve is the _high drag_ or _hard_ limit. This is the envelope of all constraints the Shuttle is subject to (thermal, load factor, dynamic pressure). If the boundary is crossed, it doesn't mean instant death, but rather there is no guarantee that nothing catastrophic will happen
 - The bottom curve is the _low drag_ or _soft_ limit. The Shuttle only crosses this when it's in a low energy condition, nothing catastrophic will happen but the Shuttle might not make TAEM Interface with the proper energy
   
-The central curves instead show the _drag profile_. This is a piecewise curve made of several segments, each of which defines the **Mode** of the Entry guidance algorithm. The curves show high, nominal and low energy situations, and show how Guidance adjusts the profile to satisfy range to the site while still respecting the corridor:
-- First is **Temperature Control**, the union of two quadratic curves (drag ∝ velocity^2), it lasts from Entry interface until about Mach 19 (5700 m/s)
-- The next one is **Equilibrium Glide**, drag is modulated to balance lift, centrigufal force and gravity. It lasts until somewhere between Mach 11 and Mach 17 depending on the Shuttle's energy.
-- The next one is **Constant Drag**, which is a constant value determined by Guidance to reach the last segment with the proper energy. If you're high on energy, Guidance might switch to constant drag early, in the nominal case this phase should not last very long before the last phase
-- The final phase is **Transition** which is a linear drag vs. energy-over-Weight profile. Strictly speaking this is not a drag-velocity profile, but it's close enough since most of your energy is kinetic anyways.
+The central curves instead show the _drag profile_. This is a piecewise curve made of several segments, each of which is tied to the **Phase** of the Entry guidance algorithm. The algorithm will adjust the current segment of the drag profile to try to bring the Shuttle back on profile , which is why you see three profile lines all converging to the same profile curve at the end.
 
-Now it's time to talk about the actual flow of the algorithm through Reentry and the various phases. Remember that the current guidance phase is displayed on the HUD:
+It makes sense to discuss the drag segments along with the general flow of the guidance algorithm:
+- At entry interface, the program is in Phase 1 : **Pre-entry (PREEN)**. This is an open-loop phase with no fancy calculations, just steady pitch and 0° bank. This phase is terminated when the total aeordynamic load reaches about 0.1G, and Phase 2 is triggered. This usually happens below 90km altitude
+- Phase 2 is **Temperature Control (TEMP)**. The drag segments are two quadratic functions of velocity. This phase normally switches to phase 3 around Mach 19, but in high-energy cases it might switch to phase 4 directly
+- Phase 3 is **Equilibrium Glide (EQGL)**. The drag profile is adjusted to balance vertical lift, centrifugal force and gravity. This phase switches to Phase 4 anywhere between Mach 17 and Mach 11 depending on the energy, but it can aso switch directly to phase 5 if energy is very low
+- Phase 4 is **Constant Drag (CONSTD)**. As the name suggests, the drag profile is a constant value calculated previously to reach phase 5 with the proper energy at the proper range. This phase can only switch to phase 5, it usually happens no later than Mach 11
+- Phase 5 is **Transition(TRAN)**. The drag is actually a function of Energy over Weight (EOW) but, since most of the energy is kinetic from velocity, we'll ignore the distinction. The name refers to the fact that in this phase the Shuttle will start pitching down to 10° Aoa and below, which is needed by TAEM guidance. This phase terminates at TAEM interface.
 
-- The first phase is **Pre-entry (PREEN, aka Phase 1)**, from program activation until the total aerodynamic acceleration reaches about 0.1G. The Shuttle will keep wings level throughout this phase, if the DAP is AUTO, of course. Pre-entry always transitions to Temp control
-- The second phase is **Temperature Control (TEMP, aka Phase 2)**, and the third phase is ** Both the quadratic and equilibrium glide profile segments are adjusted as you see in the velocity-drag
-
+Since the velocity-drag profiles are important, they are visualised at a glance in the **ENTRY TRAJ Displays**, the five displays that are shown along the Entry phase:
 
 ![traj_disp](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/entry_traj_displays.png)
 
-- Mach 12 / 1000km
-- Mach 10 / 750 km
-- Mach 5 / 250 km
-- Mach 3 / 100 km
+The central plot is a little involved:
+- Velocity is on the vertical, decreasing going down the plot
+- Drag is not on the horizontal, instead the dashed lines act as markers of the drag values. The corresponding drag value is written at the top (in ft/s^2)
+- The bundle of straight lines dislays the reentry corridor:  
+  - The lines are approximately the same velocity-drag lines as the plot above
+  - The top-left line is always the high-drag line, the bottom-right is the low-drag line
+  - The reference profile is the centre-most line, TRAJ 1 and 2 have multiple reference curves to mark typical situations
+- The Shuttle bug will invariably move from top-right to bottom-left as it makes its way through the reentry corridor
+- The square box below the bug is the Drag error indicator, it follows the bug down the screen and is placed left or right based on the reference drag value. If it's to the left of the bug, it means that Guidance would like you to have more drag than the current value
+
+The other data printouts display useful information:
+- Top left you have a bunch of aerodynamic data:
+  - _XLFAC_, the total aerdynamic acceleration in the same units as drag
+  - _L/D_, you current measured Lift-to-Drag ratio
+  - _DRAG_, the current drag acceleration
+  - _D REF_, the reference drag value fro mthe profile that Guidance calculated
+- also the _PHASE_ counter of the guidance algorithm
+- Bottom right:
+  - _HDT REF_, the reference vertical speed to track the drag profile
+  - _ALPCMD_, the commanded Angle of Attack value from the fixed profile
+  - _ROLCMD_, the commaned bank angle
+  - _ROLREF_, the bank angle to track the profile if we had no hdot or drag error right now
+
+  Also there are two yellow printouts that will only show in special situations:
+  - _ALP MODULN_ indicates that AoA modulation is in effect: if the drag error is too large, Guidance will alter the Angle of Attack a little off-profile to change drag quickly
+  - _ROLL REVERSAL_ shows when the azimuth error is too large and it's time to bank in the opposite direction to stay on course, it will go off once the az error is decreasing and within limits
+
+The TRAJ displays will advance based on velocity, not the guidance phase:
+- TRAJ 1 covers phases 1 and 2, and sometimes the start of phase 3
+- TRAJ 2 is usually phase 3
+- TRAJ 3 usually covers late phase 3, phase 4 and the switch to phase 5
+- TRAJ 4 and 5 are almost always phase 5 only
+
+Some remarks:
+- There are some Mach vs Range checkpoints that you should look out for to see if guidance is doing well:
+  - Mach 12 at 1000km
+  - Mach 10 at 750 km
+  - Mach 5 at 250 km
+  - Mach 3 at 100 km
+  - bear in mind that Guidance is not programmed to hit these points, the're just rules of thumb I devised.
+- Nevertheless, even if Entry is a bit off-nominal in range or energy, usually proper ranging is achieved by phase 4/5
+- I still haven't explored the full "envelope" of Entry Interface conditions that Guidance can handle and achieve the proper ranging. Try to hit the deorbit targets as accurately as possible
+- The aerodynamics of the Shuttle in KSP are close but not exactly like in real life. The biggest difference is during the Transition phase, which is usually entered high on energy. Guidance will consistently command high drag but the Shuttle never seems to reach it. In any case, ranging works fine
+- The Angle of Attack profile is 40° at Entry Interface, ramping down to 30° by Mach 18, and then ramping down again from Mach 8.
+  - In reality the Shuttle used 40° fixed until the rampdown at Mach 12. Technical documents show that the 40/30 profile was suggested for high-crossrange missions such as the 3B once-around mission out of Vandenberg, which is why I chose it
+- If Speedbrakes are set to Auto, they will open at Mach 3.8. In real life they would open at Mach 10 to help with trimming. I saw that this generates too much drag in KSP
 
 
-# TAEM guidance
+# Terminal Area Energy Management (TAEM) guidance
+
+Entry guidance has delivered the Shuttle some 80km from the runway, some 30km altitude at Mach 2.5 or a little higher. In addition, the Angle of Attack has been lowered to transition to the front-side of the Lift-to-Drag curve. This just means that now the Shuttle can fly like an aircraft.
+
+TAEM is all about Energy, to slow down just in time to acquire the runway and get on the proper descent profile for landing. There is an altitude profile as well as an energy profile to track. TAEM terminates when the Shuttle is established on final approach within some margin of error.  
+
+To cover all possible energy conditions, there are several approaches that can be chosen:
 
 <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/hac.png" width="600">
 
+- HAC stands for Heading Alignment Cone, it's a fixed point to use as a guidepost to align with the runway
+- **Overhead (OVHD)** is the default choice, but you have a GUI button to change to **Straight-in (ST IN)**. This will reduce the distance to fly by quite a lot in a very low energy case.
+  - **The switch from Overhead to Straight-in is always manual and up to you, never done automatically**
+- The HACs can be placed at the **Nominal Entry Point (NEP)** and switched to the **Minimum Entry Point (MEP)** if low on energy. This is a less drastic change than the Overhead/Straight-in switch
+  - **The NEP to MEP switch happens automatically within TAEM guidance, you have no control over it**
+ 
+  The phases of TAEM guidance are:
+  - **Acquisiton (ACQ)**, the Shuttle is guided on a course to the HAC entry point. The shuttle will pitch up or down based on a combination of errors with respect to the altitude and energy profile
+  - **S-turn (STURN)**, if energy is too far avode the nominal profile, the Shuttle turns away from the HAC for a little while to increase distance to fly and raise the energy profile. This phase is only entered from Acquisition and is forcibly disabled if too close to the HAC
+  - **Heading alignment (HDG)** which is the turn around the HAC. The Shuttle will bank by an angle that depends on the crosstrack error, and pitch up or down  to acquire the altitude path with no more regard for energy by this point. The phase terminates when the turn angle around the HAC is less than 30° and the Shuttle is close enough to centreline
+  - **Pre-final (PRFNL)** which manages pitch and bank to stabilise the Shuttle on the final descent path and course
+ 
+The TAEM displays are **VERT SIT** and show the energy situation against distance to fly, along with other data:
+
 ![vsit_disp](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/vsit_displays.png)
 
+- The central plot shows the three Energy-over-Weight against Range to go profiles:
+  - **Keep in mind that most of the energy by this stage is potential i.e. dominated by altitude**
+  - The middle profile is the Nominal, if the Orbiter bug is too far off-nominal, guidance will respond in the following ways:
+    - if high energy, pitch down a little to dive into thicker air and generate drag, while shedding altitude to reduce energy
+    - if low energy, pitch up to conserve some altitude and thus energy until the profile is restored
+  - The lower profile is the Minimum Entry Point line, if the Shuttle crosses this line, guidance automatically moves the HAC to the NEP, this usually brings the bug within margins
+  - The higher profile is the S-turn line, crossing this line will trigger the S-turn, which is disabled once the bug returns below the line
+- The data displayed in the left panel are the current body attitude angles
+- In the bottom-right panel you have:
+  - The indicator of nominal (NEP) or minimum (MEP) entry points currently enabled. MEP is yellow.
+  - _ALPHA LIMS_ the lower and upper limits on Angle of Attack needed to prevent dangerous commands
+  - _SPDBK CMD_ the current commanded speedbrake deflection on a scale of 0 to 1
+  - _REF HDOT_ the vertical speed to track the altitude profile
+  - _TGT NZ_ the target vertical load factor
+    - normally this is a DAP calculated quantity to maintain target hdot, but in some cases this is a direct guidance target value
+- The left slider is the error with respect to the altitude profile
+  - The middle ticks are +/- 100m, then the slider is scaled so that the outer ticks are +/- 1000m. This allows to visualise different scales of error at the proper resolution
+- VERT SIT 1 covers the early part of Acquisition (and S-turn if needed)
+- VERT SIT 2 covers late Acquisition around the time that S-turns are inhibited all the way to Approach and Landing
+- A few elements appear in the VERT SIT 2 display:
+  - during late Acquisition, a **Time-to-HAC** indicator that will start to move when the Shuttle is about 7 seconds away from the HAC
+  - This is replaced by the **Cross-track XTRACK** indicator during Heading align and pre-final, as well as Approach and Landing
+
 <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/vsit_low.png" width="350">
+
+Finally, this is the Vert Sit display in a very low energy situation:
+- The MEP selection is displayed instead of NEP
+- A message OTT ST IN appears: guidance is signalling that it would be a good idea to switch to a Straight-in approach
+  - remember that you need to switch manually, the program will never do it for you
 
 # GRTLS guidance
 
