@@ -186,6 +186,7 @@ Some remarks:
 - The Angle of Attack profile is 40° at Entry Interface, ramping down to 30° by Mach 18, and then ramping down again from Mach 8.
   - In reality the Shuttle used 40° fixed until the rampdown at Mach 12. Technical documents show that the 40/30 profile was suggested for high-crossrange missions such as the 3B once-around mission out of Vandenberg, which is why I chose it
 - If Speedbrakes are set to Auto, they will open at Mach 3.8. In real life they would open at Mach 10 to help with trimming. I saw that this generates too much drag in KSP
+- Flying CSS is tricky because Guidance will comand continuous corrections of bank angle to track the drag profile. In particular, it will overbank right after a roll reversal to counter the exra lift gained. **You MUST be focussed closely on the HUD and follow the commands if you fly CSS**
 
 
 # Terminal Area Energy Management (TAEM) guidance
@@ -244,13 +245,37 @@ Finally, this is the Vert Sit display in a very low energy situation:
 - A message OTT ST IN appears: guidance is signalling that it would be a good idea to switch to a Straight-in approach
   - remember that you need to switch manually, the program will never do it for you
 
+Remarks:
+- The speedbrake logic is as follows:
+  - constant above Mach 1.5 or during S-turns
+  - A function of the error with respect to a target Dynamic Pressure profile (i.e. velocity corrected for air density)
+- If flying CSS you should make small corrections especially in pitch, as it's very easy to overshoot the HUD command
+- In any case, you don't need super crisp vertical control during Acquisition and S-turns
+- Instead, during Heading align and Prefinal, you should have an eye on the Altitude error slider and, if needed, over-correct a little to get back on profile as soon as possible
+
 # GRTLS guidance
 
 WIP
 
-# Approach & Landing guidance
+# Approach & Landing (A/L) guidance
+
+TAEM has delivered the Shuttle on final approach, with hopefully small errors in the vertical and cross-track. The last step is to make fine alignment corrections and flare to achieve a shallow glide right over the runway, until the wheels touch down.
 
 <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/a_l_profile.png" width="800">
+
+The phases of A/L are as follows:
+- **Capture (CAPT)**, the Shuttle will use the same guidance laws as TAEM prefinal but monitor the vertical and cross-track errors. The phase terminates when the errors stay small enough for 4 seconds
+- **Outer GLideslope (OGS)**, a steep descent on the vertical profile (24° normally, 22* if the Shuttle is very heavy) designed to overcome the Shuttle's base drag and allow control of airspeed with the speedbrake
+- **Flare (FLARE)**, a pitch-up command on an imaginary circle followed by an exponential to settle down on the final shallow glidepath
+  - In this phase and beyond, altitude errors are no longer used to correct the pitch command, just the hdot error. The reason is that crisp control of altitude is not necessary if the flare is timed right, and this makes it simpler to achieve a stable shallow glide after the flare
+- **Final Flare (FNLFL)**, the Shuttle keeps a shallow 2.5° glideslope and deploys the landing gear. Yaw is used instead of bank to correct cross-track errors
+- **Rollout(ROLLOUT)**, a pitch-down is commanded to prevent a second lift-off in case the Angle of Attack was too large at touchdown. Once again. yaw and wheel steering are used to track the centreline
+
+During A/L you should completely disregard the Vert Sit display and focus on the HUD and the runway. The HUD will change to let you know you reached certain checkpoints:
+
+
+Remarks:
+- Make extremely 
 
 
 # Results from a test reentry to Edwards
