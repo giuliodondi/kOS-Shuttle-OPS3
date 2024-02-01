@@ -212,11 +212,12 @@ To cover all possible energy conditions, there are several approaches that can b
 - The HACs can be placed at the **Nominal Entry Point (NEP)** and switched to the **Minimum Entry Point (MEP)** if low on energy. This is a less drastic change than the Overhead/Straight-in switch
   - **The NEP to MEP switch happens automatically within TAEM guidance, you have no control over it**
  
-  The phases of TAEM guidance are:
-  - **Acquisiton (ACQ)**, the Shuttle is guided on a course to the HAC entry point. The shuttle will pitch up or down based on a combination of errors with respect to the altitude and energy profile
-  - **S-turn (STURN)**, if energy is too far avode the nominal profile, the Shuttle turns away from the HAC for a little while to increase distance to fly and raise the energy profile. This phase is only entered from Acquisition and is forcibly disabled if too close to the HAC
-  - **Heading alignment (HDG)** which is the turn around the HAC. The AZ ERROR number on the HUD will indicate the degrees of turn left to sweep. The Shuttle will bank by an angle that depends on the crosstrack error, and pitch up or down  to acquire the altitude path with no more regard for energy by this point. The phase terminates when the turn angle around the HAC is less than 30° and the Shuttle is close enough to centreline
-  - **Pre-final (PRFNL)** which manages pitch and bank to stabilise the Shuttle on the final descent path and course. The AZ ERROR number indicates the heading degrees off runway centreline
+The guidance outputs sent to the DAP are bank angle to steer towards a guidance point and a target vertical speed value to achieve.
+The phases of TAEM guidance are:
+- **Acquisiton (ACQ)**, the Shuttle is guided on a course to the HAC entry point. The target vertical speed depends on a combination of errors with respect to the altitude and energy profile
+- **S-turn (STURN)**, if energy is too far avode the nominal profile, the Shuttle turns away from the HAC for a little while to increase distance to fly and raise the energy profile. This phase is only entered from Acquisition and is forcibly disabled if too close to the HAC
+- **Heading alignment (HDG)** which is the turn around the HAC. The AZ ERROR number on the HUD will indicate the degrees of turn left to sweep. The Shuttle will bank by an angle that depends on the crosstrack error, the target hdot instead depends only on the error from the vertical profile, with no more contibution from energy. The phase terminates when the turn angle around the HAC is less than 30° and the Shuttle is close enough to centreline
+- **Pre-final (PRFNL)** which manages pitch and bank to stabilise the Shuttle on the final descent path and course. The AZ ERROR number indicates the heading degrees off runway centreline.
  
 The TAEM displays are **VERT SIT** and show the energy situation against distance to fly, along with other data:
 
@@ -253,39 +254,43 @@ Finally, this is the Vert Sit display in a very low energy situation:
   - remember that you need to switch manually, the program will never do it for you
 
 Remarks:
+- The moment S-turns are disabled is also the moment the program will not allow you to change runway or approach anymore. You will notice because all GUI button selectors become frozen
 - The auto speedbrake logic is as follows:
   - constant above Mach 1.5 or during S-turns
   - A function of the error with respect to a target Dynamic Pressure profile (i.e. velocity corrected for air density)
 - You can use manual speedbrakes to add or subtract drag if you're way off the energy profile
-- If flying CSS:
+- Tips for flying with DAP set to CSS:
   -  you should make small corrections especially in pitch, as it's very easy to overshoot the HUD command
   - In any case, you don't need super crisp vertical control during Acquisition and S-turns, it's enough to be within the +/- 1000m mark by HAC acquisition
-  - During Heading align and Prefinal, it's easier to manage altitude and acquire the altitude profile. You should keep an eye on the Altitude error slider and, if needed, deliberately over-correct your putch inputs to track the profile. The important thing is to be reasonably close to 0 error by pre-final
-- The energy profile is calibrated intentionally to place the Shuttle above profile by HAC acquisition. If the HAC turn is less than 180°, there might not be enough time to null the altitude error by the end of TAEM, usually this is not a major issue for what follows
+  - During Heading align and Prefinal, it's easier to manage altitude and acquire the altitude profile. You should keep an eye on the Altitude error slider and, if needed, deliberately over-correct your pitch inputs to track the profile. The important thing is to be reasonably close to 0 error by pre-final
+- The energy profile is calibrated intentionally to place the Shuttle above profile by HAC acquisition. If the HAC turn is less than 180°, there might not be enough time to null the altitude error by the end of TAEM, usually this is not a major issue for what follows.
 
-# GRTLS guidance
+# Glide-RTLS abort guidance
 
 WIP
 
 # Approach & Landing (A/L) guidance
 
-TAEM has delivered the Shuttle on final approach, with hopefully small errors in the vertical and cross-track. The last step is to make fine alignment corrections and flare to achieve a shallow glide right over the runway, until the wheels touch down.
+TAEM has delivered the Shuttle on final approach, with hopefully small errors in the vertical and cross-track. The last step is to make fine alignment corrections and flare to achieve a shallow glide right over the runway, until the wheels touch down. The guidance and control algorithms are superficially similar to TAEM (actually they are incorporated in the same routines).
 
 <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/a_l_profile.png" width="800">
 
 The phases of A/L are as follows:
 - **Capture (CAPT)**, the Shuttle will use the same guidance laws as TAEM prefinal but monitor the vertical and cross-track errors. The phase terminates when the errors stay small enough for 4 seconds
-- **Outer GLideslope (OGS)**, a steep descent on the vertical profile (24° normally, 22* if the Shuttle is very heavy) designed to overcome the Shuttle's base drag and allow control of airspeed with the speedbrake
-- **Flare (FLARE)**, a pitch-up command on an imaginary circle followed by an exponential to settle down on the final shallow glidepath
+- **Outer Glideslope (OGS)**, a steep descent on the vertical profile (24° normally, 22* if the Shuttle is very heavy) designed to overcome the Shuttle's base drag and allow control of airspeed with the speedbrake. It ends at around 600m altitude above the runway
+- **Flare (FLARE)**, a pitch-up command on an imaginary circle followed by an exponential to settle down on the final shallow glidepath. 
   - In this phase and beyond, altitude errors are no longer used to correct the pitch command, just the hdot error. The reason is that crisp control of altitude is not necessary if the flare is timed right, and this makes it simpler to achieve a stable shallow glide after the flare
-- **Final Flare (FNLFL)**, the Shuttle keeps a shallow 2.5° glideslope and deploys the landing gear. Yaw is used instead of bank to correct cross-track errors
-- **Rollout(ROLLOUT)**, a pitch-down is commanded to prevent a second lift-off in case the Angle of Attack was too large at touchdown. Once again. yaw and wheel steering are used to track the centreline
+- **Final Flare (FNLFL)**, the Shuttle keeps a shallow 2.5° glideslope and deploys the landing gear. Yaw is used instead of bank to correct cross-track errors. It ends right before touchdown
+- **Rollout(ROLLOUT)**, the mode that controls the Shuttle from touchdown to wheels stop. Horizontally, yaw and wheel steering are used to track the centreline. Vertically, the DAP will command pitch-down to prevent a second lift-off in case the Angle of Attack was too large at touchdown. 
 
-During A/L you should completely disregard the Vert Sit display and focus on the HUD and the runway. The HUD will change to let you know you reached certain checkpoints:
+During A/L you should completely disregard the Vert Sit display and focus on the HUD and the runway.  
+The HUD will change to let you know you reached certain checkpoints:  
+- The hud nose marker will change to a circle to indicate that A/L guidance is in effect
+- The G-meter and attitude angles disappear to see the runway better
+- 1500m above the runway there is a checkpoint that forces guidance from Capture into Outer Glideslope mode even if the errors are not small by then. You will notice because flap trim, vertical speed and distance will all disappear from the HUD, and altitude will be displayed in a finer format
+- During final flare, the guidance pipper disappears. If you're flying CSS, guide yourself relative to the runway
 
 
-Remarks:
-- Make extremely 
 
 
 # Results from a test reentry to Edwards
