@@ -70,7 +70,7 @@ The other GUI to look at is the **HUD**:
 ![hud](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/hud.png)
 
 - the HUD background is either transparent or darkened based on the current time of the day at your position, to provide best visibility
-- _AZ ERROR_ is the compass angle between your current trajectory and the target. When it's zero you're flying directly towards the site. Positive values mean the target is to your right
+- _AZ ERROR_ is the compass angle between your current trajectory and the current target point. When it's zero you're flying directly towards the target. Positive values mean the target is to your right.
 - _FLAP TRIM_ is an indicator of the current trim setting, from minimum (-1) to maximum (+1). The deflection angle of each control surface is proportional to this
 - _VERT SPEED_ indicates your current vertical speed at a glance
   - During Reentry the scale is 200 m/s
@@ -131,7 +131,7 @@ The central curves instead show the _drag profile_. This is a piecewise curve ma
 
 It makes sense to discuss the drag segments along with the general flow of the guidance algorithm:
 - At entry interface, the program is in Phase 1 : **Pre-entry (PREEN)**. This is an open-loop phase with no fancy calculations, just steady pitch and 0° bank. This phase is terminated when the total aeordynamic load reaches about 0.1G, and Phase 2 is triggered. This usually happens below 90km altitude
-- Phase 2 is **Temperature Control (TEMP)**. The drag segments are two quadratic functions of velocity. This phase normally switches to phase 3 around Mach 19, but in high-energy cases it might switch to phase 4 directly
+- Phase 2 is **Temperature Control (TEMP)**. The drag segments are two quadratic functions of velocity.  At the start, the Shuttle will be far off the reference drag and hdot values and so guidance will keep 0° of bank until the descent stabilises, it then performs the first roll towards the target and start tracking the drag profile. This phase normally switches to phase 3 around Mach 19, but in high-energy cases it might switch to phase 4 directly
 - Phase 3 is **Equilibrium Glide (EQGL)**. The drag profile is adjusted to balance vertical lift, centrifugal force and gravity. This phase switches to Phase 4 anywhere between Mach 17 and Mach 11 depending on the energy, but it can aso switch directly to phase 5 if energy is very low
 - Phase 4 is **Constant Drag (CONSTD)**. As the name suggests, the drag profile is a constant value calculated previously to reach phase 5 with the proper energy at the proper range. This phase can only switch to phase 5, it usually happens no later than Mach 11
 - Phase 5 is **Transition(TRAN)**. The drag is actually a function of Energy over Weight (EOW) but, since most of the energy is kinetic from velocity, we'll ignore the distinction. The name refers to the fact that in this phase the Shuttle will start pitching down to 10° Aoa and below, which is needed by TAEM guidance. This phase terminates at TAEM interface.
@@ -185,9 +185,16 @@ Some remarks:
 - The aerodynamics of the Shuttle in KSP are close but not exactly like in real life. The biggest difference is during the Transition phase, which is usually entered high on energy. Guidance will consistently command high drag but the Shuttle never seems to reach it. In any case, ranging works fine
 - The Angle of Attack profile is 40° at Entry Interface, ramping down to 30° by Mach 18, and then ramping down again from Mach 8.
   - In reality the Shuttle used 40° fixed until the rampdown at Mach 12. Technical documents show that the 40/30 profile was suggested for high-crossrange missions such as the 3B once-around mission out of Vandenberg, which is why I chose it
-- If Speedbrakes are set to Auto, they will open at Mach 3.8. In real life they would open at Mach 10 to help with trimming. I saw that this generates too much drag in KSP
-- Flying CSS is tricky because Guidance will comand continuous corrections of bank angle to track the drag profile. In particular, it will overbank right after a roll reversal to counter the exra lift gained. **You MUST be focussed closely on the HUD and follow the commands if you fly CSS**
+- If Speedbrakes are set to Auto, they will open at Mach 3.8
+  - In real life they would open at Mach 10 to help with trimming. I saw that this generates too much drag in KSP
+  - If you want manual speedbrakes, I suggest to leave them closed until about Mach 3 and then open them about 2/3 before TAEM
+- Flying CSS is tricky because Guidance will comand continuous corrections of bank angle to track the drag profile. In particular, it will overbank right after a roll reversal to counter the extra lift gained. **You MUST be focussed closely on the HUD and follow the commands if you fly CSS**
 
+## Entry guidance during a TAL abort
+
+The trajectory after an ascent TAL abort is suborbital, with not enough velocity to keep the flight-path angle within the nominal reentry values. As a result, the Shuttle will unavoidably descent rapidly and experience a drag spike.  
+When Phase 2 is triggered, the initial hdot error is so large that Guidance keeps wings level for much longer than usual. Drag will rise rapidly, and possibly even break the high-drag limit for a short while. Drag will peak at the moment the descent is arrested, but guidance will stay at wings level for even longer as the drag error term is still large. The Shuttle will start climbing and drag will decrease down towards the reference profile.  
+Once the drag error becomes small enough, guidance will command a maximum roll, to stop the climb and re-establish the reference hdot value. The descent should not take too long to stabilise close to the reference drag and from there on the rest of reentry plays out normally.
 
 # Terminal Area Energy Management (TAEM) guidance
 
@@ -208,8 +215,8 @@ To cover all possible energy conditions, there are several approaches that can b
   The phases of TAEM guidance are:
   - **Acquisiton (ACQ)**, the Shuttle is guided on a course to the HAC entry point. The shuttle will pitch up or down based on a combination of errors with respect to the altitude and energy profile
   - **S-turn (STURN)**, if energy is too far avode the nominal profile, the Shuttle turns away from the HAC for a little while to increase distance to fly and raise the energy profile. This phase is only entered from Acquisition and is forcibly disabled if too close to the HAC
-  - **Heading alignment (HDG)** which is the turn around the HAC. The Shuttle will bank by an angle that depends on the crosstrack error, and pitch up or down  to acquire the altitude path with no more regard for energy by this point. The phase terminates when the turn angle around the HAC is less than 30° and the Shuttle is close enough to centreline
-  - **Pre-final (PRFNL)** which manages pitch and bank to stabilise the Shuttle on the final descent path and course
+  - **Heading alignment (HDG)** which is the turn around the HAC. The AZ ERROR number on the HUD will indicate the degrees of turn left to sweep. The Shuttle will bank by an angle that depends on the crosstrack error, and pitch up or down  to acquire the altitude path with no more regard for energy by this point. The phase terminates when the turn angle around the HAC is less than 30° and the Shuttle is close enough to centreline
+  - **Pre-final (PRFNL)** which manages pitch and bank to stabilise the Shuttle on the final descent path and course. The AZ ERROR number indicates the heading degrees off runway centreline
  
 The TAEM displays are **VERT SIT** and show the energy situation against distance to fly, along with other data:
 
@@ -246,12 +253,15 @@ Finally, this is the Vert Sit display in a very low energy situation:
   - remember that you need to switch manually, the program will never do it for you
 
 Remarks:
-- The speedbrake logic is as follows:
+- The auto speedbrake logic is as follows:
   - constant above Mach 1.5 or during S-turns
   - A function of the error with respect to a target Dynamic Pressure profile (i.e. velocity corrected for air density)
-- If flying CSS you should make small corrections especially in pitch, as it's very easy to overshoot the HUD command
-- In any case, you don't need super crisp vertical control during Acquisition and S-turns
-- Instead, during Heading align and Prefinal, you should have an eye on the Altitude error slider and, if needed, over-correct a little to get back on profile as soon as possible
+- You can use manual speedbrakes to add or subtract drag if you're way off the energy profile
+- If flying CSS:
+  -  you should make small corrections especially in pitch, as it's very easy to overshoot the HUD command
+  - In any case, you don't need super crisp vertical control during Acquisition and S-turns, it's enough to be within the +/- 1000m mark by HAC acquisition
+  - During Heading align and Prefinal, it's easier to manage altitude and acquire the altitude profile. You should keep an eye on the Altitude error slider and, if needed, deliberately over-correct your putch inputs to track the profile. The important thing is to be reasonably close to 0 error by pre-final
+- The energy profile is calibrated intentionally to place the Shuttle above profile by HAC acquisition. If the HAC turn is less than 180°, there might not be enough time to null the altitude error by the end of TAEM, usually this is not a major issue for what follows
 
 # GRTLS guidance
 
