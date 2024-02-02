@@ -138,7 +138,7 @@ FUNCTION dap_controller_factory {
 	this:add("nz_lims", LIST(-2.5, 2.5)).
 	this:add("delta_pch_lims", LIST(-3, 3)).
 	this:add("delta_lvlh_pch_lims", LIST(-8, 8)).
-	this:add("delta_roll_lims", LIST(-16, 16)).
+	this:add("delta_roll_lims", LIST(-8, 8)).
 	
 	//these are meant to be set by guidance
 	this:add("roll_lims", LIST(-60, 60)).

@@ -34,7 +34,6 @@ FUNCTION ops3_deorbit_predict{
 
 	UNTIL FALSE {
 		clearscreen.
-		clearvecdraws().
 	
 		LOCAL simstate IS current_simstate().
 		
@@ -66,9 +65,7 @@ FUNCTION ops3_deorbit_predict{
 			
 			SET simstate["velocity"] TO simstate["velocity"] + node_dv.
 			
-			local burn_pos IS shift_pos(simstate["position"], node_ETA).
-			
-			arrow_body(burn_pos,"burn").
+			local burn_pos IS pos2vec(shift_pos(simstate["position"], node_ETA)).
 			
 			SET ei_ETA tO ei_ETA + node_ETA.
 			
@@ -106,16 +103,16 @@ FUNCTION ops3_deorbit_predict{
 		LOCAL ei_fpa IS get_fpa(ei_simstate["position"], ei_simstate["velocity"]).
 		
 		//shift ei state forwards by the time to ei 
-		LOCAL ei_posvec IS shift_pos(ei_simstate["position"], ei_ETA).
+		LOCAL ei_posvec IS pos2vec(shift_pos(ei_simstate["position"], ei_ETA)).
 		
 		LOCAL ei_normvec IS VCRS(ei_simstate["position"], ei_simstate["velocity"]).
-		LOCAL normvec_rot IS shift_pos(ei_normvec,ei_ETA):NORMALIZED.
+		LOCAL normvec_rot IS pos2vec(shift_pos(ei_normvec,ei_ETA)):NORMALIZED.
 		LOCAL ei_vel_vec IS VCRS(normvec_rot,ei_posvec):NORMALIZED*ei_simstate["velocity"]:MAG.
 		SET ei_vel_vec TO rodrigues(ei_vel_vec,-normvec_rot,ei_fpa).
 		
 		
 		LOCAL ei_range IS downrangedist(tgtrwy["position"], ei_posvec).
-		LOCAL ei_delaz IS az_error(ei_posvec, tgtrwy["position"], ei_simstate["velocity"]).
+		LOCAL ei_delaz IS az_error(ei_posvec, tgtrwy["position"], ei_vel_vec).
 		
 		local ei_data is lexicon(
 						"ei_vel", ei_vel_vec:MAG,
@@ -127,7 +124,7 @@ FUNCTION ops3_deorbit_predict{
 		update_deorbit_GUI(ei_ETA, ei_data, ei_ref_data).
 		
 		
-		
+		clearvecdraws().
 		arrow_body(ei_posvec,"entry_interface").
 		
 		if (quit_program) {

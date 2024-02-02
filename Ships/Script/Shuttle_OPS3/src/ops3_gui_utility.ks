@@ -147,7 +147,7 @@ FUNCTION update_deorbit_GUI {
 	LOCAL text4_str IS "    FPA at EI : " + round(ei_data["ei_fpa"], 2) + " °".
 	
 	LOCAL text4_color IS guitextredhex.
-	if (ABS(ei_ref_data["ei_fpa"] - ei_data["ei_fpa"]) < 0.02) {
+	if (ABS(ei_ref_data["ei_fpa"] - ei_data["ei_fpa"]) < 0.03) {
 		SET text4_color TO guitextgreenhex.
 	}
 	
