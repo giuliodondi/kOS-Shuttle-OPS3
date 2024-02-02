@@ -193,8 +193,10 @@ Some remarks:
 ## Entry guidance during a TAL abort
 
 The trajectory after an ascent TAL abort is suborbital, with not enough velocity to keep the flight-path angle within the nominal reentry values. As a result, the Shuttle will unavoidably descent rapidly and experience a drag spike.  
+
 When Phase 2 is triggered, the initial hdot error is so large that Guidance keeps wings level for much longer than usual. Drag will rise rapidly, and possibly even break the high-drag limit for a short while. Drag will peak at the moment the descent is arrested, but guidance will stay at wings level for even longer as the drag error term is still large. The Shuttle will start climbing and drag will decrease down towards the reference profile.  
-Once the drag error becomes small enough, guidance will command a maximum roll, to stop the climb and re-establish the reference hdot value. The descent should not take too long to stabilise close to the reference drag and from there on the rest of reentry plays out normally.
+
+Once the drag error becomes small enough, guidance will command a large roll, to stop the climb and re-establish the reference hdot value. This roll will exceed 90° which is normal and expected in this situation. The descent should not take too long to stabilise close to the reference drag and from there on the rest of reentry plays out pretty much normally.
 
 # Terminal Area Energy Management (TAEM) guidance
 
