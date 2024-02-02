@@ -122,6 +122,13 @@ global entryg_constants is lexicon (
 									"calp1", list(0, 0.003077, 0.02522, 0, -0.0358, 0.0025, 0.05975, 0),	//deg-s/ft 	alpcmd linear term in ve 	//40-30 profile
 									"calp2", list(0, 0, -0.148e-5, 0, 0.1e-5, 0, -0.13e-5, 0),	//deg-s2/ft2 	alpcmd quadratic term in ve 	//40-30 profile
 									
+									//TAL profile 
+									"tal_valp", list(0, 500, 7500, 8500, 17500, 18500, 20000, 21000),
+									"tal_calp0", list(5, 5.385, -77.44, 30, 826.25, -63.6, -1103.6, 43),
+									"tal_calp1", list(0, 0.003077, 0.02522, 0, -0.091, 0.0052, 0.1092, 0),
+									"tal_calp2", list(0, 0, -0.148e-5, 0, 2.6e-6, 0, -2.6e-6, 0),
+									
+
 									//original cd coefficients
 									//"cddot1", 1500,	//ft/s 	cd velocity coef 
 									//"cddot2", 2000,	//ft/s 	cd velocity coef 
@@ -145,10 +152,10 @@ global entryg_constants is lexicon (
 									"cnmfs", 1.645788e-4,	//nmi/ft 	conversion from feet to nmi 
 									"crdeaf", 4,	//roll bias due to pitch modulation gain	//was 4
 									//"ct16", list(0, 0.1354, -0.1, 0.006),	// s2/ft - nd - s2/ft	c16 coefs STS-1
-									"ct16", list(0, 0.27, -0.2, 0.015),	// s2/ft - nd - s2/ft	c16 coefs
+									"ct16", list(0, 0.27, -0.2, 0.016),	// s2/ft - nd - s2/ft	c16 coefs
 									"ct17", list(0, 2*1.537e-2, -5.8146e-1),	//s/ft - nd 	c17 coefs
 									"ct16mn", 0.025,	//s2/ft		min c16
-									"ct16mx", 0.35,		//s2/ft 	max c16
+									"ct16mx", 0.36,		//s2/ft 	max c16
 									"ct17mn", 0.0025,	//s/ft 		min c17
 									"ct17mx", 0.014,	//s/ft 		max c17
 									"ct17m2", 0.00133,	//s/ft 		min c17 when ict=1
@@ -168,6 +175,7 @@ global entryg_constants is lexicon (
 									//"df", 21.0,	//ft/s2 final drag in transition phase	STS-1
 									"df", 19.09,	//ft/s2 final drag in transition phase	STS-1
 									"dlallm", 43,	//deg max constant
+									"tal_dlallm", 45,	//deg max constant for tal
 									"dlaplm", 2,		//deg delalp lim
 									"dlrdotl", 150,		//ft/s???? clamp value for rdot feedback 
 									"d23c", 15.5,	//ft/s2 etg canned d23
@@ -199,6 +207,7 @@ global entryg_constants is lexicon (
 									"radeg", 57.29578,	//deg/rad radians to degrees
 									"rdmax", 12,	//max roll bias 
 									"rlmc0", 90,	//rlm max above verolc
+									"tal_rlmc0", 120,	//rlm max above verolc for tal
 									"rlmc1", 70,	//rlm max
 									"rlmc2", -47,	//coeff in first rlm seg 
 									"rlmc3", 0.03,		//deg/ft/s
@@ -222,7 +231,8 @@ global entryg_constants is lexicon (
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
 									//"vnoalp", 20500,	//pch mod start velocity//	//took the value from the sts-1 paper
-									"vnoalp", 21500,	//pch mod start velocity//	//turned off 
+									"vnoalp", 22500,	//pch mod start velocity//
+									"taem_vnoalp", 20500,	//pch mod start velocity for taem//	
 									"vq", 10499,	//ft/s predicted end vel for const drag			//changed for consistency with vtran
 									"vrlmc", 2750,	//ft/s rlm seg switch vel
 									"vsat", 25766.2,	//ft/s local circular orbit vel 
@@ -595,10 +605,14 @@ function eginit {
 	
 	//in case of a tal abort 
 	IF (entryg_input["ital"]) {
-		set entryg_constants["vc16"] to 0.
-		set entryg_constants["vnoalp"] to 0.
-		set entryg_constants["vrdt"] to 0.
-		set entryg_constants["vylmax"] to 0.
+		set entryg_constants["valp"] to entryg_constants["tal_valp"].
+		set entryg_constants["calp0"] to entryg_constants["tal_calp0"].
+		set entryg_constants["calp1"] to entryg_constants["tal_calp1"].
+		set entryg_constants["calp2"] to entryg_constants["tal_calp2"].
+		
+		set entryg_constants["vnoalp"] to entryg_constants["taem_vnoalp"].
+		set entryg_constants["dlallm"] to entryg_constants["tal_dlallm"].
+		set entryg_constants["rlmc0"] to entryg_constants["tal_rlmc0"].
 	}
 	
 	set entryg_internal["start"] to 1.
@@ -908,7 +922,7 @@ function egalpcmd {
 	set entryg_internal["alpcmd"] to entryg_constants["calp0"][entryg_internal["ialp"]] + entryg_input["ve"]*(entryg_constants["calp1"][entryg_internal["ialp"]] + entryg_input["ve"] * entryg_constants["calp2"][entryg_internal["ialp"]]).
 	
 	if (entryg_internal["islect"] = 1) {
-		set entryg_internal["alpcmd"] to entryg_input["mm304al"].
+		set entryg_internal["alpcmd"] to entryg_constants["calp0"][entryg_constants["nalp"]].
 	}
 	
 	set entryg_internal["alpdot"] to (entryg_internal["alpcmd"] - entryg_internal["acmd1"]) / entryg_input["dtegd"].
@@ -1145,6 +1159,8 @@ function egrolcmd {
 	
 	//my addition: fiter changes in roll cmd if they are below a threshold enough
 	LOCAL rollca IS ABS(entryg_internal["rollc"][1]).
+	//my modification: limit the new roll command by the unlimited roll 
+	SET rollca TO MIN(rollca, ABS(entryg_internal["rollc"][2])).
 	LOCAL delrollc IS rollca - rollcpa.
 	
 	IF (ABS(delrollc) < entryg_constants["drolcmdfil"]) {

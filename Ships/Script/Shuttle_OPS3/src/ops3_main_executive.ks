@@ -15,9 +15,11 @@ FUNCTION ops3_main_exec {
 	GLOBAL tgtrwy IS LEXICON().
 	
 	//did we come from an RTLS abort? 
-	LOCAL grtls_flag IS (DEFINED grtls_skip_to_TAEM).
+	LOCAL grtls_flag IS is_grtls().
 	//tal abort flag 
-	LOCAL tal_flag IS (DEFINED tal_abort).
+	LOCAL tal_flag IS is_tal_abort().
+	
+	print "grtls? " + grtls_flag + " tal? " + tal_flag at (0,15).
 	
 	//setup main gui and hud 
 	//after the td points but before anything that modifies the default button selections

@@ -6,7 +6,7 @@
 FUNCTION shuttle_steep_ei_fpa {
 	PARAMETER ei_vel.
 	
-	return 162.4208 - 0.03742578*ei_vel + 0.000002114297*ei_vel^2.
+	return 162.5208 - 0.03742578*ei_vel + 0.000002114297*ei_vel^2.
 }
 
 FUNCTION shuttle_ei_range {
@@ -101,6 +101,32 @@ FUNCTION get_reentry_state {
 	).
 }
 
+//heuristic to check if we're in a tal abort 
+FUNCTION is_tal_abort {
+
+	LOCAL rmag IS (-SHIP:ORBIT:BODY:POSITION):MAG.
+	LOCAL alt_ IS rmag - SHIP:ORBIT:BODY:RADIUS.
+	
+	LOCAL alt_condition IS (alt_ > 90000).
+	
+	LOCAL vsat IS SQRT(BODY:MU/rmag).
+	
+	LOCAL vel_condition IS (SHIP:VELOCITY:ORBIT:MAG < 0.97 * vsat).
+	
+	RETURN alt_condition AND vel_condition.
+} 
+
+//heuristic to check for a grtls condition 
+FUNCTION is_grtls {
+	LOCAL rmag IS (-SHIP:ORBIT:BODY:POSITION):MAG.
+	LOCAL alt_ IS rmag - SHIP:ORBIT:BODY:RADIUS.
+	
+	LOCAL alt_condition IS  (alt_ > 55000).
+	
+	LOCAL vel_condition IS (SHIP:VELOCITY:SURFACE:MAG < 2500).
+	
+	RETURN alt_condition AND vel_condition.
+}
 
 
 
