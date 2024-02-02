@@ -1,13 +1,11 @@
 [![License: CC BY 4.0](https://licensebuttons.net/l/by/4.0/80x15.png)](https://creativecommons.org/licenses/by/4.0/)
 
 # Kerbal Space Program Space Shuttle OPS3 Entry Guidance
-Real Entry and Landing guidance for the Space Shuttle in KSP / RO
 
-# Work In Progress, not yet functional
+## updated February 2024
 
-This will be the kOS implementation of the real-world Shuttle Entry, TAEM and Approach guidance, also including GRTLS  
-
-Only designed to be compatible with my fork of Space Shuttle System (https://github.com/giuliodondi/Space-Shuttle-System-Expanded) with realistic aerodynamics  
+This is the kOS implementation of the real-world Shuttle Entry, TAEM and Approach guidance, also including GRTLS guidance.  
+Only designed for use in KSP with full RSS - Realism Overhaul andm y fork of Space Shuttle System
 
 ## References
 - [MCC level C formulation requirements. Entry guidance and entry autopilot, optional TAEM targeting](https://ntrs.nasa.gov/api/citations/19800016873/downloads/19800016873.pdf)
@@ -18,7 +16,7 @@ Only designed to be compatible with my fork of Space Shuttle System (https://git
 
 # Installation
 
-**Requirements:**
+## Requirements
 - Your KSP language **must be set to English** or else the script will not be able to execute actions on the Shuttle parts
 - A complete install of RSS/Realism Overhaul
 - kOS version 1.3 at least
@@ -26,13 +24,58 @@ Only designed to be compatible with my fork of Space Shuttle System (https://git
 - [My own fork of Space Shuttle System, no other version will work](https://github.com/giuliodondi/Space-Shuttle-System-Expanded).
   - as part of the SSS-fork installation, you will also need to install my fork of Ferram on top of the one coming from RO, follow the README therein
 
+### This program for the moment is not usable with SOCK
+
+## Known Incompatibilities
+- Atmospheric Autopilot
+
+## (Warmly) Suggested mods
+- Kerbal Konstructs to place runways to land on, they must be at least 1.5x longer than the stock KSC runway.
+- [My fork of SpaceODY's STS Locations mod, which contains definitions for runways all over the globe](https://github.com/giuliodondi/STS-Locations.git)
+- Some mod to display the surface-relative trajectory in the map view. I recommend Principia.
+
+## Installation
+
+Put the contents of the Scripts folder inside Ship/Script so that kOS can see all the files.
+In particular, you will have several scripts to run:
+- **ops3_deorbit.ks** for deorbit targeting
+- **ops3.ks**, the main reentry program
+- **measurerwy.ks** which is a little helper to make your own runway definitions
 
 # Setup
 
-WIP
+## Runways
+First, you need to place runways to land on. Use KK to place them wherever you like, or use my fork of STS Locations to have my own Shuttle sites across the globe.  
 
+**You will need to measure the runway manually in either case.** This is because the exact placement and altitude depends on your terrain map which is likely different from mine.  
+There is a helper script in the main kOS root **measurerwy.ks** just for that. Here is how you use it:  
+- spawn on the runway you want to measure in some kind of rover or wheeled vehicle
+- drive to the near edge behind you, exactly on the runway centerline
+- run the script and press Action Group 9
+- without halting the script, drive to the opposite end of the runway, stop at the edge like before and press AG9 again,.
+- The script will print to screen all the information you need to input into the lexicon inside **Shuttle_OPS3/landing_sites.ks**.
+
+## Shuttle assembly
+
+Assemble the Orbiter from the main **Orbiter** part from my fork. **There is no longer any need for additional Airbrake parts**, the split rudder in my fork is now fully functional.
+
+Check the following settings
+- The elevons should have +100% pitch authority, +50% roll authority, 15 deflection and the rest to zero.
+- The body flap should have +100% pitch authority, 15 deflection zero for the rest.
+- The rudder should have two stock control surface modules (one for each panel) instead of one FAR module. Set deflection to 18 and control surface range to 48.
+- Flaps and spoiler settings are now irrelevant since the program will manipulate them automatically
+- **Check that the rudder airbrakes deploy and the bodyflap spoiler are NOT present in the brakes Action Group**
+- For realistic braking performance, set the main gear braking limit to 35% and the nose braking limit to 0.
+
+### Balancing CG
+
+The Shuttle Orbiter part is CG-adjusted in order to be slightly tail-heavy during reentry and on the edge of stability during approach and landing. **This is deliberate and realistic. Please refer to [the Shuttle Aerodynamic data book](https://archive.org/details/nasa_techdoc_19810067693)**.  
+If you're carrying payload you need to place it not to shift the CG too much. If you must displace the overall CG, have it move **forwards** instead of backwards.  
+You will need to save some RCS fuel for reentry, and keep in mind you need 80 - 100 m/s for the deorbit burn. Do not reenter with the OMS pods more than 40% - 50% full or you might be too tail-heavy
 
 # Deorbit planning
+
+**Before you even start, plan your mission so that you have ~50 m/s of RCS for reentry plus 80-100 m/s for the deorbit burn. Thanks to body flap trimming, there is some leeway either way but I couldn't say exactly how much.**
 
 Entry Interface is the point at which reentry begins, defined as 122km (400kft) altitude. The goal of deorbit planning is to reach this point at the right conditions for a proper reentry.  
 The critical parameters to control are velocity, range, and flight-path-angle (FPA), the angle of descent with respect to the horizontal. All these depend on the initial orbit and the placement/magnitude of the deorbit burn.
