@@ -970,7 +970,12 @@ function eglodvcmd {
 	local cdcal is entryg_constants["cddot4"] + entryg_internal["alpcmd"]*(entryg_constants["cddot5"] + entryg_constants["cddot6"]* entryg_internal["alpcmd"]) + entryg_constants["cddot3"] * a44.
 	local cddotc is entryg_constants["cddot7"]*(entryg_input["drag"] + entryg_constants["gs"]*entryg_input["rdot"] / entryg_input["ve"])*a44 + entryg_internal["alpdot"]*(entryg_constants["cddot8"]*entryg_internal["alpcmd"] + entryg_constants["cddot9"]).
 	
-	set entryg_internal["cdcal"] to cdcal.
+	
+	if (entryg_input["cd"] <> 0) {
+		set entryg_internal["cdcal"] to entryg_input["cd"].
+	} else {
+		set entryg_internal["cdcal"] to cdcal.
+	}
 	local c4 is entryg_internal["hs"]*cddotc/entryg_internal["cdcal"]. 
 	
 	//limit drag values based on max allowable drag alfm
