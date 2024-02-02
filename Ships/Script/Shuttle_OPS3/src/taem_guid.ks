@@ -175,8 +175,8 @@ global taemg_constants is lexicon (
 									"alpllc2", -1.0096,		//° constant coef of lower alpha limit with mach
 									"alpllc3", 2.3918,		//linear coef of lower alpha limit with mach 
 									"alpllc4", -2.1873,		//° constant coef of lower alpha limit with mach
-									"alpllc5", 4.84,		//linear coef of lower alpha limit with mach 
-									"alpllc6", -7.7031,		//° constant coef of lower alpha limit with mach
+									"alpllc5", 1.4446,		//linear coef of lower alpha limit with mach 
+									"alpllc6", -0.0561,		//° constant coef of lower alpha limit with mach
 									"alpllc7", 7,		//° max lower alpha limit
 									"alpllc8", 0,		//° min lower alpha limit
 									
