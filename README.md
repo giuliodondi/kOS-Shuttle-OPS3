@@ -164,7 +164,7 @@ The other data printouts display useful information:
   - _ROLREF_, the bank angle to track the profile if we had no hdot or drag error right now
 
   Also there are two yellow printouts that will only show in special situations:
-  - _ALP MODULN_ indicates that AoA modulation is in effect: if the drag error is too large, Guidance will alter the Angle of Attack a little off-profile to change drag quickly
+  - _ALP MODULN_ indicates that AoA modulation is in effect: if the drag error is too large, Guidance will alter the Angle of Attack a little off-profile to change drag quickly, up to a maximum of 3 degrees
   - _ROLL REVERSAL_ shows when the azimuth error is too large and it's time to bank in the opposite direction to stay on course, it will go off once the az error is decreasing and within limits
 
 The TRAJ displays will advance based on velocity, not the guidance phase:
@@ -295,12 +295,24 @@ The HUD will change to let you know you reached certain checkpoints:
 
 
 
-# Results from a test reentry to Edwards
+# Results from a test reentry to Edwards Runway 23
 
 ![sample_traj](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/traj.png)
 
+The first plot show the long-range Reentry and short-range TAEM.:
+- roll reversals are clearly visible
+- during TAEM, the vehicle stayed within the energy corridor for most of the early Acquisition phase
+- Then, eventually, an S-turn was deemed necessary. The S-turn chaged the location of the HAC entry point and the HAC turn angle
+
 ![entry_plots](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/entry_plots_1.png)
+
+- The first plot is Angle-of-Attack versus velocity. The 40/30 profile can be identified by the general shape. On top of this profile, Guidance will modulate Angle of Attack to correcr drag errors. This happens a lot during the Transition phase, as the drag errors are quite large
+- The second plot is the Roll and Yaw history. The roll reversals are identifiable, as well as the roll modulation done right after the reversal is complete to re-establish the proper vertical speed profile. Yaw shows small deviations during and right after the roll reversal, this is a limitation of the DAP and a consequence of the need to do the reversal quickly enough
+- The third plot is Drag v. velocity superimposed over the drag profiles. A small drag spike can be seen at the far left, this is the early portion of Temperature Control during which roll is kept at 0 to stabilise the descent before the first roll. Tracking of the reference lines is good up until the Transition phase, at that point Guidance has a harder time tracking the drag profile. More investigation is necessary on why this happens.
 
 ![entry_eow](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/eow.png)
 
-![]()
+This plot is the Energy-over-Weight vs range-to-go during TAEM. The three profile lines can be seen, The blue track is the actual flight data.  
+As evidenced by the trajectory plto above, Energy was within limits and strayed above the S-turn line just a little. The S-turn increases range-to-go and brings the Shuttle back insde the corridor.
+
+
