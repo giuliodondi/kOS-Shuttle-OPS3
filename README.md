@@ -18,7 +18,13 @@ Only designed to be compatible with my fork of Space Shuttle System (https://git
 
 # Installation
 
-WIP
+**Requirements:**
+- Your KSP language **must be set to English** or else the script will not be able to execute actions on the Shuttle parts
+- A complete install of RSS/Realism Overhaul
+- kOS version 1.3 at least
+- kOS Ferram, now available on CKAN
+- [My own fork of Space Shuttle System, no other version will work](https://github.com/giuliodondi/Space-Shuttle-System-Expanded).
+  - as part of the SSS-fork installation, you will also need to install my fork of Ferram on top of the one coming from RO, follow the README therein
 
 
 # Setup
