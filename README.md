@@ -2,6 +2,9 @@
 
 # Kerbal Space Program Space Shuttle OPS3 Entry Guidance
 
+![cover](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/ops3_cover.png)
+
+
 ## updated February 2024
 
 This is the kOS implementation of the real-world Shuttle Entry, TAEM and Approach guidance, also including GRTLS guidance.  
