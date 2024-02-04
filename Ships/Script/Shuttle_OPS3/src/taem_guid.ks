@@ -320,7 +320,7 @@ global taemg_constants is lexicon (
 									//i think the following constants were added once OTT was implemented
 									"dr4", 2000,			//ft range from hac for phase 3
 									"hmep", LISt(0, 8018, 8018),	//ft altitude at a/l steep gs at MEP
-									"demxsb", 10000,			//ft max eow error for speedbrakes out 		
+									"demxsb", 10000,			//ft max eow error for speedbrakes out 			
 									"dhoh1", 0.11,			//alt ref dev/spiral slope
 									"dhoh2", 35705,			//ft alt ref dev/spiral range bias
 									"dhoh3", 6000,			//ft alt ref dev/spiral max shift of altitude
@@ -1351,21 +1351,19 @@ FUNCTION tgnzc {
 FUNCTION tgsbc {
 	PARAMETER taemg_input.	
 	
-	//supersonic speedbrake cmd
-	if (taemg_input["mach"] > taemg_constants["dsbcm"]) {
-		set taemg_internal["dsbc_at"] to taemg_constants["dsbsup"].
-		return.
-	}
-	
-	//mach limits for speedbrake
+	//mach limits for speedbrake - modified
 	local dsbcll is midval(taemg_constants["dsbsup"] + taemg_constants["dsblls"] * (taemg_input["mach"] - taemg_constants["dsbcm"]), 0, taemg_constants["dsbsup"]).
 	local dsbcul is midval(taemg_constants["dsbsup"] + taemg_constants["dsbuls"] * (taemg_input["mach"] - taemg_constants["dsbcm"]), taemg_constants["dsbsup"], taemg_constants["dsblim"]).
 	
 	local dsbc is 0.
-	if (taemg_internal["iphase"] = 0) {
-		//if s-turn set to maximum
-		set dsbc to taemg_constants["dsblim"].
+	
+	//refactoring ofspeedbrake logic into combined
+	
+	//supersonic speedbrake cmd
+	if (taemg_input["mach"] > taemg_constants["dsbcm"]) {
+		set dsbc to  taemg_constants["dsbsup"].
 	} else {
+
 		local dsbe is taemg_constants["gsbe"] * taemg_internal["qberr"].
 		
 		if (dsbc > dsbcll) and (dsbc < dsbcul) {
@@ -1373,11 +1371,21 @@ FUNCTION tgsbc {
 		}
 		
 		set dsbc to taemg_constants["dsbnom"] - dsbe - taemg_internal["dsbi"].
-		
-		if ((taemg_internal["en"] - taemg_internal["eow"]) > taemg_constants["demxsb"]) {
-			set dsbc to 0.
-		}
 	}
+	
+	//my modification : low/high energy speedbrake logic
+	//full open if above es and full closed if below emep
+	
+	LOCAL delta_es IS ABS(taemg_internal["es"] - taemg_internal["en"]).
+	LOCAL delta_emep IS ABS(taemg_internal["en"] - taemg_internal["emep"]).
+	
+	IF (taemg_internal["eowerror"] > delta_es) {
+		set dsbc to taemg_constants["dsblim"].
+	} ELSE IF (taemg_internal["eowerror"] < -delta_emep) {
+		set dsbc to 0.
+	}
+		
+
 	
 	set taemg_internal["dsbc_at"] to midval(dsbc, dsbcll, dsbcul).
 
