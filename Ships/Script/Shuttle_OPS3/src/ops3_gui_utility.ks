@@ -577,6 +577,20 @@ FUNCTION make_entry_traj_GUI {
 	GLOBAL trajleftdata5 IS traj_disp_leftdatabox:ADDLABEL("PHASE xxxxxx").
 	set trajleftdata5:style:margin:v to -4.
 	
+	traj_disp_leftdatabox:addspacing(14).
+	
+	GLOBAL traj_disp_attitudebox IS traj_disp_leftdatabox:ADDVLAYOUT().
+	SET traj_disp_attitudebox:STYLE:ALIGN TO "left".
+	SET traj_disp_attitudebox:STYLE:WIDTH TO 75.
+    SET traj_disp_attitudebox:STYLE:HEIGHT TO 75.
+	
+	GLOBAL trajattdata1 IS traj_disp_attitudebox:ADDLABEL("R  XXX").
+	set trajattdata1:style:margin:v to -4.
+	GLOBAL trajattdata2 IS traj_disp_attitudebox:ADDLABEL("P  XXX").
+	set trajattdata2:style:margin:v to -4.
+	GLOBAL trajattdata3 IS traj_disp_attitudebox:ADDLABEL("Y  XXX").
+	set trajattdata3:style:margin:v to -4.
+	
 	GLOBAL traj_disp_rightdatabox IS traj_disp_overlaiddata:ADDVLAYOUT().
 	SET traj_disp_rightdatabox:STYLE:ALIGN TO "left".
 	SET traj_disp_rightdatabox:STYLE:WIDTH TO 145.
@@ -680,6 +694,10 @@ function update_entry_traj_disp {
 	set trajleftdata3:text TO "DRAG      " + ROUND(gui_data["drag"],1).
 	set trajleftdata4:text TO "D REF     " + ROUND(gui_data["drag_ref"],1).
 	set trajleftdata5:text TO "PHASE     " + ROUND(gui_data["phase"],0).
+	
+	set trajattdata1:text to "R  " + round(gui_data["prog_roll"], 0).
+	set trajattdata2:text to "P  " + round(gui_data["prog_pch"], 0).
+	set trajattdata3:text to "Y  " + round(gui_data["prog_yaw"], 0).
 	
 	set trajrightdata1:text TO "HDT REF    " + ROUND(gui_data["hdot_ref"],0).
 	set trajrightdata2:text TO "ALPCMD    " + ROUND(gui_data["pitch_cmd"],0).
@@ -846,7 +864,7 @@ FUNCTION make_taem_vsit_GUI {
 	GLOBAL vsit_disp_leftdatabox IS vsit_disp_overlaiddata:ADDVLAYOUT().
 	SET vsit_disp_leftdatabox:STYLE:ALIGN TO "left".
 	SET vsit_disp_leftdatabox:STYLE:WIDTH TO 75.
-    SET vsit_disp_leftdatabox:STYLE:HEIGHT TO 75.
+    SET vsit_disp_leftdatabox:STYLE:HEIGHT TO 1.
 	set vsit_disp_leftdatabox:style:margin:h to 20.
 	set vsit_disp_leftdatabox:style:margin:v to ops3_disp_vmargin.
 	
@@ -855,7 +873,7 @@ FUNCTION make_taem_vsit_GUI {
 	SET vsit_disp_horiz_sliderbox:STYLe:HEIGHT TO 1.
 	set vsit_disp_horiz_sliderbox:style:margin:h to 148.
 	
-	vsit_disp_leftdatabox:addspacing(129).
+	vsit_disp_leftdatabox:addspacing(128).
 	
 	GLOBAL horiz_slider_label IS vsit_disp_horiz_sliderbox:ADDLABEL("").
 	set horiz_slider_label:style:margin:h to 55.
@@ -874,6 +892,11 @@ FUNCTION make_taem_vsit_GUI {
 	for w in vsit_disp_horiz_sliderbox:WIDGETS {
 		w:HIDE().
 	}
+	
+	GLOBAL vsit_disp_attitudebox IS vsit_disp_leftdatabox:ADDVLAYOUT().
+	SET vsit_disp_attitudebox:STYLE:ALIGN TO "left".
+	SET vsit_disp_attitudebox:STYLE:WIDTH TO 75.
+    SET vsit_disp_attitudebox:STYLE:HEIGHT TO 75.
 	
 	GLOBAL vsitleftdata1 IS vsit_disp_leftdatabox:ADDLABEL("R  XXX").
 	set vsitleftdata1:style:margin:v to -4.

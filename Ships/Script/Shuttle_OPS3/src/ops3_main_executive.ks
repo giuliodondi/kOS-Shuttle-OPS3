@@ -218,7 +218,10 @@ FUNCTION ops3_main_exec {
 									"roll_cmd",entryg_out["rolcmd"],
 									"roll_ref",entryg_out["roll_ref"],
 									"pitch_mod",entryg_out["pitch_mod"],
-									"roll_rev",entryg_out["roll_rev"]
+									"roll_rev",entryg_out["roll_rev"],
+									"prog_pch", dap:prog_pitch,
+									"prog_roll", dap:prog_roll,
+									"prog_yaw", dap:prog_yaw
 			).
 			update_entry_traj_disp(gui_data).
 			
@@ -396,10 +399,10 @@ FUNCTION ops3_main_exec {
 			
 			if (guid_id >= 23) {
 				set hud_datalex["delaz"] to - rwystate["rwy_rel_crs"].
-				gui_data:ADD("xtrack_err",  taemg_out["yerrc"]).
+				gui_data:ADD("xtrack_err",  -taemg_out["yerrc"]).
 			} else if (guid_id = 22) {
 				set hud_datalex["delaz"] to taemg_out["ysgn"] * taemg_out["psha"].
-				gui_data:ADD("xtrack_err",  taemg_out["rerrc"] / 50).
+				gui_data:ADD("xtrack_err",  -taemg_out["ysgn"] * taemg_out["rerrc"] / 50).
 			} else if (guid_id <= 21) {
 				set hud_datalex["delaz"] to taemg_out["dpsac"].
 				gui_data:ADD("hac_entry_t",  taemg_out["tth"]).
