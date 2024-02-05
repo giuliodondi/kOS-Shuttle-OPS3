@@ -74,12 +74,15 @@ Check the following settings
 ### Balancing CG
 
 The Shuttle Orbiter part is CG-adjusted in order to be slightly tail-heavy during reentry and on the edge of stability during approach and landing. **This is deliberate and realistic. Please refer to [the Shuttle Aerodynamic data book](https://archive.org/details/nasa_techdoc_19810067693)**.  
-If you're carrying payload you need to place it not to shift the CG too much. If you must displace the overall CG, have it move **forwards** instead of backwards.  
-You will need to save some RCS fuel for reentry, and keep in mind you need 80 - 100 m/s for the deorbit burn. Do not reenter with the OMS pods more than 40% - 50% full or you might be too tail-heavy
+
+If you're carrying payload you need to ensure it does not shift the empty CG too much. **IT IS CRUCIAL THAT YOU MEASURE THE CG WITH NO OMS OR RCS FUEL.** If the yellow CG meatball in the SPH is shifted by an entire diameter, that's already almost too much for the flaps to handle.
+
+You will need to save some 50-70 m/s RCS fuel for reentry balancing and control, and remember you need 80 - 100 m/s on top of that for the deorbit burn. Keep in mind that those RCS figures assume that the CG is within trim limits, If it's outside the limits, RCS will drain **fast**.
+Do not reenter with the OMS pods more than 50% - 60% full or you might be too tail-heavy
 
 # Deorbit planning
 
-**Before you even start, plan your mission so that you have ~50 m/s of RCS for reentry plus 80-100 m/s for the deorbit burn. Thanks to body flap trimming, there is some leeway either way but I couldn't say exactly how much.**
+**Before you even start, plan your mission so that you have 50-70 m/s of RCS for reentry plus 80-100 m/s for the deorbit burn. Thanks to body flap trimming, there is some leeway either way but I couldn't say exactly how much.**
 
 Entry Interface is the point at which reentry begins, defined as 122km (400kft) altitude. The goal of deorbit planning is to reach this point at the right conditions for a proper reentry.  
 The critical parameters to control are velocity, range, and flight-path-angle (FPA), the angle of descent with respect to the horizontal. All these depend on the initial orbit and the placement/magnitude of the deorbit burn.
@@ -113,7 +116,7 @@ You interact with the script using two GUIS. The **Main GUI** is a panel of butt
 - _Runway_ is the runway you will land on. There are always at least two runways even if there is a single strip of tarmac (one for each side). The choice is random upon selecting the landing site, but you can override it here
 - _Apch mode_ is a parameter used by TAEM guidance, by default is set to Overhead. Leave it be for now.
 - _DAP_ selects the digital autopilot modes. **As long as you leave it OFF the program will not send any steering commands**. More on autopilot modes later on.
-- _Auto Flaps_ will enable pitch trimming by moving the elevons and body flap. **99.9% of the time you want this ON**.
+- _Auto Flaps_ will enable pitch trimming by moving the elevons and body flap. **99.9% of the time you want this ON**. Automatic trimming only activates when the aerodynamic load crosses a threshold
 - _Auto Airbk_ will toggle between manual (off) and automatic (on) rudder speedbrake functionality. **Also leave this ON during Entry** and don't worry about it until TAEM
 - _RESET_ allows you to completely reset the guidance algorithms during either Entry or TAEM. The program will also actuate this every time you change target, runway or approach.
 - _Log Data_ will log some telemetry data to the file **Ships/Script/Shuttle_OPS3/LOGS/ops3_log.csv**
