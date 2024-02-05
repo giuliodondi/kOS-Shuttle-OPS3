@@ -2,7 +2,7 @@
 //			MAIN EXECUTIVE OF OPS3 REENTRY, TAEM AND LANDING
 FUNCTION ops3_main_exec {
 
-	shutdown_engines().
+	shutdown_all_engines().
 
 	GLOBAL quit_program IS FALSE.
 
