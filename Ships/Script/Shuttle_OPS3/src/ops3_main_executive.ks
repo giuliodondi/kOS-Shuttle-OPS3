@@ -93,7 +93,7 @@ FUNCTION ops3_main_exec {
 					dap:measure_cur_state().
 				}
 				
-				if (guid_id > 11) {
+				if (guid_id > 11) OR (dap:aero:load >= parameters["xlfac_trim_on"]) {
 					aerosurfaces_control:update(is_autoflap(), is_autoairbk()).
 				}
 				
