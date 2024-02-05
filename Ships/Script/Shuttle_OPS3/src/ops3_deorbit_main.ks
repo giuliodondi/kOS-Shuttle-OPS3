@@ -13,6 +13,12 @@ close_all_GUIs().
 
 FUNCTION ops3_deorbit_predict{
 	GLOBAL quit_program IS FALSE.
+	
+	//check engines 
+	IF (get_running_engines():LENGTH = 0) {
+		PRINT "No active engines,  aborting." .
+		RETURN.
+	}
 
 	if (ALLNODES:LENGTH>1) {
 		print "Can handle at most one manoeuvre node".
