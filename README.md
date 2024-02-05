@@ -71,18 +71,19 @@ Check the following settings
 - **Check that the rudder airbrakes deploy and the bodyflap spoiler are NOT present in the brakes Action Group**
 - For realistic braking performance, set the main gear braking limit to 35% and the nose braking limit to 0.
 
-### Balancing CG
+### Balancing CG and fuel
 
 The Shuttle Orbiter part is CG-adjusted in order to be slightly tail-heavy during reentry and on the edge of stability during approach and landing. **This is deliberate and realistic. Please refer to [the Shuttle Aerodynamic data book](https://archive.org/details/nasa_techdoc_19810067693)**.  
 
 If you're carrying payload you need to ensure it does not shift the empty CG too much. **IT IS CRUCIAL THAT YOU MEASURE THE CG WITH NO OMS OR RCS FUEL.** If the yellow CG meatball in the SPH is shifted by an entire diameter, that's already almost too much for the flaps to handle.
 
-You will need to save some 50-70 m/s RCS fuel for reentry balancing and control, and remember you need 80 - 100 m/s on top of that for the deorbit burn. Keep in mind that those RCS figures assume that the CG is within trim limits, If it's outside the limits, RCS will drain **fast**.
-Do not reenter with the OMS pods more than 50% - 60% full or you might be too tail-heavy
+You will need to save some 80 m/s RCS fuel for reentry balancing and control, and remember you need 80 - 100 m/s on top of that for the deorbit burn. Keep in mind that those RCS figures assume that the CG is within trim limits, If it's outside the limits, RCS will drain **fast**.  
+As a rule of thumb, I measured that in well balanced and trimmed conditions the Orbiter will drain about 350L of MMH from a single OMS pod during the entire reentry.
+Do not reenter with the OMS pods more than 50% - 60% full or you might be too tail-heavy.
 
 # Deorbit planning
 
-**Before you even start, plan your mission so that you have 50-70 m/s of RCS for reentry plus 80-100 m/s for the deorbit burn. Thanks to body flap trimming, there is some leeway either way but I couldn't say exactly how much.**
+**Before you even start, plan your mission so that you have 80 m/s of RCS for reentry plus 80-100 m/s for the deorbit burn. Thanks to body flap trimming, there is some leeway either way but I couldn't say exactly how much.**
 
 Entry Interface is the point at which reentry begins, defined as 122km (400kft) altitude. The goal of deorbit planning is to reach this point at the right conditions for a proper reentry.  
 The critical parameters to control are velocity, range, and flight-path-angle (FPA), the angle of descent with respect to the horizontal. All these depend on the initial orbit and the placement/magnitude of the deorbit burn.
@@ -155,6 +156,7 @@ Additionally, some guidance modes require the Shuttle to control quantities (suc
 
 The program is able to take the Shuttle from Entry Interface all the way to wheels stop completely automatically with the DAP set to AUTO. It's also possible to fly a complete reentry in CSS but there are a couple quirks to keep in ming dring both entry and TAEM, more on this later.
 
+The DAP will rely on RCS from entry interface all the way to below Mach 1. You may disable RCS on the forward fuselage, but keep all actuation toggles enabled on the OMS pods.
 I do not advise you to disengage the DAP at all above Mach 2, if you do you definitely need the KSP SAS and RCS and even so you might lose control very quickly.
 
 
