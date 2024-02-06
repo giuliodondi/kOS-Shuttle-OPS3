@@ -2,11 +2,11 @@
 
 # Kerbal Space Program Space Shuttle OPS3 Entry Guidance
 
+## updated February 2024
+
 <p align="center">
   <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/ops3_cover.png" width="700" >
 </p>
-
-## updated February 2024
 
 This is the kOS implementation of the real-world Shuttle Entry, TAEM and Approach guidance, also including GRTLS guidance.  
 Only designed for use in KSP with full RSS - Realism Overhaul andm y fork of Space Shuttle System
@@ -22,6 +22,7 @@ Only designed for use in KSP with full RSS - Realism Overhaul andm y fork of Spa
 
 ## Requirements
 - Your KSP language **must be set to English** or else the script will not be able to execute actions on the Shuttle parts
+- If you use a joystick, check that the wheel steering axis is bound to the same control axs you use for yaw, or the program won't be able to stay on the runway on landing
 - A complete install of RSS/Realism Overhaul
 - kOS version 1.3 at least
 - kOS Ferram, now available on CKAN
@@ -349,6 +350,8 @@ The HUD will change to let you know you reached certain checkpoints:
 - The G-meter and attitude angles disappear to see the runway better
 - 1500m above the runway there is a checkpoint that forces guidance from Capture into Outer Glideslope mode even if the errors are not small by then. You will notice because flap trim, vertical speed and distance will all disappear from the HUD, and altitude will be displayed in a finer format
 - During final flare, the guidance pipper disappears. If you're flying CSS, guide yourself relative to the runway
+
+Speed-wise, the Orbiter should be at around 180 m/s at the start of A/L, slow down in a controlled manner to about 145 m/s at the start of the flare, complete the flare around 120m/s and decelerating and touchdown between 90 and 80 m/s. If the dap is on AUTO, there will be some oscillations during Final Flare as it attempts to stabilise the vertical speed, I still haven't been able to dampen these out reliably 
 
 
 
