@@ -383,7 +383,7 @@ global taemg_constants is lexicon (
 									"hgeardn", 300,			//ft alt at which to command gear down
 									"hfnlfl", 120,			//ft alt at which to force transition to final flare
 									"h0_hdfnlfl", 80,			//ft reference altitude for hdot exp decay during final flare
-									"max_hdfnlfl", 0.18,			//ft maximum hdot during finalflare
+									"max_hdfnlfl", 0.1,			//ft maximum hdot during finalflare
 									"philm4", 15, 				//deg bank lim for flare and beyond
 									"alpcmd_rlt", -3.4,			//aoa command for slapdown and rollout
 									"phi_beta_gain", 2, 			//gain for yaw during rollout

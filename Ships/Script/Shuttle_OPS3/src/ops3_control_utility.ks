@@ -127,11 +127,11 @@ FUNCTION dap_controller_factory {
 	}).
 
 	this:add("set_flare_hdot_gains", {
-		local kc is 0.0045.
+		local kc is 0.0047.
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * 2.0.
+		set this:hdot_nz_pid:Kd to kc * 2.05.
 	}).
 	
 	//should be consistent with taem nz limits
@@ -507,12 +507,4 @@ FUNCTION aerosurfaces_control_factory {
 	this["deflect"]().
 	
 	RETURN this.
-}
-
-FUNCTION shutdown_engines {
-	//shutdown engines, needed for airbrake control 
-	LISt ENGINES IN englist.
-	FOR e IN englist {
-			e:shutdown.
-	}
 }
