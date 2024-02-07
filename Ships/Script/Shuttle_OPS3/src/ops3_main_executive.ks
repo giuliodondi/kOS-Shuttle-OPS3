@@ -188,10 +188,11 @@ FUNCTION ops3_main_exec {
 			SET dap:pitch_lims to LIST(entryg_out["aclim"], entryg_out["aclam"]).
 			SET dap:roll_lims to LIST(-entryg_out["rlm"], entryg_out["rlm"]).
 			
-			SET dap:tgt_pitch tO entryg_out["alpcmd"].
-			SET dap:tgt_roll tO entryg_out["rolcmd"].
+			if (entryg_out["eg_conv"]) {
+				SET dap:tgt_pitch tO entryg_out["alpcmd"].
+				SET dap:tgt_roll tO entryg_out["rolcmd"].
+			}
 			SET dap:tgt_yaw tO 0.
-			
 			
 			//gui outputs
 			SET hud_datalex["phase"] TO guid_id.

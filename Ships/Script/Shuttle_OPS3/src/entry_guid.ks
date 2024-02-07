@@ -83,7 +83,8 @@ FUNCTION entryg_wrapper {
 								"pitch_mod", entryg_internal["ict"],
 								"vcg", entryg_internal["vcg"]/mt2ft,
 								"eowd", entryg_internal["eowd"],
-								"eg_end", entryg_internal["eg_end"]
+								"eg_end", entryg_internal["eg_end"],
+								"eg_conv", (entryg_internal["n_iter"] = 0)		//my addition: signal that enough iterations have been done
 	).
 }
 
@@ -264,6 +265,7 @@ global entryg_constants is lexicon (
 									//other misc stuff added by me 
 									"drolcmdfil", 15,	//° roll cmd value band to apply filtering
 									"rolcmdfildt", 10,	//° roll cmd value filtering time const
+									"n_iter", 10,		// guidance iterations before steering commands should be accepted
 
 									"dummy", 0
 ).
@@ -366,6 +368,7 @@ global entryg_internal is lexicon(
 									"tran4f_drefp4", FALSE,
 									
 									"tgtsite0", 0,		//my addition, keep track of the tgt site to reset guidance
+									"n_iter", -1, 		//do not initialise to zero
 									
 									"dummy", 0
 ).
@@ -616,10 +619,16 @@ function eginit {
 	}
 	
 	set entryg_internal["start"] to 1.
+	set entryg_internal["n_iter"] to entryg_constants["n_iter"].
 }
 
 function egcomn {
 	PARAMETER entryg_input.
+	
+	//my addition, keep track of iterations 
+	if (entryg_internal["n_iter"] > 0) {
+		set entryg_internal["n_iter"] to entryg_internal["n_iter"] - 1.
+	}
 
 	set entryg_internal["xlod"] to max(entryg_input["lod"], entryg_constants["lodmin"]).
 	

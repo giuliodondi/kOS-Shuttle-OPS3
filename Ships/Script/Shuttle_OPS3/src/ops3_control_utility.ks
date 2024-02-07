@@ -99,6 +99,9 @@ FUNCTION dap_controller_factory {
 		set this:steer_roll to this:prog_roll.
 		set this:steer_yaw to 0.
 		set this:steer_lvlh_pitch TO this:lvlh_pitch.
+		set this:tgt_pitch to this:prog_pitch.
+		set this:tgt_roll to this:prog_roll.
+		set this:tgt_yaw to 0.
 		SET this:tgt_hdot TO this:hdot.
 		SET this:tgt_nz TO this:aero:nz.
 		SET this:steering_dir TO SHIP:FACINg.
