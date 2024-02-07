@@ -73,7 +73,8 @@ FUNCTION make_global_deorbit_GUI {
 	SET select_tgt:STYLE:ALIGN TO "center".
 	FOR site IN ldgsiteslex:KEYS {
 		select_tgt:addoption(site).
-	}		
+	}	
+	set select_tgt:index to -1.
 	SET select_tgt:ONCHANGE to { 
 		PARAMETER lex_key.	
 		//pick the first runway position 
@@ -141,7 +142,14 @@ FUNCTION update_deorbit_GUI {
 	PARAMETER ei_ref_data.
 	
 	SET textEI1:text TO "  Time to EI  : " + sectotime(interf_t).
-	SET textEI2:text TO "  Delaz at EI : " + ROUND(ei_data["ei_delaz"],1) + " °".
+	
+	LOCAL text2_color IS guitextredhex.
+	if (ABS(ei_data["ei_delaz"]) < 15) {
+		SET text2_color TO guitextgreenhex.
+	}
+	LOCAL text2_str IS "  Delaz at EI : " + ROUND(ei_data["ei_delaz"],1) + " °".
+	
+	SET textEI2:text TO "<color=#" + text2_color + ">" + text2_str + "</color>".
 	
 	SET textEI3:text TO "Ref FPA at EI : " + round(ei_ref_data["ei_fpa"], 2) + " °".
 	LOCAL text4_str IS "    FPA at EI : " + round(ei_data["ei_fpa"], 2) + " °".
