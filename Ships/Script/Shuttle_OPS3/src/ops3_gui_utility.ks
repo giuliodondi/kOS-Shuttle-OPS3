@@ -165,7 +165,7 @@ FUNCTION update_deorbit_GUI {
 	LOCAL text6_str IS "    Vel at EI : " + round(ei_data["ei_vel"], 1) + " m/s".
 	
 	LOCAL text6_color IS guitextredhex.
-	if (ABS(ei_ref_data["ei_vel"] - ei_data["ei_vel"]) < 5) {
+	if (ABS(ei_ref_data["ei_vel"] - ei_data["ei_vel"]) < 2) {
 		SET text6_color TO guitextgreenhex.
 	}
 	
@@ -175,7 +175,7 @@ FUNCTION update_deorbit_GUI {
 	LOCAL text8_str IS "    Rng at EI : " + round(ei_data["ei_range"], 0) + " km".
 	
 	LOCAL text8_color IS guitextredhex.
-	if (ABS(ei_ref_data["ei_range"] - ei_data["ei_range"]) < 50) {
+	if (ABS(ei_ref_data["ei_range"] - ei_data["ei_range"]) < 100) {
 		SET text8_color TO guitextgreenhex.
 	}
 	

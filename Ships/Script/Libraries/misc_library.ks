@@ -124,8 +124,8 @@ FUNCTION arrow {
 	PARAMETER vec.
 	PARAMETER lab.
 	PARAMETER vec_centre IS v(0,0,0).
-	PARAMETER scl IS 10.
-	PARAMETER wdh IS 0.5.
+	PARAMETER scl IS 2.2.
+	PARAMETER wdh IS 0.2.
 	
 	VECDRAW(
       vec_centre,
@@ -151,6 +151,26 @@ FUNCTION arrow_body {
 	VECDRAW(
       SHIP:ORBIT:BODY:POSITION,
       v_,
+      RGB(1,0,0),
+      lab,
+      scl,
+      TRUE,
+      wdh/scl
+    ).
+
+}
+
+//draw a vector  with label, centered on a position around the body and scaled to 2.2x radius
+FUNCTION arrow_bodyvec {
+	PARAMETER vec.
+	PARAMETER lab.
+	PARAMETER bodyvec_origin.
+	PARAMETER scl IS 2.2.
+	PARAMETER wdh IS 0.2.
+	
+	VECDRAW(
+      SHIP:ORBIT:BODY:POSITION + scl*bodyvec_origin,
+      vec,
       RGB(1,0,0),
       lab,
       scl,

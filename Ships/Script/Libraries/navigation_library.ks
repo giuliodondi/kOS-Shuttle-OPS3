@@ -356,11 +356,12 @@ function state_vector_orb_elems {
 	RETURN LEXICON(
 			"ap", ap,
 			"pe", pe,
-			"ecc_", ecc_,
+			"sma", sma_,
+			"ecc", ecc_,
 			"incl", incl,
-			"lan_", lan_,
+			"lan", lan_,
 			"periarg", periarg,
-			"eta_", eta_
+			"eta", eta_
 	).
 
 }

@@ -9,6 +9,8 @@ ops3_deorbit_predict().
 
 close_all_GUIs().
 
+clearvecdraws().
+clearscreen.
 
 
 FUNCTION ops3_deorbit_predict{
@@ -33,54 +35,74 @@ FUNCTION ops3_deorbit_predict{
 	
 	UNTIL (deorbit_target_selected) {
 		print "Please select a deorbit target" AT (0,1).
+		if (quit_program) {
+			return.
+		}
 		WAIT 0.1.
 	}
 	
 	freeze_target_site().
+	
+	local drawburnvec IS false.
+	local burn_pos IS 0.
+	local burn_dv IS v(0,0,0).
+	
+	LOCAL deorbit_base_dt IS 30.
+	//cover half a revolution
+	LOCAL max_steps IS FLOOR(45 * 60 / deorbit_base_dt).
+	
+	LOCAL initial_simstate IS current_simstate().
+	LOCAL initial_t IS TIME:SECONDS.
+	
+	LOCAL ei_radius IS BODY:RADIUS + parameters["interfalt"].
 
 	UNTIL FALSE {
-		clearscreen.
 	
-		LOCAL simstate IS current_simstate().
-		
-		LOCAL deorbit_base_dt IS 60.
-		//should cover half a revolution at a timestep of 30
-		LOCAL max_steps IS 90.
+		LOCAL simstate IS clone_simstate(initial_simstate).
+		LOCAL dt_from_initial IS (TIME:SECONDS - initial_t).
 		
 		LOCAL ei_ETA IS 0.
 	
 		IF HASNODE {
+			SET drawburnvec TO TRUE.
 			//predict trajectory from now up to the manoeuvre node 
 			//then add the delta-v increment 
 			
 			LOCAL lastnode IS ALLNODES[0].
 			
-			LOCAL node_dv IS lastnode:deltav.
+			set burn_dv to lastnode:deltav.
 			
-			LOCAL node_dt IS burnDT(node_dv:MAG).
+			LOCAL node_dt IS burnDT(burn_dv:MAG).
 			
-			LOCAL node_ETA IS lastnode:ETA + node_dt/2.
+			LOCAL node_ETA IS dt_from_initial + lastnode:ETA + node_dt/2.
 			
 			LOCAL patch1_steps IS CEILING(node_ETA/deorbit_base_dt).
 			
 			LOCAL patch1_dt IS node_ETA/patch1_steps.
 			
+			LOCAL burn_simstate IS clone_simstate(simstate).
+			
 			FROM {local s is 1.} UNTIL (s > patch1_steps) STEP {set s to s+1.} DO {
-				SET simstate TO coast_rk4(patch1_dt, simstate).
+				SET burn_simstate TO clone_simstate(coast_rk4(patch1_dt, burn_simstate)).
 			}
 			
-			SET simstate["velocity"] TO simstate["velocity"] + node_dv.
+			SET burn_simstate["velocity"] TO burn_simstate["velocity"] + burn_dv.
 			
-			local burn_pos IS pos2vec(shift_pos(simstate["position"], node_ETA)).
+			SET burn_simstate["altitude"] TO bodyalt(burn_simstate["position"]).
+			
+			set burn_pos to pos2vec(shift_pos(burn_simstate["position"], node_ETA)).
+			
+			SET simstate TO burn_simstate.
 			
 			SET ei_ETA tO ei_ETA + node_ETA.
 			
-			print "patch 1 steps: " + patch1_steps at (0,2).
-			print "time to node: " + round(node_ETA, 1) at (0,3).
-			print "node burn dt: " + round(node_dt, 1) at (0,4).
-			print "node burn Dv: " + round(node_dv:MAG, 1) at (0,5).
+			print "patch 1 steps: " + patch1_steps + "  " at (0,2).
+			print "time to node: " + round(node_ETA, 1) + "  "  at (0,3).
+			print "node burn dt: " + round(node_dt, 1) + "  "  at (0,4).
+			print "node burn Dv: " + round(burn_dv:MAG, 1) + "  "  at (0,5).
 		
 		} ELSE {
+			SET drawburnvec TO FALSE.
 			IF SHIP:ORBIT:periapsis>=parameters["interfalt"] {
 				PRINT "Orbit does not have a manoeuvre node and does not re-enter the atmosphere".
 				RETURN.
@@ -89,18 +111,39 @@ FUNCTION ops3_deorbit_predict{
 		
 		//now simulate until below entry interface 
 		
-		LOCAL ei_simstate IS simstate.
-		local step_c is 0.
-		UNTIL((ei_simstate["altitude"]< parameters["interfalt"]) OR (step_c >= max_steps)) {
-			SET step_c TO step_c + 1.
-			
-			SET ei_simstate TO clone_simstate(coast_rk4(deorbit_base_dt, simstate)).
+		LOCAL ei_simstate IS clone_simstate(simstate).
 		
-			SET ei_simstate["altitude"] TO bodyalt(ei_simstate["position"]).
-			SET ei_simstate["surfvel"] TO surfacevel(ei_simstate["velocity"],ei_simstate["position"]).
+		print "patch 2 initial alt: " + round(ei_simstate["altitude"], 0) + "  "  at (0,7).
+		print "patch 2 initial vel: " + round(ei_simstate["velocity"]:mag, 1) + "  "  at (0,8).
+		
+		local patch2_steps is 0.
+		local patch2_dt is deorbit_base_dt.
+		LOCAL patch2_simtime IS 0.
+		
+		UNTIL(patch2_steps >= max_steps) {
+			SET patch2_steps TO patch2_steps + 1.
 			
-			SET ei_ETA tO ei_ETA + deorbit_base_dt. 
+			SET ei_simstate TO clone_simstate(coast_rk4(patch2_dt, ei_simstate)).
+			
+			SET patch2_simtime tO patch2_simtime + patch2_dt. 
+			
+			LOCAL simstate_dr IS ei_simstate["position"]:MAG - ei_radius.
+			
+			//finer simulation step
+			IF (simstate_dr < 5000) {
+				SET patch2_dt TO 5.
+			} ELSe IF (simstate_dr < 1000) {
+				SET patch2_dt TO 1.
+			}
+			
+			IF (ABS(simstate_dr) < 100 OR simstate_dr < 0) {
+				BREAK.
+			}
 		}
+		
+		SET ei_ETA tO ei_ETA + patch2_simtime. 
+		
+		SET ei_simstate["altitude"] TO bodyalt(ei_simstate["position"]).
 		
 		//entry interface calculations
 		LOCAL ei_orb_elems IS state_vector_orb_elems(ei_simstate["position"], ei_simstate["velocity"]).
@@ -129,19 +172,25 @@ FUNCTION ops3_deorbit_predict{
 		 
 		update_deorbit_GUI(ei_ETA, ei_data, ei_ref_data).
 		
+		print "patch 2 steps: " + patch2_steps + "  "  at (0,10).
+		print "patch 2 dt: " + round(patch2_simtime, 1) + "  "  at (0,11).
+		print "EI alt: " + round(ei_simstate["altitude"], 0) + "  "  at (0,12).
 		
 		clearvecdraws().
 		arrow_body(ei_posvec,"entry_interface").
+		if (drawburnvec) {
+			arrow_body(burn_pos,"deorbit_burn").
+			arrow_bodyvec(burn_dv * 10000,"deltaV", burn_pos).
+		}
 		
 		if (quit_program) {
-			BREAK.
+			return.
 		}
 		
 		WAIT 0.5.
 	}
 
-	clearvecdraws().
-	clearscreen.
+	
 }
 
 
