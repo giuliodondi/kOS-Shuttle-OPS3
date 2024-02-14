@@ -1,6 +1,6 @@
 clearscreen.
 close_all_GUIs().
-SET CONFIG:IPU TO 1000. 
+SET CONFIG:IPU TO 1500. 
 
 make_global_deorbit_GUI().
 	
@@ -47,9 +47,10 @@ FUNCTION ops3_deorbit_predict{
 	local burn_pos IS 0.
 	local burn_dv IS v(0,0,0).
 	
-	LOCAL deorbit_base_dt IS 30.
+	LOCAL deorbit_base_dt IS 5.
 	//cover half a revolution
 	LOCAL max_steps IS FLOOR(45 * 60 / deorbit_base_dt).
+	local burn_steps is 30.
 	
 	LOCAL initial_simstate IS current_simstate().
 	LOCAL initial_t IS TIME:SECONDS.
@@ -74,7 +75,7 @@ FUNCTION ops3_deorbit_predict{
 			
 			LOCAL node_dt IS burnDT(burn_dv:MAG).
 			
-			LOCAL node_ETA IS dt_from_initial + lastnode:ETA + node_dt/2.
+			LOCAL node_ETA IS dt_from_initial + lastnode:ETA.
 			
 			LOCAL patch1_steps IS CEILING(node_ETA/deorbit_base_dt).
 			
@@ -86,7 +87,13 @@ FUNCTION ops3_deorbit_predict{
 				SET burn_simstate TO clone_simstate(coast_rk4(patch1_dt, burn_simstate)).
 			}
 			
-			SET burn_simstate["velocity"] TO burn_simstate["velocity"] + burn_dv.
+			LOCAL burn_patch_dt IS node_dt/burn_steps.
+			LOCAL burn_step_dv IS burn_dv/burn_steps.
+			FROM {local s is 1.} UNTIL (s > burn_steps) STEP {set s to s+1.} DO {
+				SET burn_simstate["velocity"] TO burn_simstate["velocity"] + burn_step_dv. 
+				SET burn_simstate TO clone_simstate(coast_rk3(burn_patch_dt, burn_simstate)).
+			}
+			
 			
 			SET burn_simstate["altitude"] TO bodyalt(burn_simstate["position"]).
 			
