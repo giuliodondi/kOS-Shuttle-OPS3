@@ -1040,11 +1040,13 @@ function update_taem_vsit_disp {
 		reset_taem_vsit_disp().
 	}
 	
-	//horiz slider 
-	if (gui_data["guid_id"] <= 21) {
-		set vsit_horiz_slider:value to CLAMP(gui_data["hac_entry_t"],vsit_horiz_slider:MIN,vsit_horiz_slider:MAX).
-	} else {
-		set vsit_horiz_slider:value to CLAMP(gui_data["xtrack_err"],vsit_horiz_slider:MIN,vsit_horiz_slider:MAX).
+	if (taem_vsit_disp_counter=2) {
+		//horiz slider 
+		if (gui_data["guid_id"] <= 21) {
+			set vsit_horiz_slider:value to CLAMP(gui_data["hac_entry_t"],vsit_horiz_slider:MIN,vsit_horiz_slider:MAX).
+		} else {
+			set vsit_horiz_slider:value to CLAMP(gui_data["xtrack_err"],vsit_horiz_slider:MIN,vsit_horiz_slider:MAX).
+		}
 	}
 	
 	local orbiter_bug_pos is set_taem_vsit_disp_bug(v(taem_vsit_disp_x_convert(gui_data["rpred"]),taem_vsit_disp_y_convert(gui_data["eow"]), 0)).
@@ -1647,10 +1649,10 @@ FUNCTION distance_format {
 FUNCTION speed_format {
 	PARAMETER iphase.
 
-	if (iphase <= 21) { 
-		return "M" + ROUND(ADDONS:FAR:MACH, 1).
-	} else {
+	if (iphase >= 30) OR (iphase = 22) OR (iphase = 23) {
 		return ROUND(SHIP:VELOCITY:SURFACE:MAG, 0).
+	} else { 
+		return "M" + ROUND(ADDONS:FAR:MACH, 1).
 	}
 }
 	
@@ -1658,7 +1660,7 @@ FUNCTION speed_format {
 FUNCTION hud_decluttering {
 	PARAMETER iphase.
 
-	if (iphase >= 23) {
+	if (iphase >= 30 OR iphase = 23) {
 		//hide g indicator and change nose marker 
 		nz_text:HIDE().
 		SET  pointbox:style:BG to "Shuttle_OPS3/src/gui_images/bg_marker_round.png".

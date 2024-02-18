@@ -394,9 +394,11 @@ global taemg_constants is lexicon (
 									//GRTLS guidance stuff
 									"gralpul", 50,		//° grtls upper lim on aoa
 									"gralpll", 0,		//° grtls lower lim on aoa
-									"msw1", 3.2, 		//mach to switch from grtls phase 4 to taem phase 1
+									"msw1", 3.2, 		//mach to switch from grtls phase 4 to taem phase 1		//taem paper
+									"msw1", 3.8, 		//mach to switch from grtls phase 4 to taem phase 1		
 									"msw3", 7.0, 		//upper mach to enable phase 4 s-turns
-									"nzsw1", 1.85,		//gs initial value of nzsw
+									//"nzsw1", 1.85,		//gs initial value of nzsw	//taem paper
+									"nzsw1", 0.85,		//gs initial value of nzsw	//taem paper
 									"gralps", 2.6637,	//linear coef of alpha transition aoa vs mach
 									"gralpi",6.712,	//° constant coef of alpha transition aoa vs mach
 									"gralpl", 10,	//° min alpha transition aoa
@@ -408,7 +410,8 @@ global taemg_constants is lexicon (
 									"smnzc4", 0.0086956,		//gs constant nz value for computing smnz2
 									"smnz2l", -0.05,
 									"grnzc1", 1.2,		//gs desired normal accel for nz hold 
-									"alprec", 50,		//° aoa during alpha recovery
+									//"alprec", 50,		//° aoa during alpha recovery	//taem paper
+									"alprec", 45,		//° aoa during alpha recovery
 									"hdnom", -1558, 	//Nominal maximum sink rate during alpha recovery
 									"dhdnz", 0.002, 		//Gain on max sink rate difference to compute DGRNZ
 									"dhdll", -0.3, 			//Lower limit on DGRNZ
@@ -1521,7 +1524,7 @@ function grnzc {
 	
 	// constant value minus linear and exponential terms that ramp down with time 
 	//remmeber that nzc is increment over equilibrium
-	set taemg_internal["nzc"] to taemg_constants["grnzc1"] - taemg_internal["smnz1"] - taemg_internal["smnz2"] + taemg_internal["dgrnz"].
+	set taemg_internal["nzc"] to taemg_constants["grnzc1"] - taemg_internal["smnz1"] - taemg_internal["smnz2"] + taemg_internal["dgrnz"] - 0.2.
 	set taemg_internal["nztotal"] to midval(taemg_internal["nzc"] + 1, -taemg_constants["nztotallim"], taemg_constants["nztotallim"]).
 }
 
@@ -1548,7 +1551,7 @@ function gralpc {
 		} else if (taemg_internal["igra"] = 1) {
 			local dgralp is midval(taemg_internal["gralpr"] - taemg_input["alpha"],  taemg_constants["grall"], taemg_constants["gralu"]).
 			
-			set taemg_internal["alpcmd"] to taemg_internal["alpcmd"] - dgralp * taemg_input["dtg"].
+			set taemg_internal["alpcmd"] to taemg_internal["alpcmd"] + dgralp * taemg_input["dtg"].
 			
 			if 
 				((dgralp < 0) and (taemg_internal["alpcmd"] <= taemg_internal["gralpr"]))

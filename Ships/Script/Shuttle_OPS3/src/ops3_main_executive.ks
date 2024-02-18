@@ -72,13 +72,14 @@ FUNCTION ops3_main_exec {
 						} else {
 							 if (guid_id = 25) {
 								//nz hold
+								dap:set_grtls_gains().
 								dap:update_auto_nz().
 							} else {
 								//hdot control
 								if (guid_id = 34) {
-									dap:set_flare_hdot_gains().
+									dap:set_flare_gains().
 								} else {
-									dap:set_taem_hdot_gains().
+									dap:set_taem_gains().
 								}
 								
 								dap:update_auto_hdot().
@@ -398,13 +399,13 @@ FUNCTION ops3_main_exec {
 									"prog_yaw", dap:prog_yaw
 			).
 			
-			if (guid_id >= 23) {
+			if (guid_id >= 30 OR guid_id=23) {
 				set hud_datalex["delaz"] to - rwystate["rwy_rel_crs"].
 				gui_data:ADD("xtrack_err",  -taemg_out["yerrc"]).
 			} else if (guid_id = 22) {
 				set hud_datalex["delaz"] to taemg_out["ysgn"] * taemg_out["psha"].
 				gui_data:ADD("xtrack_err",  -taemg_out["ysgn"] * taemg_out["rerrc"] / 50).
-			} else if (guid_id <= 21) {
+			} else if (guid_id <= 21 OR guid_id>23) {
 				set hud_datalex["delaz"] to taemg_out["dpsac"].
 				gui_data:ADD("hac_entry_t",  taemg_out["tth"]).
 			}

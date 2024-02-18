@@ -121,20 +121,36 @@ FUNCTION dap_controller_factory {
 		return -this:nz_pitch_pid:UPDATE(this:last_time, this:tgt_nz - this:aero:nz ).
 	}).
 	
-	this:add("set_taem_hdot_gains", {
+	this:add("set_grtls_gains", {
+
+		set this:nz_pitch_pid:Kp to 1.5.
+		set this:nz_pitch_pid:Ki to 0.
+		set this:nz_pitch_pid:Kd to 3.
+	}).
+	
+	this:add("set_taem_gains", {
 		local kc is 0.004.
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
 		set this:hdot_nz_pid:Kd to kc * 2.9.
+		
+		
+		set this:nz_pitch_pid:Kp to 4.
+		set this:nz_pitch_pid:Ki to 0.
+		set this:nz_pitch_pid:Kd to 5.7.
 	}).
 
-	this:add("set_flare_hdot_gains", {
+	this:add("set_flare_gains", {
 		local kc is 0.0047.
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
 		set this:hdot_nz_pid:Kd to kc * 2.05.
+		
+		set this:nz_pitch_pid:Kp to 4.
+		set this:nz_pitch_pid:Ki to 0.
+		set this:nz_pitch_pid:Kd to 5.7.
 	}).
 	
 	//should be consistent with taem nz limits
@@ -361,7 +377,7 @@ FUNCTION aerosurfaces_control_factory {
 									),
 									LEXICON(
 											"mod",SHIP:PARTSDUBBED("ShuttleBodyFlap")[0]:getmodule("FARControllableSurface"),
-											"flap_defl_max",12,
+											"flap_defl_max",17,
 											"flap_defl_min",-22.5,
 											"spdbk_defl_max",-8
 									)
