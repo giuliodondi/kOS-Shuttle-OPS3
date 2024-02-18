@@ -398,16 +398,16 @@ global taemg_constants is lexicon (
 									"msw1", 3.8, 		//mach to switch from grtls phase 4 to taem phase 1		
 									"msw3", 7.0, 		//upper mach to enable phase 4 s-turns
 									//"nzsw1", 1.85,		//gs initial value of nzsw	//taem paper
-									"nzsw1", 0.85,		//gs initial value of nzsw	//taem paper
+									"nzsw1", 0.5,		//gs initial value of nzsw	//taem paper
 									"gralps", 2.6637,	//linear coef of alpha transition aoa vs mach
 									"gralpi",6.712,	//° constant coef of alpha transition aoa vs mach
 									"gralpl", 10,	//° min alpha transition aoa
 									"gralpu", 17.55,	//° max alpha transition aoa
 									"hdtrn", -347.5,	//ft/s hdot for transition to phase 4
 									"smnzc1", 0.125,		//gs initial value of smnz1
-									"smnzc2", 0.258,		//gs initial value of smnz2
+									"smnzc2", 0.575,		//gs initial value of smnz2
 									"smnzc3", 0.7314,		//coefficient for smnz1
-									"smnzc4", 0.0086956,		//gs constant nz value for computing smnz2
+									"smnzc4", 0.028,		//gs constant nz value for computing smnz2
 									"smnz2l", -0.05,
 									"grnzc1", 1.2,		//gs desired normal accel for nz hold 
 									//"alprec", 50,		//° aoa during alpha recovery	//taem paper
@@ -1523,9 +1523,9 @@ function grnzc {
 	set taemg_internal["smnz2"] to MAX(taemg_internal["smnz2"] - (taemg_constants["smnzc4"] * taemg_input["dtg"]), taemg_constants["smnz2l"]).
 	
 	// constant value minus linear and exponential terms that ramp down with time 
-	//remmeber that nzc is increment over equilibrium
-	set taemg_internal["nzc"] to taemg_constants["grnzc1"] - taemg_internal["smnz1"] - taemg_internal["smnz2"] + taemg_internal["dgrnz"] - 0.2.
-	set taemg_internal["nztotal"] to midval(taemg_internal["nzc"] + 1, -taemg_constants["nztotallim"], taemg_constants["nztotallim"]).
+	//use the nzc prodile directly without adding 1
+	set taemg_internal["nzc"] to taemg_constants["grnzc1"] - taemg_internal["smnz1"] - taemg_internal["smnz2"] + taemg_internal["dgrnz"].
+	set taemg_internal["nztotal"] to midval(taemg_internal["nzc"], -taemg_constants["nztotallim"], taemg_constants["nztotallim"]).
 }
 
 // alpha recovery and transition aoa command
