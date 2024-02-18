@@ -142,11 +142,11 @@ FUNCTION dap_controller_factory {
 	}).
 
 	this:add("set_flare_gains", {
-		local kc is 0.0047.
+		local kc is 0.005.
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * 2.05.
+		set this:hdot_nz_pid:Kd to kc * 1.95.
 		
 		set this:nz_pitch_pid:Kp to 4.
 		set this:nz_pitch_pid:Ki to 0.

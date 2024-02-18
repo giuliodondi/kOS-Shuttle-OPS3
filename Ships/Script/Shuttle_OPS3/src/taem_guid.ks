@@ -237,8 +237,8 @@ global taemg_constants is lexicon (
 									"gdhll", 0.1, 			//gdh lower limit 	//OTT
 									"gdhs", 0.9e-5,		//1/ft	slope for computing gdh 		//ott
 									"gdhul", 0.5,			//gdh upper lim 
-									"gehdll", 0.025, 		//g/fps  gain used in computing eownzll
-									"gehdul", 0.025, 		//g/fps  gain used in computing eownzul
+									"gehdll", 0.03, 		//g/fps  gain used in computing eownzll
+									"gehdul", 0.02, 		//g/fps  gain used in computing eownzul
 									"gell", 0.02, 		//1/s  gain used in computing eownzll
 									"geul", 0.02, 		//1/s  gain used in computing eownzul
 									"geownzc", 0.0005, 		//1/s  gain used to correct eow error
@@ -250,7 +250,7 @@ global taemg_constants is lexicon (
 									"gy", 0.075,			//deg/ft gain on y in computing pfl roll angle cmd 
 									"gydot", 0.45,		//deg/fps gain on ydot on computing pfl roll angle cmd 
 									"h_error", 1000,		//ft altitude error bound	//deprecated
-									"hdherrcmax", 50,		//ft/s max herror correction to ref. hdot //my addition
+									"hdherrcmax", 80,		//ft/s max herror correction to ref. hdot //my addition
 									"hderr_lag_k", 0.7,		//ft/s lag filter gain for hderr feedback	//my addition
 									"h_ref1", 8000,			//ft alt to force transition to a/l 		//modified from OTT
 									"h_ref2", 5000,			//ft alt to force transition to ogs		//modified from OTT
@@ -405,9 +405,9 @@ global taemg_constants is lexicon (
 									"gralpu", 17.55,	//° max alpha transition aoa
 									"hdtrn", -347.5,	//ft/s hdot for transition to phase 4
 									"smnzc1", 0.125,		//gs initial value of smnz1
-									"smnzc2", 0.575,		//gs initial value of smnz2
+									"smnzc2", 0.565,		//gs initial value of smnz2
 									"smnzc3", 0.7314,		//coefficient for smnz1
-									"smnzc4", 0.028,		//gs constant nz value for computing smnz2
+									"smnzc4", 0.023,		//gs constant nz value for computing smnz2
 									"smnz2l", -0.05,
 									"grnzc1", 1.2,		//gs desired normal accel for nz hold 
 									//"alprec", 50,		//° aoa during alpha recovery	//taem paper
@@ -454,6 +454,7 @@ global taemg_internal is lexicon(
 								"dsbi", 0,	//integral component of delta speedbrake cmd
 								"eas_cmd", 0, 		//kn equivalent airspeed commanded 
 								"emep", 0,		//ft energy/weight at which the mep is selected 
+								"emoh", 0,		//ft energy/weight at which ohalrt is set
 								"eow", 0,			//ft energy/weight
 								"eowerror", 0,			//ft energy/weight error
 								"eowhdul", 0,			//ft energy/weight hdot upper limit
@@ -1223,8 +1224,8 @@ FUNCTION tgtran {
 			//I think these two belong outside the s-turn block
 			
 			//suggest downmoding to straight-in
-			local emoh is taemg_constants["emohc1"][taemg_internal["igs"]] + taemg_constants["emohc2"][taemg_internal["igs"]] * taemg_internal["drpred"].
-			if (taemg_internal["eow"] < emoh) and (taemg_internal["psha"] > taemg_constants["psohal"]) and (taemg_internal["rpred"] > taemg_constants["rmoh"]) {
+			set taemg_internal["emoh"] to  taemg_constants["emohc1"][taemg_internal["igs"]] + taemg_constants["emohc2"][taemg_internal["igs"]] * taemg_internal["drpred"].
+			if (taemg_internal["eow"] < taemg_internal["emoh"]) and (taemg_internal["psha"] > taemg_constants["psohal"]) and (taemg_internal["rpred"] > taemg_constants["rmoh"]) {
 				set taemg_internal["ohalrt"] to TRUE.
 			}
 			
@@ -1358,7 +1359,7 @@ FUNCTION tgsbc {
 	
 	//mach limits for speedbrake - modified
 	local dsbcll is midval(taemg_constants["dsbsup"] + taemg_constants["dsblls"] * (taemg_input["mach"] - taemg_constants["dsbcm"]), 0, taemg_constants["dsbsup"]).
-	local dsbcul is midval(taemg_constants["dsbsup"] + taemg_constants["dsbuls"] * (taemg_input["mach"] - taemg_constants["dsbcm"]), taemg_constants["dsbsup"], taemg_constants["dsblim"]).
+	local dsbcul is midval(taemg_constants["dsbsup"] + taemg_constants["dsbuls"] * (taemg_input["mach"] - taemg_constants["dsbcm"]), taemg_constants["dsbsup"], taemg_constants["dsbsup"]).
 	
 	local dsbc is 0.
 	
@@ -1385,9 +1386,9 @@ FUNCTION tgsbc {
 	LOCAL delta_emep IS ABS(taemg_internal["en"] - taemg_internal["emep"]).
 	
 	IF (taemg_internal["eowerror"] > delta_es) {
-		set dsbc to taemg_constants["dsblim"].
+		set dsbc to dsbcul.
 	} ELSE IF (taemg_internal["eowerror"] < -delta_emep) {
-		set dsbc to 0.
+		set dsbc to dsbcll.
 	}
 		
 
