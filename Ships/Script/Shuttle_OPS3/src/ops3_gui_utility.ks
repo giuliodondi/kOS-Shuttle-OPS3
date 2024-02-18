@@ -1564,6 +1564,8 @@ FUNCTION hud_guid_labels{
 			RETURN "NZHOLD".
 		} ELSE IF (iphase=26) {
 			RETURN "ALPREC".
+		} ELSE IF (iphase=27) {
+			RETURN "STURN".
 		} 
 	} ELSE IF (iphase>=10) {
 		//entry

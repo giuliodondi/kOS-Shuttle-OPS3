@@ -58,7 +58,7 @@ FUNCTION ops3_main_exec {
 				set dap_engaged to is_dap_engaged().
 				if (dap_engaged) {
 					set css_flag to is_dap_css().
-					if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) OR (guid_id = 36) {
+					if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) OR (guid_id = 27) OR (guid_id = 36) {
 						aerosurfaces_control["set_aoa_feedback"](parameters["entry_aoa_feedback"]).
 						//reentry, alpha recovery, alpha transition, slapdown/rollout
 						if (css_flag) {
@@ -101,7 +101,7 @@ FUNCTION ops3_main_exec {
 					aerosurfaces_control:update(is_autoflap(), is_autoairbk()).
 				}
 				
-				if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) OR (guid_id = 36) {
+				if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) OR (guid_id = 27) OR (guid_id = 36) {
 					SET hud_datalex["pipper_deltas"] TO LIST(
 															dap:tgt_roll - dap:prog_roll, 
 															dap:tgt_pitch -  dap:prog_pitch
@@ -331,7 +331,7 @@ FUNCTION ops3_main_exec {
 			SET dap:tgt_roll tO taemg_out["phic_at"].
 			SET dap:tgt_yaw tO taemg_out["betac_at"].
 			
-			if (guid_id = 26) OR (guid_id = 24) OR (guid_id = 36) {
+			if (guid_id = 26) OR (guid_id = 24) OR (guid_id = 27) OR (guid_id = 36) {
 				SET dap:tgt_pitch tO taemg_out["alpcmd"].
 			} else if (guid_id = 25) {
 				SET dap:tgt_nz tO taemg_out["nztotal"].

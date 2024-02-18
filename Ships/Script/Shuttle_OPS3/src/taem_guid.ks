@@ -100,7 +100,7 @@ FUNCTION taemg_wrapper {
 		
 		//set guid mode to s-turn during phase 4 
 		if (taemg_internal["iphase"] = 4) and (taemg_internal["istp4"] = 0) {
-			set  guid_id to 20.
+			set  guid_id to 27.
 		}
 	}
 
@@ -169,16 +169,16 @@ global taemg_constants is lexicon (
 									"alpulc2", 9.2353,		//° constant coef of upper alpha limit with mach
 									"alpulc3", 13.7,		//° max upper alpha limit
 									"alpulc4", 20,		//° min upper alpha limit							
-									"alpllcm1", 2.25,		// mach breakpoint for lower alpha limit vs mach 
+									"alpllcm1", 2.02,		// mach breakpoint for lower alpha limit vs mach 
 									"alpllcm2", 3.2,		// mach breakpoint for lower alpha limit vs mach 
-									"alpllc1", 2.2706,		//linear coef of lower alpha limit with mach 
+									"alpllc1", 1.8706,		//linear coef of lower alpha limit with mach 
 									"alpllc2", -2.3096,		//° constant coef of lower alpha limit with mach
 									"alpllc3", 5.96384,		//linear coef of lower alpha limit with mach 
 									"alpllc4", -10.6194,		//° constant coef of lower alpha limit with mach
 									"alpllc5", 3.4637,		//linear coef of lower alpha limit with mach 
 									"alpllc6", -2.618935,		//° constant coef of lower alpha limit with mach
 									"alpllc7", 14,		//° max lower alpha limit
-									"alpllc8", 0,		//° min lower alpha limit
+									"alpllc8", -2,		//° min lower alpha limit
 									
 									
 									"cdeqd", 0.68113143,	//gain in qbd calculation
@@ -237,8 +237,8 @@ global taemg_constants is lexicon (
 									"gdhll", 0.1, 			//gdh lower limit 	//OTT
 									"gdhs", 0.9e-5,		//1/ft	slope for computing gdh 		//ott
 									"gdhul", 0.5,			//gdh upper lim 
-									"gehdll", 0.02, 		//g/fps  gain used in computing eownzll
-									"gehdul", 0.02, 		//g/fps  gain used in computing eownzul
+									"gehdll", 0.025, 		//g/fps  gain used in computing eownzll
+									"gehdul", 0.025, 		//g/fps  gain used in computing eownzul
 									"gell", 0.02, 		//1/s  gain used in computing eownzll
 									"geul", 0.02, 		//1/s  gain used in computing eownzul
 									"geownzc", 0.0005, 		//1/s  gain used to correct eow error
@@ -256,7 +256,7 @@ global taemg_constants is lexicon (
 									"h_ref2", 5000,			//ft alt to force transition to ogs		//modified from OTT
 									"hali", LIST(0, 10018, 10018),		//ft altitude at a/l for reference profiles
 									//"hdreqg", 0.1,				//hdreq computation gain 		//OTT
-									"hdreqg", 0.3,				//hdreq computation gain 		//OTT
+									"hdreqg", 0.35,				//hdreq computation gain
 									"hftc", LIST(0, 12018, 12018),		//ft altitude of a/l steep gs at nominal entry pt
 									"machad", 0.75,		//mach to use air data (used in gcomp appendix)
 									"mxqbwt", 0.0007368421,		// psf/lb max l/d dyn press for nominal weight		//deprecated 
@@ -471,6 +471,7 @@ global taemg_internal is lexicon(
 								"hdref", 0,			//ft/s hdot reference
 								"hderrc", 0,			//ft/s hdot error corrected - my addition
 								"hderrcl", 0,			//ft/s hdot error corrected and limited - my addition
+								"hderrc_eowl", 0,			//ft/s hdot error corrected and limited by energy - my addition
 								"hdrefc", 0,			//ft/s hdot reference corrected - my addition
 								"href", 0,			//ft ref altitude
 								"iel", 0,			//energy reference profile selector flag
@@ -1332,9 +1333,9 @@ FUNCTION tgnzc {
 		SET taemg_internal["eowhdul"] TO eownzul * dnz2ddh.
 		SET taemg_internal["eowhdll"] TO eownzll * dnz2ddh.
 
-		set taemg_internal["hderrcl"] to midval(taemg_internal["hderrcl"], taemg_internal["eowhdll"], taemg_internal["eowhdul"]).
+		set taemg_internal["hderrc_eowl"] to midval(taemg_internal["hderrcl"], taemg_internal["eowhdll"], taemg_internal["eowhdul"]).
 		
-		local dhdcd is midval((taemg_internal["hderrcl"] - taemg_internal["hderrc"]) * taemg_constants["cqg"], -taemg_constants["hdherrcmax"], taemg_constants["hdherrcmax"]).
+		local dhdcd is midval((taemg_internal["hderrc_eowl"] - taemg_internal["hderrc"]) * taemg_constants["cqg"], -taemg_constants["hdherrcmax"], taemg_constants["hdherrcmax"]).
 		set taemg_internal["hderrc"] to taemg_internal["hderrc"] + dhdcd * taemg_input["dtg"].
 		
 		
@@ -1593,8 +1594,8 @@ function grphic {
 	//my addition
 	set taemg_internal["betac_at"] to 0.
 	
-	//zero roll before  alpha tran 
-	if (taemg_internal["iphase"] > 4) {
+	//zero roll before  alpha tran and before we are on gralpr profile 
+	if (taemg_internal["iphase"] > 4) OR (taemg_internal["igra"] < 2) {
 		set taemg_internal["phic_at"] to 0.
 		return.
 	}
