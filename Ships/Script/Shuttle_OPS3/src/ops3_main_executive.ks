@@ -59,6 +59,7 @@ FUNCTION ops3_main_exec {
 				if (dap_engaged) {
 					set css_flag to is_dap_css().
 					if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) OR (guid_id = 36) {
+						aerosurfaces_control["set_aoa_feedback"](parameters["entry_aoa_feedback"]).
 						//reentry, alpha recovery, alpha transition, slapdown/rollout
 						if (css_flag) {
 							dap:update_css_prograde().
@@ -66,6 +67,8 @@ FUNCTION ops3_main_exec {
 							dap:update_auto_prograde().
 						}
 					} else {
+						aerosurfaces_control["set_aoa_feedback"](parameters["taem_aoa_feedback"]).
+						
 						if (css_flag) {
 							local direct_pitch_flag is (guid_id >= 34).
 							dap:update_css_lvlh(direct_pitch_flag).
@@ -130,8 +133,6 @@ FUNCTION ops3_main_exec {
 
 	if (NOT grtls_flag) AND (SHIP:VELOCITY:SURFACE:MAG > parameters["surfv_skip_to_taem"]){
 		//entry guidance loop
-		
-		aerosurfaces_control["set_aoa_feedback"](parameters["entry_aoa_feedback"]).
 		
 		make_entry_traj_GUI().
 		
@@ -267,8 +268,6 @@ FUNCTION ops3_main_exec {
 
 	if (NOT quit_program) {
 		//TAEM and A/L loop
-		
-		aerosurfaces_control["set_aoa_feedback"](parameters["taem_aoa_feedback"]).
 
 		make_taem_vsit_GUI().
 		

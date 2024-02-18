@@ -123,7 +123,7 @@ FUNCTION dap_controller_factory {
 	
 	this:add("set_grtls_gains", {
 
-		set this:nz_pitch_pid:Kp to 1.5.
+		set this:nz_pitch_pid:Kp to 2.2.
 		set this:nz_pitch_pid:Ki to 0.
 		set this:nz_pitch_pid:Kd to 3.
 	}).
