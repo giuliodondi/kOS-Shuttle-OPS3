@@ -219,13 +219,13 @@ global taemg_constants is lexicon (
 									//"eow_spt", list(0, 76068, 76068), 	//ft range at which to change slope and y-intercept on the mep and nom energy line  	//OTT paper
 									
 									//my modification: single set of energy profiles, n-point piecewise lines
-									"emep_c1", list(958, 10018),		//all in ft mep energy line y intercept 
-									"emep_c2", list(0.5155, 0.4404),		//all in ft^2/ft mep energy line slope
-									"en_c1", list(-3712, 15500),		//all ft^2/ft nom energy line y-intercept 
-									"en_c2", list(0.6005, 0.4404),		//all ft^2/ft nom energy line slope
-									"es_c1", list(911.6, 15500),		//all ft^2/ft s-turn energy line y-intercept 		//my addition
-									"es_c2", list(0.69946, 0.57789),		//all ft^2/ft s-turn energy line slope			//my addition
-									"eow_spt", list(120000, -100000), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
+									"emep_c1", list(40761, 958, 10018),		//all in ft mep energy line y intercept 
+									"emep_c2", list(0.4404, 0.5155, 0.4404),		//all in ft^2/ft mep energy line slope
+									"en_c1", list(81141, -3712, 15500),		//all ft^2/ft nom energy line y-intercept 
+									"en_c2", list(0.4404, 0.6005, 0.4404),		//all ft^2/ft nom energy line slope
+									"es_c1", list(99543.7, 3311.6, 15500),		//all ft^2/ft s-turn energy line y-intercept 		//my addition
+									"es_c2", list(0.49789, 0.67946, 0.57789),		//all ft^2/ft s-turn energy line slope			//my addition
+									"eow_spt", list(530000, 120000, -100000), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
 									
 
 									"g", 32.174,					//ft/s^2 earth gravity 
@@ -382,8 +382,8 @@ global taemg_constants is lexicon (
 									"al_fnlfl_herrexpmin", 1, //ft alt delta on exponential decay for final flare toggle
 									"hgeardn", 300,			//ft alt at which to command gear down
 									"hfnlfl", 120,			//ft alt at which to force transition to final flare
-									"h0_hdfnlfl", 80,			//ft reference altitude for hdot exp decay during final flare
-									"max_hdfnlfl", 0.1,			//ft maximum hdot during finalflare
+									"h0_hdfnlfl", 120,			//ft reference altitude for hdot exp decay during final flare
+									"max_hdfnlfl", 0.02,			//ft maximum hdot during finalflare
 									"philm4", 15, 				//deg bank lim for flare and beyond
 									"alpcmd_rlt", -3.4,			//aoa command for slapdown and rollout
 									"phi_beta_gain", 2, 			//gain for yaw during rollout
@@ -395,7 +395,6 @@ global taemg_constants is lexicon (
 									"gralpul", 50,		//° grtls upper lim on aoa
 									"gralpll", 0,		//° grtls lower lim on aoa
 									"msw1", 3.2, 		//mach to switch from grtls phase 4 to taem phase 1		//taem paper
-									"msw1", 3.8, 		//mach to switch from grtls phase 4 to taem phase 1		
 									"msw3", 7.0, 		//upper mach to enable phase 4 s-turns
 									//"nzsw1", 1.85,		//gs initial value of nzsw	//taem paper
 									"nzsw1", 0.5,		//gs initial value of nzsw	//taem paper
@@ -886,7 +885,8 @@ FUNCTION gtp {
 	set taemg_internal["rpred2"] to - taemg_internal["xhac"] + (taemg_internal["rf"] + (0.5 * taemg_constants["r1"] + 0.333333 * taemg_constants["r2"] * taemg_internal["psha"]) * taemg_internal["psha"]) * taemg_internal["psha"] * taemg_constants["dtr"].
 
 	//if s-turn or acq build the hac acquisition turn circle based on velocity and average bank angle as a function of mach
-	IF (taemg_internal["iphase"] < 2) {
+	//my modification: do this also in case of grtls transition
+	IF (taemg_internal["iphase"] < 2) OR (taemg_internal["iphase"] = 4)  {
 		//my modification, use supersonic roll instead
 		//local phavg is midval(taemg_constants["phavgc"] - taemg_constants["phavgs"] * taemg_input["mach"], taemg_constants["phavgll"], taemg_constants["phavgul"]).
 		local phavg is taemg_constants["philmsup"].
