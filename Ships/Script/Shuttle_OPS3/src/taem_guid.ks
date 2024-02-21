@@ -394,8 +394,17 @@ global taemg_constants is lexicon (
 									"surfv_h_exit", 15,		//ft/s trigger for termination
 									
 									//GRTLS guidance stuff
-									"gralpul", 50,		//° grtls upper lim on aoa
-									"gralpll", 0,		//° grtls lower lim on aoa
+									//my addition: custom grtls alpha limit profiles 
+									"gralpulc1", 37.5,		//linear coef of upper alpha limit with mach
+									"gralpulc2", -167.5,		//° constant coef of upper alpha limit with mach
+									"gralpulc3", 20,		//° max upper alpha limit
+									"gralpulc4", 50,		//° min upper alpha limit
+									"gralpllc1", 37.5,		//linear coef of lower alpha limit with mach
+									"gralpllc2", -185,		//° constant coef of lower alpha limit with mach
+									"gralpllc3", 14,		//° max lower alpha limit
+									"gralpllc4", 40,		//° min lower alpha limit										
+									
+									
 									"msw1", 3.2, 		//mach to switch from grtls phase 4 to taem phase 1		//taem paper
 									"msw3", 7.0, 		//upper mach to enable phase 4 s-turns
 									//"nzsw1", 1.85,		//gs initial value of nzsw	//taem paper
@@ -780,9 +789,6 @@ FUNCTION tginit {
 		set taemg_internal["smnz1"] to taemg_constants["smnzc1"].
 		set taemg_internal["smnz2"] to taemg_constants["smnzc2"].
 		set taemg_internal["istp4"] to 1.
-		//for grtls they won't be touched until taem is triggered
-		 set taemg_internal["alpul"] to taemg_constants["gralpul"].
-		 set taemg_internal["alpll"] to taemg_constants["gralpll"].
 	}
 	
 	SET taemg_internal["tg_end"] TO FALSE.
@@ -1032,15 +1038,20 @@ FUNCTION tgcomp {
 	//cmd eas 
 	set taemg_internal["eas_cmd"] to 17.1865 * sqrt(taemg_internal["qbref"]).
 	
-	//my addition: alpha limits for taem
-	// moved up from tgnzc so they are calculted for grtls as well
-	set taemg_internal["alpul"] to midval(taemg_constants["alpulc1"] * taemg_input["mach"] + taemg_constants["alpulc2"], taemg_constants["alpulc3"], taemg_constants["alpulc4"]).
-	if (taemg_input["mach"] < taemg_constants["alpllcm1"]) {
-		set taemg_internal["alpll"] to midval(taemg_constants["alpllc1"] * taemg_input["mach"] + taemg_constants["alpllc2"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
-	} else if (taemg_input["mach"] < taemg_constants["alpllcm2"]) {
-		set taemg_internal["alpll"] to midval(taemg_constants["alpllc3"] * taemg_input["mach"] + taemg_constants["alpllc4"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
+	//my addition: alpha limits for taem and grtls
+	// modification: different profiles for taem and grtls
+	if (taemg_internal["iphase"] > 4) {
+		set taemg_internal["alpul"] to midval(taemg_constants["gralpulc1"] * taemg_input["mach"] + taemg_constants["gralpulc2"], taemg_constants["gralpulc3"], taemg_constants["gralpulc4"]).
+		set taemg_internal["alpll"] to midval(taemg_constants["gralpllc1"] * taemg_input["mach"] + taemg_constants["gralpllc2"], taemg_constants["gralpllc3"], taemg_constants["gralpllc4"]).
 	} else {
-		set taemg_internal["alpll"] to midval(taemg_constants["alpllc5"] * taemg_input["mach"] + taemg_constants["alpllc6"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
+		set taemg_internal["alpul"] to midval(taemg_constants["alpulc1"] * taemg_input["mach"] + taemg_constants["alpulc2"], taemg_constants["alpulc3"], taemg_constants["alpulc4"]).
+		if (taemg_input["mach"] < taemg_constants["alpllcm1"]) {
+			set taemg_internal["alpll"] to midval(taemg_constants["alpllc1"] * taemg_input["mach"] + taemg_constants["alpllc2"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
+		} else if (taemg_input["mach"] < taemg_constants["alpllcm2"]) {
+			set taemg_internal["alpll"] to midval(taemg_constants["alpllc3"] * taemg_input["mach"] + taemg_constants["alpllc4"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
+		} else {
+			set taemg_internal["alpll"] to midval(taemg_constants["alpllc5"] * taemg_input["mach"] + taemg_constants["alpllc6"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
+		}
 	}
 
 }	
@@ -1539,7 +1550,6 @@ function gralpc {
 	
 	if (taemg_internal["iphase"] = 6) {
 		set taemg_internal["alpcmd"] to taemg_constants["alprec"].
-		set taemg_internal["alpul"] to taemg_constants["alprec"].
 		
 		if (taemg_input["hdot"] < taemg_internal["hdmax"]) {
 			set taemg_internal["hdmax"] to taemg_input["hdot"].
@@ -1569,7 +1579,6 @@ function gralpc {
 			set taemg_internal["alpcmd"] to taemg_internal["gralpr"].
 		}
 		
-		set taemg_internal["alpul"] to MAX(taemg_internal["alpul"], taemg_internal["alpcmd"]).
 	}
 }
 
