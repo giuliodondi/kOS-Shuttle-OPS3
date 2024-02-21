@@ -227,6 +227,7 @@ global taemg_constants is lexicon (
 									"es_c2", list(0.49789, 0.67946, 0.57789),		//all ft^2/ft s-turn energy line slope			//my addition
 									"eow_spt", list(530000, 120000, -100000), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
 									
+									"est_gain", 0.75,		//est gain 
 
 									"g", 32.174,					//ft/s^2 earth gravity 
 									"gamma_coef1", 0.0007,			//deg/ft fpa error coef 
@@ -300,8 +301,8 @@ global taemg_constants is lexicon (
 									"qbrul", LIST(0, 305, 305),		//psf  qbref ul
 									"rerrlm", 7000,			//ft limit of rerrc 		//was 50 deg????
 									"rftc", 5,			//s roll fader time const 
-									//"rminst", LIST(0, 122204.6, 122204.6),		//ft min range allowed to initiate sturn
-									"rminst", LIST(0, 180000, 180000),		//ft min range allowed to initiate sturn 	//OTT
+									//"rminst", LIST(0, 180000, 180000),		//ft min range allowed to initiate sturn 	//OTT
+									"rminst", LIST(0, 122204.6, 122204.6),		//ft min range allowed to initiate sturn
 									"rn1", LISt(0, 6542.886, 6542.866),			//ft range at which the gain on edelmz goes to zero 	//deprecated
 									"rtbias", 3000,			//ft max value of rt for ha initiation		//deprecated
 									"rtd", 	57.29578,			//deg/rad rad2teg
@@ -931,7 +932,7 @@ FUNCTION tgcomp {
 	SET taemg_internal["emep"] TO taemg_constants["emep_c1"][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["emep_c2"][taemg_internal["iel"]].
 	SET taemg_internal["es"] TO taemg_constants["es_c1"][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["es_c2"][taemg_internal["iel"]].
 	
-	SET taemg_internal["est"] TO taemg_internal["en"] + 0.9 * (taemg_internal["es"] - taemg_internal["en"]).
+	SET taemg_internal["est"] TO taemg_internal["en"] + taemg_constants["est_gain"] * (taemg_internal["es"] - taemg_internal["en"]).
 	
 	set taemg_internal["eowerror"] to taemg_internal["eow"] - taemg_internal["en"].
 	

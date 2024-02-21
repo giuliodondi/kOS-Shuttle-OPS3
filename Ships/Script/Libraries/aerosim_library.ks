@@ -401,7 +401,6 @@ FUNCTION accurate_g {
 	
 	//central body potential
 	LOCAL G_c IS simple_g(pos).
-	
 
 	LOCAL G_corr IS V(0,0,0).
 	
