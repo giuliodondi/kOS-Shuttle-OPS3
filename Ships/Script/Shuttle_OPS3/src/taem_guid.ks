@@ -79,7 +79,8 @@ FUNCTION taemg_wrapper {
 										"weight", taemg_input["m"] * kg2slug, 	//slugs mass 
 										"gamma", taemg_input["gamma"], 	//deg earth relative fpa  
 										"alpha", taemg_input["alpha"], 	//deg angle of attack 
-										"nz", taemg_input["nz"], 	//gs load factor 
+										"nz", taemg_input["nz"], 	//gs vertical load factor 
+										"xlfac", entryg_input["xlfac"],      //(ft/s2) total load factor acceleration 
 										"ovhd", taemg_input["ovhd"],  		// ovhd/straight-in flag , it's a 2-elem list, one for each value of rwid 			//changed into a simple flag
 										"rwid", taemg_input["rwid"],		//runway id flag  (only needed to detect a runway change, the runway number is fine)
 										"grtls", taemg_input["grtls"]		//grtls flag

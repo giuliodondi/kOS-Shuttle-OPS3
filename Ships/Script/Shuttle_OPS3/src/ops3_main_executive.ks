@@ -308,6 +308,7 @@ FUNCTION ops3_main_exec {
 												"gamma", dap:fpa,
 												"alpha", dap:prog_pitch,
 												"nz", dap:aero:nz,
+												"xlfac", dap:aero:load, 
 												"ovhd", tgtrwy["overhead"],
 												"rwid", tgtrwy["name"],
 												"grtls", grtls_flag,
