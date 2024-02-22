@@ -396,7 +396,7 @@ global taemg_constants is lexicon (
 									//GRTLS guidance stuff
 									//my addition: custom grtls alpha limit profiles 
 									"gralpulc1", 37.5,		//linear coef of upper alpha limit with mach
-									"gralpulc2", -167.5,		//° constant coef of upper alpha limit with mach
+									"gralpulc2", -130,		//° constant coef of upper alpha limit with mach
 									"gralpulc3", 20,		//° max upper alpha limit
 									"gralpulc4", 50,		//° min upper alpha limit
 									"gralpllc1", 37.5,		//linear coef of lower alpha limit with mach
@@ -415,7 +415,7 @@ global taemg_constants is lexicon (
 									"gralpu", 17.55,	//° max alpha transition aoa
 									"hdtrn", -347.5,	//ft/s hdot for transition to phase 4
 									"smnzc1", 0.125,		//gs initial value of smnz1
-									"smnzc2", 0.565,		//gs initial value of smnz2
+									"smnzc2", 0.6,		//gs initial value of smnz2
 									"smnzc3", 0.7314,		//coefficient for smnz1
 									"smnzc4", 0.023,		//gs constant nz value for computing smnz2
 									"smnz2l", -0.05,
@@ -637,11 +637,9 @@ function tgexec {
 		
 		//refactoring of this block to remove call to tgnzc
 		grtrn(taemg_input).
-	
-		if (taemg_internal["iphase"] = 4){
-			tgcomp(taemg_input).
-		}
-		
+
+		tgcomp(taemg_input).
+
 		if (taemg_internal["iphase"] = 5){
 			grnzc(taemg_input).
 		} else {
@@ -1040,7 +1038,7 @@ FUNCTION tgcomp {
 	
 	//my addition: alpha limits for taem and grtls
 	// modification: different profiles for taem and grtls
-	if (taemg_internal["iphase"] > 4) {
+	if (taemg_internal["iphase"] >= 4) {
 		set taemg_internal["alpul"] to midval(taemg_constants["gralpulc1"] * taemg_input["mach"] + taemg_constants["gralpulc2"], taemg_constants["gralpulc3"], taemg_constants["gralpulc4"]).
 		set taemg_internal["alpll"] to midval(taemg_constants["gralpllc1"] * taemg_input["mach"] + taemg_constants["gralpllc2"], taemg_constants["gralpllc3"], taemg_constants["gralpllc4"]).
 	} else {

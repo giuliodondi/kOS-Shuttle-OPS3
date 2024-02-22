@@ -125,7 +125,7 @@ FUNCTION dap_controller_factory {
 
 		set this:nz_pitch_pid:Kp to 2.2.
 		set this:nz_pitch_pid:Ki to 0.
-		set this:nz_pitch_pid:Kd to 3.
+		set this:nz_pitch_pid:Kd to 2.8.
 	}).
 	
 	this:add("set_taem_gains", {
