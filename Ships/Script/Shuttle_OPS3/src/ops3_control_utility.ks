@@ -136,9 +136,9 @@ FUNCTION dap_controller_factory {
 		set this:hdot_nz_pid:Kd to kc * 2.9.
 		
 		
-		set this:nz_pitch_pid:Kp to 4.
+		set this:nz_pitch_pid:Kp to 3.5.
 		set this:nz_pitch_pid:Ki to 0.
-		set this:nz_pitch_pid:Kd to 5.2.
+		set this:nz_pitch_pid:Kd to 5.0.
 	}).
 
 	this:add("set_flare_gains", {

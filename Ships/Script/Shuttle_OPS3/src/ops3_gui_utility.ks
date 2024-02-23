@@ -1031,7 +1031,7 @@ function update_taem_vsit_disp {
 	
 	SET ops3_main_display_clock:text TO "MET " + sectotime_simple(MISSIONTIME, true).
 
-	if (taem_vsit_disp_counter = 1 and gui_data["rpred"] <= 53340) {
+	if (taem_vsit_disp_counter = 1 and gui_data["rpred"] <= 64000) {
 		increment_taem_vsit_disp_counter().
 	}
 	
@@ -1077,7 +1077,12 @@ function update_taem_vsit_disp {
 	set vsitrightdata2:text to "ALPHA LIMS  " + round(gui_data["alpll"], 0) + "  " +  round(gui_data["alpul"], 0).
 	set vsitrightdata3:text to "SPDBK CMD  " + round(gui_data["spdbkcmd"], 1).
 	set vsitrightdata4:text to "REF HDOT  " + round(gui_data["tgthdot"], 0).
+	
 	set vsitrightdata5:text to "LOAD FAC    " + round(gui_data["xlfac"], 1) + " G".
+	
+	if (gui_data["xlfac"] > 2.2) {
+		set vsitrightdata5:text to "<color=#fff600>" + vsitrightdata5:text + "</color>".
+	}
 	
 	set vsitleftdata1:text to "R  " + round(gui_data["prog_roll"], 0).
 	set vsitleftdata2:text to "P  " + round(gui_data["prog_pch"], 0).
