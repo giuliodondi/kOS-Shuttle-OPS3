@@ -165,21 +165,27 @@ FUNCTION taemg_wrapper {
 
 //deprecated -> present in sts1 baseline and not in ott baseline - also disabled from ott
 global taemg_constants is lexicon (
-									//my addition: alpha upper and lower limit - simplified from level-C
+									//my addition: alpha upper and lower limit - simplified from level-C - added grtls 
+									"alpulcm1", 4.1,		//mach breakpoint for uper alpha 
 									"alpulc1", 3.4637,		//linear coef of upper alpha limit with mach
 									"alpulc2", 9.2353,		//° constant coef of upper alpha limit with mach
 									"alpulc3", 13.7,		//° max upper alpha limit
-									"alpulc4", 20,		//° min upper alpha limit							
+									"alpulc4", 50,		//° min upper alpha limit		
+									"alpulc5", 37.5,		//linear coef of upper alpha limit with mach
+									"alpulc6", -130,			//° constant coef of upper alpha limit with mach								
 									"alpllcm1", 2.02,		// mach breakpoint for lower alpha limit vs mach 
 									"alpllcm2", 3.2,		// mach breakpoint for lower alpha limit vs mach 
+									"alpllcm3", 5.3,		// mach breakpoint for lower alpha limit vs mach 
 									"alpllc1", 1.8706,		//linear coef of lower alpha limit with mach 
 									"alpllc2", -2.3096,		//° constant coef of lower alpha limit with mach
 									"alpllc3", 5.96384,		//linear coef of lower alpha limit with mach 
 									"alpllc4", -10.6194,		//° constant coef of lower alpha limit with mach
-									"alpllc5", 3.4637,		//linear coef of lower alpha limit with mach 
-									"alpllc6", -2.618935,		//° constant coef of lower alpha limit with mach
-									"alpllc7", 14,		//° max lower alpha limit
+									"alpllc5", 2.5637,		//linear coef of lower alpha limit with mach 
+									"alpllc6", 0.218935,		//° constant coef of lower alpha limit with mach
+									"alpllc7", 40,		//° max lower alpha limit
 									"alpllc8", -2,		//° min lower alpha limit
+									"alpllc9", 37.5,	//linear coef of lower alpha limit with mach 
+									"alpllc10", -185,    	//° constant coef of lower alpha limit with mach 
 									
 									
 									"cdeqd", 0.68113143,	//gain in qbd calculation
@@ -393,17 +399,7 @@ global taemg_constants is lexicon (
 									"surfv_h_dapoff", 80,		//ft/s trigger for dap off outside executive
 									"surfv_h_exit", 15,		//ft/s trigger for termination
 									
-									//GRTLS guidance stuff
-									//my addition: custom grtls alpha limit profiles 
-									"gralpulc1", 37.5,		//linear coef of upper alpha limit with mach
-									"gralpulc2", -130,		//° constant coef of upper alpha limit with mach
-									"gralpulc3", 20,		//° max upper alpha limit
-									"gralpulc4", 50,		//° min upper alpha limit
-									"gralpllc1", 37.5,		//linear coef of lower alpha limit with mach
-									"gralpllc2", -185,		//° constant coef of lower alpha limit with mach
-									"gralpllc3", 14,		//° max lower alpha limit
-									"gralpllc4", 40,		//° min lower alpha limit										
-									
+									//GRTLS guidance stuff									
 									
 									"msw1", 3.2, 		//mach to switch from grtls phase 4 to taem phase 1		//taem paper
 									"msw3", 7.0, 		//upper mach to enable phase 4 s-turns
@@ -1037,19 +1033,20 @@ FUNCTION tgcomp {
 	set taemg_internal["eas_cmd"] to 17.1865 * sqrt(taemg_internal["qbref"]).
 	
 	//my addition: alpha limits for taem and grtls
-	// modification: different profiles for taem and grtls
-	if (taemg_internal["iphase"] >= 4) {
-		set taemg_internal["alpul"] to midval(taemg_constants["gralpulc1"] * taemg_input["mach"] + taemg_constants["gralpulc2"], taemg_constants["gralpulc3"], taemg_constants["gralpulc4"]).
-		set taemg_internal["alpll"] to midval(taemg_constants["gralpllc1"] * taemg_input["mach"] + taemg_constants["gralpllc2"], taemg_constants["gralpllc3"], taemg_constants["gralpllc4"]).
-	} else {
+	if (taemg_input["mach"] < taemg_constants["alpulcm1"]) {
 		set taemg_internal["alpul"] to midval(taemg_constants["alpulc1"] * taemg_input["mach"] + taemg_constants["alpulc2"], taemg_constants["alpulc3"], taemg_constants["alpulc4"]).
-		if (taemg_input["mach"] < taemg_constants["alpllcm1"]) {
-			set taemg_internal["alpll"] to midval(taemg_constants["alpllc1"] * taemg_input["mach"] + taemg_constants["alpllc2"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
-		} else if (taemg_input["mach"] < taemg_constants["alpllcm2"]) {
-			set taemg_internal["alpll"] to midval(taemg_constants["alpllc3"] * taemg_input["mach"] + taemg_constants["alpllc4"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
-		} else {
-			set taemg_internal["alpll"] to midval(taemg_constants["alpllc5"] * taemg_input["mach"] + taemg_constants["alpllc6"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
-		}
+	} else {
+		set taemg_internal["alpul"] to midval(taemg_constants["alpulc5"] * taemg_input["mach"] + taemg_constants["alpulc6"], taemg_constants["alpulc3"], taemg_constants["alpulc4"]).
+	}
+	
+	if (taemg_input["mach"] < taemg_constants["alpllcm1"]) {
+		set taemg_internal["alpll"] to midval(taemg_constants["alpllc1"] * taemg_input["mach"] + taemg_constants["alpllc2"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
+	} else if (taemg_input["mach"] < taemg_constants["alpllcm2"]) {
+		set taemg_internal["alpll"] to midval(taemg_constants["alpllc3"] * taemg_input["mach"] + taemg_constants["alpllc4"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
+	} else if (taemg_input["mach"] < taemg_constants["alpllcm3"]) {
+		set taemg_internal["alpll"] to midval(taemg_constants["alpllc5"] * taemg_input["mach"] + taemg_constants["alpllc6"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
+	} else {
+		set taemg_internal["alpll"] to midval(taemg_constants["alpllc9"] * taemg_input["mach"] + taemg_constants["alpllc10"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
 	}
 
 }	

@@ -390,10 +390,11 @@ FUNCTION ops3_main_exec {
 									"ottstin", taemg_out["ohalrt"],
 									"mep", taemg_out["mep"],
 									"tgthdot", taemg_out["hdref"],
-									"tgtnz", dap:tgt_nz,
+									"xlfac", dap:aero:load / taemg_constants["g"], 
 									"spdbkcmd", taemg_out["dsbc_at"],
 									"alpll", taemg_out["alpll"],
 									"alpul", taemg_out["alpul"],
+									"mach", taemg_in["mach"],
 									"prog_pch", dap:prog_pitch,
 									"prog_roll", dap:prog_roll,
 									"prog_yaw", dap:prog_yaw

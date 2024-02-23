@@ -881,7 +881,7 @@ FUNCTION make_taem_vsit_GUI {
 	SET vsit_disp_horiz_sliderbox:STYLe:HEIGHT TO 1.
 	set vsit_disp_horiz_sliderbox:style:margin:h to 148.
 	
-	vsit_disp_leftdatabox:addspacing(128).
+	vsit_disp_leftdatabox:addspacing(180).
 	
 	GLOBAL horiz_slider_label IS vsit_disp_horiz_sliderbox:ADDLABEL("").
 	set horiz_slider_label:style:margin:h to 55.
@@ -1049,7 +1049,14 @@ function update_taem_vsit_disp {
 		}
 	}
 	
-	local orbiter_bug_pos is set_taem_vsit_disp_bug(v(taem_vsit_disp_x_convert(gui_data["rpred"]),taem_vsit_disp_y_convert(gui_data["eow"]), 0)).
+	local orbiter_bug_pos is LIST(0,0).
+	
+	if (gui_data["guid_id"] <= 26) AND (gui_data["guid_id"] >= 24) {
+		set orbiter_bug_pos to set_taem_vsit_disp_bug(v(grtls_disp_x_convert(gui_data["mach"]),grtls_disp_y_convert(gui_data["prog_pch"]), 0)).
+	} ELSE {
+		set orbiter_bug_pos to set_taem_vsit_disp_bug(v(taem_vsit_disp_x_convert(gui_data["rpred"]),taem_vsit_disp_y_convert(gui_data["eow"]), 0)).
+	}
+	
 	SET vsit_disp_orbiter:STYLE:margin:v to orbiter_bug_pos[1].
 	SET vsit_disp_orbiter:STYLE:margin:h to orbiter_bug_pos[0].
 	
@@ -1070,7 +1077,7 @@ function update_taem_vsit_disp {
 	set vsitrightdata2:text to "ALPHA LIMS  " + round(gui_data["alpll"], 0) + "  " +  round(gui_data["alpul"], 0).
 	set vsitrightdata3:text to "SPDBK CMD  " + round(gui_data["spdbkcmd"], 1).
 	set vsitrightdata4:text to "REF HDOT  " + round(gui_data["tgthdot"], 0).
-	set vsitrightdata5:text to "TGT NZ    " + round(gui_data["tgtnz"], 1).
+	set vsitrightdata5:text to "LOAD FAC    " + round(gui_data["xlfac"], 1) + " G".
 	
 	set vsitleftdata1:text to "R  " + round(gui_data["prog_roll"], 0).
 	set vsitleftdata2:text to "P  " + round(gui_data["prog_pch"], 0).
@@ -1106,9 +1113,9 @@ function taem_vsit_disp_x_convert {
 	local out is 0.
 	
 	if (taem_vsit_disp_counter=1) {
-		set out to (rpred / 75000 -  0.66235294117).
+		set out to (rpred / 93000 -  0.64235294117).
 	} else if (taem_vsit_disp_counter=2) {
-		set out to (rpred / 49720).
+		set out to (rpred / 60000).
 	}	
 	
 	return out * 380.
@@ -1121,12 +1128,26 @@ function taem_vsit_disp_y_convert {
 	local out is 0.
 	
 	if (taem_vsit_disp_counter=1) {
-		set out to (eow / 55000  - 0.38257142857).
+		set out to (eow / 75000  - 0.33757142857).
 	} else if (taem_vsit_disp_counter=2) {
-		set out to (eow / 36000 + 0.03).
+		set out to (eow / 45000 + 0.03).
 	}	
 	
 	return 50 + 300 * out.
+}
+
+function grtls_disp_x_convert {
+	parameter mach.
+	
+	local mach_ is clamp(mach, 3.2, 6.5).
+	
+	return 60.31746 * mach_ -140.95238. 
+}
+
+function grtls_disp_y_convert {
+	parameter alp.
+
+	return 3.33333 * alp + 190.
 }
 
 

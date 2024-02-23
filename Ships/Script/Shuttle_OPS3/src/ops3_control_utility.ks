@@ -138,7 +138,7 @@ FUNCTION dap_controller_factory {
 		
 		set this:nz_pitch_pid:Kp to 4.
 		set this:nz_pitch_pid:Ki to 0.
-		set this:nz_pitch_pid:Kd to 5.7.
+		set this:nz_pitch_pid:Kd to 5.2.
 	}).
 
 	this:add("set_flare_gains", {
@@ -150,7 +150,7 @@ FUNCTION dap_controller_factory {
 		
 		set this:nz_pitch_pid:Kp to 4.
 		set this:nz_pitch_pid:Ki to 0.
-		set this:nz_pitch_pid:Kd to 5.7.
+		set this:nz_pitch_pid:Kd to 5.2.
 	}).
 	
 	//should be consistent with taem nz limits
