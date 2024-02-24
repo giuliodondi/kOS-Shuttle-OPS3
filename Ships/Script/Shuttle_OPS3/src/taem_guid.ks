@@ -170,7 +170,7 @@ global taemg_constants is lexicon (
 									"alpulc1", 3.4637,		//linear coef of upper alpha limit with mach
 									"alpulc2", 9.2353,		//° constant coef of upper alpha limit with mach
 									"alpulc3", 13.7,		//° max upper alpha limit
-									"alpulc4", 50,		//° min upper alpha limit		
+									"alpulc4", 47,		//° min upper alpha limit		
 									"alpulc5", 37.5,		//linear coef of upper alpha limit with mach
 									"alpulc6", -130,			//° constant coef of upper alpha limit with mach								
 									"alpllcm1", 2.02,		// mach breakpoint for lower alpha limit vs mach 
