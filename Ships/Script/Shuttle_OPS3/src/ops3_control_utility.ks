@@ -261,7 +261,8 @@ FUNCTION dap_controller_factory {
 		this:measure_cur_state().
 		
 		IF (NOT this:wow) {
-			SET this:tgt_nz TO CLAMP(this:aero:nz + (this:update_hdot_pid()) / COS(this:prog_roll), this:nz_lims[0], this:nz_lims[1]).
+			local roll_corr is max(abs(COS(this:prog_roll)), 0.7071).
+			SET this:tgt_nz TO CLAMP(this:aero:nz + (this:update_hdot_pid() / roll_corr), this:nz_lims[0], this:nz_lims[1]).
 			SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
 		}
 		
