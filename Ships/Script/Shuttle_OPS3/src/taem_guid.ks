@@ -153,6 +153,7 @@ FUNCTION taemg_wrapper {
 					"al_end", taemg_internal["al_end"], 	//termination flag 
 					"freezetgt", taemg_internal["freezetgt"],	
 					"freezeapch", taemg_internal["freezeapch"],	
+					"al_resetpids", taemg_internal["al_resetpids"],	
 					"geardown", taemg_internal["geardown"],	
 					"brakeson", taemg_internal["brakeson"],
 					"dapoff", taemg_internal["dapoff"]
@@ -235,6 +236,7 @@ global taemg_constants is lexicon (
 									"eow_spt", list(530000, 120000, -100000), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
 									
 									"est_gain", 0.75,		//est gain 
+									"eow_rtan0", 130000,		//ft my addition
 
 									"g", 32.174,					//ft/s^2 earth gravity 
 									"gamma_coef1", 0.0007,			//deg/ft fpa error coef 
@@ -245,10 +247,10 @@ global taemg_constants is lexicon (
 									"gdhll", 0.1, 			//gdh lower limit 	//OTT
 									"gdhs", 0.9e-5,		//1/ft	slope for computing gdh 		//ott
 									"gdhul", 0.5,			//gdh upper lim 
-									"gehdll", 0.03, 		//g/fps  gain used in computing eownzll
-									"gehdul", 0.02, 		//g/fps  gain used in computing eownzul
-									"gell", 0.02, 		//1/s  gain used in computing eownzll
-									"geul", 0.02, 		//1/s  gain used in computing eownzul
+									"gehdll", 0.01, 		//g/fps  gain used in computing eownzll
+									"gehdul", 0.01, 		//g/fps  gain used in computing eownzul
+									"gell", 0.01, 		//1/s  gain used in computing eownzll
+									"geul", 0.01, 		//1/s  gain used in computing eownzul
 									"geownzc", 0.0005, 		//1/s  gain used to correct eow error
 									"gphi", 2.5, 		//heading err gain for phic 
 									"gr", 0.005,			//deg/ft gain on rcir in computing ha roll angle command 
@@ -256,7 +258,7 @@ global taemg_constants is lexicon (
 									"gsbe", 1.5, 			//deg/psf-s 	spdbk prop. gain on qberr 
 									"gsbi", 0.1, 		//deg/psf-s gain on qberr integral in computing spdbk cmd
 									"gy", 0.075,			//deg/ft gain on y in computing pfl roll angle cmd 
-									"gydot", 0.45,		//deg/fps gain on ydot on computing pfl roll angle cmd 
+									"gydot", 0.39,		//deg/fps gain on ydot on computing pfl roll angle cmd 
 									"h_error", 1000,		//ft altitude error bound	//deprecated
 									"hdherrcmax", 80,		//ft/s max herror correction to ref. hdot //my addition
 									"hderr_lag_k", 0.7,		//ft/s lag filter gain for hderr feedback	//my addition
@@ -279,7 +281,8 @@ global taemg_constants is lexicon (
 									"phavgul", 50, 			//deg upperl im for phavg 
 									"philm0", 50,			//deg sturn roll cmd lim
 									"philm1", 45,			//deg acq roll cmd lim 
-									"philm2", 60,			//deg heading alignment roll cmd lim 
+									//"philm2", 60,			//deg heading alignment roll cmd lim 		//OTT
+									"philm2", 45,			//deg heading alignment roll cmd lim 
 									"philm3", 35, 			//deg prefinal roll cmd lim 
 									//"philmsup", 30, 		//deg supersonic roll cmd lim 		//OTT
 									"philmsup", 35, 		//deg supersonic roll cmd lim 		//OTT
@@ -335,7 +338,8 @@ global taemg_constants is lexicon (
 									"eqlowu", 85000,			//ft upper eow of region for OVHD that qhat qbmxnz is lowered
 									//"eshfmx", 20000,			//ft max shift of en target at hac  	//OTT paper
 									"eshfmx", 10000,			//ft max shift of en target at hac 
-									"phils", -30,			//deg constant used to calculated philimit
+									"phils", -30,			//deg constant used to calculated philimit	//OTT
+									"phils", -12,			//deg constant used to calculated philimit
 									"pewrr", 0.52,			//partial of en with respect to range at r2max 
 									"pqbwrr", 0.006,			//psf / ft partial of qbar with respect to range with constraints of e=en and mach = phim 
 									"pshars", 270,				//deg  psha reset value 
@@ -378,20 +382,20 @@ global taemg_constants is lexicon (
 									
 									//A/L guidance stuff 
 									"tgsh", TAN(3.1),			//tangent of shallow gs
-									"xaim", 2100,			//ft aim point distance from threshold		
+									"xaim", 2300,			//ft aim point distance from threshold		
 									"hflare", 2000,			//ft transition to open loop flare
-									"hcloop", 1670,			//ft transition to closed loop flare
+									"hcloop", 1680,			//ft transition to closed loop flare
 									"rflare", 17000,		//ft flare circle radius
 									"hdecay", 13,			//ft exponential decay gain
-									"xbar_exp", 1000,		//ft defines the tangent point bw the flare circle and the shallow exponential
+									"xbar_exp", 1200,		//ft defines the tangent point bw the flare circle and the shallow exponential
 									"al_capt_herrlim", 50, 	//ft altitude error for steep gs capture
 									"al_capt_gammalim", 1, 	//deg fpa error for steep gs capture
 									"al_capt_interv_s", 3, 	//s time interval for errors to be within tolerance to toggle capture
 									"al_fnlfl_herrexpmin", 1, //ft alt delta on exponential decay for final flare toggle
 									"hgeardn", 300,			//ft alt at which to command gear down
-									"hfnlfl", 120,			//ft alt at which to force transition to final flare
-									"h0_hdfnlfl", 120,			//ft reference altitude for hdot exp decay during final flare
-									"max_hdfnlfl", 0.02,			//ft maximum hdot during finalflare
+									"hfnlfl", 150,			//ft alt at which to force transition to final flare
+									"h0_hdfnlfl", 150,			//ft reference altitude for hdot exp decay during final flare
+									"max_hdfnlfl", 0.002,			//ft maximum hdot during finalflare
 									"philm4", 15, 				//deg bank lim for flare and beyond
 									"alpcmd_rlt", -3.4,			//aoa command for slapdown and rollout
 									"phi_beta_gain", 2, 			//gain for yaw during rollout
@@ -422,8 +426,8 @@ global taemg_constants is lexicon (
 									"dhdnz", 0.002, 		//Gain on max sink rate difference to compute DGRNZ
 									"dhdll", -0.3, 			//Lower limit on DGRNZ
 									"dhdul", 0.2,			//Upper limit on DGRNZ
-									"grall", -1,			//° limit on dgralp
-									"gralu", 1,			//° limit on dgralp
+									"grall", -0.5,			//° limit on dgralp
+									"gralu", 0.5,			//° limit on dgralp
 									"sbq", 20,			//qbar to trigger speedbrake deflection
 									"del1sb", 3.125,		//speedbrake open rate
 									"grsbl1", 80.6,			//upper grtls speedbrake limit
@@ -472,6 +476,7 @@ global taemg_internal is lexicon(
 								"est", 0, 		//ft energy/weight at which the s-turn is terminated		//my addition from grtls 
 								"gdhfit", LIST(0, 0), 		// coefficients for hdot gain for nzc	//my addition
 								"gdh", 0, 		// hdot gain for nzc
+								"gelrtan", 0, 		// my addition - rtan gain for eow lims
 								"hdreqg", 0, 		//gain for herror in nzc
 								"hderr", 0, 		//ft hdot error
 								"herror", 0, 		//ft altitude error
@@ -538,6 +543,7 @@ global taemg_internal is lexicon(
 								"p_mode", 0,		//a/l mode flag 
 								"f_mode", 0,		//a/l flare mode flag during p_mode=3
 								"al_capt_count", 0,		//a/l iteration counter for capture
+								"al_resetpids", FALSE,	//flag to reset pids at exponential flare
 								"geardown", FALSE,	//flag to command gear down to outside executive
 								"brakeson", FALSE,	//flag to command brakes on to outside executive
 								"dapoff", FALSE,	//flag to command dap off to outside executive
@@ -1060,8 +1066,12 @@ FUNCTION tgtran {
 		set taemg_internal["itran"] to FALSE.
 	}
 	
+	//important to avoid resetting repeatedly
+	set taemg_internal["al_resetpids"] to FALSE. 
+	
 	//a/l transitions
 	if (taemg_internal["tg_end"]) {
+	
 		//capture steep gs when errors small enough
 		//CAREFUL: gamma is negative but gsstp is positive!
 		if (taemg_internal["p_mode"] = 1) {
@@ -1092,6 +1102,7 @@ FUNCTION tgtran {
 		}
 		
 		if (taemg_internal["p_mode"] = 4) {
+		
 			//toggle closed-loop flare
 			if (taemg_internal["f_mode"] = 1) and (taemg_input["h"] <= taemg_constants["hcloop"]) {
 				set taemg_internal["f_mode"] to 2.
@@ -1101,6 +1112,7 @@ FUNCTION tgtran {
 			//toggle exp decay 
 			if (taemg_internal["f_mode"] = 2) and (taemg_input["x"] >= taemg_internal["xexp"]) {
 				set taemg_internal["f_mode"] to 3.
+				set taemg_internal["al_resetpids"] to TRUE.
 				return.
 			}
 			
@@ -1108,6 +1120,7 @@ FUNCTION tgtran {
 			if (taemg_internal["f_mode"] = 3) {
 				if (abs(taemg_internal["herrexp"]) <= taemg_constants["al_fnlfl_herrexpmin"]) or (taemg_input["h"] <= taemg_constants["hfnlfl"]) {
 					set taemg_internal["p_mode"] to 5.
+					set taemg_internal["al_resetpids"] to TRUE.
 					//command gear down again to make sure
 					set taemg_internal["geardown"] to TRUE.
 					set taemg_internal["itran"] to TRUE.
@@ -1321,9 +1334,14 @@ FUNCTION tgnzc {
 	//my modification: transform energy nz filters into hdot error filters
 	//don't do energy filtering beyond acq phase
 	if (taemg_internal["iphase"] <= 1) {
+	
+		//my addition 
+		//gain to widen the eow limits as we approach hac entry 
+		SET taemg_internal["gelrtan"] TO MAX(1, taemg_constants["eow_rtan0"] / taemg_internal["rtan"]).
+		
 		//eow limits
-		SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnzu"].
-		SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnzl"].
+		SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnzu"] * taemg_internal["gelrtan"].
+		SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnzl"] * taemg_internal["gelrtan"].
 		
 		local eownzul is (taemg_constants["geul"] * taemg_internal["gdh"] * (taemg_internal["emax"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdul"] * taemg_internal["gdh"].
 		local eownzll is (taemg_constants["gell"] * taemg_internal["gdh"] * (taemg_internal["emin"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdll"] * taemg_internal["gdh"].

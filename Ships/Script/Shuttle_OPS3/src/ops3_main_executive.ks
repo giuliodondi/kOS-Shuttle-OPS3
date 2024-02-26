@@ -19,8 +19,6 @@ FUNCTION ops3_main_exec {
 	//tal abort flag 
 	LOCAL tal_flag IS is_tal_abort().
 	
-	print "grtls? " + grtls_flag + " tal? " + tal_flag at (0,15).
-	
 	//setup main gui and hud 
 	//after the td points but before anything that modifies the default button selections
 	make_main_ops3_gui().
@@ -347,6 +345,10 @@ FUNCTION ops3_main_exec {
 			
 			if (guid_id <= 21) and taemg_internal["freezeapch"] {
 				freeze_apch().
+			}
+			
+			if (taemg_internal["al_resetpids"]) {
+				dap:reset_steering().
 			}
 
 			if (NOT GEAR) and (taemg_out["geardown"]) {

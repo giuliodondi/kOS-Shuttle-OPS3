@@ -106,6 +106,9 @@ FUNCTION dap_controller_factory {
 		SET this:tgt_nz TO this:aero:nz.
 		SET this:steering_dir TO SHIP:FACINg.
 		SET this:wow TO FALSE.
+		
+		this:hdot_nz_pid:RESET.
+		this:nz_pitch_pid:RESET.
 	}).
 
 
@@ -133,7 +136,7 @@ FUNCTION dap_controller_factory {
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * 2.9.
+		set this:hdot_nz_pid:Kd to kc * 2.6.
 		
 		
 		set this:nz_pitch_pid:Kp to 3.5.
@@ -142,11 +145,11 @@ FUNCTION dap_controller_factory {
 	}).
 
 	this:add("set_flare_gains", {
-		local kc is 0.0047.
+		local kc is 0.0048.
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * 2.05.
+		set this:hdot_nz_pid:Kd to kc * 1.9.
 		
 		set this:nz_pitch_pid:Kp to 4.
 		set this:nz_pitch_pid:Ki to 0.
@@ -205,7 +208,7 @@ FUNCTION dap_controller_factory {
 		LOCAL deltapitch IS time_gain * (SHIP:CONTROL:PILOTPITCH - SHIP:CONTROL:PILOTPITCHTRIM).
 		LOCAL deltayaw IS yawgain * (SHIP:CONTROL:PILOTYAW - SHIP:CONTROL:PILOTYAWTRIM).
 		
-		LOCAL cosroll IS MAX(ABS(COS(this:steer_roll)), 0.5).
+		LOCAL cosroll IS MAX(ABS(COS(this:steer_roll)), 0.766).
 		
 		IF (this:wow) {
 			SET this:steer_pitch TO this:prog_pitch.
@@ -261,7 +264,7 @@ FUNCTION dap_controller_factory {
 		this:measure_cur_state().
 		
 		IF (NOT this:wow) {
-			local roll_corr is max(abs(COS(this:prog_roll)), 0.7071).
+			local roll_corr is max(abs(COS(this:prog_roll)), 0.6).
 			SET this:tgt_nz TO CLAMP(this:aero:nz + (this:update_hdot_pid() / roll_corr), this:nz_lims[0], this:nz_lims[1]).
 			SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
 		}
