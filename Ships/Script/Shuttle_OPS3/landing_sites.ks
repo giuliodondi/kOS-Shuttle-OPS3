@@ -59,7 +59,7 @@ GLOBAL ldgsiteslex IS LEXICON(
 						),
 						"Rota",LEXICON(
 							"position",LATLNG(36.6354140,-6.3257163),
-							"elevation",92,
+							"elevation",45,
 							"length",5028,
 							"heading",276.78
 							
