@@ -261,15 +261,28 @@ FUNCTION get_closest_site {
 
 	LOCAL pos IS SHIP:GEOPOSITION.
 
+	local rwylist is list().
+	
+	FOR s in sites_lex:KEYS {
+		LOCAL site IS sites_lex[s].
+		
+		IF (site:ISTYPE("LEXICON")) {
+			rwylist:add(site).
+		} ELSE IF (site:ISTYPE("LIST")) {
+			for sr in site {
+				rwylist:add(sr).
+			}
+		}
+	}
+
 	LOCAL min_dist IS 0.
 	LOCAL closest_site IS 0.
 	LOCAL closest_site_idx IS 0.
 	LOCAL k IS 0.
 
-	FOR s in sites_lex:KEYS {
+	FOR rw in rwylist {
 		
-		LOCAL site IS sites_lex[s].
-		LOCAL sitepos IS site["position"].
+		LOCAL sitepos IS rw["position"].
 		
 		LOCAL sitedist IS downrangedist(pos,sitepos).
 
@@ -286,6 +299,8 @@ FUNCTION get_closest_site {
 		}
 		SET k TO k + 1.
 	}
+	
+	
 	RETURN LIST(closest_site_idx,closest_site).
 }
 
