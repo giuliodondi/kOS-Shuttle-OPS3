@@ -282,7 +282,7 @@ global taemg_constants is lexicon (
 									"philm0", 50,			//deg sturn roll cmd lim
 									"philm1", 45,			//deg acq roll cmd lim 
 									//"philm2", 60,			//deg heading alignment roll cmd lim 		//OTT
-									"philm2", 45,			//deg heading alignment roll cmd lim 
+									"philm2", 48,			//deg heading alignment roll cmd lim 
 									"philm3", 35, 			//deg prefinal roll cmd lim 
 									//"philmsup", 30, 		//deg supersonic roll cmd lim 		//OTT
 									"philmsup", 35, 		//deg supersonic roll cmd lim 		//OTT
