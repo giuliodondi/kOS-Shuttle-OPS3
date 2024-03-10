@@ -98,7 +98,6 @@ FUNCTION glim_stg_time {
 	ELSE {
 		SET tt TO maxtime.
 	}
-	SET stg_lex["throt_mult"] TO glim*g0/stg_lex["engines"]["thrust"].
 	
 	RETURN tt.								
 }
@@ -358,13 +357,19 @@ FUNCTION aimAndRoll {
 //converts between absolute throttle value (percentage of max thrust)
 //and throttle percentage relative to the range min-max which KSP uses
 FUNCTION throtteValueConverter {
-	PARAMETER abs_throt.
+	PARAMETER throt_val.
 	PARAMETER minthrot IS 0.
+	PARAMETER inverse is FALSE.
 
-	RETURN CLAMP((abs_throt - minthrot)/(1 - minthrot),0.005,1).
+	if (inverse) {
+		RETURN CLAMP(minthrot + (1 - minthrot) * throt_val, 0, 1).
+	} else {
+		RETURN CLAMP((throt_val - minthrot)/(1 - minthrot), 0.005, 1).
+	}
 }
 
 //given current vehicle fore vector, computes where the thrust is pointing
 FUNCTION thrust_vec {
-	RETURN SHIP:FACING:VECTOR:NORMALIZED - thrustrot(SHIP:FACING:FOREVECTOR,SHIP:FACING:TOPVECTOR).
+	PARAMETER running_thrust is TRUE.
+	RETURN SHIP:FACING:VECTOR:NORMALIZED - thrustrot(SHIP:FACING:FOREVECTOR,SHIP:FACING:TOPVECTOR, running_thrust).
 }
