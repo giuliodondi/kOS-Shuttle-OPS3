@@ -209,6 +209,7 @@ global taemg_constants is lexicon (
 									//"dsbsup", 98.6,	//deg fixed spdbk deflection at supersonic 
 									"dsbil", 20,	//deg min spdbk deflection 
 									"dsbnom", 65,		//deg nominal spdbk deflection
+									"dsbdtg", 30,		//deg/s spdbk deflection rate - my addition
 									"dshply", 4000,		//ft delta range value in shplyk  	//deprecated
 									"dtg", 0.96,		//s taem guid cycle interval
 									"dtr", 0.0174533, 		//rad/deg deg2rad
@@ -362,7 +363,8 @@ global taemg_constants is lexicon (
 									"rf0", 14000,				//ft initial hac spiral radius on final 
 									"dnzcdl", 0.2,				//g/sec nzc rate lim 
 									"drfk", -3,					//rf adjust gain (-0.8/tan 15°)
-									"dsblls", 650,				//deg constant for dsbcll
+									//"dsblls", 650,				//deg constant for dsbcll
+									"dsblls", 30,				//deg constant for dsbcll
 									"dsbuls", -336,				//deg constant for dsbcul
 									"emohc1", LISt(0, -3894, -3894), 		//ft constant eow used ot compute emnoh
 									"emohc2", LISt(0, 0.51464, 0.51464), 		//slope of emnoh with range 
@@ -399,6 +401,7 @@ global taemg_constants is lexicon (
 									"h0_hdfnlfl", 150,			//ft reference altitude for hdot exp decay during final flare
 									"max_hdfnlfl", 0.002,			//ft maximum hdot during finalflare
 									"philm4", 15, 				//deg bank lim for flare and beyond
+									"dsbwow", 45,				// deg speedbrake cmd if wow (during rollout)
 									"alpcmd_rlt", -3.4,			//aoa command for slapdown and rollout
 									"phi_beta_gain", 2, 			//gain for yaw during rollout
 									"surfv_h_brakes", 140,		//ft/s trigger for braking outside executive
@@ -1296,7 +1299,9 @@ FUNCTION tgnzc {
 
 	//do not correct for altitude error after flare
 	if (taemg_internal["p_mode"] < 5) {
-		set taemg_internal["gdh"] to taemg_constants["gdhfl"].
+		if (taemg_internal["p_mode"] >= 4)
+			set taemg_internal["gdh"] to taemg_constants["gdhfl"].
+		}
 		set hderrcn to hderrcn + midval(taemg_internal["gdh"] * taemg_constants["hdreqg"] * taemg_internal["herror"], -taemg_constants["hdherrcmax"], taemg_constants["hdherrcmax"]) .
 	}
 
@@ -1393,8 +1398,8 @@ FUNCTION tgsbc {
 	PARAMETER taemg_input.	
 	
 	//mach limits for speedbrake - modified
-	local dsbcll is midval(taemg_constants["dsbsup"] + taemg_constants["dsblls"] * (taemg_input["mach"] - taemg_constants["dsbcm"]), 0, taemg_constants["dsbsup"]).
-	local dsbcul is midval(taemg_constants["dsbsup"] + taemg_constants["dsbuls"] * (taemg_input["mach"] - taemg_constants["dsbcm"]), taemg_constants["dsbsup"], taemg_constants["dsbsup"]).
+	local dsbcll is midval(0 + taemg_constants["dsblls"] * (taemg_input["mach"] - taemg_constants["dsbcm"]), 0, taemg_constants["dsbsup"]).
+	local dsbcul is taemg_constants["dsbsup"].
 	
 	local dsbc is 0.
 	
@@ -1426,7 +1431,15 @@ FUNCTION tgsbc {
 		set dsbc to dsbcll.
 	}
 		
+	// wow speedbrake command
+	if (taemg_input["wow"]) {
+		set dsbc to taemg_constants["dsbwow"].
+	}
 
+	// my addition - limit deflection rate 
+	local dsbc_delta is dsbc - taemg_internal["dsbc_at"].
+	set dsbc_delta to SIGN(dsbc_delta) * min(abs(dsbc_delta), taemg_constants["dsbdtg"] * taemg_input["dtg"]).
+	set dsbc to taemg_internal["dsbc_at"] + dsbc_delta.
 	
 	set taemg_internal["dsbc_at"] to midval(dsbc, dsbcll, dsbcul).
 
