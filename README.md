@@ -331,15 +331,22 @@ Remarks:
 Glide-RTLS is the atmospheric guidance mode used during an RTLS abort after MECO and External Tank separation.  
 The powered guidance part is taken care of by my OPS1 ascent program, it will automatically transition to OPS3 and GRTLS guidance at the right moment.  
 
-The orbiter will be around 70km of altitude and travelling far too slowly to glide in a controlled manner, and so it will start falling very soon. Things happen fast in a GRTLS.  
-As soon as the program engages you must enable the DAP (AUTO or CSS) and auto flaps and spoilers.  
-The phases of GRTLs are:  
-
-- **Alpha-recovery (ALPREC)**,
-- **NZ-hold (NZHOLD)**,
-- **Alpha-transition (ALPTRN)**,
+The orbiter will be around 70km of altitude and travelling far too slowly to glide in a controlled manner, and so it will start falling very soon. Things happen fast in a GRTLS. As soon as the program engages you must enable the DAP (AUTO or CSS) and auto flaps and spoilers.  
+The display during GRTLS is VERT SIT 1 like for early TAEM, but you only focus on the top left part of the monitor, disregard the energy profile lines.
 
 <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/vsit_grtls.png" width="350">
+
+- The mini plot in the top-left corner is Pitch vs. Mach number. THe bug will move to the left as you slow down. It is designed to give a reference to monitor what guidance is trying to do or if you fly CSS
+- The solid zig-zagged line is the lower limit, you should always stay above this line
+- The dashed line is the pitch profile during Alpha Transition, you should see the bug settle on this line eventually.
+
+The phases of GRTLs are:  
+
+- **Alpha-recovery (ALPREC)**, the Orbiter will maintain 0 bank and 45° Aoa as it plunges in the atmosphere The vertical load factor (NZ) will start climbing as the wings generate lift, above a threshold the program will transition to NZHOLD. The orbiter shoudl climb abobe the solid pitch limit line.
+- **NZ-hold (NZHOLD)**, the program will keep wings level and modulate the Orbiter's pitch to maintain a target NZ. The target value is a canned profile plus corrections to keep the total load factor (lift plus drag) within the structural limit of 2.5G. You will see the orbiter bug descend a little as pitch is modulated, and the total load factor value possibly turn yellow. The program transitions to ALPTRN when the vertical speed rises above a threshold
+- **Alpha-transition (ALPTRN)**, the pitch is lowered in a controlled manner from whatever value it had at the end of NZHOLD to a profile of Mach. Once the pitch profile is established, the program will start banking for lateral guidance. S-turns might be performed if energy is very high. The orbiter pitch bug 
+
+
 
 # Approach & Landing (A/L) guidance
 
