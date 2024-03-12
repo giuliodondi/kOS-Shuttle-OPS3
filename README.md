@@ -2,7 +2,7 @@
 
 # Kerbal Space Program Space Shuttle OPS3 Entry Guidance
 
-## updated February 2024
+## updated March 2024
 
 <p align="center">
   <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/ops3_cover.png" width="700" >
@@ -344,7 +344,11 @@ The phases of GRTLs are:
 
 - **Alpha-recovery (ALPREC)**, the Orbiter will maintain 0 bank and 45° Aoa as it plunges in the atmosphere The vertical load factor (NZ) will start climbing as the wings generate lift, above a threshold the program will transition to NZHOLD. The orbiter shoudl climb abobe the solid pitch limit line.
 - **NZ-hold (NZHOLD)**, the program will keep wings level and modulate the Orbiter's pitch to maintain a target NZ. The target value is a canned profile plus corrections to keep the total load factor (lift plus drag) within the structural limit of 2.5G. You will see the orbiter bug descend a little as pitch is modulated, and the total load factor value possibly turn yellow. The program transitions to ALPTRN when the vertical speed rises above a threshold
-- **Alpha-transition (ALPTRN)**, the pitch is lowered in a controlled manner from whatever value it had at the end of NZHOLD to a profile of Mach. Once the pitch profile is established, the program will start banking for lateral guidance. S-turns might be performed if energy is very high. The orbiter pitch bug 
+- **Alpha-transition (ALPTRN)**, the pitch is lowered in a controlled manner from whatever value it had at the end of NZHOLD to a profile of Mach. Once the pitch profile is established, the program will start banking for lateral guidance. S-turns might be performed if energy is very high. The orbiter pitch bug will descend gently and should settle on the dashed line.
+
+At Mach 3.2 the program will transition to regular TAEM guidance, either ACQ or STURN phase depending on the energy state.
+
+- The energy state at the end of GTLS depends on the Range-Velocity line targeted by Powered RTLS guidance and also depends on payload, since a heavier orbiter is less affected by drag. At times the orbiter might be in a low energy condition at TAEM interface, with the **OTT ST IN** message suggesting a downmode to a Straight-In approach
 
 
 
