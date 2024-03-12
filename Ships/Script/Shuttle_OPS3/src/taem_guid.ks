@@ -380,7 +380,7 @@ global taemg_constants is lexicon (
 									"philmc", 100, 				//deg bank lim for large bank command 
 									"qbmxs1", -400,				//psf slope of qbmxnz with mach < qbm1 
 									"hmin3", 7000,				//min altitude for prefinal
-									"nztotallim", 2.5,				// my addition from the taem paper
+									"nztotallim", 2.4,				// my addition from the taem paper - lowered for grtls margins
 									"rtanmin", 328,				//ft my own addition, empirical
 									
 									//A/L guidance stuff 
@@ -425,7 +425,7 @@ global taemg_constants is lexicon (
 									"smnzc4", 0.023,		//gs constant nz value for computing smnz2
 									"smnz2l", -0.05,
 									"grnzc1", 1.2,		//gs desired normal accel for nz hold 
-									"nzxlfacg", 0.85,	//gain for xlfac feedback into nzc
+									"nzxlfacg", 1,	//gain for xlfac feedback into nzc
 									//"alprec", 50,		//° aoa during alpha recovery	//taem paper
 									"alprec", 45,		//° aoa during alpha recovery
 									"hdnom", -1558, 	//Nominal maximum sink rate during alpha recovery
@@ -578,7 +578,7 @@ global taemg_internal is lexicon(
 								"igra", 0,			//alpha transition aoa index
 								"dsbc_at1", 0,		//incremented speedbrake command
 								"istp4", 1,		//phase 4 s-turn variable, will match phase at taem transition 
-								
+								"xlfmax", 0,	//g max load factor reached during grtls
 								
 								"dummy", 0			//can't be arsed to add commas all the time
 ).
@@ -1568,6 +1568,10 @@ function grtrn {
 function grnzc {
 	PARAMETER taemg_input.	
 	
+	if (taemg_input["xlfac"] > taemg_internal["xlfmax"]) {
+		set taemg_internal["xlfmax"] to taemg_input["xlfac"].
+	}
+	
 	//correct coefficients for different iteration time 
 	set taemg_internal["smnz1"] to taemg_internal["smnz1"] * (taemg_constants["smnzc3"]^taemg_input["dtg"]).
 	set taemg_internal["smnz2"] to MAX(taemg_internal["smnz2"] - (taemg_constants["smnzc4"] * taemg_input["dtg"]), taemg_constants["smnz2l"]).
@@ -1576,8 +1580,8 @@ function grnzc {
 	//use the nzc profile directly without adding 1
 	set taemg_internal["nzc"] to taemg_constants["grnzc1"] - taemg_internal["smnz1"] - taemg_internal["smnz2"] + taemg_internal["dgrnz"].
 	
-	//my addition: use the total load factor to correct target nzc
-	set taemg_internal["nzc"] to taemg_internal["nzc"] - max(0, taemg_constants["nzxlfacg"] * (taemg_input["xlfac"] - taemg_constants["nztotallim"])).
+	//my addition: use the max total load factor to correct target nzc
+	set taemg_internal["nzc"] to taemg_internal["nzc"] - max(0, taemg_constants["nzxlfacg"] * (taemg_internal["xlfmax"] - taemg_constants["nztotallim"])).
 	
 	set taemg_internal["nztotal"] to midval(taemg_internal["nzc"], -taemg_constants["nztotallim"], taemg_constants["nztotallim"]).
 }
