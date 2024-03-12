@@ -317,8 +317,9 @@ Finally, this is the Vert Sit display in a very low energy situation:
 Remarks:
 - The moment S-turns are disabled is also the moment the program will not allow you to change runway or approach anymore. You will notice because all GUI button selectors become frozen
 - The auto speedbrake logic is as follows:
-  - constant above Mach 1.5 or during S-turns
+  - the maximum constant 65° above Mach 1.5
   - A function of the error with respect to a target Dynamic Pressure profile (i.e. velocity corrected for air density)
+  - max open above the S-turn energy line and min open (or closed) below the MEP energy line
 - You can use manual speedbrakes to add or subtract drag if you're way off the energy profile
 - Tips for flying with DAP set to CSS:
   -  you should make small corrections especially in pitch, as it's very easy to overshoot the HUD command
