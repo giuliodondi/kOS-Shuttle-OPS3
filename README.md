@@ -328,7 +328,18 @@ Remarks:
 
 # Glide-RTLS abort guidance
 
-WIP
+Glide-RTLS is the atmospheric guidance mode used during an RTLS abort after MECO and External Tank separation.  
+The powered guidance part is taken care of by my OPS1 ascent program, it will automatically transition to OPS3 and GRTLS guidance at the right moment.  
+
+The orbiter will be around 70km of altitude and travelling far too slowly to glide in a controlled manner, and so it will start falling very soon. Things happen fast in a GRTLS.  
+As soon as the program engages you must enable the DAP (AUTO or CSS) and auto flaps and spoilers.  
+The phases of GRTLs are:  
+
+- **Alpha-recovery (ALPREC)**,
+- **NZ-hold (NZHOLD)**,
+- **Alpha-transition (ALPTRN)**,
+
+<img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/vsit_grtls.png" width="350">
 
 # Approach & Landing (A/L) guidance
 
