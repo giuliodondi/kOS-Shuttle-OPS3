@@ -75,7 +75,11 @@ FUNCTION dap_controller_factory {
 		SET this:aero:nz to aeroacc["lift"] / g0.
 		SET this:aero:drag to aeroacc["drag"]*mt2ft.
 		SET this:aero:load to aeroacc["load"]:MAG*mt2ft.
-		SET this:aero:lod to aeroacc["lift"]/aeroacc["drag"].
+		if (this:aero:drag > 0) {
+			SET this:aero:lod to aeroacc["lift"]/aeroacc["drag"].
+		} else {
+			SET this:aero:lod to 0.
+		}
 
 		SET this:wow to measure_wow().
 	}).
@@ -131,6 +135,8 @@ FUNCTION dap_controller_factory {
 		set this:nz_pitch_pid:Kd to 2.8.
 	}).
 	
+	this:add("nz_ref_mass", 100).
+	
 	this:add("set_taem_gains", {
 		local kc is 0.004.
 
@@ -138,10 +144,11 @@ FUNCTION dap_controller_factory {
 		set this:hdot_nz_pid:Ki to 0.
 		set this:hdot_nz_pid:Kd to kc * 2.6.
 		
+		local nz_mass_gain IS SHIP:MASS / this:nz_ref_mass.
 		
-		set this:nz_pitch_pid:Kp to 3.5.
+		set this:nz_pitch_pid:Kp to nz_mass_gain * 3.3.
 		set this:nz_pitch_pid:Ki to 0.
-		set this:nz_pitch_pid:Kd to 5.0.
+		set this:nz_pitch_pid:Kd to nz_mass_gain * 4.2.
 	}).
 
 	this:add("set_flare_gains", {
@@ -149,11 +156,13 @@ FUNCTION dap_controller_factory {
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * 1.9.
+		set this:hdot_nz_pid:Kd to kc * 1.8.
 		
-		set this:nz_pitch_pid:Kp to 4.
+		local nz_mass_gain IS SHIP:MASS / this:nz_ref_mass.
+		
+		set this:nz_pitch_pid:Kp to nz_mass_gain * 3.3.
 		set this:nz_pitch_pid:Ki to 0.
-		set this:nz_pitch_pid:Kd to 5.2.
+		set this:nz_pitch_pid:Kd to nz_mass_gain * 4.0.
 	}).
 	
 	//should be consistent with taem nz limits
@@ -389,9 +398,17 @@ FUNCTION aerosurfaces_control_factory {
 			)
 	).
 	
+
+	local ruddermods is SHIP:PARTSDUBBED("ShuttleTailControl")[0]:MODULESNAMED("ModuleControlSurface").
+	
+	if (ruddermods:length < 2) {
+		print "Error, not enough rudder control modules found" at (0,20).
+		return 1/0.
+	}
+	
 	this:ADD("rudders",LIST(
-						SHIP:PARTSDUBBED("ShuttleTailControl")[0]:MODULESNAMED("ModuleControlSurface")[0],
-						SHIP:PARTSDUBBED("ShuttleTailControl")[0]:MODULESNAMED("ModuleControlSurface")[1]
+							 ruddermods[0],
+							 ruddermods[1]
 					)
 	).
 	

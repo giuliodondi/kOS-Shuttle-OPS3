@@ -261,7 +261,7 @@ global taemg_constants is lexicon (
 									"gydot", 0.39,		//deg/fps gain on ydot on computing pfl roll angle cmd 
 									"h_error", 1000,		//ft altitude error bound	//deprecated
 									"hdherrcmax", 80,		//ft/s max herror correction to ref. hdot //my addition
-									"hderr_lag_k", 0.7,		//ft/s lag filter gain for hderr feedback	//my addition
+									"hderr_lag_k", 0.5,		//ft/s lag filter gain for hderr feedback	//my addition
 									"h_ref1", 8000,			//ft alt to force transition to a/l 		//modified from OTT
 									"h_ref2", 5000,			//ft alt to force transition to ogs		//modified from OTT
 									"hali", LIST(0, 10018, 10018),		//ft altitude at a/l for reference profiles
@@ -366,6 +366,7 @@ global taemg_constants is lexicon (
 									"dsbuls", -336,				//deg constant for dsbcul
 									"emohc1", LISt(0, -3894, -3894), 		//ft constant eow used ot compute emnoh
 									"emohc2", LISt(0, 0.51464, 0.51464), 		//slope of emnoh with range 
+									"emepdelemoh", 15000,					//ft delta for emoh wrt emep - my addition
 									//"enbias", 0, 					//ft eow bias for s-turn off 		//OTT
 									//"enbias", 10000, 					//ft eow bias for s-turn off 		//deprecated
 									"eqlowl", 60000,			//ft lower eow of region for ovhd that wbmxnz is lowered 
@@ -384,10 +385,11 @@ global taemg_constants is lexicon (
 									"tgsh", TAN(3.1),			//tangent of shallow gs
 									"xaim", 2300,			//ft aim point distance from threshold		
 									"hflare", 2000,			//ft transition to open loop flare
-									"hcloop", 1680,			//ft transition to closed loop flare
+									"hcloop", 1750,			//ft transition to closed loop flare
 									"rflare", 17000,		//ft flare circle radius
 									"hdecay", 13,			//ft exponential decay gain
 									"xbar_exp", 1200,		//ft defines the tangent point bw the flare circle and the shallow exponential
+									"gdhfl", 0.2,			// my additio - hdot gain during flare
 									"al_capt_herrlim", 50, 	//ft altitude error for steep gs capture
 									"al_capt_gammalim", 1, 	//deg fpa error for steep gs capture
 									"al_capt_interv_s", 3, 	//s time interval for errors to be within tolerance to toggle capture
@@ -420,6 +422,7 @@ global taemg_constants is lexicon (
 									"smnzc4", 0.023,		//gs constant nz value for computing smnz2
 									"smnz2l", -0.05,
 									"grnzc1", 1.2,		//gs desired normal accel for nz hold 
+									"nzxlfacg", 0.85,	//gain for xlfac feedback into nzc
 									//"alprec", 50,		//° aoa during alpha recovery	//taem paper
 									"alprec", 45,		//° aoa during alpha recovery
 									"hdnom", -1558, 	//Nominal maximum sink rate during alpha recovery
@@ -675,6 +678,14 @@ FUNCTION taemg_reset {
 FUNCTION tginit {
 	PARAMETER taemg_input.
 	
+	
+	//moved up from tgxhac bc there's no reason to do this repeatedly
+	if (taemg_input["weight"] > taemg_constants["wt_gs1"]) {
+		set taemg_internal["igs"] to 2.
+	} else {
+		set taemg_internal["igs"] to 1.
+	}
+	
 	//a/l stuff first because now we calculate xa
 	//glideslopes
 	set taemg_internal["tgsh"] to taemg_constants["tgsh"].
@@ -737,13 +748,6 @@ FUNCTION tginit {
 	SET taemg_internal["qbarf"] TO taemg_input["qbar"].
 	
 	SET taemg_internal["qbd"] TO 0.
-	
-	//moved up from tgxhac bc there's no reason to do this repeatedly
-	if (taemg_input["weight"] > taemg_constants["wt_gs1"]) {
-		set taemg_internal["igs"] to 2.
-	} else {
-		set taemg_internal["igs"] to 1.
-	}
 	
 	set taemg_internal["xftc"] to taemg_internal["xa"] - taemg_constants["hftc"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
 	set taemg_internal["xali"] to taemg_internal["xa"] - taemg_constants["hali"][taemg_internal["igs"]] / taemg_constants["tggs"][taemg_internal["igs"]].
@@ -942,6 +946,10 @@ FUNCTION tgcomp {
 	SET taemg_internal["est"] TO taemg_internal["en"] + taemg_constants["est_gain"] * (taemg_internal["es"] - taemg_internal["en"]).
 	
 	set taemg_internal["eowerror"] to taemg_internal["eow"] - taemg_internal["en"].
+	
+	//my modification - emoh is emep biased
+	//set taemg_internal["emoh"] to  taemg_constants["emohc1"][taemg_internal["igs"]] + taemg_constants["emohc2"][taemg_internal["igs"]] * taemg_internal["drpred"].
+	set taemg_internal["emoh"] to taemg_internal["emep"] - taemg_constants["emepdelemoh"].
 	
 	//calculate ref altitude profile
 	//calculate tangent of ref. fpa
@@ -1245,7 +1253,7 @@ FUNCTION tgtran {
 			//I think these two belong outside the s-turn block
 			
 			//suggest downmoding to straight-in
-			set taemg_internal["emoh"] to  taemg_constants["emohc1"][taemg_internal["igs"]] + taemg_constants["emohc2"][taemg_internal["igs"]] * taemg_internal["drpred"].
+			//modification: moved emoh calculation to tgcomp
 			if (taemg_internal["eow"] < taemg_internal["emoh"]) and (taemg_internal["psha"] > taemg_constants["psohal"]) and (taemg_internal["rpred"] > taemg_constants["rmoh"]) {
 				set taemg_internal["ohalrt"] to TRUE.
 			}
@@ -1287,7 +1295,8 @@ FUNCTION tgnzc {
 	local hderrcn is taemg_internal["hderr"].
 
 	//do not correct for altitude error after flare
-	if (taemg_internal["p_mode"] < 4) {
+	if (taemg_internal["p_mode"] < 5) {
+		set taemg_internal["gdh"] to taemg_constants["gdhfl"].
 		set hderrcn to hderrcn + midval(taemg_internal["gdh"] * taemg_constants["hdreqg"] * taemg_internal["herror"], -taemg_constants["hdherrcmax"], taemg_constants["hdherrcmax"]) .
 	}
 
@@ -1551,8 +1560,12 @@ function grnzc {
 	set taemg_internal["smnz2"] to MAX(taemg_internal["smnz2"] - (taemg_constants["smnzc4"] * taemg_input["dtg"]), taemg_constants["smnz2l"]).
 	
 	// constant value minus linear and exponential terms that ramp down with time 
-	//use the nzc prodile directly without adding 1
+	//use the nzc profile directly without adding 1
 	set taemg_internal["nzc"] to taemg_constants["grnzc1"] - taemg_internal["smnz1"] - taemg_internal["smnz2"] + taemg_internal["dgrnz"].
+	
+	//my addition: use the total load factor to correct target nzc
+	set taemg_internal["nzc"] to taemg_internal["nzc"] - max(0, taemg_constants["nzxlfacg"] * (taemg_input["xlfac"] - taemg_constants["nztotallim"])).
+	
 	set taemg_internal["nztotal"] to midval(taemg_internal["nzc"], -taemg_constants["nztotallim"], taemg_constants["nztotallim"]).
 }
 
