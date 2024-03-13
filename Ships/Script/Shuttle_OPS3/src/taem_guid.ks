@@ -396,14 +396,14 @@ global taemg_constants is lexicon (
 									"al_capt_gammalim", 1, 	//deg fpa error for steep gs capture
 									"al_capt_interv_s", 3, 	//s time interval for errors to be within tolerance to toggle capture
 									"al_fnlfl_herrexpmin", 1, //ft alt delta on exponential decay for final flare toggle
-									"hgeardn", 300,			//ft alt at which to command gear down
+									"hgeardn", 250,			//ft alt at which to command gear down
 									"hfnlfl", 150,			//ft alt at which to force transition to final flare
 									"h0_hdfnlfl", 150,			//ft reference altitude for hdot exp decay during final flare
 									"max_hdfnlfl", 0.002,			//ft maximum hdot during finalflare
 									"philm4", 15, 				//deg bank lim for flare and beyond
-									"dsbwow", 45,				// deg speedbrake cmd if wow (during rollout)
+									"dsbwow", 65,				// deg speedbrake cmd if wow (during rollout)
 									"alpcmd_rlt", -3.4,			//aoa command for slapdown and rollout
-									"phi_beta_gain", 2, 			//gain for yaw during rollout
+									"phi_beta_gain", 1.5, 			//gain for yaw during rollout
 									"surfv_h_brakes", 140,		//ft/s trigger for braking outside executive
 									"surfv_h_dapoff", 80,		//ft/s trigger for dap off outside executive
 									"surfv_h_exit", 15,		//ft/s trigger for termination
@@ -1299,7 +1299,7 @@ FUNCTION tgnzc {
 
 	//do not correct for altitude error after flare
 	if (taemg_internal["p_mode"] < 5) {
-		if (taemg_internal["p_mode"] >= 4)
+		if (taemg_internal["p_mode"] >= 4) {
 			set taemg_internal["gdh"] to taemg_constants["gdhfl"].
 		}
 		set hderrcn to hderrcn + midval(taemg_internal["gdh"] * taemg_constants["hdreqg"] * taemg_internal["herror"], -taemg_constants["hdherrcmax"], taemg_constants["hdherrcmax"]) .
