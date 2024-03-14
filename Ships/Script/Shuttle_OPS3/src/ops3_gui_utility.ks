@@ -1365,7 +1365,7 @@ FUNCTION make_hud_gui {
 
 
 	GLOBAL spdbk_slider_box IS bottom_box:ADDHLAYOUT().
-	GLOBAL spdbk_slider is spdbk_slider_box:addhslider(0,0.01,1).
+	GLOBAL spdbk_slider is spdbk_slider_box:addhslider(0,-0.01,1).
 	SET spdbk_slider:style:vstretch to false.
 	SET spdbk_slider:style:hstretch to false.
 	SET spdbk_slider:STYLE:WIDTH TO 110.
