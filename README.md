@@ -9,7 +9,9 @@
 </p>
 
 This is the kOS implementation of the real-world Shuttle Entry, TAEM and Approach guidance, also including GRTLS guidance.  
-Only designed for use in KSP with full RSS - Realism Overhaul andm y fork of Space Shuttle System
+Only designed for use in KSP with full RSS - Realism Overhaul and my fork of Space Shuttle System.
+
+**Demonstration video available at https://www.youtube.com/watch?v=-VJaHGSrF64**
 
 ## References
 - [MCC level C formulation requirements. Entry guidance and entry autopilot, optional TAEM targeting](https://ntrs.nasa.gov/api/citations/19800016873/downloads/19800016873.pdf)
