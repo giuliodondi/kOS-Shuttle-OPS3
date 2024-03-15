@@ -162,7 +162,7 @@ FUNCTION dap_controller_factory {
 		
 		set this:nz_pitch_pid:Kp to nz_mass_gain * 3.3.
 		set this:nz_pitch_pid:Ki to 0.
-		set this:nz_pitch_pid:Kd to nz_mass_gain * 4.0.
+		set this:nz_pitch_pid:Kd to nz_mass_gain * 3.8.
 	}).
 	
 	//should be consistent with taem nz limits

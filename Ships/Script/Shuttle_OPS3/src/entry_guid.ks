@@ -207,8 +207,8 @@ global entryg_constants is lexicon (
 									"mm304alp0", 40,	//standard preentry aoa
 									"radeg", 57.29578,	//deg/rad radians to degrees
 									"rdmax", 12,	//max roll bias 
-									"rlmc0", 90,	//rlm max above verolc
-									"tal_rlmc0", 120,	//rlm max above verolc for tal
+									"rlmc0", 85,	//rlm max above verolc
+									"tal_rlmc0", 120,	//rlm max above tal_verolc for tal
 									"rlmc1", 70,	//rlm max
 									"rlmc2", -47,	//coeff in first rlm seg 
 									"rlmc3", 0.03,		//deg/ft/s
@@ -229,6 +229,7 @@ global entryg_constants is lexicon (
 									"vc20", 2500,	//ft/s c20 vel break point
 									"velmn", 8000,	//ft/s	max vel for limiting lmn by almn3
 									"verolc", 8000,	//max vel for limiting bank cmd
+									"tal_verolc", 20000,	//max vel for limiting bank cmd by tal_rlmc0
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
 									//"vnoalp", 20500,	//pch mod start velocity//	//took the value from the sts-1 paper
@@ -615,7 +616,6 @@ function eginit {
 		
 		set entryg_constants["vnoalp"] to entryg_constants["taem_vnoalp"].
 		set entryg_constants["dlallm"] to entryg_constants["tal_dlallm"].
-		set entryg_constants["rlmc0"] to entryg_constants["tal_rlmc0"].
 	}
 	
 	set entryg_internal["start"] to 1.
@@ -1162,7 +1162,13 @@ function egrolcmd {
 	
 	//calculate absolute roll angle limits
 	//refactored this block 
-	set entryg_internal["rlm"] to entryg_constants["rlmc0"].
+	//modification: check if tal and above tal_verolc
+	IF (entryg_input["ital"]) and (entryg_input["ve"]  > entryg_constants["tal_verolc"]) { 
+		set entryg_internal["rlm"] to entryg_constants["tal_rlmc0"].
+	} else {
+		set entryg_internal["rlm"] to entryg_constants["rlmc0"].
+	} 
+	
 	if (entryg_input["ve"]  < entryg_constants["verolc"]) {
 		if (entryg_input["ve"] > entryg_constants["vrlmc"]) {
 			set entryg_internal["rlm"] to min(entryg_constants["rlmc1"], entryg_constants["rlmc2"] + entryg_constants["rlmc3"]*entryg_input["ve"]).	//entry 70°
