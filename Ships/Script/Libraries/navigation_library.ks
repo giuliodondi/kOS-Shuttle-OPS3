@@ -281,8 +281,7 @@ FUNCTION get_rwylist {
 // each must have at least the "position" field defined
 FUNCTION get_closest_site {
 	PARAMETER sites_lex.
-
-	LOCAL pos IS SHIP:GEOPOSITION.
+	parameter pos IS SHIP:GEOPOSITION.
 
 	local rwylist is get_rwylist(sites_lex).
 
@@ -313,6 +312,45 @@ FUNCTION get_closest_site {
 	
 	
 	RETURN LIST(closest_site_idx,closest_site).
+}
+
+
+function get_sites_downrange {
+	parameter sites_lex.
+	parameter posvec.
+	parameter dwnrng_dir.
+	parameter min_range is 0.		//km
+	parameter max_range is 25000.		//km
+	
+	local downrange_sites is list().
+	local normv is vcrs(posvec, dwnrng_dir):normalized.
+	
+	FOR s in ldgsiteslex:KEYS {
+		
+		LOCAL site IS ldgsiteslex[s].
+		
+		local rwypos is 0.
+		
+		IF (site:ISTYPE("LEXICON")) {
+			set rwypos to site["position"].
+		} ELSE IF (site:ISTYPE("LIST")) {
+			set rwypos to site[0]["position"].
+		}
+	
+		LOCAL sitevec IS pos2vec(rwypos).
+		
+		local siteang is signed_angle(posvec, sitevec, normv, 0).
+		
+		if (siteang > 0) {
+			LOCAL sitedist IS greatcircledist(posvec,sitevec).
+			
+			if (sitedist > min_range) and (sitedist < max_range) {
+				downrange_sites:add(s).
+			}
+		}
+	}
+	
+	return downrange_sites.
 }
 
 
@@ -519,6 +557,15 @@ FUNCTION orbit_eta_alt {
 	parameter ecc.
 	
 	return sma*(1 - ecc^2)/(1 + ecc*COS(eta_)).
+
+}
+
+// calculates circular orbital velocity at altitude 
+//altitude must be measured from the body centre
+FUNCTION orbit_alt_vsat {
+	parameter h.
+	
+	RETURN SQRT( BODY:MU / h ).
 
 }
 
