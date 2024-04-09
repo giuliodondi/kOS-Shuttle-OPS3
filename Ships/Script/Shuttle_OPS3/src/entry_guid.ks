@@ -207,6 +207,7 @@ global entryg_constants is lexicon (
 									"mm304alp0", 40,	//standard preentry aoa
 									"radeg", 57.29578,	//deg/rad radians to degrees
 									"rdmax", 12,	//max roll bias 
+									"rlmndzfac", 2.2,	//min roll delaz gain 
 									"rlmc0", 85,	//rlm max above verolc
 									"tal_rlmc0", 120,	//rlm max above tal_verolc for tal
 									"rlmc1", 70,	//rlm max
@@ -229,6 +230,7 @@ global entryg_constants is lexicon (
 									"vc20", 2500,	//ft/s c20 vel break point
 									"velmn", 8000,	//ft/s	max vel for limiting lmn by almn3
 									"verolc", 8000,	//max vel for limiting bank cmd
+									"verlmndz", 20000,	//max vel for delaz min bank
 									"tal_verolc", 20000,	//max vel for limiting bank cmd by tal_rlmc0
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
@@ -298,6 +300,7 @@ global entryg_internal is lexicon(
 									"ddp", 0,   		//ddp prev 
 									"delalp", 0,   	//commanded alpha incr,   
 									"dlrdot", 0,   	//r feedback 
+									"dlzrl", 0,		//deg negative if we're rolling towards the site, positive if heading aways
 									"drdd", 0,   	//dRange / dD 
 									"drefp", 0,   	//drag ref used in controller 
 									"drefp1", 0,   	//eq glide
@@ -337,6 +340,7 @@ global entryg_internal is lexicon(
 									"rk2rol", 0,   	//bank angle direction 
 									"rk2rlp", 0,   	//prev val 
 									"rlm", 0,		//roll limit
+									"rlmndz", 0, 	//min roll based on delaz
 									"rollc", list(0,0,0,0),	//1: roll angle command,  2: unlimited roll command,  3: roll ref //deg
 									"rolref", 0,	//deg 	//roll ref
 									"rpt", 0,   	//desired range at vq 
@@ -1088,11 +1092,11 @@ function eglodvcmd {
 	
 	set entryg_internal["lmn"] to entryg_internal["xlod"]*entryg_internal["lmn"].
 	
-	local dlzrl is -entryg_input["delaz"]*entryg_internal["rk2rol"].
+	set entryg_internal["dlzrl"] to -entryg_input["delaz"]*entryg_internal["rk2rol"].
 	
 	//apply the l/d limtis and finally calculate if we do the roll reversal
 	//dlzrl should first be negative as we reduce crossrange then positive
-	if (abs(entryg_internal["lodv"]) >= entryg_internal["lmn"] and dlzrl <= 0) {
+	if (abs(entryg_internal["lodv"]) >= entryg_internal["lmn"] and entryg_internal["dlzrl"] <= 0) {
 		set entryg_internal["lmflg"] to TRUE.
 		set entryg_internal["lodv"] to entryg_internal["lmn"]*sign(entryg_internal["lodv"]).
 	} else {
@@ -1101,7 +1105,7 @@ function eglodvcmd {
 		
 		//should do the roll reversal
 		//added condition on abs(delaz) plus flag to track reversal start and end
-		if (dlzrl > 0) and (ABS(entryg_input["delaz"]) >= yl) {
+		if (entryg_internal["dlzrl"] > 0) and (ABS(entryg_input["delaz"]) >= yl) {
 			set entryg_internal["rk2rol"] to -entryg_internal["rk2rol"].
 			//moved it to the else block so delaz limits are changed after the roll is complete
 			
@@ -1177,10 +1181,17 @@ function egrolcmd {
 		}
 	}
 	
+	//my addition: min roll logic 
+	if (entryg_internal["dlzrl"] < 0) and (entryg_input["ve"] < entryg_constants["verlmndz"])  {
+		set entryg_internal["rlmndz"] to entryg_constants["rlmndzfac"] * abs(entryg_input["delaz"]).
+	} else {
+		set entryg_internal["rlmndz"] to 0.
+	}
+	
 	//my addition: fiter changes in roll cmd if they are below a threshold enough
 	LOCAL rollca IS ABS(entryg_internal["rollc"][1]).
-	//my modification: limit the new roll command by the unlimited roll 
-	SET rollca TO MIN(rollca, ABS(entryg_internal["rollc"][2])).
+	//my modification: limit the new roll command by the unlimited roll and min delaz roll
+	SET rollca TO midval(rollca, ABS(entryg_internal["rollc"][2]), entryg_internal["rlmndz"]).
 	LOCAL delrollc IS rollca - rollcpa.
 	
 	IF (ABS(delrollc) < entryg_constants["drolcmdfil"]) {
