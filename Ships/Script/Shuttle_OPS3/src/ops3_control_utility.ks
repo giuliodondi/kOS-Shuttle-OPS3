@@ -3,14 +3,14 @@ GLOBAL g0 IS 9.80665.
 STEERINGMANAGER:RESETPIDS().
 STEERINGMANAGER:RESETTODEFAULT().
 
-SET STEERINGMANAGER:MAXSTOPPINGTIME TO 5.5.
+
 SET STEERINGMANAGER:PITCHTS TO 8.0.
 SET STEERINGMANAGER:YAWTS TO 3.
 SET STEERINGMANAGER:ROLLTS TO 2.
 
 SET STEERINGMANAGER:PITCHPID:KD TO 0.5.
 SET STEERINGMANAGER:YAWPID:KD TO 0.5.
-SET STEERINGMANAGER:ROLLPID:KD TO 0.2.
+SET STEERINGMANAGER:ROLLPID:KD TO 0.5.
 
 IF (STEERINGMANAGER:PITCHPID:HASSUFFIX("epsilon")) {
 	SET STEERINGMANAGER:PITCHPID:EPSILON TO 0.1.
@@ -88,8 +88,6 @@ FUNCTION dap_controller_factory {
 		SET this:wow to measure_wow().
 	}).
 	
-	this:measure_cur_state().
-	
 	this:add("tgt_hdot", 0).
 	this:add("tgt_nz", 0).
 	this:add("tgt_pitch", 0).
@@ -100,6 +98,8 @@ FUNCTION dap_controller_factory {
 	this:add("steer_lvlh_pitch",0).
 	this:add("steer_yaw",0).
 	this:add("steer_roll",0).
+	
+	
 	
 	this:add("reset_steering",{
 		set this:cur_mode to "".
@@ -295,6 +295,13 @@ FUNCTION dap_controller_factory {
 		SET this:steer_pitch TO CLAMP(this:steer_pitch, this:pitch_lims[0], this:pitch_lims[1]).
 		SET this:steer_yaw TO CLAMP(this:steer_yaw, this:yaw_lims[0], this:yaw_lims[1]).
 		
+		//update steering manager
+		if (abs(this:delta_roll) < 10) {
+			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 1.5.
+		} else {
+			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 5.5.
+		}
+		
 		SET this:steering_dir TO this:create_prog_steering_dir(
 			this:steer_pitch,
 			this:steer_roll,
@@ -370,6 +377,8 @@ FUNCTION dap_controller_factory {
 	SET STEERINGMANAGER:ROLLCONTROLANGLERANGE TO 180.
 	
 	this:reset_steering().
+	
+	this:measure_cur_state().
 	
 	return this.
 }
