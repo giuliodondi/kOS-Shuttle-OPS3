@@ -40,6 +40,8 @@ FUNCTION dap_controller_factory {
 		SET this:iteration_dt TO this:last_time - old_t.
 	}).
 	
+	this:add("delta_roll",0).
+	
 	this:add("prog_pitch",0).
 	this:add("prog_yaw",0).
 	this:add("prog_roll",0).
@@ -67,6 +69,8 @@ FUNCTION dap_controller_factory {
 		SET this:lvlh_pitch TO get_pitch_lvlh().
 		SET this:lvlh_roll TO get_roll_lvlh().
 		set this:fpa to get_surf_fpa().
+		
+		set this:delta_roll to this:tgt_roll - this:prog_roll.
 		
 		SET this:hdot to SHIP:VERTICALSPEED.
 		
@@ -245,7 +249,7 @@ FUNCTION dap_controller_factory {
 		set this:cur_mode to "auto_prograde".
 		this:measure_cur_state().
 		
-		SET this:steer_roll TO this:prog_roll + CLAMP(this:tgt_roll - this:prog_roll, this:delta_roll_lims[0], this:delta_roll_lims[1]).
+		SET this:steer_roll TO this:prog_roll + CLAMP(this:delta_roll, this:delta_roll_lims[0], this:delta_roll_lims[1]).
 		SET this:steer_pitch TO this:prog_pitch + CLAMP(this:tgt_pitch - this:prog_pitch, this:delta_pch_lims[0], this:delta_pch_lims[1]).
 		SET this:steer_yaw TO this:tgt_yaw.
 		
@@ -261,7 +265,7 @@ FUNCTION dap_controller_factory {
 			SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
 		}
 		
-		SET this:steer_roll TO this:prog_roll + CLAMP(this:tgt_roll - this:prog_roll,this:delta_roll_lims[0], this:delta_roll_lims[1]).
+		SET this:steer_roll TO this:prog_roll + CLAMP(this:delta_roll,this:delta_roll_lims[0], this:delta_roll_lims[1]).
 		SET this:steer_yaw TO this:tgt_yaw.
 		
 		this:update_steering().
@@ -278,7 +282,7 @@ FUNCTION dap_controller_factory {
 			SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
 		}
 		
-		SET this:steer_roll TO this:prog_roll + CLAMP(this:tgt_roll - this:prog_roll,this:delta_roll_lims[0], this:delta_roll_lims[1]).
+		SET this:steer_roll TO this:prog_roll + CLAMP(this:delta_roll,this:delta_roll_lims[0], this:delta_roll_lims[1]).
 		SET this:steer_yaw TO this:tgt_yaw.
 		
 		this:update_steering().
