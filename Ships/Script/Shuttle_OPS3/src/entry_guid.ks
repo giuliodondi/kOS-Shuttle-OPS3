@@ -244,7 +244,9 @@ global entryg_constants is lexicon (
 									"vrdt", 23000,	//ft/s hdot feedback start vel 
 									"vrr", 0, 		//velocity first reversal //ft/s 
 									"v_taem", 2500,	//ft/s entry-taem interface ref vel 
+									"v_taem_high", 4000,	//ft/s my addition: high-energy taem velocity
 									"r_taem", 45,	//nm my addition: force transition below this range
+									"r_taem_high", 75,	//nm my addition: high-energy transition range
 									"vtrb0", 60000,	//ft/s initial value of vtrb
 									//"vtran", 10500,	//ft/s nominal vel at start of transition STS-1
 									"vtran", 9000,	//ft/s nominal vel at start of transition
@@ -533,7 +535,13 @@ function egexec {
 	
 	//entry guidance termination 
 	//check this regardless of the value of islect
-	if (entryg_input["ve"] < entryg_constants["v_taem"] OR entryg_input["trange"] <= entryg_constants["r_taem"]) {
+	//addition: early exit if very high energy
+	if (entryg_input["ve"] < entryg_constants["v_taem"])
+		OR (entryg_input["trange"] <= entryg_constants["r_taem"]) 
+		or (
+			(entryg_input["trange"] <= entryg_constants["r_taem_high"])
+			and (entryg_input["ve"] >= entryg_constants["v_taem_high"])
+	) {		
 		set entryg_internal["eg_end"] to TRUE.
 	}
 }
