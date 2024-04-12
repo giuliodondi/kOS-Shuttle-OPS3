@@ -29,7 +29,7 @@ FUNCTION ops3_main_exec {
 	
 	//force target selection logic goes here
 	if (not nominal_flag) {
-		force_target_selection().
+		force_target_selection(force_tgt_select).
 	}
 	
 	local hud_datalex IS get_hud_datalex().

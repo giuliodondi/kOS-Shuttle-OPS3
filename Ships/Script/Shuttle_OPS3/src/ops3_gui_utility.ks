@@ -521,7 +521,16 @@ FUNCTION is_log {
 function force_target_selection {
 	parameter force_tgt_select.
 	
-	set select_tgt:value to force_tgt_select.
+	local k is 0.
+	for t in select_tgt:options {
+		if (t = force_tgt_select) {
+			break.
+		}
+		set k to k + 1.
+	}
+	
+	set select_tgt:index to k.
+	
 	wait 0.
 	freeze_target_site().
 	

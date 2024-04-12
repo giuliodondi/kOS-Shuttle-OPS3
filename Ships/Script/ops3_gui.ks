@@ -24,6 +24,9 @@ define_td_points().
 make_main_ops3_gui().
 
 
+force_target_selection("Vandenberg").
+
+
 make_taem_vsit_GUI().
 
 local sample_data is sample_taem_data().
@@ -77,6 +80,7 @@ until false {
 							"mep", mepflag,
 							"tgthdot", -100,
 							"tgtnz", 0.75,
+							"xlfac", 1.8,
 							"spdbkcmd", 0.25,
 							"alpll", 2.5,
 							"alpul", 16.5,
