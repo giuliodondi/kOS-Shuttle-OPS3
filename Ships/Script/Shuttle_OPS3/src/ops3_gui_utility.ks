@@ -518,6 +518,15 @@ FUNCTION is_log {
 	RETURN logb:PRESSED.
 }
 
+function force_target_selection {
+	parameter force_tgt_select.
+	
+	set select_tgt:value to force_tgt_select.
+	wait 0.
+	freeze_target_site().
+	
+}
+
 FUNCTION freeze_target_site {
 	SET select_tgt:ENABLED to FALSE.
 }

@@ -1,11 +1,34 @@
 @LAZYGLOBAL OFF.
+
+parameter mode_ is "nominal".
+parameter force_tgt_select is "".
+
 CLEARSCREEN.
 SET CONFIG:IPU TO 1800. 
+
+
+//determine mode flags
+local nominal_flag is false.
+local tal_flag is false.
+local grtls_flag is false.
+local cont_flag is false.
+
+if (mode_ = "nominal") {
+	set nominal_flag to true.
+} else if (mode_ = "tal") {
+	set tal_flag to true.
+} else if (mode_ = "grtls") {
+	set grtls_flag to true.
+} else if (mode_ = "cont") {
+	set cont_flag to true.
+}
 
 RUNPATH("0:/Shuttle_OPS3/parameters").
 
 //hard-coded check to run the script only in atmosphere
-If (SHIP:ALTITUDE >= parameters["interfalt"]) {
+// modification : do this only in the nominal case
+// we might be in a weird situation at TAL and it's an irrelevant check for grtls and cont
+If nominal_flag and (SHIP:ALTITUDE >= parameters["interfalt"]) {
 	PRINT "Not yet below Entry Interface (" + round(parameters["interfalt"]/1000, 0) + "km),  aborting." .
 } ELSE {
 
@@ -25,5 +48,11 @@ If (SHIP:ALTITUDE >= parameters["interfalt"]) {
 	RUNPATH("0:/Shuttle_OPS3/src/taem_guid.ks").
 	RUNPATH("0:/Shuttle_OPS3/src/ops3_main_executive.ks").
 
-	ops3_main_exec().
+	ops3_main_exec(
+					nominal_flag,
+					tal_flag, 
+					grtls_flag,
+					cont_flag,
+					force_tgt_select
+	).
 }

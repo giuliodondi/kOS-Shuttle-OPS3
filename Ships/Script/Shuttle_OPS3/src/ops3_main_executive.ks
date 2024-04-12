@@ -1,9 +1,12 @@
 
 //			MAIN EXECUTIVE OF OPS3 REENTRY, TAEM AND LANDING
 FUNCTION ops3_main_exec {
-
-	shutdown_all_engines().
-
+	parameter nominal_flag.
+	parameter tal_flag.
+	parameter grtls_flag.
+	parameter cont_flag.
+	parameter force_tgt_select is "".
+	
 	GLOBAL quit_program IS FALSE.
 
 	//main guidance phase counter
@@ -14,15 +17,21 @@ FUNCTION ops3_main_exec {
 	IF (DEFINED tgtrwy) {UNSET tgtrwy.}
 	GLOBAL tgtrwy IS LEXICON().
 	
-	//did we come from an RTLS abort? 
-	LOCAL grtls_flag IS is_grtls().
-	//tal abort flag 
-	LOCAL tal_flag IS is_tal_abort().
-	
 	//setup main gui and hud 
 	//after the td points but before anything that modifies the default button selections
 	make_main_ops3_gui().
 	make_hud_gui().
+	
+	//will implement some custom oms dump logic to handle contingency
+	if (not cont_flag) {
+		shutdown_all_engines().
+	}
+	
+	//force target selection logic goes here
+	if (not nominal_flag) {
+		force_target_selection().
+	}
+	
 	local hud_datalex IS get_hud_datalex().
 	
 	//setup dap and aerosurface controllers
@@ -129,7 +138,7 @@ FUNCTION ops3_main_exec {
 
 	local guidance_timer IS timer_factory().
 
-	if (NOT grtls_flag) AND (SHIP:VELOCITY:SURFACE:MAG > parameters["surfv_skip_to_taem"]){
+	if (NOT (grtls_flag OR cont_flag)) AND (SHIP:VELOCITY:SURFACE:MAG > parameters["surfv_skip_to_taem"]){
 		//entry guidance loop
 		
 		make_entry_traj_GUI().
