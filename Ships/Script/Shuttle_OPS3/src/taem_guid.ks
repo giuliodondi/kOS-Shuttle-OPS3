@@ -247,11 +247,11 @@ global taemg_constants is lexicon (
 									"gdhc", 0.55, 			//  constant for computing gdh 		//ott
 									"gdhll", 0.1, 			//gdh lower limit 	//OTT
 									"gdhs", 0.9e-5,		//1/ft	slope for computing gdh 		//ott
-									"gdhul", 0.5,			//gdh upper lim 
+									"gdhul", 0.55,			//gdh upper lim 
 									"gehdll", 0.01, 		//g/fps  gain used in computing eownzll
 									"gehdul", 0.01, 		//g/fps  gain used in computing eownzul
-									"gell", 0.01, 		//1/s  gain used in computing eownzll
-									"geul", 0.01, 		//1/s  gain used in computing eownzul
+									"gell", 0.02, 		//1/s  gain used in computing eownzll
+									"geul", 0.02, 		//1/s  gain used in computing eownzul
 									"geownzc", 0.0005, 		//1/s  gain used to correct eow error
 									"gphi", 2.5, 		//heading err gain for phic 
 									"gr", 0.005,			//deg/ft gain on rcir in computing ha roll angle command 
