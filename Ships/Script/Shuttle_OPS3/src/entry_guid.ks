@@ -154,7 +154,7 @@ global entryg_constants is lexicon (
 									"crdeaf", 4,	//roll bias due to pitch modulation gain	//was 4
 									//"ct16", list(0, 0.1354, -0.1, 0.006),	// s2/ft - nd - s2/ft	c16 coefs STS-1
 									"ct16", list(0, 0.27, -0.2, 0.018),	// s2/ft - nd - s2/ft	c16 coefs
-									"ct17", list(0, 2*1.537e-2, -5.8146e-1),	//s/ft - nd 	c17 coefs
+									"ct17", list(0, 1.537e-2, -5.8146e-1),	//s/ft - nd 	c17 coefs
 									"ct16mn", 0.025,	//s2/ft		min c16
 									"ct16mx", 0.36,		//s2/ft 	max c16
 									"ct17mn", 0.0025,	//s/ft 		min c17

@@ -145,7 +145,7 @@ FUNCTION dap_controller_factory {
 		local kc is 0.004.
 
 		set this:hdot_nz_pid:Kp to kc.
-		set this:hdot_nz_pid:Ki to 0.
+		set this:hdot_nz_pid:Ki to kc * 0.03.
 		set this:hdot_nz_pid:Kd to kc * 2.6.
 		
 		local nz_mass_gain IS SHIP:MASS / this:nz_ref_mass.

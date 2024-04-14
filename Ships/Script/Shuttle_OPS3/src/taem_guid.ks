@@ -192,7 +192,8 @@ global taemg_constants is lexicon (
 									"cdeqd", 0.68113143,	//gain in qbd calculation
 									"cpmin", 0.707,		//cosphi min value 
 									"cqdg", 0.31886860,		//gain for qbd calculation 
-									"cqg", 0.7583958,		//gain for calculation of dnzcd and qbard 
+									//"cqg", 0.7583958,		//gain for calculation of dnzcd and qbard 
+									"cqg", 1,		//gain for calculation of dnzcd and qbard 
 									"del_h1", 0.19,				//alt error coeff 
 									"del_h2", 900,				//ft alt error coeff 
 									"del_r_emax", list(0,54000,54000),		// -/ft/ft constant ised for computing emax 	//deprecated
@@ -248,10 +249,10 @@ global taemg_constants is lexicon (
 									"gdhll", 0.1, 			//gdh lower limit 	//OTT
 									"gdhs", 0.9e-5,		//1/ft	slope for computing gdh 		//ott
 									"gdhul", 0.55,			//gdh upper lim 
-									"gehdll", 0.01, 		//g/fps  gain used in computing eownzll
-									"gehdul", 0.01, 		//g/fps  gain used in computing eownzul
-									"gell", 0.02, 		//1/s  gain used in computing eownzll
-									"geul", 0.02, 		//1/s  gain used in computing eownzul
+									"gehdll", 0.025, 		//g/fps  gain used in computing eownzll
+									"gehdul", 0.025, 		//g/fps  gain used in computing eownzul
+									"gell", 0.03, 		//1/s  gain used in computing eownzll
+									"geul", 0.03, 		//1/s  gain used in computing eownzul
 									"geownzc", 0.0005, 		//1/s  gain used to correct eow error
 									"gphi", 2.5, 		//heading err gain for phic 
 									"gr", 0.005,			//deg/ft gain on rcir in computing ha roll angle command 
@@ -261,8 +262,8 @@ global taemg_constants is lexicon (
 									"gy", 0.075,			//deg/ft gain on y in computing pfl roll angle cmd 
 									"gydot", 0.39,		//deg/fps gain on ydot on computing pfl roll angle cmd 
 									"h_error", 1000,		//ft altitude error bound	//deprecated
-									"hdherrcmax", 80,		//ft/s max herror correction to ref. hdot //my addition
-									"hderr_lag_k", 0.5,		//ft/s lag filter gain for hderr feedback	//my addition
+									"hdherrcmax", 120,		//ft/s max herror correction to ref. hdot //my addition
+									"hderr_lag_k", 0.9,		//ft/s lag filter gain for hderr feedback	//my addition
 									"h_ref1", 8000,			//ft alt to force transition to a/l 		//modified from OTT
 									"h_ref2", 5000,			//ft alt to force transition to ogs		//modified from OTT
 									"hali", LIST(0, 10018, 10018),		//ft altitude at a/l for reference profiles
@@ -404,7 +405,7 @@ global taemg_constants is lexicon (
 									"dsbwow", 65,				// deg speedbrake cmd if wow (during rollout)
 									"alpcmd_rlt", -3.4,			//aoa command for slapdown and rollout
 									"phi_beta_gain", 1.5, 			//gain for yaw during rollout
-									"surfv_h_brakes", 140,		//ft/s trigger for braking outside executive
+									"surfv_h_brakes", 180,		//ft/s trigger for braking outside executive
 									"surfv_h_dapoff", 80,		//ft/s trigger for dap off outside executive
 									"surfv_h_exit", 15,		//ft/s trigger for termination
 									
