@@ -587,13 +587,13 @@ FUNCTION warp_controller {
 	
 	LOCAL new_warp IS cur_warp.
 	
-	IF time_span > (3600 + final_wait) {
+	IF time_span > (5000 + final_wait) {
 		set new_warp to 4.
 	}
-	ELSE IF time_span > (400 + final_wait) {
+	ELSE IF time_span > (500 + final_wait) {
 		set new_warp to 3.
 	}
-	ELSE IF time_span > (60 + final_wait) {
+	ELSE IF time_span > (90 + final_wait) {
 		set new_warp to 2.
 	}
 	ELSE IF time_span > final_wait {
