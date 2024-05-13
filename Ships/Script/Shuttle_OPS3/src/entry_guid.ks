@@ -236,7 +236,7 @@ global entryg_constants is lexicon (
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
 									//"vnoalp", 20500,	//pch mod start velocity//	//took the value from the sts-1 paper
 									"vnoalp", 22500,	//pch mod start velocity//
-									"taem_vnoalp", 20500,	//pch mod start velocity for taem//	
+									"tal_vnoalp", 20500,	//pch mod start velocity for tal//	
 									"vq", 10499,	//ft/s predicted end vel for const drag			//changed for consistency with vtran
 									"vrlmc", 2750,	//ft/s rlm seg switch vel
 									"vsat", 25766.2,	//ft/s local circular orbit vel 
@@ -626,8 +626,15 @@ function eginit {
 		set entryg_constants["calp1"] to entryg_constants["tal_calp1"].
 		set entryg_constants["calp2"] to entryg_constants["tal_calp2"].
 		
-		set entryg_constants["vnoalp"] to entryg_constants["taem_vnoalp"].
+		set entryg_constants["vnoalp"] to entryg_constants["tal_vnoalp"].
 		set entryg_constants["dlallm"] to entryg_constants["tal_dlallm"].
+	}
+	
+	//my addition: do stuff if we resume entry halfway and in transition phase
+	if (entryg_input["ve"] <= entryg_constants["vtran"]) {
+		//use the upper delaz limits
+		set entryg_internal["idbchg"] to TRUE.
+		//other stuff??
 	}
 	
 	set entryg_internal["start"] to 1.
@@ -1066,7 +1073,7 @@ function eglodvcmd {
 	//this is where we calculate delaz limits
 	//slight modification so that constant stay in fact constant 
 	LOCAL delaz_upper is entryg_constants["y1"].
-	if (entryg_internal["idbchg"]) {	//and (entryg_internal["rk2rol"]*entryg_internal["rk2rlp"] > 0) 
+	if (entryg_internal["idbchg"]) {
 		set delaz_upper to entryg_constants["y3"].
 	}
 	LOCAL delaz_lower IS entryg_constants["y2"].
