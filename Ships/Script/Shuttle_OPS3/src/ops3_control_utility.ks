@@ -5,17 +5,17 @@ STEERINGMANAGER:RESETTODEFAULT().
 
 
 SET STEERINGMANAGER:PITCHTS TO 8.0.
-SET STEERINGMANAGER:YAWTS TO 3.
-SET STEERINGMANAGER:ROLLTS TO 2.
+SET STEERINGMANAGER:YAWTS TO 2.
+SET STEERINGMANAGER:ROLLTS TO 3.
 
 SET STEERINGMANAGER:PITCHPID:KD TO 0.5.
 SET STEERINGMANAGER:YAWPID:KD TO 0.5.
 SET STEERINGMANAGER:ROLLPID:KD TO 0.5.
 
 IF (STEERINGMANAGER:PITCHPID:HASSUFFIX("epsilon")) {
-	SET STEERINGMANAGER:PITCHPID:EPSILON TO 0.1.
-	SET STEERINGMANAGER:YAWPID:EPSILON TO 0.1.
-	SET STEERINGMANAGER:ROLLPID:EPSILON TO 0.25.
+	SET STEERINGMANAGER:PITCHPID:EPSILON TO 0.2.
+	SET STEERINGMANAGER:YAWPID:EPSILON TO 0.2.
+	SET STEERINGMANAGER:ROLLPID:EPSILON TO 0.6.
 }
 
 
@@ -50,6 +50,7 @@ FUNCTION dap_controller_factory {
 	this:add("lvlh_roll",0).
 	this:add("fpa",0).
 	
+	this:add("h", 0).
 	this:add("hdot", 0).
 	this:add("aero", LEXICON(
 							"nz", 0,
@@ -72,6 +73,7 @@ FUNCTION dap_controller_factory {
 		
 		set this:delta_roll to this:tgt_roll - this:prog_roll.
 		
+		set this:h to pos_rwy_alt(-SHIP:ORBIT:BODY:POSITION, tgtrwy).
 		SET this:hdot to SHIP:VERTICALSPEED.
 		
 		//drag forces are alyways in imperial
@@ -157,10 +159,14 @@ FUNCTION dap_controller_factory {
 
 	this:add("set_flare_gains", {
 		local kc is 0.0048.
+		
+		local kdfmn is 0.4.
+		local kdfmx is 2.0.
+		set kdf to midval( 0.0089 * this:h + 0.223 , kdfmn, kdfmx).
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * 1.8.
+		set this:hdot_nz_pid:Kd to kc * kdf.
 		
 		local nz_mass_gain IS SHIP:MASS / this:nz_ref_mass.
 		
@@ -276,13 +282,25 @@ FUNCTION dap_controller_factory {
 		set this:cur_mode to "auto_hdot".
 		this:measure_cur_state().
 		
+		local delta_roll is this:delta_roll.
+		
 		IF (NOT this:wow) {
-			local roll_corr is max(abs(COS(this:prog_roll)), 0.6).
-			SET this:tgt_nz TO CLAMP(this:aero:nz + (this:update_hdot_pid() / roll_corr), this:nz_lims[0], this:nz_lims[1]).
+			local phi is this:prog_roll.
+			local roll_corr is max(abs(COS(phi)), 0.6).
+			local dnzv is this:update_hdot_pid().
+			
+			local nz is this:aero:nz.
+			local nzp is nz + dnzv/roll_corr.
+			
+			local phip is ARCSIN(limitarg(abs(SIN(phi)*nz/nzp))).
+			
+			set delta_roll to delta_roll + sign(phi) * phip - phi.
+			
+			SET this:tgt_nz TO CLAMP(nzp, this:nz_lims[0], this:nz_lims[1]).
 			SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
 		}
 		
-		SET this:steer_roll TO this:prog_roll + CLAMP(this:delta_roll,this:delta_roll_lims[0], this:delta_roll_lims[1]).
+		SET this:steer_roll TO this:prog_roll + CLAMP(delta_roll, this:delta_roll_lims[0], this:delta_roll_lims[1]).
 		SET this:steer_yaw TO this:tgt_yaw.
 		
 		this:update_steering().
@@ -297,7 +315,7 @@ FUNCTION dap_controller_factory {
 		
 		//update steering manager
 		if (abs(this:delta_roll) < 10) {
-			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 1.5.
+			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 0.9.
 		} else {
 			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 5.5.
 		}
