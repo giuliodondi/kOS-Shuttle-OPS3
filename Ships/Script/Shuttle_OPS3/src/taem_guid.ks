@@ -281,6 +281,7 @@ global taemg_constants is lexicon (
 									"phavgll", 30,			//deg lower lim of phavg
 									"phavgs", 13.33,		//deg slope for phavg 
 									"phavgul", 50, 			//deg upperl im for phavg 
+									"phic_hdg_lag_k", 0.85,		//my addition: hdg phase roll lag filtering constant
 									"philm0", 50,			//deg sturn roll cmd lim
 									"philm1", 45,			//deg acq roll cmd lim 
 									//"philm2", 60,			//deg heading alignment roll cmd lim 		//OTT
@@ -1485,6 +1486,10 @@ FUNCTION tgphic {
 			
 			set taemg_internal["phic"] to taemg_internal["ysgn"] * MAX(phip2c + taemg_constants["gr"] * taemg_internal["rerrc"] + taemg_constants["grdot"] * (rdot - rdotrf), 0).
 		}
+		
+		//my addition: lag filtering during hdg phase to limit pitch/roll oscillations
+		set taemg_internal["phic"]  to (1 - taemg_constants["phic_hdg_lag_k"]) * phi0 + taemg_constants["phic_hdg_lag_k"] *  taemg_internal["phic"].
+		
 	} else if (taemg_internal["iphase"] = 3) {
 	
 		//prefinal bank proportional to lateral (y coord) deviation and rate relative to the centreline
