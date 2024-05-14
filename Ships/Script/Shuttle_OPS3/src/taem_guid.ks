@@ -248,7 +248,7 @@ global taemg_constants is lexicon (
 									"gdhc", 0.55, 			//  constant for computing gdh 		//ott
 									"gdhll", 0.1, 			//gdh lower limit 	//OTT
 									"gdhs", 0.9e-5,		//1/ft	slope for computing gdh 		//ott
-									"gdhul", 0.55,			//gdh upper lim 
+									"gdhul", 0.18,			//gdh upper lim 
 									"gehdll", 0.025, 		//g/fps  gain used in computing eownzll
 									"gehdul", 0.025, 		//g/fps  gain used in computing eownzul
 									"gell", 0.03, 		//1/s  gain used in computing eownzll
@@ -256,11 +256,11 @@ global taemg_constants is lexicon (
 									"geownzc", 0.0005, 		//1/s  gain used to correct eow error
 									"gphi", 2.5, 		//heading err gain for phic 
 									"gr", 0.005,			//deg/ft gain on rcir in computing ha roll angle command 
-									"grdot", 0.2,			//deg/fps  gain on drcir/dt in computing ha roll angle command 
+									"grdot", 0.25,			//deg/fps  gain on drcir/dt in computing ha roll angle command 
 									"gsbe", 1.5, 			//deg/psf-s 	spdbk prop. gain on qberr 
 									"gsbi", 0.1, 		//deg/psf-s gain on qberr integral in computing spdbk cmd
 									"gy", 0.075,			//deg/ft gain on y in computing pfl roll angle cmd 
-									"gydot", 0.39,		//deg/fps gain on ydot on computing pfl roll angle cmd 
+									"gydot", 0.36,		//deg/fps gain on ydot on computing pfl roll angle cmd 
 									"h_error", 1000,		//ft altitude error bound	//deprecated
 									"hdherrcmax", 120,		//ft/s max herror correction to ref. hdot //my addition
 									"hderr_lag_k", 0.9,		//ft/s lag filter gain for hderr feedback	//my addition
@@ -394,7 +394,7 @@ global taemg_constants is lexicon (
 									"hdecay", 13,			//ft exponential decay gain
 									"xbar_exp", 1200,		//ft defines the tangent point bw the flare circle and the shallow exponential
 									"gdhfl", 0.2,			// my additio - hdot gain during flare
-									"al_capt_herrlim", 50, 	//ft altitude error for steep gs capture
+									"al_capt_herrlim", 100, 	//ft altitude error for steep gs capture
 									"al_capt_gammalim", 1, 	//deg fpa error for steep gs capture
 									"al_capt_interv_s", 3, 	//s time interval for errors to be within tolerance to toggle capture
 									"al_fnlfl_herrexpmin", 1, //ft alt delta on exponential decay for final flare toggle

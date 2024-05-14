@@ -141,16 +141,16 @@ FUNCTION dap_controller_factory {
 		set this:nz_pitch_pid:Kd to 2.8.
 	}).
 	
-	this:add("nz_ref_mass", 100).
+	this:add("nz_mass_gain", {return 0.8 + 0.007 * (SHIP:MASS - 80).}).
 	
 	this:add("set_taem_gains", {
 		local kc is 0.004.
 
 		set this:hdot_nz_pid:Kp to kc.
-		set this:hdot_nz_pid:Ki to kc * 0.03.
-		set this:hdot_nz_pid:Kd to kc * 2.6.
+		set this:hdot_nz_pid:Ki to kc * 0.
+		set this:hdot_nz_pid:Kd to kc * 5.0.
 		
-		local nz_mass_gain IS SHIP:MASS / this:nz_ref_mass.
+		local nz_mass_gain IS this:nz_mass_gain().
 		
 		set this:nz_pitch_pid:Kp to nz_mass_gain * 3.3.
 		set this:nz_pitch_pid:Ki to 0.
@@ -159,16 +159,12 @@ FUNCTION dap_controller_factory {
 
 	this:add("set_flare_gains", {
 		local kc is 0.0048.
-		
-		local kdfmn is 0.4.
-		local kdfmx is 2.0.
-		set kdf to midval( 0.0089 * this:h + 0.223 , kdfmn, kdfmx).
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * kdf.
+		set this:hdot_nz_pid:Kd to kc * 2.6.
 		
-		local nz_mass_gain IS SHIP:MASS / this:nz_ref_mass.
+		local nz_mass_gain IS this:nz_mass_gain().
 		
 		set this:nz_pitch_pid:Kp to nz_mass_gain * 3.3.
 		set this:nz_pitch_pid:Ki to 0.
@@ -285,18 +281,8 @@ FUNCTION dap_controller_factory {
 		local delta_roll is this:delta_roll.
 		
 		IF (NOT this:wow) {
-			local phi is this:prog_roll.
-			local roll_corr is max(abs(COS(phi)), 0.6).
-			local dnzv is this:update_hdot_pid().
-			
-			local nz is this:aero:nz.
-			local nzp is nz + dnzv/roll_corr.
-			
-			local phip is ARCSIN(limitarg(abs(SIN(phi)*nz/nzp))).
-			
-			set delta_roll to delta_roll + sign(phi) * phip - phi.
-			
-			SET this:tgt_nz TO CLAMP(nzp, this:nz_lims[0], this:nz_lims[1]).
+			local roll_corr is max(abs(COS(this:prog_roll)), 0.6).
+			SET this:tgt_nz TO CLAMP(this:aero:nz + (this:update_hdot_pid() / roll_corr), this:nz_lims[0], this:nz_lims[1]).
 			SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
 		}
 		
