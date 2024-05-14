@@ -202,6 +202,8 @@ FUNCTION dap_controller_factory {
 		SET this:steer_roll TO this:steer_roll + deltaroll.
 		SET this:steer_yaw TO 0.
 		
+		set this:tgt_roll to this:steer_roll.
+		
 		this:update_steering().
 	}).
 	
@@ -240,6 +242,8 @@ FUNCTION dap_controller_factory {
 			
 		SET this:steer_roll TO this:prog_roll + deltaroll.
 		SET this:steer_yaw TO deltayaw.
+		
+		set this:tgt_roll to this:steer_roll.
 		
 		this:update_steering().
 	}).
