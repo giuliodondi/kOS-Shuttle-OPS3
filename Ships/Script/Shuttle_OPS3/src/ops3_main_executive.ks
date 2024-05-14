@@ -23,7 +23,7 @@ FUNCTION ops3_main_exec {
 	make_hud_gui().
 	
 	//will implement some custom oms dump logic to handle contingency
-	if (not cont_flag) {
+	if (nominal_flag) {
 		shutdown_all_engines().
 	}
 	
