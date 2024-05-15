@@ -6,16 +6,20 @@ STEERINGMANAGER:RESETTODEFAULT().
 
 SET STEERINGMANAGER:PITCHTS TO 8.0.
 SET STEERINGMANAGER:YAWTS TO 2.
-SET STEERINGMANAGER:ROLLTS TO 3.
+SET STEERINGMANAGER:ROLLTS TO 5.
 
 SET STEERINGMANAGER:PITCHPID:KD TO 0.5.
 SET STEERINGMANAGER:YAWPID:KD TO 0.5.
 SET STEERINGMANAGER:ROLLPID:KD TO 0.5.
 
 IF (STEERINGMANAGER:PITCHPID:HASSUFFIX("epsilon")) {
-	SET STEERINGMANAGER:PITCHPID:EPSILON TO 0.2.
+	SET STEERINGMANAGER:PITCHPID:EPSILON TO 0.5.
 	SET STEERINGMANAGER:YAWPID:EPSILON TO 0.2.
 	SET STEERINGMANAGER:ROLLPID:EPSILON TO 0.6.
+}
+
+IF (STEERINGMANAGER:PITCHPID:HASSUFFIX("TORQUEEPSILONMAX")) {
+	set STEERINGMANAGER:TORQUEEPSILONMAX TO 0.002.
 }
 
 
@@ -27,6 +31,7 @@ FUNCTION dap_controller_factory {
 	LOCAL this IS lexicon().
 	
 	this:add("cur_mode", "").
+	this:add("is_css", FALSE).
 	
 	this:add("steering_dir", SHIP:FACINg).
 	
@@ -187,6 +192,7 @@ FUNCTION dap_controller_factory {
 	//control prograde pitch and roll
 	this:add("update_css_prograde", {
 		set this:cur_mode to "css_prograde".
+		set this:is_css to TRUE.
 		this:measure_cur_state().
 		
 		LOCAL rollgain IS 0.5.
@@ -202,8 +208,6 @@ FUNCTION dap_controller_factory {
 		SET this:steer_roll TO this:steer_roll + deltaroll.
 		SET this:steer_yaw TO 0.
 		
-		set this:tgt_roll to this:steer_roll.
-		
 		this:update_steering().
 	}).
 	
@@ -211,6 +215,7 @@ FUNCTION dap_controller_factory {
 	this:add("update_css_lvlh", {
 		parameter direct_pitch.
 		set this:cur_mode to "css_lvlh".
+		set this:is_css to TRUE.
 		this:measure_cur_state().
 		
 		//gains suitable for manoeivrable steerign in atmosphere
@@ -243,8 +248,6 @@ FUNCTION dap_controller_factory {
 		SET this:steer_roll TO this:prog_roll + deltaroll.
 		SET this:steer_yaw TO deltayaw.
 		
-		set this:tgt_roll to this:steer_roll.
-		
 		this:update_steering().
 	}).
 	
@@ -253,6 +256,7 @@ FUNCTION dap_controller_factory {
 	//steer directly to target prograde pitch and roll
 	this:add("update_auto_prograde", {
 		set this:cur_mode to "auto_prograde".
+		set this:is_css to FALSE.
 		this:measure_cur_state().
 		
 		SET this:steer_roll TO this:prog_roll + CLAMP(this:delta_roll, this:delta_roll_lims[0], this:delta_roll_lims[1]).
@@ -265,6 +269,7 @@ FUNCTION dap_controller_factory {
 	//steer to target roll and keep target nz 
 	this:add("update_auto_nz", {
 		set this:cur_mode to "auto_nz".
+		set this:is_css to FALSE.
 		this:measure_cur_state().
 		
 		IF (NOT this:wow) {
@@ -280,6 +285,7 @@ FUNCTION dap_controller_factory {
 	//steer to target roll and keep target hdot 
 	this:add("update_auto_hdot", {
 		set this:cur_mode to "auto_hdot".
+		set this:is_css to FALSE.
 		this:measure_cur_state().
 		
 		local delta_roll is this:delta_roll.
@@ -304,10 +310,10 @@ FUNCTION dap_controller_factory {
 		SET this:steer_yaw TO CLAMP(this:steer_yaw, this:yaw_lims[0], this:yaw_lims[1]).
 		
 		//update steering manager
-		if (abs(this:delta_roll) < 10) {
-			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 0.9.
-		} else {
+		if (this:is_css) OR (abs(this:delta_roll) >= 10) {
 			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 5.5.
+		} else {
+			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 0.9.
 		}
 		
 		SET this:steering_dir TO this:create_prog_steering_dir(
