@@ -313,7 +313,7 @@ FUNCTION dap_controller_factory {
 		if (this:is_css) OR (abs(this:delta_roll) >= 10) {
 			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 5.5.
 		} else {
-			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 0.9.
+			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 1.3.
 		}
 		
 		SET this:steering_dir TO this:create_prog_steering_dir(

@@ -88,6 +88,8 @@ FUNCTION taemg_wrapper {
 	
 	local dump_overwrite is (NOT entryg_internal["fpflag"]).
 	
+	tgexec(tg_input).
+	
 	if (taemg_input["debug"]) {
 		taemg_dump(tg_input, dump_overwrite).
 	}
