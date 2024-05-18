@@ -868,6 +868,9 @@ function egref {
 		}
 	}
 	
+	//my addition - drefp is never negative
+	set entryg_internal["drefp"] to MAX(0, entryg_internal["drefp"]).
+	
 	//test value for drefp for transition to phase 4
 	set entryg_internal["drefp4"] to entryg_constants["gs3"] * (entryg_internal["rdtref"] + 2*entryg_internal["hs"]*entryg_internal["t2"] / entryg_input["ve"]) + entryg_internal["t2"].
 	
@@ -885,6 +888,9 @@ function egref4 {
 	//phase 3 range to go
 	set entryg_internal["drdd"] to -(entryg_input["trange"] -  entryg_internal["rpt"]) / entryg_internal["drefp"].
 	set entryg_internal["c2"] to 0.
+	
+	//my addition - drefp is never negative
+	set entryg_internal["drefp"] to MAX(0, entryg_internal["drefp"]).
 	
 	set entryg_internal["itran"] to TRUE.
 }
@@ -934,6 +940,9 @@ function egtran {
 	//my addition
 	//in any case do not exceed the previous constant drag
 	set entryg_internal["drefp"] to min(entryg_internal["drefp"], entryg_internal["t2"]).
+	
+	//my addition - drefp is never negative
+	set entryg_internal["drefp"] to MAX(0, entryg_internal["drefp"]).
 	
 	set entryg_internal["rdtref"] to -entryg_internal["hs"]*entryg_input["ve"]*(2*entryg_internal["drefp"] - c1*entryg_internal["ve2"]) / entryg_internal["cag"].
 	
