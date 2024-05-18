@@ -29,7 +29,18 @@ FUNCTION ops3_main_exec {
 	
 	//force target selection logic goes here
 	if (not nominal_flag) {
-		force_target_selection(force_tgt_select).
+		force_target_selection(force_tgt_select, TRUE).
+	}
+	
+	local skip_2_taem_flag is false.
+	
+	//if skip to taem select first target ahead 
+	if (SHIP:VELOCITY:SURFACE:MAG < parameters["surfv_skip_to_taem"]) {
+		set skip_2_taem_flag to true.
+		
+		local closest_site is get_closest_site(ldgsiteslex)[1].
+		
+		force_target_selection(closest_site).
 	}
 	
 	local hud_datalex IS get_hud_datalex().
@@ -138,7 +149,7 @@ FUNCTION ops3_main_exec {
 
 	local guidance_timer IS timer_factory().
 
-	if (NOT (grtls_flag OR cont_flag)) AND (SHIP:VELOCITY:SURFACE:MAG > parameters["surfv_skip_to_taem"]){
+	if (NOT (grtls_flag OR cont_flag)) AND (NOT skip_2_taem_flag) {
 		//entry guidance loop
 		
 		make_entry_traj_GUI().

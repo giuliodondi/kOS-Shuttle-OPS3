@@ -520,6 +520,7 @@ FUNCTION is_log {
 
 function force_target_selection {
 	parameter force_tgt_select.
+	parameter freeze_tgt is FALSE.
 	
 	local k is 0.
 	for t in select_tgt:options {
@@ -532,8 +533,10 @@ function force_target_selection {
 	set select_tgt:index to k.
 	
 	wait 0.
-	freeze_target_site().
 	
+	if (freeze_tgt) {
+		freeze_target_site().
+	}
 }
 
 FUNCTION freeze_target_site {
