@@ -210,6 +210,7 @@ global entryg_constants is lexicon (
 									"rlmndzfac", 2.2,	//min roll delaz gain 
 									"rlmc0", 85,	//rlm max above verolc
 									"tal_rlmc0", 120,	//rlm max above tal_verolc for tal
+									"rlmdz", 70,		//max roll delaz limiting
 									"rlmc1", 70,	//rlm max
 									"rlmc2", -47,	//coeff in first rlm seg 
 									"rlmc3", 0.03,		//deg/ft/s
@@ -230,7 +231,7 @@ global entryg_constants is lexicon (
 									"vc20", 2500,	//ft/s c20 vel break point
 									"velmn", 8000,	//ft/s	max vel for limiting lmn by almn3
 									"verolc", 8000,	//max vel for limiting bank cmd
-									"verlmndz", 20000,	//max vel for delaz min bank
+									"verlmndz", 18000,	//max vel for delaz min bank
 									"tal_verolc", 20000,	//max vel for limiting bank cmd by tal_rlmc0
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
@@ -1209,15 +1210,17 @@ function egrolcmd {
 	
 	//my addition: min roll logic 
 	if (entryg_internal["dlzrl"] < 0) and (entryg_input["ve"] < entryg_constants["verlmndz"])  {
-		set entryg_internal["rlmndz"] to entryg_constants["rlmndzfac"] * abs(entryg_input["delaz"]).
+		set entryg_internal["rlmndz"] to MIN(entryg_constants["rlmndzfac"] * abs(entryg_input["delaz"]), entryg_constants["rlmdz"]).
 	} else {
 		set entryg_internal["rlmndz"] to 0.
 	}
 	
+	//my modification: limit the new roll command from above by the unlimited roll 
+	LOCAL rollca IS MIN(ABS(entryg_internal["rollc"][1]), ABS(entryg_internal["rollc"][2])).
+	//my modification: limit the new roll command from below by the min delaz roll
+	SET rollca TO MAX(rollca, entryg_internal["rlmndz"]).
+	
 	//my addition: fiter changes in roll cmd if they are below a threshold enough
-	LOCAL rollca IS ABS(entryg_internal["rollc"][1]).
-	//my modification: limit the new roll command by the unlimited roll and min delaz roll
-	SET rollca TO midval(rollca, ABS(entryg_internal["rollc"][2]), entryg_internal["rlmndz"]).
 	LOCAL delrollc IS rollca - rollcpa.
 	
 	IF (ABS(delrollc) < entryg_constants["drolcmdfil"]) {
