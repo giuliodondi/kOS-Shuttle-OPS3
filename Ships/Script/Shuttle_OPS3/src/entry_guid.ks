@@ -53,7 +53,7 @@ FUNCTION entryg_wrapper {
 							"ital", entryg_input["ital"]				//is tal abort flag
 	).
 	
-	local dump_overwrite is (entryg_internal["start"] = 0).
+	local dump_overwrite is (NOT entryg_internal["fpflag"]).
 
 	egexec(eg_input).
 	
@@ -347,7 +347,8 @@ global entryg_internal is lexicon(
 									"rolref", 0,	//deg 	//roll ref
 									"rpt", 0,   	//desired range at vq 
 									"rrflag", FALSE,		//roll reversal flag
-									"start", 0,   	//first pass flag  
+									"start", 0,   	//guidance initialised flag  
+									"fpflag", FALSE,		//my addition - separate flag for first pass
 									"t2", 0,   		//constant drag level to target 	
 									"t2dot", 0,   	//rate of t2 change -à
 									"vb2", 0,   		//vb ^ 2
@@ -638,6 +639,7 @@ function eginit {
 	}
 	
 	set entryg_internal["start"] to 1.
+	set entryg_internal["fpflag"] to TRUE.
 	set entryg_internal["n_iter"] to entryg_constants["n_iter"].
 }
 

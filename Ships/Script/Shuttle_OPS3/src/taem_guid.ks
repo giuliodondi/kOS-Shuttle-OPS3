@@ -86,7 +86,7 @@ FUNCTION taemg_wrapper {
 										"grtls", taemg_input["grtls"]		//grtls flag
 								).
 	
-	local dump_overwrite is tgexec(tg_input).
+	local dump_overwrite is (NOT entryg_internal["fpflag"]).
 	
 	if (taemg_input["debug"]) {
 		taemg_dump(tg_input, dump_overwrite).
@@ -260,7 +260,7 @@ global taemg_constants is lexicon (
 									"gsbe", 1.5, 			//deg/psf-s 	spdbk prop. gain on qberr 
 									"gsbi", 0.1, 		//deg/psf-s gain on qberr integral in computing spdbk cmd
 									"gy", 0.075,			//deg/ft gain on y in computing pfl roll angle cmd 
-									"gydot", 0.36,		//deg/fps gain on ydot on computing pfl roll angle cmd 
+									"gydot", 0.38,		//deg/fps gain on ydot on computing pfl roll angle cmd 
 									"h_error", 1000,		//ft altitude error bound	//deprecated
 									"hdherrcmax", 120,		//ft/s max herror correction to ref. hdot //my addition
 									"hderr_lag_k", 0.9,		//ft/s lag filter gain for hderr feedback	//my addition
@@ -499,7 +499,8 @@ global taemg_internal is lexicon(
 								"igs", 1,			//glideslope selector based on weight 
 								"iphase", -1,	//phase counter 
 								"itran", FALSE,		//signal that a phase transition has occured
-								"ireset", TRUE,		//initially true
+								"ireset", TRUE,		//guidance initialised flag 
+								"fpflag", FALSE,		//my addition - separate flag for first pass
 								"isr", 0,		// pre-final roll fader
 								"mep", FALSE,	//minimum entry point flag
 								"nzc", 0, 	//g-units normal load factor increment from equilibrium	
@@ -632,10 +633,8 @@ function taemg_dump {
 function tgexec {
 	PARAMETER taemg_input.
 	
-	local reset_flag is FALSE.
 
 	if (taemg_internal["ireset"] = TRUE) OR (taemg_input["rwid"] <> taemg_internal["rwid0"]) OR (taemg_input["ovhd"]<>taemg_internal["ovhd0"]) {
-		set reset_flag to TRUE.
 		tginit(taemg_input).
 	}
 	
@@ -671,8 +670,6 @@ function tgexec {
 		
 		tgphic(taemg_input).
 	}
-		
-	return reset_flag.
 
 }
 
@@ -803,6 +800,7 @@ FUNCTION tginit {
 	SET taemg_internal["tg_end"] TO FALSE.
 	
 	SET taemg_internal["ireset"] TO FALSE.
+	SET taemg_internal["fpflag"] TO TRUE.
 
 }
 
