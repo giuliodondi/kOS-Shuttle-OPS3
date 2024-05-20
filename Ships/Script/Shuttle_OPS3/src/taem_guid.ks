@@ -258,7 +258,7 @@ global taemg_constants is lexicon (
 									"geownzc", 0.0005, 		//1/s  gain used to correct eow error
 									"gphi", 2.5, 		//heading err gain for phic 
 									"gr", 0.005,			//deg/ft gain on rcir in computing ha roll angle command 
-									"grdot", 0.25,			//deg/fps  gain on drcir/dt in computing ha roll angle command 
+									"grdot", 0.35,			//deg/fps  gain on drcir/dt in computing ha roll angle command 
 									"gsbe", 1.5, 			//deg/psf-s 	spdbk prop. gain on qberr 
 									"gsbi", 0.1, 		//deg/psf-s gain on qberr integral in computing spdbk cmd
 									"gy", 0.075,			//deg/ft gain on y in computing pfl roll angle cmd 
