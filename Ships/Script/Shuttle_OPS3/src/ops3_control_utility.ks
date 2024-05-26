@@ -167,7 +167,7 @@ FUNCTION dap_controller_factory {
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * 2.6.
+		set this:hdot_nz_pid:Kd to kc * 6.0.
 		
 		local nz_mass_gain IS this:nz_mass_gain().
 		
