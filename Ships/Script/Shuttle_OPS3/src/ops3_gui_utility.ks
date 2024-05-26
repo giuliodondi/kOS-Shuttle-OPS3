@@ -521,16 +521,21 @@ FUNCTION is_log {
 function force_target_selection {
 	parameter force_tgt_select.
 	parameter freeze_tgt is FALSE.
+	parameter tgt_index IS FALSE.
 	
-	local k is 0.
-	for t in select_tgt:options {
-		if (t = force_tgt_select) {
-			break.
+	if (tgt_index) {
+		set select_tgt:index to force_tgt_select.
+	} else {
+		local k is 0.
+		for t in select_tgt:options {
+			if (t = force_tgt_select) {
+				break.
+			}
+			set k to k + 1.
 		}
-		set k to k + 1.
+		
+		set select_tgt:index to k.
 	}
-	
-	set select_tgt:index to k.
 	
 	wait 0.
 	
