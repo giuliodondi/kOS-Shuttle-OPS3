@@ -105,6 +105,7 @@ global entryg_constants is lexicon (
 									"ak1", -5.5,	//temp control dD/dV factor
 									//"alfm", 33.0,	//ft/s2 	desired const drag STS-1
 									"alfm", 33,	//ft/s2 	desired const drag
+									"tal_alfm", 37,	//ft/s2 	my addition: desired const drag for tal
 									"alim", 70.84,	//ft/s2 max accel in transition
 									"almn1", 0.7986355,	//max l/d cmd outside heading err deadband
 									"almn2", 0.9659258,	//max l/d cmd inside heading err deadband
@@ -152,9 +153,11 @@ global entryg_constants is lexicon (
 									"cddot9", -8.165e-3,	//1/s cddot coef
 									"cnmfs", 1.645788e-4,	//nmi/ft 	conversion from feet to nmi 
 									"crdeaf", 4,	//roll bias due to pitch modulation gain	//was 4
+									"c16_kd", 0.8, 			//my addition: c16 gain factor to control derivative damping term
 									//"ct16", list(0, 0.1354, -0.1, 0.006),	// s2/ft - nd - s2/ft	c16 coefs STS-1
 									"ct16", list(0, 0.27, -0.2, 0.018),	// s2/ft - nd - s2/ft	c16 coefs
-									"ct17", list(0, 1.537e-2, -5.8146e-1),	//s/ft - nd 	c17 coefs
+									//"ct17", list(0, 1.537e-2, -5.8146e-1),	//s/ft - nd 	c17 coefs STs-1
+									"ct17", list(0, 6.148e-3, -5.8146e-1),	//s/ft - nd 	c17 coefs
 									"ct16mn", 0.025,	//s2/ft		min c16
 									"ct16mx", 0.36,		//s2/ft 	max c16
 									"ct17mn", 0.0025,	//s/ft 		min c17
@@ -623,6 +626,9 @@ function eginit {
 	
 	//in case of a tal abort 
 	IF (entryg_input["ital"]) {
+		set entryg_constants["alfm"] to entryg_constants["tal_alfm"].
+		
+		
 		set entryg_constants["valp"] to entryg_constants["tal_valp"].
 		set entryg_constants["calp0"] to entryg_constants["tal_calp0"].
 		set entryg_constants["calp1"] to entryg_constants["tal_calp1"].
@@ -1074,12 +1080,19 @@ function eglodvcmd {
 		
 	}
 	
+	//my addition: damping term with the derivative of drag error
+	//if dd is positive we have more drag than we need and we need to increase lodv 
+	//if dd is decreasing, dd_dot is negative 
+	//if the dd_dot coef is pisitive this will dampen the rise in lodv
+	local dd_dot is (dd - entryg_internal["ddp"])/entryg_input["dtegd"].
+	
 	set entryg_internal["ddp"] to dd.
 	set entryg_internal["rk2rlp"] to entryg_internal["rk2rol"].
 	
 	//delta drag correction corrected for max drag alfm 
 	//the main vertical l/d equation
-	set entryg_internal["lodx"] to entryg_internal["aldref"] + entryg_internal["c16"]*dd + entryg_internal["c17"]*(entryg_internal["rdtrf"] + entryg_internal["dlrdot"] - entryg_input["rdot"]).
+	//added derivative of dd damping term
+	set entryg_internal["lodx"] to entryg_internal["aldref"] + entryg_internal["c16"]*(dd + entryg_constants["c16_kd"]*dd_dot) + entryg_internal["c17"]*(entryg_internal["rdtrf"] + entryg_internal["dlrdot"] - entryg_input["rdot"]).
 	set entryg_internal["lodv"] to entryg_internal["lodx"].
 	
 	//this is where we calculate delaz limits

@@ -258,7 +258,7 @@ global taemg_constants is lexicon (
 									"geownzc", 0.0005, 		//1/s  gain used to correct eow error
 									"gphi", 2.5, 		//heading err gain for phic 
 									"gr", 0.005,			//deg/ft gain on rcir in computing ha roll angle command 
-									"grdot", 0.35,			//deg/fps  gain on drcir/dt in computing ha roll angle command 
+									"grdot", 0.10,			//deg/fps  gain on drcir/dt in computing ha roll angle command 
 									"gsbe", 1.5, 			//deg/psf-s 	spdbk prop. gain on qberr 
 									"gsbi", 0.1, 		//deg/psf-s gain on qberr integral in computing spdbk cmd
 									"gy", 0.075,			//deg/ft gain on y in computing pfl roll angle cmd 
@@ -283,7 +283,7 @@ global taemg_constants is lexicon (
 									"phavgll", 30,			//deg lower lim of phavg
 									"phavgs", 13.33,		//deg slope for phavg 
 									"phavgul", 50, 			//deg upperl im for phavg 
-									"phic_hdg_lag_k", 0.85,		//my addition: hdg phase roll lag filtering constant
+									"phic_hdg_lag_k", 0.98,		//my addition: hdg phase roll lag filtering constant
 									"philm0", 50,			//deg sturn roll cmd lim
 									"philm1", 45,			//deg acq roll cmd lim 
 									//"philm2", 60,			//deg heading alignment roll cmd lim 		//OTT

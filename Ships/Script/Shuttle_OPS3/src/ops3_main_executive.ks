@@ -38,9 +38,9 @@ FUNCTION ops3_main_exec {
 	if (SHIP:VELOCITY:SURFACE:MAG < parameters["surfv_skip_to_taem"]) {
 		set skip_2_taem_flag to true.
 		
-		local closest_site is get_closest_site(ldgsiteslex)[1].
+		local closest_site is get_closest_site(ldgsiteslex)[0].
 		
-		force_target_selection(closest_site).
+		force_target_selection(closest_site,FALSE,TRUE).
 	}
 	
 	local hud_datalex IS get_hud_datalex().

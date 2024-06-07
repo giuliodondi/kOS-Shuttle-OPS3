@@ -21,7 +21,10 @@ FUNCTION define_td_points {
 			SET rwydeflist TO site.
 		}
 		
+		local rep_pos is "".
+		
 		FOR rwy IN rwydeflist {
+			set rep_pos to rwy["position"].
 			initialise_rwy_guid_pts(
 				rwyslex,
 				sitename,
@@ -32,7 +35,10 @@ FUNCTION define_td_points {
 			).
 		}
 		
-		SET ldgsiteslex[sitename] TO LEXICON("rwys", rwyslex).
+		SET ldgsiteslex[sitename] TO LEXICON(
+										"rwys", rwyslex,
+										"position", rep_pos
+									).
 
 	}
 
