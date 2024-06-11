@@ -33,6 +33,7 @@ Only designed for use in KSP with full RSS - Realism Overhaul andm y fork of Spa
 
 ## Known Incompatibilities
 - Atmospheric Autopilot
+- POSSIBLY Trajectories - more study is needed
 
 ## (Warmly) Suggested mods
 - Kerbal Konstructs to place runways to land on, they must be at least 1.5x longer than the stock KSC runway.
