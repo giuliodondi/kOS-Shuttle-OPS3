@@ -569,8 +569,6 @@ FUNCTION orbit_alt_vsat {
 
 }
 
-
-
 //VEHICLE-SPECIFIC FUNCTIONS
 
 
@@ -889,4 +887,42 @@ FUNCTION launchAzimuth {
 	}
 	
 	RETURN azimuth.
+}
+
+
+
+
+//other-bodies stuff 
+
+//rotational angular velocities in degrees per second
+function body_angular_vel {
+	PARAMETER body_.
+	
+	return body_:angularvel:mag * constant:radtodeg.
+}
+
+FUNCTION body_orbital_angular_vel {
+	PARAMETER body_.
+	
+	return 360/body_:orbit:period.
+}
+
+function body_orbital_normal_vec {
+	PARAMETER body_.
+	
+	local parent_body is body_:orbit:body.
+	
+	local posvec_parent is body_:position - parent_body:position.
+	local orbv is body_:orbit:velocity:orbit.
+	
+	RETURN VCRS(posvec_parent,orbv):NORMALIZED.
+}
+
+//takes a lstlng position and 
+//transforms it into a position defined on a given body
+function fix_site_position_body {
+	parameter pos.
+	parameter body_.
+	
+	return body_:GEOPOSITIONLATLNG(pos:LAT, pos:LNG).
 }

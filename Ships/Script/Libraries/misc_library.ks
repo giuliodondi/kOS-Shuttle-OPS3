@@ -180,6 +180,28 @@ FUNCTION arrow_bodyvec {
 
 }
 
+//draw a vector centered on another body  with label, by default its centered on the body and scaled to 2.2x radius
+FUNCTION arrow_foreignbody {
+	PARAMETER foreignbody.
+	PARAMETER vec.
+	PARAMETER lab.
+	PARAMETER scl IS 2.2.
+	
+	LOCAL v_ IS vec:NORMALIZED*foreignbody:RADIUS.
+	LOCAL width_ IS 0.001*v_:MAG/(1e06).
+	
+	VECDRAW(
+      foreignbody:POSITION,
+      v_,
+      RGB(1,0,0),
+      lab,
+      scl,
+      TRUE,
+      width_
+    ).
+
+}
+
 //draw a vector  with label centered on the ship and scaled to 30 times its length
 FUNCTION arrow_ship {
 	PARAMETER vec.
@@ -400,14 +422,15 @@ declare function sectotime_simple {
 	
 }
 
+function random_int_range {
+	parameter range_.
+	return FLOOR(range_*RANDOM()).
+}
 
 //select a random element from a list
 FUNCTION select_rand{
 	PARAMETER lst.
-	
-	LOCAL len IS lst:LENGTH.
-	
-	RETURN lst[FLOOR(len*RANDOM())].
+	RETURN lst[random_int_range(lst:LENGTH)].
 }
 
 

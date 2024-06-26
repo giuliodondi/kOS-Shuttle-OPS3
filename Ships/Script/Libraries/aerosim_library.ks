@@ -503,6 +503,31 @@ FUNCTION coast_rk4 {
 	RETURN state.
 }
 
+//conic state extrapolation function / gravity integrator
+FUNCTION cse_rk3 {
+	PARAMETER r0.
+	PARAMETER v0.
+	PARAMETER tgo.
+		
+	LOCAL nstep IS 30.
+	LOCAL dT Is tgo/nstep.
+	
+	LOCAl simstate IS blank_simstate(
+		LEXICON(
+				"position", r0,
+				"velocity", v0
+		)
+	).
+	
+	FROM { LOCAL i IS 1. } UNTIL i>nstep STEP { SET i TO i+1. } DO {
+		SET simstate TO clone_simstate(coast_rk3(dT, simstate)).
+	}
+	
+	RETURN LISt(
+				simstate["position"],
+				simstate["velocity"]
+	).
+}
 
 
 
