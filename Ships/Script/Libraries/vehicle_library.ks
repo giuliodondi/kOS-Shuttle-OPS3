@@ -237,6 +237,15 @@ FUNCTION shutdown_all_engines {
 	}	
 }
 
+FUNCTION engine_flameout {
+
+	local eng_flameout is true.
+	FOR e_ IN get_running_engines() {
+		set eng_flameout to (eng_flameout and (e_:FLAMEOUT)).
+	}
+	RETURN eng_flameout.
+}
+
 //measures current total engine thrust vector and isp of running engines
 
 FUNCTION get_current_thrust_isp {
