@@ -1550,9 +1550,10 @@ function grtrn {
 	set taemg_internal["gralpr"] to taemg_internal["gralpr"] / abs(taemg_input["cosphi"]).
 	
 	if (taemg_internal["iphase"] = 5) { 
+		//my modification: force switch to alptran if we start climbing and haven't switched by then
 		if (
-			(taemg_input["hdot"] > taemg_constants["hdtrn"])
-			and (taemg_input["alpha"] > taemg_internal["gralpr"])
+			((taemg_input["hdot"] > taemg_constants["hdtrn"]) and (taemg_input["alpha"] >= taemg_internal["gralpr"]))
+			or (taemg_input["hdot"] > 0)
 		) {
 			set taemg_internal["iphase"] to 4.
 			set taemg_internal["itran"] to TRUE.
