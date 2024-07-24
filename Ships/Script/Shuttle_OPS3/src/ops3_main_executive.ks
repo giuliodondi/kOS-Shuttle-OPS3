@@ -289,6 +289,10 @@ FUNCTION ops3_main_exec {
 
 		make_taem_vsit_GUI().
 		
+		if (grtls_flag) or (cont_flag) {
+			set_dap_auto().
+		}
+		
 		LOCAL al_end_flag Is FALSE.
 		
 		until (quit_program OR al_end_flag) {

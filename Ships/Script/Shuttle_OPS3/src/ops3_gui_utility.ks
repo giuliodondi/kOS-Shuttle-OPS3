@@ -362,9 +362,9 @@ FUNCTION make_main_ops3_gui {
 	SET dap_b:STYLE:WIDTH TO 70.
 	SET dap_b:STYLE:HEIGHT TO 25.
 	SET dap_b:STYLE:ALIGN TO "center".
-	dap_b:addoption("OFF").
-	dap_b:addoption("CSS").
-	dap_b:addoption("AUTO").
+	dap_b:addoption("OFF").		//index 0
+	dap_b:addoption("CSS").		//index 1
+	dap_b:addoption("AUTO").		//index 2
 	toggles_box:addspacing(15).
 	
 	SET dap_b:ONCHANGE to {
@@ -382,8 +382,12 @@ FUNCTION make_main_ops3_gui {
 	GLOBAL flptrmb IS  toggles_box:ADDCHECKBOX("Auto Flaps",false).
 	toggles_box:addspacing(15).	
 	
+	set flptrmb:pressed to true.
+	
 	GLOBAL arbkb IS  toggles_box:ADDCHECKBOX("Auto Airbk",false).
 	toggles_box:addspacing(15).	
+	
+	set arbkb:pressed to true.
 	
 	GLOBAL reset_guidb is toggles_box:ADDBUTTON("RESET").
 	SET reset_guidb:STYLE:WIDTH TO 55.
@@ -490,6 +494,12 @@ FUNCTION is_apch_overhead {
 
 FUNCTION disengage_dap {
 	SET dap_b:INDEX TO 0.
+	dap_b:ONCHANGE(dap_b:VALUE).	
+	WAIT 0.
+}
+
+function set_dap_auto {
+	SET dap_b:INDEX TO 2.
 	dap_b:ONCHANGE(dap_b:VALUE).	
 	WAIT 0.
 }
