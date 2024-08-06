@@ -253,23 +253,46 @@ FUNCTION vector_pos_bearing {
 }
 
 
+//get a list of runways from the site lexicon, suport for multiple runways per site 
+FUNCTION get_rwylist {
+	PARAMETER sites_lex.
+
+	local rwylist is list().
+	
+	FOR s in sites_lex:KEYS {
+		LOCAL site IS sites_lex[s].
+		
+		IF (site:ISTYPE("LEXICON")) {
+			rwylist:add(site).
+		} ELSE IF (site:ISTYPE("LIST")) {
+			for sr in site {
+				rwylist:add(sr).
+			}
+		}
+	}
+	
+	return rwylist.
+}
+
+
+
 //determine which site is the closest to the current position.
 // takes in a lexicon of sites which are themselves lexicons
 // each must have at least the "position" field defined
 FUNCTION get_closest_site {
 	PARAMETER sites_lex.
+	parameter pos IS SHIP:GEOPOSITION.
 
-	LOCAL pos IS SHIP:GEOPOSITION.
+	local rwylist is get_rwylist(sites_lex).
 
 	LOCAL min_dist IS 0.
 	LOCAL closest_site IS 0.
 	LOCAL closest_site_idx IS 0.
 	LOCAL k IS 0.
 
-	FOR s in sites_lex:KEYS {
+	FOR rw in rwylist {
 		
-		LOCAL site IS sites_lex[s].
-		LOCAL sitepos IS site["position"].
+		LOCAL sitepos IS rw["position"].
 		
 		LOCAL sitedist IS downrangedist(pos,sitepos).
 
@@ -286,7 +309,48 @@ FUNCTION get_closest_site {
 		}
 		SET k TO k + 1.
 	}
+	
+	
 	RETURN LIST(closest_site_idx,closest_site).
+}
+
+
+function get_sites_downrange {
+	parameter sites_lex.
+	parameter posvec.
+	parameter dwnrng_dir.
+	parameter min_range is 0.		//km
+	parameter max_range is 25000.		//km
+	
+	local downrange_sites is list().
+	local normv is vcrs(posvec, dwnrng_dir):normalized.
+	
+	FOR s in ldgsiteslex:KEYS {
+		
+		LOCAL site IS ldgsiteslex[s].
+		
+		local rwypos is 0.
+		
+		IF (site:ISTYPE("LEXICON")) {
+			set rwypos to site["position"].
+		} ELSE IF (site:ISTYPE("LIST")) {
+			set rwypos to site[0]["position"].
+		}
+	
+		LOCAL sitevec IS pos2vec(rwypos).
+		
+		local siteang is signed_angle(posvec, sitevec, normv, 0).
+		
+		if (siteang > 0) {
+			LOCAL sitedist IS greatcircledist(posvec,sitevec).
+			
+			if (sitedist > min_range) and (sitedist < max_range) {
+				downrange_sites:add(s).
+			}
+		}
+	}
+	
+	return downrange_sites.
 }
 
 
@@ -356,11 +420,12 @@ function state_vector_orb_elems {
 	RETURN LEXICON(
 			"ap", ap,
 			"pe", pe,
-			"ecc_", ecc_,
+			"sma", sma_,
+			"ecc", ecc_,
 			"incl", incl,
-			"lan_", lan_,
+			"lan", lan_,
 			"periarg", periarg,
-			"eta_", eta_
+			"eta", eta_
 	).
 
 }
@@ -495,7 +560,14 @@ FUNCTION orbit_eta_alt {
 
 }
 
+// calculates circular orbital velocity at altitude 
+//altitude must be measured from the body centre
+FUNCTION orbit_alt_vsat {
+	parameter h.
+	
+	RETURN SQRT( BODY:MU / h ).
 
+}
 
 //VEHICLE-SPECIFIC FUNCTIONS
 
@@ -553,9 +625,11 @@ FUNCTION get_pitch {
 
 //get current vehicle roll angle wrt local horizontal and vertical
 FUNCTION get_roll_lvlh {
+	parameter facingdir is SHIP:FACING.
+
 	LOCAL topvec IS -SHIP:ORBIT:BODY:POSITION:NORMALIZED.
-	LOCAL horiz_facing IS VXCL(topvec,SHIP:FACING:FOREVECTOR:NORMALIZED):NORMALIZED.
-	LOCAL shiptopvec IS VXCL(horiz_facing,SHIP:FACING:TOPVECTOR:NORMALIZED):NORMALIZED.
+	LOCAL horiz_facing IS VXCL(topvec,facingdir:FOREVECTOR:NORMALIZED):NORMALIZED.
+	LOCAL shiptopvec IS VXCL(horiz_facing,facingdir:TOPVECTOR:NORMALIZED):NORMALIZED.
 	
 	RETURN signed_angle(shiptopvec,topvec,horiz_facing,0).
 }
@@ -563,8 +637,11 @@ FUNCTION get_roll_lvlh {
 
 //get current vehicle pitch angle wrt local horizontal and vertical
 FUNCTION get_pitch_lvlh {
+	parameter facingdir is SHIP:FACING.
+
+	local facingvec is facingdir:FOREVECTOR:NORMALIZED.
+
 	LOCAL topvec IS -SHIP:ORBIT:BODY:POSITION:NORMALIZED.
-	LOCAL facingvec IS SHIP:FACING:FOREVECTOR:NORMALIZED.
 	LOCAL horiz_facing IS VXCL(topvec,facingvec):NORMALIZED.
 	LOCAL sidevec IS VCRS(horiz_facing,topvec).
 	RETURN signed_angle(
@@ -572,6 +649,24 @@ FUNCTION get_pitch_lvlh {
 						facingvec,
 						sidevec,
 						0
+	).
+}
+
+function get_az_lvlh {
+	parameter facingdir is SHIP:FACING.
+
+	local facingvec is facingdir:FOREVECTOR:NORMALIZED.
+	
+	LOCAL topvec IS -SHIP:ORBIT:BODY:POSITION:NORMALIZED.
+	
+	local northvec is vxcl(topvec, v(0,1,0)).
+	LOCAL horiz_facing IS VXCL(topvec,facingvec):NORMALIZED.
+	
+	RETURN signed_angle(
+						northvec,
+						horiz_facing,
+						topvec,
+						1
 	).
 }
 
@@ -792,4 +887,42 @@ FUNCTION launchAzimuth {
 	}
 	
 	RETURN azimuth.
+}
+
+
+
+
+//other-bodies stuff 
+
+//rotational angular velocities in degrees per second
+function body_angular_vel {
+	PARAMETER body_.
+	
+	return body_:angularvel:mag * constant:radtodeg.
+}
+
+FUNCTION body_orbital_angular_vel {
+	PARAMETER body_.
+	
+	return 360/body_:orbit:period.
+}
+
+function body_orbital_normal_vec {
+	PARAMETER body_.
+	
+	local parent_body is body_:orbit:body.
+	
+	local posvec_parent is body_:position - parent_body:position.
+	local orbv is body_:orbit:velocity:orbit.
+	
+	RETURN VCRS(posvec_parent,orbv):NORMALIZED.
+}
+
+//takes a lstlng position and 
+//transforms it into a position defined on a given body
+function fix_site_position_body {
+	parameter pos.
+	parameter body_.
+	
+	return body_:GEOPOSITIONLATLNG(pos:LAT, pos:LNG).
 }

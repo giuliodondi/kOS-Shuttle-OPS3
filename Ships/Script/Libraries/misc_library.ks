@@ -124,8 +124,8 @@ FUNCTION arrow {
 	PARAMETER vec.
 	PARAMETER lab.
 	PARAMETER vec_centre IS v(0,0,0).
-	PARAMETER scl IS 10.
-	PARAMETER wdh IS 0.5.
+	PARAMETER scl IS 2.2.
+	PARAMETER wdh IS 0.2.
 	
 	VECDRAW(
       vec_centre,
@@ -156,6 +156,48 @@ FUNCTION arrow_body {
       scl,
       TRUE,
       wdh/scl
+    ).
+
+}
+
+//draw a vector  with label, centered on a position around the body and scaled to 2.2x radius
+FUNCTION arrow_bodyvec {
+	PARAMETER vec.
+	PARAMETER lab.
+	PARAMETER bodyvec_origin.
+	PARAMETER scl IS 2.2.
+	PARAMETER wdh IS 0.2.
+	
+	VECDRAW(
+      SHIP:ORBIT:BODY:POSITION + scl*bodyvec_origin,
+      vec,
+      RGB(1,0,0),
+      lab,
+      scl,
+      TRUE,
+      wdh/scl
+    ).
+
+}
+
+//draw a vector centered on another body  with label, by default its centered on the body and scaled to 2.2x radius
+FUNCTION arrow_foreignbody {
+	PARAMETER foreignbody.
+	PARAMETER vec.
+	PARAMETER lab.
+	PARAMETER scl IS 2.2.
+	
+	LOCAL v_ IS vec:NORMALIZED*foreignbody:RADIUS.
+	LOCAL width_ IS 0.001*v_:MAG/(1e06).
+	
+	VECDRAW(
+      foreignbody:POSITION,
+      v_,
+      RGB(1,0,0),
+      lab,
+      scl,
+      TRUE,
+      width_
     ).
 
 }
@@ -380,14 +422,15 @@ declare function sectotime_simple {
 	
 }
 
+function random_int_range {
+	parameter range_.
+	return FLOOR(range_*RANDOM()).
+}
 
 //select a random element from a list
 FUNCTION select_rand{
 	PARAMETER lst.
-	
-	LOCAL len IS lst:LENGTH.
-	
-	RETURN lst[FLOOR(len*RANDOM())].
+	RETURN lst[random_int_range(lst:LENGTH)].
 }
 
 
@@ -567,13 +610,13 @@ FUNCTION warp_controller {
 	
 	LOCAL new_warp IS cur_warp.
 	
-	IF time_span > (3600 + final_wait) {
+	IF time_span > (5000 + final_wait) {
 		set new_warp to 4.
 	}
-	ELSE IF time_span > (400 + final_wait) {
+	ELSE IF time_span > (500 + final_wait) {
 		set new_warp to 3.
 	}
-	ELSE IF time_span > (60 + final_wait) {
+	ELSE IF time_span > (90 + final_wait) {
 		set new_warp to 2.
 	}
 	ELSE IF time_span > final_wait {

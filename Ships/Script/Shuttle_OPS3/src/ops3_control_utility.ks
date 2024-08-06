@@ -3,19 +3,23 @@ GLOBAL g0 IS 9.80665.
 STEERINGMANAGER:RESETPIDS().
 STEERINGMANAGER:RESETTODEFAULT().
 
-SET STEERINGMANAGER:MAXSTOPPINGTIME TO 5.5.
+
 SET STEERINGMANAGER:PITCHTS TO 8.0.
-SET STEERINGMANAGER:YAWTS TO 3.
-SET STEERINGMANAGER:ROLLTS TO 2.
+SET STEERINGMANAGER:YAWTS TO 2.
+SET STEERINGMANAGER:ROLLTS TO 5.
 
 SET STEERINGMANAGER:PITCHPID:KD TO 0.5.
 SET STEERINGMANAGER:YAWPID:KD TO 0.5.
-SET STEERINGMANAGER:ROLLPID:KD TO 0.2.
+SET STEERINGMANAGER:ROLLPID:KD TO 0.5.
 
 IF (STEERINGMANAGER:PITCHPID:HASSUFFIX("epsilon")) {
-	SET STEERINGMANAGER:PITCHPID:EPSILON TO 0.1.
-	SET STEERINGMANAGER:YAWPID:EPSILON TO 0.1.
-	SET STEERINGMANAGER:ROLLPID:EPSILON TO 0.25.
+	SET STEERINGMANAGER:PITCHPID:EPSILON TO 0.5.
+	SET STEERINGMANAGER:YAWPID:EPSILON TO 0.2.
+	SET STEERINGMANAGER:ROLLPID:EPSILON TO 0.6.
+}
+
+IF (STEERINGMANAGER:PITCHPID:HASSUFFIX("TORQUEEPSILONMAX")) {
+	set STEERINGMANAGER:TORQUEEPSILONMAX TO 0.002.
 }
 
 
@@ -27,6 +31,7 @@ FUNCTION dap_controller_factory {
 	LOCAL this IS lexicon().
 	
 	this:add("cur_mode", "").
+	this:add("is_css", FALSE).
 	
 	this:add("steering_dir", SHIP:FACINg).
 	
@@ -40,6 +45,8 @@ FUNCTION dap_controller_factory {
 		SET this:iteration_dt TO this:last_time - old_t.
 	}).
 	
+	this:add("delta_roll",0).
+	
 	this:add("prog_pitch",0).
 	this:add("prog_yaw",0).
 	this:add("prog_roll",0).
@@ -48,6 +55,7 @@ FUNCTION dap_controller_factory {
 	this:add("lvlh_roll",0).
 	this:add("fpa",0).
 	
+	this:add("h", 0).
 	this:add("hdot", 0).
 	this:add("aero", LEXICON(
 							"nz", 0,
@@ -68,6 +76,9 @@ FUNCTION dap_controller_factory {
 		SET this:lvlh_roll TO get_roll_lvlh().
 		set this:fpa to get_surf_fpa().
 		
+		set this:delta_roll to this:tgt_roll - this:prog_roll.
+		
+		set this:h to pos_rwy_alt(-SHIP:ORBIT:BODY:POSITION, tgtrwy).
 		SET this:hdot to SHIP:VERTICALSPEED.
 		
 		//drag forces are alyways in imperial
@@ -75,12 +86,14 @@ FUNCTION dap_controller_factory {
 		SET this:aero:nz to aeroacc["lift"] / g0.
 		SET this:aero:drag to aeroacc["drag"]*mt2ft.
 		SET this:aero:load to aeroacc["load"]:MAG*mt2ft.
-		SET this:aero:lod to aeroacc["lift"]/aeroacc["drag"].
+		if (this:aero:drag > 0) {
+			SET this:aero:lod to aeroacc["lift"]/aeroacc["drag"].
+		} else {
+			SET this:aero:lod to 0.
+		}
 
 		SET this:wow to measure_wow().
 	}).
-	
-	this:measure_cur_state().
 	
 	this:add("tgt_hdot", 0).
 	this:add("tgt_nz", 0).
@@ -93,16 +106,24 @@ FUNCTION dap_controller_factory {
 	this:add("steer_yaw",0).
 	this:add("steer_roll",0).
 	
+	
+	
 	this:add("reset_steering",{
 		set this:cur_mode to "".
 		set this:steer_pitch to this:prog_pitch.
 		set this:steer_roll to this:prog_roll.
 		set this:steer_yaw to 0.
 		set this:steer_lvlh_pitch TO this:lvlh_pitch.
+		set this:tgt_pitch to this:prog_pitch.
+		set this:tgt_roll to this:prog_roll.
+		set this:tgt_yaw to 0.
 		SET this:tgt_hdot TO this:hdot.
 		SET this:tgt_nz TO this:aero:nz.
 		SET this:steering_dir TO SHIP:FACINg.
 		SET this:wow TO FALSE.
+		
+		this:hdot_nz_pid:RESET.
+		this:nz_pitch_pid:RESET.
 	}).
 
 
@@ -118,20 +139,41 @@ FUNCTION dap_controller_factory {
 		return -this:nz_pitch_pid:UPDATE(this:last_time, this:tgt_nz - this:aero:nz ).
 	}).
 	
-	this:add("set_taem_hdot_gains", {
+	this:add("set_grtls_gains", {
+
+		set this:nz_pitch_pid:Kp to 2.2.
+		set this:nz_pitch_pid:Ki to 0.
+		set this:nz_pitch_pid:Kd to 2.8.
+	}).
+	
+	this:add("nz_mass_gain", {return 0.8 + 0.007 * (SHIP:MASS - 80).}).
+	
+	this:add("set_taem_gains", {
 		local kc is 0.004.
 
 		set this:hdot_nz_pid:Kp to kc.
-		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * 2.9.
+		set this:hdot_nz_pid:Ki to kc * 0.
+		set this:hdot_nz_pid:Kd to kc * 5.0.
+		
+		local nz_mass_gain IS this:nz_mass_gain().
+		
+		set this:nz_pitch_pid:Kp to nz_mass_gain * 3.3.
+		set this:nz_pitch_pid:Ki to 0.
+		set this:nz_pitch_pid:Kd to nz_mass_gain * 4.2.
 	}).
 
-	this:add("set_flare_hdot_gains", {
-		local kc is 0.0045.
+	this:add("set_flare_gains", {
+		local kc is 0.0048.
 
 		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to 0.
-		set this:hdot_nz_pid:Kd to kc * 2.0.
+		set this:hdot_nz_pid:Kd to kc * 6.0.
+		
+		local nz_mass_gain IS this:nz_mass_gain().
+		
+		set this:nz_pitch_pid:Kp to nz_mass_gain * 3.3.
+		set this:nz_pitch_pid:Ki to 0.
+		set this:nz_pitch_pid:Kd to nz_mass_gain * 3.8.
 	}).
 	
 	//should be consistent with taem nz limits
@@ -150,6 +192,7 @@ FUNCTION dap_controller_factory {
 	//control prograde pitch and roll
 	this:add("update_css_prograde", {
 		set this:cur_mode to "css_prograde".
+		set this:is_css to TRUE.
 		this:measure_cur_state().
 		
 		LOCAL rollgain IS 0.5.
@@ -172,6 +215,7 @@ FUNCTION dap_controller_factory {
 	this:add("update_css_lvlh", {
 		parameter direct_pitch.
 		set this:cur_mode to "css_lvlh".
+		set this:is_css to TRUE.
 		this:measure_cur_state().
 		
 		//gains suitable for manoeivrable steerign in atmosphere
@@ -186,7 +230,7 @@ FUNCTION dap_controller_factory {
 		LOCAL deltapitch IS time_gain * (SHIP:CONTROL:PILOTPITCH - SHIP:CONTROL:PILOTPITCHTRIM).
 		LOCAL deltayaw IS yawgain * (SHIP:CONTROL:PILOTYAW - SHIP:CONTROL:PILOTYAWTRIM).
 		
-		LOCAL cosroll IS MAX(ABS(COS(this:steer_roll)), 0.5).
+		LOCAL cosroll IS MAX(ABS(COS(this:steer_roll)), 0.766).
 		
 		IF (this:wow) {
 			SET this:steer_pitch TO this:prog_pitch.
@@ -212,9 +256,10 @@ FUNCTION dap_controller_factory {
 	//steer directly to target prograde pitch and roll
 	this:add("update_auto_prograde", {
 		set this:cur_mode to "auto_prograde".
+		set this:is_css to FALSE.
 		this:measure_cur_state().
 		
-		SET this:steer_roll TO this:prog_roll + CLAMP(this:tgt_roll - this:prog_roll, this:delta_roll_lims[0], this:delta_roll_lims[1]).
+		SET this:steer_roll TO this:prog_roll + CLAMP(this:delta_roll, this:delta_roll_lims[0], this:delta_roll_lims[1]).
 		SET this:steer_pitch TO this:prog_pitch + CLAMP(this:tgt_pitch - this:prog_pitch, this:delta_pch_lims[0], this:delta_pch_lims[1]).
 		SET this:steer_yaw TO this:tgt_yaw.
 		
@@ -224,13 +269,14 @@ FUNCTION dap_controller_factory {
 	//steer to target roll and keep target nz 
 	this:add("update_auto_nz", {
 		set this:cur_mode to "auto_nz".
+		set this:is_css to FALSE.
 		this:measure_cur_state().
 		
 		IF (NOT this:wow) {
 			SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
 		}
 		
-		SET this:steer_roll TO this:prog_roll + CLAMP(this:tgt_roll - this:prog_roll,this:delta_roll_lims[0], this:delta_roll_lims[1]).
+		SET this:steer_roll TO this:prog_roll + CLAMP(this:delta_roll,this:delta_roll_lims[0], this:delta_roll_lims[1]).
 		SET this:steer_yaw TO this:tgt_yaw.
 		
 		this:update_steering().
@@ -239,14 +285,18 @@ FUNCTION dap_controller_factory {
 	//steer to target roll and keep target hdot 
 	this:add("update_auto_hdot", {
 		set this:cur_mode to "auto_hdot".
+		set this:is_css to FALSE.
 		this:measure_cur_state().
 		
+		local delta_roll is this:delta_roll.
+		
 		IF (NOT this:wow) {
-			SET this:tgt_nz TO CLAMP(this:aero:nz + (this:update_hdot_pid()) / COS(this:prog_roll), this:nz_lims[0], this:nz_lims[1]).
+			local roll_corr is max(abs(COS(this:prog_roll)), 0.6).
+			SET this:tgt_nz TO CLAMP(this:aero:nz + (this:update_hdot_pid() / roll_corr), this:nz_lims[0], this:nz_lims[1]).
 			SET this:steer_pitch TO this:steer_pitch + CLAMP(this:update_nz_pid(), this:delta_pch_lims[0], this:delta_pch_lims[1]).
 		}
 		
-		SET this:steer_roll TO this:prog_roll + CLAMP(this:tgt_roll - this:prog_roll,this:delta_roll_lims[0], this:delta_roll_lims[1]).
+		SET this:steer_roll TO this:prog_roll + CLAMP(delta_roll, this:delta_roll_lims[0], this:delta_roll_lims[1]).
 		SET this:steer_yaw TO this:tgt_yaw.
 		
 		this:update_steering().
@@ -258,6 +308,13 @@ FUNCTION dap_controller_factory {
 		SET this:steer_roll TO CLAMP(this:steer_roll, this:roll_lims[0], this:roll_lims[1]).
 		SET this:steer_pitch TO CLAMP(this:steer_pitch, this:pitch_lims[0], this:pitch_lims[1]).
 		SET this:steer_yaw TO CLAMP(this:steer_yaw, this:yaw_lims[0], this:yaw_lims[1]).
+		
+		//update steering manager
+		if (this:is_css) OR (abs(this:delta_roll) >= 10) {
+			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 5.5.
+		} else {
+			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 1.3.
+		}
 		
 		SET this:steering_dir TO this:create_prog_steering_dir(
 			this:steer_pitch,
@@ -335,6 +392,8 @@ FUNCTION dap_controller_factory {
 	
 	this:reset_steering().
 	
+	this:measure_cur_state().
+	
 	return this.
 }
 
@@ -358,17 +417,25 @@ FUNCTION aerosurfaces_control_factory {
 									),
 									LEXICON(
 											"mod",SHIP:PARTSDUBBED("ShuttleBodyFlap")[0]:getmodule("FARControllableSurface"),
-											"flap_defl_max",12,
+											"flap_defl_max",22.5,
 											"flap_defl_min",-22.5,
-											"spdbk_defl_max",-8
+											"spdbk_defl_max",-6
 									)
 										
 			)
 	).
 	
+
+	local ruddermods is SHIP:PARTSDUBBED("ShuttleTailControl")[0]:MODULESNAMED("ModuleControlSurface").
+	
+	if (ruddermods:length < 2) {
+		print "Error, not enough rudder control modules found" at (0,20).
+		return 1/0.
+	}
+	
 	this:ADD("rudders",LIST(
-						SHIP:PARTSDUBBED("ShuttleTailControl")[0]:MODULESNAMED("ModuleControlSurface")[0],
-						SHIP:PARTSDUBBED("ShuttleTailControl")[0]:MODULESNAMED("ModuleControlSurface")[1]
+							 ruddermods[0],
+							 ruddermods[1]
 					)
 	).
 	
@@ -507,12 +574,4 @@ FUNCTION aerosurfaces_control_factory {
 	this["deflect"]().
 	
 	RETURN this.
-}
-
-FUNCTION shutdown_engines {
-	//shutdown engines, needed for airbrake control 
-	LISt ENGINES IN englist.
-	FOR e IN englist {
-			e:shutdown.
-	}
 }

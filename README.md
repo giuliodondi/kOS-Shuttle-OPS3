@@ -1,13 +1,15 @@
 [![License: CC BY 4.0](https://licensebuttons.net/l/by/4.0/80x15.png)](https://creativecommons.org/licenses/by/4.0/)
 
 # Kerbal Space Program Space Shuttle OPS3 Entry Guidance
-Real Entry and Landing guidance for the Space Shuttle in KSP / RO
 
-# Work In Progress, not yet functional
+## updated July 2024
 
-This will be the kOS implementation of the real-world Shuttle Entry, TAEM and Approach guidance, also including GRTLS  
+<p align="center">
+  <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/ops3_cover.png" width="700" >
+</p>
 
-Only designed to be compatible with my fork of Space Shuttle System (https://github.com/giuliodondi/Space-Shuttle-System-Expanded) with realistic aerodynamics  
+This is the kOS implementation of the real-world Shuttle Entry, TAEM and Approach guidance, also including GRTLS guidance.  
+Only designed for use in KSP with full RSS - Realism Overhaul andm y fork of Space Shuttle System
 
 ## References
 - [MCC level C formulation requirements. Entry guidance and entry autopilot, optional TAEM targeting](https://ntrs.nasa.gov/api/citations/19800016873/downloads/19800016873.pdf)
@@ -18,15 +20,72 @@ Only designed to be compatible with my fork of Space Shuttle System (https://git
 
 # Installation
 
-WIP
+## Requirements
+- Your KSP language **must be set to English** or else the script will not be able to execute actions on the Shuttle parts
+- If you use a joystick, check that the wheel steering axis is bound to the same control axs you use for yaw, or the program won't be able to stay on the runway on landing
+- A complete install of RSS/Realism Overhaul
+- kOS version 1.3 at least
+- kOS Ferram, now available on CKAN
+- [My own fork of Space Shuttle System, no other version will work](https://github.com/giuliodondi/Space-Shuttle-System-Expanded).
+  - as part of the SSS-fork installation, you will also need to install my fork of Ferram on top of the one coming from RO, follow the README therein
 
+### This program for the moment is not usable with SOCK
+
+## Known Incompatibilities
+- Atmospheric Autopilot
+- POSSIBLY Trajectories - more study is needed
+
+## (Warmly) Suggested mods
+- Kerbal Konstructs to place runways to land on, they must be at least 1.5x longer than the stock KSC runway.
+- [My fork of SpaceODY's STS Locations mod, which contains definitions for runways all over the globe](https://github.com/giuliodondi/STS-Locations.git)
+- Some mod to display the surface-relative trajectory in the map view. I recommend Principia.
+
+## Installation
+
+Put the contents of the Scripts folder inside Ship/Script so that kOS can see all the files.
+In particular, you will have several scripts to run:
+- **ops3_deorbit.ks** for deorbit targeting
+- **ops3.ks**, the main reentry program
+- **measurerwy.ks** which is a little helper to make your own runway definitions
 
 # Setup
 
-WIP
+## Runways
+First, you need to place runways to land on. Use KK to place them wherever you like, or use my fork of STS Locations to have my own Shuttle sites across the globe.  
 
+**You will need to measure the runway manually in either case.** This is because the exact placement and altitude depends on your terrain map which is likely different from mine.  
+There is a helper script in the main kOS root **measurerwy.ks** just for that. Here is how you use it:  
+- spawn on the runway you want to measure in some kind of rover or wheeled vehicle
+- drive to the near edge behind you, exactly on the runway centerline
+- run the script and press Action Group 9
+- without halting the script, drive to the opposite end of the runway, stop at the edge like before and press AG9 again,.
+- The script will print to screen all the information you need to input into the lexicon inside **Shuttle_OPS3/landing_sites.ks**.
+
+## Shuttle assembly
+
+Assemble the Orbiter from the main **Orbiter** part from my fork. **There is no longer any need for additional Airbrake parts**, the split rudder in my fork is now fully functional.
+
+Check the following settings
+- The elevons should have +100% pitch authority, +50% roll authority, 15 deflection and the rest to zero.
+- The body flap should have +100% pitch authority, 15 deflection zero for the rest.
+- The rudder should have two stock control surface modules (one for each panel) instead of one FAR module. Set deflection to 18 and control surface range to 48.
+- Flaps and spoiler settings are now irrelevant since the program will manipulate them automatically
+- **Check that the rudder airbrakes deploy and the bodyflap spoiler are NOT present in the brakes Action Group**
+- For realistic braking performance, set the main gear braking limit to 35% and the nose braking limit to 0.
+
+### Balancing CG and fuel
+
+The Shuttle Orbiter part is CG-adjusted in order to be slightly tail-heavy during reentry and on the edge of stability during approach and landing. **This is deliberate and realistic. Please refer to [the Shuttle Aerodynamic data book](https://archive.org/details/nasa_techdoc_19810067693)**.  
+
+If you're carrying payload you need to ensure it does not shift the empty CG too much. **IT IS CRUCIAL THAT YOU MEASURE THE CG WITH NO OMS OR RCS FUEL.** If the yellow CG meatball in the SPH is shifted by an entire diameter, that's already almost too much for the flaps to handle.
+
+You will need to save some 80 m/s RCS fuel for reentry balancing and control, and remember you need 80 - 100 m/s on top of that for the deorbit burn. Keep in mind that those RCS figures assume that the CG is within trim limits, If it's outside the limits, RCS will drain **fast**.  
+As a rule of thumb, I measured that in well balanced and trimmed conditions the Orbiter will drain about 350L of MMH from a single OMS pod during the entire reentry.
+Do not reenter with the OMS pods more than 50% - 60% full or you might be too tail-heavy.
 
 # Deorbit planning
+
+**Before you even start, plan your mission so that you have 80 m/s of RCS for reentry plus 80-100 m/s for the deorbit burn. Thanks to body flap trimming, there is some leeway either way but I couldn't say exactly how much.**
 
 Entry Interface is the point at which reentry begins, defined as 122km (400kft) altitude. The goal of deorbit planning is to reach this point at the right conditions for a proper reentry.  
 The critical parameters to control are velocity, range, and flight-path-angle (FPA), the angle of descent with respect to the horizontal. All these depend on the initial orbit and the placement/magnitude of the deorbit burn.
@@ -60,7 +119,7 @@ You interact with the script using two GUIS. The **Main GUI** is a panel of butt
 - _Runway_ is the runway you will land on. There are always at least two runways even if there is a single strip of tarmac (one for each side). The choice is random upon selecting the landing site, but you can override it here
 - _Apch mode_ is a parameter used by TAEM guidance, by default is set to Overhead. Leave it be for now.
 - _DAP_ selects the digital autopilot modes. **As long as you leave it OFF the program will not send any steering commands**. More on autopilot modes later on.
-- _Auto Flaps_ will enable pitch trimming by moving the elevons and body flap. **99.9% of the time you want this ON**.
+- _Auto Flaps_ will enable pitch trimming by moving the elevons and body flap. **99.9% of the time you want this ON**. Automatic trimming only activates when the aerodynamic load crosses a threshold
 - _Auto Airbk_ will toggle between manual (off) and automatic (on) rudder speedbrake functionality. **Also leave this ON during Entry** and don't worry about it until TAEM
 - _RESET_ allows you to completely reset the guidance algorithms during either Entry or TAEM. The program will also actuate this every time you change target, runway or approach.
 - _Log Data_ will log some telemetry data to the file **Ships/Script/Shuttle_OPS3/LOGS/ops3_log.csv**
@@ -99,6 +158,7 @@ Additionally, some guidance modes require the Shuttle to control quantities (suc
 
 The program is able to take the Shuttle from Entry Interface all the way to wheels stop completely automatically with the DAP set to AUTO. It's also possible to fly a complete reentry in CSS but there are a couple quirks to keep in ming dring both entry and TAEM, more on this later.
 
+The DAP will rely on RCS from entry interface all the way to below Mach 1. You may disable RCS on the forward fuselage, but keep all actuation toggles enabled on the OMS pods.
 I do not advise you to disengage the DAP at all above Mach 2, if you do you definitely need the KSP SAS and RCS and even so you might lose control very quickly.
 
 
@@ -164,7 +224,7 @@ The other data printouts display useful information:
   - _ROLREF_, the bank angle to track the profile if we had no hdot or drag error right now
 
   Also there are two yellow printouts that will only show in special situations:
-  - _ALP MODULN_ indicates that AoA modulation is in effect: if the drag error is too large, Guidance will alter the Angle of Attack a little off-profile to change drag quickly
+  - _ALP MODULN_ indicates that AoA modulation is in effect: if the drag error is too large, Guidance will alter the Angle of Attack a little off-profile to change drag quickly, up to a maximum of 3 degrees
   - _ROLL REVERSAL_ shows when the azimuth error is too large and it's time to bank in the opposite direction to stay on course, it will go off once the az error is decreasing and within limits
 
 The TRAJ displays will advance based on velocity, not the guidance phase:
@@ -258,8 +318,9 @@ Finally, this is the Vert Sit display in a very low energy situation:
 Remarks:
 - The moment S-turns are disabled is also the moment the program will not allow you to change runway or approach anymore. You will notice because all GUI button selectors become frozen
 - The auto speedbrake logic is as follows:
-  - constant above Mach 1.5 or during S-turns
+  - the maximum constant 65° above Mach 1.5
   - A function of the error with respect to a target Dynamic Pressure profile (i.e. velocity corrected for air density)
+  - max open above the S-turn energy line and min open (or closed) below the MEP energy line
 - You can use manual speedbrakes to add or subtract drag if you're way off the energy profile
 - Tips for flying with DAP set to CSS:
   -  you should make small corrections especially in pitch, as it's very easy to overshoot the HUD command
@@ -269,7 +330,29 @@ Remarks:
 
 # Glide-RTLS abort guidance
 
-WIP
+Glide-RTLS is the atmospheric guidance mode used during an RTLS abort after MECO and External Tank separation.  
+The powered guidance part is taken care of by my OPS1 ascent program, it will automatically transition to OPS3 and GRTLS guidance at the right moment.  
+
+The orbiter will be around 70km of altitude and travelling far too slowly to glide in a controlled manner, and so it will start falling very soon. Things happen fast in a GRTLS. As soon as the program engages you must enable the DAP (AUTO or CSS) and auto flaps and spoilers.  
+The display during GRTLS is VERT SIT 1 like for early TAEM, but you only focus on the top left part of the monitor, disregard the energy profile lines.
+
+<img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/vsit_grtls.png" width="350">
+
+- The mini plot in the top-left corner is Pitch vs. Mach number. THe bug will move to the left as you slow down. It is designed to give a reference to monitor what guidance is trying to do or if you fly CSS
+- The solid zig-zagged line is the lower limit, you should always stay above this line
+- The dashed line is the pitch profile during Alpha Transition, you should see the bug settle on this line eventually.
+
+The phases of GRTLs are:  
+
+- **Alpha-recovery (ALPREC)**, the Orbiter will maintain 0 bank and 45° Aoa as it plunges in the atmosphere The vertical load factor (NZ) will start climbing as the wings generate lift, above a threshold the program will transition to NZHOLD. The orbiter shoudl climb abobe the solid pitch limit line.
+- **NZ-hold (NZHOLD)**, the program will keep wings level and modulate the Orbiter's pitch to maintain a target NZ. The target value is a canned profile plus corrections to keep the total load factor (lift plus drag) within the structural limit of 2.5G. You will see the orbiter bug descend a little as pitch is modulated, and the total load factor value possibly turn yellow. The program transitions to ALPTRN when the vertical speed rises above a threshold
+- **Alpha-transition (ALPTRN)**, the pitch is lowered in a controlled manner from whatever value it had at the end of NZHOLD to a profile of Mach. Once the pitch profile is established, the program will start banking for lateral guidance. S-turns might be performed if energy is very high. The orbiter pitch bug will descend gently and should settle on the dashed line.
+
+At Mach 3.2 the program will transition to regular TAEM guidance, either ACQ or STURN phase depending on the energy state.
+
+- The energy state at the end of GTLS depends on the Range-Velocity line targeted by Powered RTLS guidance and also depends on payload, since a heavier orbiter is less affected by drag. At times the orbiter might be in a low energy condition at TAEM interface, with the **OTT ST IN** message suggesting a downmode to a Straight-In approach
+
+
 
 # Approach & Landing (A/L) guidance
 
@@ -292,15 +375,29 @@ The HUD will change to let you know you reached certain checkpoints:
 - 1500m above the runway there is a checkpoint that forces guidance from Capture into Outer Glideslope mode even if the errors are not small by then. You will notice because flap trim, vertical speed and distance will all disappear from the HUD, and altitude will be displayed in a finer format
 - During final flare, the guidance pipper disappears. If you're flying CSS, guide yourself relative to the runway
 
+Speed-wise, the Orbiter should be at around 180 m/s at the start of A/L, slow down in a controlled manner to about 145 m/s at the start of the flare, complete the flare around 120m/s and decelerating and touchdown between 90 and 80 m/s. If the dap is on AUTO, there will be some oscillations during Final Flare as it attempts to stabilise the vertical speed, I still haven't been able to dampen these out reliably 
 
 
 
-# Results from a test reentry to Edwards
+
+# Results from a test reentry to Edwards Runway 23
 
 ![sample_traj](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/traj.png)
 
+The first plot show the long-range Reentry and short-range TAEM.:
+- roll reversals are clearly visible
+- during TAEM, the vehicle stayed within the energy corridor for most of the early Acquisition phase
+- Then, eventually, an S-turn was deemed necessary. The S-turn chaged the location of the HAC entry point and the HAC turn angle
+
 ![entry_plots](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/entry_plots_1.png)
+
+- The first plot is Angle-of-Attack versus velocity. The 40/30 profile can be identified by the general shape. On top of this profile, Guidance will modulate Angle of Attack to correcr drag errors. This happens a lot during the Transition phase, as the drag errors are quite large
+- The second plot is the Roll and Yaw history. The roll reversals are identifiable, as well as the roll modulation done right after the reversal is complete to re-establish the proper vertical speed profile. Yaw shows small deviations during and right after the roll reversal, this is a limitation of the DAP and a consequence of the need to do the reversal quickly enough
+- The third plot is Drag v. velocity superimposed over the drag profiles. A small drag spike can be seen at the far left, this is the early portion of Temperature Control during which roll is kept at 0 to stabilise the descent before the first roll. Tracking of the reference lines is good up until the Transition phase, at that point Guidance has a harder time tracking the drag profile. More investigation is necessary on why this happens.
 
 ![entry_eow](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/eow.png)
 
-![]()
+This plot is the Energy-over-Weight vs range-to-go during TAEM. The three profile lines can be seen, The blue track is the actual flight data.  
+As evidenced by the trajectory plto above, Energy was within limits and strayed above the S-turn line just a little. The S-turn increases range-to-go and brings the Shuttle back insde the corridor.
+
+

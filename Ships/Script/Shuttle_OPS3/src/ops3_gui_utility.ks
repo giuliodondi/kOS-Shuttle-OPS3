@@ -73,7 +73,8 @@ FUNCTION make_global_deorbit_GUI {
 	SET select_tgt:STYLE:ALIGN TO "center".
 	FOR site IN ldgsiteslex:KEYS {
 		select_tgt:addoption(site).
-	}		
+	}	
+	set select_tgt:index to -1.
 	SET select_tgt:ONCHANGE to { 
 		PARAMETER lex_key.	
 		//pick the first runway position 
@@ -141,7 +142,14 @@ FUNCTION update_deorbit_GUI {
 	PARAMETER ei_ref_data.
 	
 	SET textEI1:text TO "  Time to EI  : " + sectotime(interf_t).
-	SET textEI2:text TO "  Delaz at EI : " + ROUND(ei_data["ei_delaz"],1) + " °".
+	
+	LOCAL text2_color IS guitextredhex.
+	if (ABS(ei_data["ei_delaz"]) < 15) {
+		SET text2_color TO guitextgreenhex.
+	}
+	LOCAL text2_str IS "  Delaz at EI : " + ROUND(ei_data["ei_delaz"],1) + " °".
+	
+	SET textEI2:text TO "<color=#" + text2_color + ">" + text2_str + "</color>".
 	
 	SET textEI3:text TO "Ref FPA at EI : " + round(ei_ref_data["ei_fpa"], 2) + " °".
 	LOCAL text4_str IS "    FPA at EI : " + round(ei_data["ei_fpa"], 2) + " °".
@@ -157,7 +165,7 @@ FUNCTION update_deorbit_GUI {
 	LOCAL text6_str IS "    Vel at EI : " + round(ei_data["ei_vel"], 1) + " m/s".
 	
 	LOCAL text6_color IS guitextredhex.
-	if (ABS(ei_ref_data["ei_vel"] - ei_data["ei_vel"]) < 5) {
+	if (ABS(ei_ref_data["ei_vel"] - ei_data["ei_vel"]) < 2) {
 		SET text6_color TO guitextgreenhex.
 	}
 	
@@ -167,7 +175,7 @@ FUNCTION update_deorbit_GUI {
 	LOCAL text8_str IS "    Rng at EI : " + round(ei_data["ei_range"], 0) + " km".
 	
 	LOCAL text8_color IS guitextredhex.
-	if (ABS(ei_ref_data["ei_range"] - ei_data["ei_range"]) < 50) {
+	if (ABS(ei_ref_data["ei_range"] - ei_data["ei_range"]) < 100) {
 		SET text8_color TO guitextgreenhex.
 	}
 	
@@ -354,9 +362,9 @@ FUNCTION make_main_ops3_gui {
 	SET dap_b:STYLE:WIDTH TO 70.
 	SET dap_b:STYLE:HEIGHT TO 25.
 	SET dap_b:STYLE:ALIGN TO "center".
-	dap_b:addoption("OFF").
-	dap_b:addoption("CSS").
-	dap_b:addoption("AUTO").
+	dap_b:addoption("OFF").		//index 0
+	dap_b:addoption("CSS").		//index 1
+	dap_b:addoption("AUTO").		//index 2
 	toggles_box:addspacing(15).
 	
 	SET dap_b:ONCHANGE to {
@@ -374,8 +382,12 @@ FUNCTION make_main_ops3_gui {
 	GLOBAL flptrmb IS  toggles_box:ADDCHECKBOX("Auto Flaps",false).
 	toggles_box:addspacing(15).	
 	
+	set flptrmb:pressed to true.
+	
 	GLOBAL arbkb IS  toggles_box:ADDCHECKBOX("Auto Airbk",false).
 	toggles_box:addspacing(15).	
+	
+	set arbkb:pressed to true.
 	
 	GLOBAL reset_guidb is toggles_box:ADDBUTTON("RESET").
 	SET reset_guidb:STYLE:WIDTH TO 55.
@@ -486,6 +498,12 @@ FUNCTION disengage_dap {
 	WAIT 0.
 }
 
+function set_dap_auto {
+	SET dap_b:INDEX TO 2.
+	dap_b:ONCHANGE(dap_b:VALUE).	
+	WAIT 0.
+}
+
 FUNCTION is_dap_engaged {
 	RETURN (NOT (dap_b:VALUE = "OFF")).
 }
@@ -508,6 +526,32 @@ FUNCTION is_guid_reset {
 
 FUNCTION is_log {
 	RETURN logb:PRESSED.
+}
+
+function force_target_selection {
+	parameter force_tgt_select.
+	parameter freeze_tgt is FALSE.
+	parameter tgt_index IS FALSE.
+	
+	if (tgt_index) {
+		set select_tgt:index to force_tgt_select.
+	} else {
+		local k is 0.
+		for t in select_tgt:options {
+			if (t = force_tgt_select) {
+				break.
+			}
+			set k to k + 1.
+		}
+		
+		set select_tgt:index to k.
+	}
+	
+	wait 0.
+	
+	if (freeze_tgt) {
+		freeze_target_site().
+	}
 }
 
 FUNCTION freeze_target_site {
@@ -576,6 +620,20 @@ FUNCTION make_entry_traj_GUI {
 	set trajleftdata4:style:margin:v to -4.
 	GLOBAL trajleftdata5 IS traj_disp_leftdatabox:ADDLABEL("PHASE xxxxxx").
 	set trajleftdata5:style:margin:v to -4.
+	
+	traj_disp_leftdatabox:addspacing(14).
+	
+	GLOBAL traj_disp_attitudebox IS traj_disp_leftdatabox:ADDVLAYOUT().
+	SET traj_disp_attitudebox:STYLE:ALIGN TO "left".
+	SET traj_disp_attitudebox:STYLE:WIDTH TO 75.
+    SET traj_disp_attitudebox:STYLE:HEIGHT TO 75.
+	
+	GLOBAL trajattdata1 IS traj_disp_attitudebox:ADDLABEL("R  XXX").
+	set trajattdata1:style:margin:v to -4.
+	GLOBAL trajattdata2 IS traj_disp_attitudebox:ADDLABEL("P  XXX").
+	set trajattdata2:style:margin:v to -4.
+	GLOBAL trajattdata3 IS traj_disp_attitudebox:ADDLABEL("Y  XXX").
+	set trajattdata3:style:margin:v to -4.
 	
 	GLOBAL traj_disp_rightdatabox IS traj_disp_overlaiddata:ADDVLAYOUT().
 	SET traj_disp_rightdatabox:STYLE:ALIGN TO "left".
@@ -680,6 +738,10 @@ function update_entry_traj_disp {
 	set trajleftdata3:text TO "DRAG      " + ROUND(gui_data["drag"],1).
 	set trajleftdata4:text TO "D REF     " + ROUND(gui_data["drag_ref"],1).
 	set trajleftdata5:text TO "PHASE     " + ROUND(gui_data["phase"],0).
+	
+	set trajattdata1:text to "R  " + round(gui_data["prog_roll"], 0).
+	set trajattdata2:text to "P  " + round(gui_data["prog_pch"], 0).
+	set trajattdata3:text to "Y  " + round(gui_data["prog_yaw"], 0).
 	
 	set trajrightdata1:text TO "HDT REF    " + ROUND(gui_data["hdot_ref"],0).
 	set trajrightdata2:text TO "ALPCMD    " + ROUND(gui_data["pitch_cmd"],0).
@@ -846,7 +908,7 @@ FUNCTION make_taem_vsit_GUI {
 	GLOBAL vsit_disp_leftdatabox IS vsit_disp_overlaiddata:ADDVLAYOUT().
 	SET vsit_disp_leftdatabox:STYLE:ALIGN TO "left".
 	SET vsit_disp_leftdatabox:STYLE:WIDTH TO 75.
-    SET vsit_disp_leftdatabox:STYLE:HEIGHT TO 75.
+    SET vsit_disp_leftdatabox:STYLE:HEIGHT TO 1.
 	set vsit_disp_leftdatabox:style:margin:h to 20.
 	set vsit_disp_leftdatabox:style:margin:v to ops3_disp_vmargin.
 	
@@ -855,7 +917,7 @@ FUNCTION make_taem_vsit_GUI {
 	SET vsit_disp_horiz_sliderbox:STYLe:HEIGHT TO 1.
 	set vsit_disp_horiz_sliderbox:style:margin:h to 148.
 	
-	vsit_disp_leftdatabox:addspacing(129).
+	vsit_disp_leftdatabox:addspacing(180).
 	
 	GLOBAL horiz_slider_label IS vsit_disp_horiz_sliderbox:ADDLABEL("").
 	set horiz_slider_label:style:margin:h to 55.
@@ -874,6 +936,11 @@ FUNCTION make_taem_vsit_GUI {
 	for w in vsit_disp_horiz_sliderbox:WIDGETS {
 		w:HIDE().
 	}
+	
+	GLOBAL vsit_disp_attitudebox IS vsit_disp_leftdatabox:ADDVLAYOUT().
+	SET vsit_disp_attitudebox:STYLE:ALIGN TO "left".
+	SET vsit_disp_attitudebox:STYLE:WIDTH TO 75.
+    SET vsit_disp_attitudebox:STYLE:HEIGHT TO 75.
 	
 	GLOBAL vsitleftdata1 IS vsit_disp_leftdatabox:ADDLABEL("R  XXX").
 	set vsitleftdata1:style:margin:v to -4.
@@ -1000,7 +1067,7 @@ function update_taem_vsit_disp {
 	
 	SET ops3_main_display_clock:text TO "MET " + sectotime_simple(MISSIONTIME, true).
 
-	if (taem_vsit_disp_counter = 1 and gui_data["rpred"] <= 53340) {
+	if (taem_vsit_disp_counter = 1 and gui_data["rpred"] <= 64000) {
 		increment_taem_vsit_disp_counter().
 	}
 	
@@ -1009,14 +1076,23 @@ function update_taem_vsit_disp {
 		reset_taem_vsit_disp().
 	}
 	
-	//horiz slider 
-	if (gui_data["guid_id"] <= 21) {
-		set vsit_horiz_slider:value to CLAMP(gui_data["hac_entry_t"],vsit_horiz_slider:MIN,vsit_horiz_slider:MAX).
-	} else {
-		set vsit_horiz_slider:value to CLAMP(gui_data["xtrack_err"],vsit_horiz_slider:MIN,vsit_horiz_slider:MAX).
+	if (taem_vsit_disp_counter=2) {
+		//horiz slider 
+		if (gui_data["guid_id"] <= 21) {
+			set vsit_horiz_slider:value to CLAMP(gui_data["hac_entry_t"],vsit_horiz_slider:MIN,vsit_horiz_slider:MAX).
+		} else {
+			set vsit_horiz_slider:value to CLAMP(gui_data["xtrack_err"],vsit_horiz_slider:MIN,vsit_horiz_slider:MAX).
+		}
 	}
 	
-	local orbiter_bug_pos is set_taem_vsit_disp_bug(v(taem_vsit_disp_x_convert(gui_data["rpred"]),taem_vsit_disp_y_convert(gui_data["eow"]), 0)).
+	local orbiter_bug_pos is LIST(0,0).
+	
+	if (gui_data["guid_id"] <= 26) AND (gui_data["guid_id"] >= 24) {
+		set orbiter_bug_pos to set_taem_vsit_disp_bug(v(grtls_disp_x_convert(gui_data["mach"]),grtls_disp_y_convert(gui_data["prog_pch"]), 0)).
+	} ELSE {
+		set orbiter_bug_pos to set_taem_vsit_disp_bug(v(taem_vsit_disp_x_convert(gui_data["rpred"]),taem_vsit_disp_y_convert(gui_data["eow"]), 0)).
+	}
+	
 	SET vsit_disp_orbiter:STYLE:margin:v to orbiter_bug_pos[1].
 	SET vsit_disp_orbiter:STYLE:margin:h to orbiter_bug_pos[0].
 	
@@ -1037,7 +1113,12 @@ function update_taem_vsit_disp {
 	set vsitrightdata2:text to "ALPHA LIMS  " + round(gui_data["alpll"], 0) + "  " +  round(gui_data["alpul"], 0).
 	set vsitrightdata3:text to "SPDBK CMD  " + round(gui_data["spdbkcmd"], 1).
 	set vsitrightdata4:text to "REF HDOT  " + round(gui_data["tgthdot"], 0).
-	set vsitrightdata5:text to "TGT NZ    " + round(gui_data["tgtnz"], 1).
+	
+	set vsitrightdata5:text to "LOAD FAC    " + round(gui_data["xlfac"], 1) + " G".
+	
+	if (gui_data["xlfac"] > 2.2) {
+		set vsitrightdata5:text to "<color=#fff600>" + vsitrightdata5:text + "</color>".
+	}
 	
 	set vsitleftdata1:text to "R  " + round(gui_data["prog_roll"], 0).
 	set vsitleftdata2:text to "P  " + round(gui_data["prog_pch"], 0).
@@ -1073,9 +1154,9 @@ function taem_vsit_disp_x_convert {
 	local out is 0.
 	
 	if (taem_vsit_disp_counter=1) {
-		set out to (rpred / 75000 -  0.66235294117).
+		set out to (rpred / 93000 -  0.64235294117).
 	} else if (taem_vsit_disp_counter=2) {
-		set out to (rpred / 49720).
+		set out to (rpred / 60000).
 	}	
 	
 	return out * 380.
@@ -1088,12 +1169,26 @@ function taem_vsit_disp_y_convert {
 	local out is 0.
 	
 	if (taem_vsit_disp_counter=1) {
-		set out to (eow / 55000  - 0.38257142857).
+		set out to (eow / 75000  - 0.33757142857).
 	} else if (taem_vsit_disp_counter=2) {
-		set out to (eow / 36000 + 0.03).
+		set out to (eow / 45000 + 0.03).
 	}	
 	
 	return 50 + 300 * out.
+}
+
+function grtls_disp_x_convert {
+	parameter mach.
+	
+	local mach_ is clamp(mach, 3.2, 6.5).
+	
+	return 60.31746 * mach_ -140.95238. 
+}
+
+function grtls_disp_y_convert {
+	parameter alp.
+
+	return 3.33333 * alp + 190.
 }
 
 
@@ -1306,7 +1401,7 @@ FUNCTION make_hud_gui {
 
 
 	GLOBAL spdbk_slider_box IS bottom_box:ADDHLAYOUT().
-	GLOBAL spdbk_slider is spdbk_slider_box:addhslider(0,0,1).
+	GLOBAL spdbk_slider is spdbk_slider_box:addhslider(0,-0.01,1).
 	SET spdbk_slider:style:vstretch to false.
 	SET spdbk_slider:style:hstretch to false.
 	SET spdbk_slider:STYLE:WIDTH TO 110.
@@ -1531,6 +1626,8 @@ FUNCTION hud_guid_labels{
 			RETURN "NZHOLD".
 		} ELSE IF (iphase=26) {
 			RETURN "ALPREC".
+		} ELSE IF (iphase=27) {
+			RETURN "STURN".
 		} 
 	} ELSE IF (iphase>=10) {
 		//entry
@@ -1616,10 +1713,10 @@ FUNCTION distance_format {
 FUNCTION speed_format {
 	PARAMETER iphase.
 
-	if (iphase <= 21) { 
-		return "M" + ROUND(ADDONS:FAR:MACH, 1).
-	} else {
+	if (iphase >= 30) OR (iphase = 22) OR (iphase = 23) {
 		return ROUND(SHIP:VELOCITY:SURFACE:MAG, 0).
+	} else { 
+		return "M" + ROUND(ADDONS:FAR:MACH, 1).
 	}
 }
 	
@@ -1627,7 +1724,7 @@ FUNCTION speed_format {
 FUNCTION hud_decluttering {
 	PARAMETER iphase.
 
-	if (iphase >= 23) {
+	if (iphase >= 30 OR iphase = 23) {
 		//hide g indicator and change nose marker 
 		nz_text:HIDE().
 		SET  pointbox:style:BG to "Shuttle_OPS3/src/gui_images/bg_marker_round.png".

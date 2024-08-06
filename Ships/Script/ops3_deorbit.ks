@@ -1,3 +1,4 @@
+@LAZYGLOBAL OFF.
 CLEARSCREEN.
 RUNPATH("0:/Libraries/misc_library").	
 RUNPATH("0:/Libraries/maths_library").	

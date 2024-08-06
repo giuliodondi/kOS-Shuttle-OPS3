@@ -1,9 +1,12 @@
 
 //			MAIN EXECUTIVE OF OPS3 REENTRY, TAEM AND LANDING
 FUNCTION ops3_main_exec {
-
-	shutdown_engines().
-
+	parameter nominal_flag.
+	parameter tal_flag.
+	parameter grtls_flag.
+	parameter cont_flag.
+	parameter force_tgt_select is "".
+	
 	GLOBAL quit_program IS FALSE.
 
 	//main guidance phase counter
@@ -14,17 +17,32 @@ FUNCTION ops3_main_exec {
 	IF (DEFINED tgtrwy) {UNSET tgtrwy.}
 	GLOBAL tgtrwy IS LEXICON().
 	
-	//did we come from an RTLS abort? 
-	LOCAL grtls_flag IS is_grtls().
-	//tal abort flag 
-	LOCAL tal_flag IS is_tal_abort().
-	
-	print "grtls? " + grtls_flag + " tal? " + tal_flag at (0,15).
-	
 	//setup main gui and hud 
 	//after the td points but before anything that modifies the default button selections
 	make_main_ops3_gui().
 	make_hud_gui().
+	
+	//will implement some custom oms dump logic to handle contingency
+	if (nominal_flag) {
+		shutdown_all_engines().
+	}
+	
+	//force target selection logic goes here
+	if (not nominal_flag) {
+		force_target_selection(force_tgt_select, TRUE).
+	}
+	
+	local skip_2_taem_flag is false.
+	
+	//if skip to taem select first target ahead 
+	if (SHIP:VELOCITY:SURFACE:MAG < parameters["surfv_skip_to_taem"]) {
+		set skip_2_taem_flag to true.
+		
+		local closest_site is get_closest_site(ldgsiteslex)[0].
+		
+		force_target_selection(closest_site,FALSE,TRUE).
+	}
+	
 	local hud_datalex IS get_hud_datalex().
 	
 	//setup dap and aerosurface controllers
@@ -58,7 +76,8 @@ FUNCTION ops3_main_exec {
 				set dap_engaged to is_dap_engaged().
 				if (dap_engaged) {
 					set css_flag to is_dap_css().
-					if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) OR (guid_id = 36) {
+					if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) OR (guid_id = 27) OR (guid_id = 36) {
+						aerosurfaces_control["set_aoa_feedback"](parameters["entry_aoa_feedback"]).
 						//reentry, alpha recovery, alpha transition, slapdown/rollout
 						if (css_flag) {
 							dap:update_css_prograde().
@@ -66,19 +85,22 @@ FUNCTION ops3_main_exec {
 							dap:update_auto_prograde().
 						}
 					} else {
+						aerosurfaces_control["set_aoa_feedback"](parameters["taem_aoa_feedback"]).
+						
 						if (css_flag) {
 							local direct_pitch_flag is (guid_id >= 34).
 							dap:update_css_lvlh(direct_pitch_flag).
 						} else {
 							 if (guid_id = 25) {
 								//nz hold
+								dap:set_grtls_gains().
 								dap:update_auto_nz().
 							} else {
 								//hdot control
-								if (guid_id = 34) {
-									dap:set_flare_hdot_gains().
+								if (guid_id >= 34) {
+									dap:set_flare_gains().
 								} else {
-									dap:set_taem_hdot_gains().
+									dap:set_taem_gains().
 								}
 								
 								dap:update_auto_hdot().
@@ -93,11 +115,11 @@ FUNCTION ops3_main_exec {
 					dap:measure_cur_state().
 				}
 				
-				if (guid_id > 11) {
+				if (guid_id > 11) OR (dap:aero:load >= parameters["xlfac_trim_on"]) {
 					aerosurfaces_control:update(is_autoflap(), is_autoairbk()).
 				}
 				
-				if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) OR (guid_id = 36) {
+				if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) OR (guid_id = 27) OR (guid_id = 36) {
 					SET hud_datalex["pipper_deltas"] TO LIST(
 															dap:tgt_roll - dap:prog_roll, 
 															dap:tgt_pitch -  dap:prog_pitch
@@ -127,10 +149,8 @@ FUNCTION ops3_main_exec {
 
 	local guidance_timer IS timer_factory().
 
-	if (NOT grtls_flag) AND (SHIP:VELOCITY:SURFACE:MAG > parameters["surfv_skip_to_taem"]){
+	if (NOT (grtls_flag OR cont_flag)) AND (NOT skip_2_taem_flag) {
 		//entry guidance loop
-		
-		aerosurfaces_control["set_aoa_feedback"](parameters["entry_aoa_feedback"]).
 		
 		make_entry_traj_GUI().
 		
@@ -188,10 +208,11 @@ FUNCTION ops3_main_exec {
 			SET dap:pitch_lims to LIST(entryg_out["aclim"], entryg_out["aclam"]).
 			SET dap:roll_lims to LIST(-entryg_out["rlm"], entryg_out["rlm"]).
 			
-			SET dap:tgt_pitch tO entryg_out["alpcmd"].
-			SET dap:tgt_roll tO entryg_out["rolcmd"].
+			if (entryg_out["eg_conv"]) {
+				SET dap:tgt_pitch tO entryg_out["alpcmd"].
+				SET dap:tgt_roll tO entryg_out["rolcmd"].
+			}
 			SET dap:tgt_yaw tO 0.
-			
 			
 			//gui outputs
 			SET hud_datalex["phase"] TO guid_id.
@@ -218,7 +239,10 @@ FUNCTION ops3_main_exec {
 									"roll_cmd",entryg_out["rolcmd"],
 									"roll_ref",entryg_out["roll_ref"],
 									"pitch_mod",entryg_out["pitch_mod"],
-									"roll_rev",entryg_out["roll_rev"]
+									"roll_rev",entryg_out["roll_rev"],
+									"prog_pch", dap:prog_pitch,
+									"prog_roll", dap:prog_roll,
+									"prog_yaw", dap:prog_yaw
 			).
 			update_entry_traj_disp(gui_data).
 			
@@ -262,10 +286,12 @@ FUNCTION ops3_main_exec {
 
 	if (NOT quit_program) {
 		//TAEM and A/L loop
-		
-		aerosurfaces_control["set_aoa_feedback"](parameters["taem_aoa_feedback"]).
 
 		make_taem_vsit_GUI().
+		
+		if (grtls_flag) or (cont_flag) {
+			set_dap_auto().
+		}
 		
 		LOCAL al_end_flag Is FALSE.
 		
@@ -304,6 +330,7 @@ FUNCTION ops3_main_exec {
 												"gamma", dap:fpa,
 												"alpha", dap:prog_pitch,
 												"nz", dap:aero:nz,
+												"xlfac", dap:aero:load, 
 												"ovhd", tgtrwy["overhead"],
 												"rwid", tgtrwy["name"],
 												"grtls", grtls_flag,
@@ -327,7 +354,7 @@ FUNCTION ops3_main_exec {
 			SET dap:tgt_roll tO taemg_out["phic_at"].
 			SET dap:tgt_yaw tO taemg_out["betac_at"].
 			
-			if (guid_id = 26) OR (guid_id = 24) OR (guid_id = 36) {
+			if (guid_id = 26) OR (guid_id = 24) OR (guid_id = 27) OR (guid_id = 36) {
 				SET dap:tgt_pitch tO taemg_out["alpcmd"].
 			} else if (guid_id = 25) {
 				SET dap:tgt_nz tO taemg_out["nztotal"].
@@ -342,6 +369,10 @@ FUNCTION ops3_main_exec {
 			
 			if (guid_id <= 21) and taemg_internal["freezeapch"] {
 				freeze_apch().
+			}
+			
+			if (taemg_internal["al_resetpids"]) {
+				dap:reset_steering().
 			}
 
 			if (NOT GEAR) and (taemg_out["geardown"]) {
@@ -385,22 +416,23 @@ FUNCTION ops3_main_exec {
 									"ottstin", taemg_out["ohalrt"],
 									"mep", taemg_out["mep"],
 									"tgthdot", taemg_out["hdref"],
-									"tgtnz", dap:tgt_nz,
+									"xlfac", dap:aero:load / taemg_constants["g"], 
 									"spdbkcmd", taemg_out["dsbc_at"],
 									"alpll", taemg_out["alpll"],
 									"alpul", taemg_out["alpul"],
+									"mach", taemg_in["mach"],
 									"prog_pch", dap:prog_pitch,
 									"prog_roll", dap:prog_roll,
 									"prog_yaw", dap:prog_yaw
 			).
 			
-			if (guid_id >= 23) {
+			if (guid_id >= 30 OR guid_id=23) {
 				set hud_datalex["delaz"] to - rwystate["rwy_rel_crs"].
-				gui_data:ADD("xtrack_err",  taemg_out["yerrc"]).
+				gui_data:ADD("xtrack_err",  -taemg_out["yerrc"]).
 			} else if (guid_id = 22) {
 				set hud_datalex["delaz"] to taemg_out["ysgn"] * taemg_out["psha"].
-				gui_data:ADD("xtrack_err",  taemg_out["rerrc"] / 50).
-			} else if (guid_id <= 21) {
+				gui_data:ADD("xtrack_err",  -taemg_out["ysgn"] * taemg_out["rerrc"] / 50).
+			} else if (guid_id <= 21 OR guid_id>23) {
 				set hud_datalex["delaz"] to taemg_out["dpsac"].
 				gui_data:ADD("hac_entry_t",  taemg_out["tth"]).
 			}

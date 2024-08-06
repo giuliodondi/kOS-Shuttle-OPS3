@@ -15,8 +15,8 @@ FUNCTION shuttle_ei_range {
 	
 	LOCAL range_bias IS 800.
 	
-	//heuristic, 10km for every degree off from 40°
-	LOCAL incl_corr IS (ei_incl - 40) * 10.
+	//heuristic, 16km for every degree off from 40°
+	LOCAL incl_corr IS (ei_incl - 40) * 16.
 	
 	return (ei_fpa/3 + 1.6638490566)*BODY:RADIUS/1000 - range_bias  + incl_corr.
 }

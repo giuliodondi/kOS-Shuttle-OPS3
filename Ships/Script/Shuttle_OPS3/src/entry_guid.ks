@@ -53,7 +53,7 @@ FUNCTION entryg_wrapper {
 							"ital", entryg_input["ital"]				//is tal abort flag
 	).
 	
-	local dump_overwrite is (entryg_internal["start"] = 0).
+	local dump_overwrite is (NOT entryg_internal["fpflag"]).
 
 	egexec(eg_input).
 	
@@ -83,7 +83,8 @@ FUNCTION entryg_wrapper {
 								"pitch_mod", entryg_internal["ict"],
 								"vcg", entryg_internal["vcg"]/mt2ft,
 								"eowd", entryg_internal["eowd"],
-								"eg_end", entryg_internal["eg_end"]
+								"eg_end", entryg_internal["eg_end"],
+								"eg_conv", (entryg_internal["n_iter"] = 0)		//my addition: signal that enough iterations have been done
 	).
 }
 
@@ -104,6 +105,7 @@ global entryg_constants is lexicon (
 									"ak1", -5.5,	//temp control dD/dV factor
 									//"alfm", 33.0,	//ft/s2 	desired const drag STS-1
 									"alfm", 33,	//ft/s2 	desired const drag
+									"tal_alfm", 37,	//ft/s2 	my addition: desired const drag for tal
 									"alim", 70.84,	//ft/s2 max accel in transition
 									"almn1", 0.7986355,	//max l/d cmd outside heading err deadband
 									"almn2", 0.9659258,	//max l/d cmd inside heading err deadband
@@ -151,9 +153,11 @@ global entryg_constants is lexicon (
 									"cddot9", -8.165e-3,	//1/s cddot coef
 									"cnmfs", 1.645788e-4,	//nmi/ft 	conversion from feet to nmi 
 									"crdeaf", 4,	//roll bias due to pitch modulation gain	//was 4
+									"c16_kd", 0.8, 			//my addition: c16 gain factor to control derivative damping term
 									//"ct16", list(0, 0.1354, -0.1, 0.006),	// s2/ft - nd - s2/ft	c16 coefs STS-1
-									"ct16", list(0, 0.27, -0.2, 0.016),	// s2/ft - nd - s2/ft	c16 coefs
-									"ct17", list(0, 2*1.537e-2, -5.8146e-1),	//s/ft - nd 	c17 coefs
+									"ct16", list(0, 0.27, -0.2, 0.018),	// s2/ft - nd - s2/ft	c16 coefs
+									//"ct17", list(0, 1.537e-2, -5.8146e-1),	//s/ft - nd 	c17 coefs STs-1
+									"ct17", list(0, 6.148e-3, -5.8146e-1),	//s/ft - nd 	c17 coefs
 									"ct16mn", 0.025,	//s2/ft		min c16
 									"ct16mx", 0.36,		//s2/ft 	max c16
 									"ct17mn", 0.0025,	//s/ft 		min c17
@@ -195,7 +199,7 @@ global entryg_constants is lexicon (
 									"gs3", 0,	//1/s	roll cmd smoohing fac 
 									"gs4", 0.03,	//1/s	roll cmd smoohing fac 
 									"hsmin", 20500,	//ft 	min scale height 
-									"hs01", 18075,	//ft scale height term 
+									"hs01", 21075,	//ft scale height term 
 									"hs02", 27000,	//ft scale height term 
 									"hs03", 45583.5,	//ft scale height term 
 									"hs11", 0.725,	//s scale height slope wrt ve  
@@ -206,8 +210,10 @@ global entryg_constants is lexicon (
 									"mm304alp0", 40,	//standard preentry aoa
 									"radeg", 57.29578,	//deg/rad radians to degrees
 									"rdmax", 12,	//max roll bias 
-									"rlmc0", 90,	//rlm max above verolc
-									"tal_rlmc0", 120,	//rlm max above verolc for tal
+									"rlmndzfac", 2.2,	//min roll delaz gain 
+									"rlmc0", 85,	//rlm max above verolc
+									"tal_rlmc0", 120,	//rlm max above tal_verolc for tal
+									"rlmdz", 70,		//max roll delaz limiting
 									"rlmc1", 70,	//rlm max
 									"rlmc2", -47,	//coeff in first rlm seg 
 									"rlmc3", 0.03,		//deg/ft/s
@@ -228,11 +234,13 @@ global entryg_constants is lexicon (
 									"vc20", 2500,	//ft/s c20 vel break point
 									"velmn", 8000,	//ft/s	max vel for limiting lmn by almn3
 									"verolc", 8000,	//max vel for limiting bank cmd
+									"verlmndz", 18000,	//max vel for delaz min bank
+									"tal_verolc", 20000,	//max vel for limiting bank cmd by tal_rlmc0
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
 									//"vnoalp", 20500,	//pch mod start velocity//	//took the value from the sts-1 paper
 									"vnoalp", 22500,	//pch mod start velocity//
-									"taem_vnoalp", 20500,	//pch mod start velocity for taem//	
+									"tal_vnoalp", 20500,	//pch mod start velocity for tal//	
 									"vq", 10499,	//ft/s predicted end vel for const drag			//changed for consistency with vtran
 									"vrlmc", 2750,	//ft/s rlm seg switch vel
 									"vsat", 25766.2,	//ft/s local circular orbit vel 
@@ -240,7 +248,9 @@ global entryg_constants is lexicon (
 									"vrdt", 23000,	//ft/s hdot feedback start vel 
 									"vrr", 0, 		//velocity first reversal //ft/s 
 									"v_taem", 2500,	//ft/s entry-taem interface ref vel 
+									"v_taem_high", 4000,	//ft/s my addition: high-energy taem velocity
 									"r_taem", 45,	//nm my addition: force transition below this range
+									"r_taem_high", 75,	//nm my addition: high-energy transition range
 									"vtrb0", 60000,	//ft/s initial value of vtrb
 									//"vtran", 10500,	//ft/s nominal vel at start of transition STS-1
 									"vtran", 9000,	//ft/s nominal vel at start of transition
@@ -264,6 +274,7 @@ global entryg_constants is lexicon (
 									//other misc stuff added by me 
 									"drolcmdfil", 15,	//° roll cmd value band to apply filtering
 									"rolcmdfildt", 10,	//° roll cmd value filtering time const
+									"n_iter", 10,		// guidance iterations before steering commands should be accepted
 
 									"dummy", 0
 ).
@@ -295,6 +306,7 @@ global entryg_internal is lexicon(
 									"ddp", 0,   		//ddp prev 
 									"delalp", 0,   	//commanded alpha incr,   
 									"dlrdot", 0,   	//r feedback 
+									"dlzrl", 0,		//deg negative if we're rolling towards the site, positive if heading aways
 									"drdd", 0,   	//dRange / dD 
 									"drefp", 0,   	//drag ref used in controller 
 									"drefp1", 0,   	//eq glide
@@ -334,11 +346,13 @@ global entryg_internal is lexicon(
 									"rk2rol", 0,   	//bank angle direction 
 									"rk2rlp", 0,   	//prev val 
 									"rlm", 0,		//roll limit
+									"rlmndz", 0, 	//min roll based on delaz
 									"rollc", list(0,0,0,0),	//1: roll angle command,  2: unlimited roll command,  3: roll ref //deg
 									"rolref", 0,	//deg 	//roll ref
 									"rpt", 0,   	//desired range at vq 
 									"rrflag", FALSE,		//roll reversal flag
-									"start", 0,   	//first pass flag  
+									"start", 0,   	//guidance initialised flag  
+									"fpflag", FALSE,		//my addition - separate flag for first pass
 									"t2", 0,   		//constant drag level to target 	
 									"t2dot", 0,   	//rate of t2 change -à
 									"vb2", 0,   		//vb ^ 2
@@ -366,6 +380,7 @@ global entryg_internal is lexicon(
 									"tran4f_drefp4", FALSE,
 									
 									"tgtsite0", 0,		//my addition, keep track of the tgt site to reset guidance
+									"n_iter", -1, 		//do not initialise to zero
 									
 									"dummy", 0
 ).
@@ -525,7 +540,13 @@ function egexec {
 	
 	//entry guidance termination 
 	//check this regardless of the value of islect
-	if (entryg_input["ve"] < entryg_constants["v_taem"] OR entryg_input["trange"] <= entryg_constants["r_taem"]) {
+	//addition: early exit if very high energy
+	if (entryg_input["ve"] < entryg_constants["v_taem"])
+		OR (entryg_input["trange"] <= entryg_constants["r_taem"]) 
+		or (
+			(entryg_input["trange"] <= entryg_constants["r_taem_high"])
+			and (entryg_input["ve"] >= entryg_constants["v_taem_high"])
+	) {		
 		set entryg_internal["eg_end"] to TRUE.
 	}
 }
@@ -605,21 +626,37 @@ function eginit {
 	
 	//in case of a tal abort 
 	IF (entryg_input["ital"]) {
+		set entryg_constants["alfm"] to entryg_constants["tal_alfm"].
+		
+		
 		set entryg_constants["valp"] to entryg_constants["tal_valp"].
 		set entryg_constants["calp0"] to entryg_constants["tal_calp0"].
 		set entryg_constants["calp1"] to entryg_constants["tal_calp1"].
 		set entryg_constants["calp2"] to entryg_constants["tal_calp2"].
 		
-		set entryg_constants["vnoalp"] to entryg_constants["taem_vnoalp"].
+		set entryg_constants["vnoalp"] to entryg_constants["tal_vnoalp"].
 		set entryg_constants["dlallm"] to entryg_constants["tal_dlallm"].
-		set entryg_constants["rlmc0"] to entryg_constants["tal_rlmc0"].
+	}
+	
+	//my addition: do stuff if we resume entry halfway and in transition phase
+	if (entryg_input["ve"] <= entryg_constants["vtran"]) {
+		//use the upper delaz limits
+		set entryg_internal["idbchg"] to TRUE.
+		//other stuff??
 	}
 	
 	set entryg_internal["start"] to 1.
+	set entryg_internal["fpflag"] to TRUE.
+	set entryg_internal["n_iter"] to entryg_constants["n_iter"].
 }
 
 function egcomn {
 	PARAMETER entryg_input.
+	
+	//my addition, keep track of iterations 
+	if (entryg_internal["n_iter"] > 0) {
+		set entryg_internal["n_iter"] to entryg_internal["n_iter"] - 1.
+	}
 
 	set entryg_internal["xlod"] to max(entryg_input["lod"], entryg_constants["lodmin"]).
 	
@@ -838,6 +875,9 @@ function egref {
 		}
 	}
 	
+	//my addition - drefp is never negative
+	set entryg_internal["drefp"] to MAX(0, entryg_internal["drefp"]).
+	
 	//test value for drefp for transition to phase 4
 	set entryg_internal["drefp4"] to entryg_constants["gs3"] * (entryg_internal["rdtref"] + 2*entryg_internal["hs"]*entryg_internal["t2"] / entryg_input["ve"]) + entryg_internal["t2"].
 	
@@ -855,6 +895,9 @@ function egref4 {
 	//phase 3 range to go
 	set entryg_internal["drdd"] to -(entryg_input["trange"] -  entryg_internal["rpt"]) / entryg_internal["drefp"].
 	set entryg_internal["c2"] to 0.
+	
+	//my addition - drefp is never negative
+	set entryg_internal["drefp"] to MAX(0, entryg_internal["drefp"]).
 	
 	set entryg_internal["itran"] to TRUE.
 }
@@ -904,6 +947,9 @@ function egtran {
 	//my addition
 	//in any case do not exceed the previous constant drag
 	set entryg_internal["drefp"] to min(entryg_internal["drefp"], entryg_internal["t2"]).
+	
+	//my addition - drefp is never negative
+	set entryg_internal["drefp"] to MAX(0, entryg_internal["drefp"]).
 	
 	set entryg_internal["rdtref"] to -entryg_internal["hs"]*entryg_input["ve"]*(2*entryg_internal["drefp"] - c1*entryg_internal["ve2"]) / entryg_internal["cag"].
 	
@@ -970,7 +1016,12 @@ function eglodvcmd {
 	local cdcal is entryg_constants["cddot4"] + entryg_internal["alpcmd"]*(entryg_constants["cddot5"] + entryg_constants["cddot6"]* entryg_internal["alpcmd"]) + entryg_constants["cddot3"] * a44.
 	local cddotc is entryg_constants["cddot7"]*(entryg_input["drag"] + entryg_constants["gs"]*entryg_input["rdot"] / entryg_input["ve"])*a44 + entryg_internal["alpdot"]*(entryg_constants["cddot8"]*entryg_internal["alpcmd"] + entryg_constants["cddot9"]).
 	
-	set entryg_internal["cdcal"] to cdcal.
+	
+	if (entryg_input["cd"] <> 0) {
+		set entryg_internal["cdcal"] to entryg_input["cd"].
+	} else {
+		set entryg_internal["cdcal"] to cdcal.
+	}
 	local c4 is entryg_internal["hs"]*cddotc/entryg_internal["cdcal"]. 
 	
 	//limit drag values based on max allowable drag alfm
@@ -1029,18 +1080,25 @@ function eglodvcmd {
 		
 	}
 	
+	//my addition: damping term with the derivative of drag error
+	//if dd is positive we have more drag than we need and we need to increase lodv 
+	//if dd is decreasing, dd_dot is negative 
+	//if the dd_dot coef is pisitive this will dampen the rise in lodv
+	local dd_dot is (dd - entryg_internal["ddp"])/entryg_input["dtegd"].
+	
 	set entryg_internal["ddp"] to dd.
 	set entryg_internal["rk2rlp"] to entryg_internal["rk2rol"].
 	
 	//delta drag correction corrected for max drag alfm 
 	//the main vertical l/d equation
-	set entryg_internal["lodx"] to entryg_internal["aldref"] + entryg_internal["c16"]*dd + entryg_internal["c17"]*(entryg_internal["rdtrf"] + entryg_internal["dlrdot"] - entryg_input["rdot"]).
+	//added derivative of dd damping term
+	set entryg_internal["lodx"] to entryg_internal["aldref"] + entryg_internal["c16"]*(dd + entryg_constants["c16_kd"]*dd_dot) + entryg_internal["c17"]*(entryg_internal["rdtrf"] + entryg_internal["dlrdot"] - entryg_input["rdot"]).
 	set entryg_internal["lodv"] to entryg_internal["lodx"].
 	
 	//this is where we calculate delaz limits
 	//slight modification so that constant stay in fact constant 
 	LOCAL delaz_upper is entryg_constants["y1"].
-	if (entryg_internal["idbchg"]) {	//and (entryg_internal["rk2rol"]*entryg_internal["rk2rlp"] > 0) 
+	if (entryg_internal["idbchg"]) {
 		set delaz_upper to entryg_constants["y3"].
 	}
 	LOCAL delaz_lower IS entryg_constants["y2"].
@@ -1074,11 +1132,11 @@ function eglodvcmd {
 	
 	set entryg_internal["lmn"] to entryg_internal["xlod"]*entryg_internal["lmn"].
 	
-	local dlzrl is -entryg_input["delaz"]*entryg_internal["rk2rol"].
+	set entryg_internal["dlzrl"] to -entryg_input["delaz"]*entryg_internal["rk2rol"].
 	
 	//apply the l/d limtis and finally calculate if we do the roll reversal
 	//dlzrl should first be negative as we reduce crossrange then positive
-	if (abs(entryg_internal["lodv"]) >= entryg_internal["lmn"] and dlzrl <= 0) {
+	if (abs(entryg_internal["lodv"]) >= entryg_internal["lmn"] and entryg_internal["dlzrl"] <= 0) {
 		set entryg_internal["lmflg"] to TRUE.
 		set entryg_internal["lodv"] to entryg_internal["lmn"]*sign(entryg_internal["lodv"]).
 	} else {
@@ -1087,7 +1145,7 @@ function eglodvcmd {
 		
 		//should do the roll reversal
 		//added condition on abs(delaz) plus flag to track reversal start and end
-		if (dlzrl > 0) and (ABS(entryg_input["delaz"]) >= yl) {
+		if (entryg_internal["dlzrl"] > 0) and (ABS(entryg_input["delaz"]) >= yl) {
 			set entryg_internal["rk2rol"] to -entryg_internal["rk2rol"].
 			//moved it to the else block so delaz limits are changed after the roll is complete
 			
@@ -1148,7 +1206,13 @@ function egrolcmd {
 	
 	//calculate absolute roll angle limits
 	//refactored this block 
-	set entryg_internal["rlm"] to entryg_constants["rlmc0"].
+	//modification: check if tal and above tal_verolc
+	IF (entryg_input["ital"]) and (entryg_input["ve"]  > entryg_constants["tal_verolc"]) { 
+		set entryg_internal["rlm"] to entryg_constants["tal_rlmc0"].
+	} else {
+		set entryg_internal["rlm"] to entryg_constants["rlmc0"].
+	} 
+	
 	if (entryg_input["ve"]  < entryg_constants["verolc"]) {
 		if (entryg_input["ve"] > entryg_constants["vrlmc"]) {
 			set entryg_internal["rlm"] to min(entryg_constants["rlmc1"], entryg_constants["rlmc2"] + entryg_constants["rlmc3"]*entryg_input["ve"]).	//entry 70°
@@ -1157,10 +1221,19 @@ function egrolcmd {
 		}
 	}
 	
+	//my addition: min roll logic 
+	if (entryg_internal["dlzrl"] < 0) and (entryg_input["ve"] < entryg_constants["verlmndz"])  {
+		set entryg_internal["rlmndz"] to MIN(entryg_constants["rlmndzfac"] * abs(entryg_input["delaz"]), entryg_constants["rlmdz"]).
+	} else {
+		set entryg_internal["rlmndz"] to 0.
+	}
+	
+	//my modification: limit the new roll command from above by the unlimited roll 
+	LOCAL rollca IS MIN(ABS(entryg_internal["rollc"][1]), ABS(entryg_internal["rollc"][2])).
+	//my modification: limit the new roll command from below by the min delaz roll
+	SET rollca TO MAX(rollca, entryg_internal["rlmndz"]).
+	
 	//my addition: fiter changes in roll cmd if they are below a threshold enough
-	LOCAL rollca IS ABS(entryg_internal["rollc"][1]).
-	//my modification: limit the new roll command by the unlimited roll 
-	SET rollca TO MIN(rollca, ABS(entryg_internal["rollc"][2])).
 	LOCAL delrollc IS rollca - rollcpa.
 	
 	IF (ABS(delrollc) < entryg_constants["drolcmdfil"]) {

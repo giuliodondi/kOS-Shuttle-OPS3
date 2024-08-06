@@ -384,14 +384,23 @@ DECLARE FUNCTION rk4 {
 //		coasting integrators, more accurate gravity but no other forces
 
 //assumes KSP position vector
+FUNCTION simple_g {
+	PARAMETEr pos.
+	
+	LOCAL pos_inv IS 1/pos:MAG.
+	
+	//central body potential
+	return -BODY:MU*pos*(pos_inv^3).
+}
+
+//assumes KSP position vector
 FUNCTION accurate_g {
 	PARAMETEr pos.
 	
 	LOCAL pos_inv IS 1/pos:MAG.
 	
 	//central body potential
-	LOCAL G_c IS -BODY:MU*pos*(pos_inv^3).
-	
+	LOCAL G_c IS simple_g(pos).
 
 	LOCAL G_corr IS V(0,0,0).
 	
@@ -419,9 +428,46 @@ FUNCTION accurate_g {
 }	
 
 
+DECLARE FUNCTION coast_rk3 {
+	PARAMETER dt.
+	PARAMETER state.
+	parameter grav_acc_func IS simple_g@.
+	
+	LOCAL pos IS state["position"].
+	LOCAL vel IS state["velocity"].
+	
+	set state["simtime"] to state["simtime"] + dt.
+	
+	LOCAL out IS LIST().
+	
+	//RK3
+	LOCAL p1 IS pos.
+	LOCAL v1 IS vel.
+	LOCAL a1 IS grav_acc_func(p1).
+	 
+	LOCAL  p2 IS  pos + 0.5 * v1 * dt.
+	LOCAL  v2 IS vel + 0.5 * a1 * dt.
+	LOCAL a2 IS grav_acc_func(p2).
+	 
+	LOCAL  p3 IS pos + (2*v2 - v1) * dt.
+	LOCAL  v3 IS vel + (2*a2 - a1) * dt.
+	LOCAL a3 IS grav_acc_func(p3).
+	 
+	 
+	SET pos TO pos + (dt / 6) * (v1 + 4 * v2 + v3 ).
+	SET vel TO vel + (dt / 6) * (a1 + 4 * a2 + a3).
+	
+	SET state["position"] TO pos.
+	SET state["velocity"] TO vel.
+	
+	RETURN state.
+
+}
+
 FUNCTION coast_rk4 {
 	PARAMETER dt.
 	PARAMETER state.
+	parameter grav_acc_func IS simple_g@.
 	
 	LOCAL pos IS state["position"].
 	LOCAL vel IS state["velocity"].
@@ -433,19 +479,19 @@ FUNCTION coast_rk4 {
 	//RK4
 	LOCAL p1 IS pos.
 	LOCAL v1 IS vel.
-	LOCAL a1 IS accurate_g(p1).
+	LOCAL a1 IS grav_acc_func(p1).
 	 
 	LOCAL  p2 IS  pos + 0.5 * v1 * dt.
 	LOCAL  v2 IS vel + 0.5 * a1 * dt.
-	LOCAL a2 IS accurate_g(p2).
+	LOCAL a2 IS grav_acc_func(p2).
 	 
 	LOCAL  p3 IS pos + 0.5 * v2 * dt.
 	LOCAL  v3 IS vel + 0.5 * a2 * dt.
-	LOCAL a3 IS accurate_g(p3).
+	LOCAL a3 IS grav_acc_func(p3).
 	 
 	LOCAL  p4 IS pos + v3 * dt.
 	LOCAL  v4 IS vel + a3 * dt.
-	LOCAL a4 IS accurate_g(p4).
+	LOCAL a4 IS grav_acc_func(p4).
 	 
 	SET pos TO pos + (dt / 6) * (v1 + 2 * v2 + 2 * v3 + v4).
 	SET vel TO vel + (dt / 6) * (a1 + 2 * a2 + 2 * a3 + a4).
@@ -457,6 +503,31 @@ FUNCTION coast_rk4 {
 	RETURN state.
 }
 
+//conic state extrapolation function / gravity integrator
+FUNCTION cse_rk3 {
+	PARAMETER r0.
+	PARAMETER v0.
+	PARAMETER tgo.
+		
+	LOCAL nstep IS 30.
+	LOCAL dT Is tgo/nstep.
+	
+	LOCAl simstate IS blank_simstate(
+		LEXICON(
+				"position", r0,
+				"velocity", v0
+		)
+	).
+	
+	FROM { LOCAL i IS 1. } UNTIL i>nstep STEP { SET i TO i+1. } DO {
+		SET simstate TO clone_simstate(coast_rk3(dT, simstate)).
+	}
+	
+	RETURN LISt(
+				simstate["position"],
+				simstate["velocity"]
+	).
+}
 
 
 
