@@ -477,9 +477,10 @@ FUNCTION ops3_main_exec {
 		clear_ops3_disp().
 	}
 
-
+	disengage_dap().
 	control_loop:stop_execution().
 	close_all_GUIs().
 	clearscreen.
+	wait 0.2.
 
 }
