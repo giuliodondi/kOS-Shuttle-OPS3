@@ -2,7 +2,7 @@
 
 # Kerbal Space Program Space Shuttle OPS3 Entry Guidance
 
-## updated July 2024
+## updated August 2024
 
 <p align="center">
   <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/ops3_cover.png" width="700" >
