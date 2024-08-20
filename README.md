@@ -161,8 +161,8 @@ The program is able to take the Shuttle from Entry Interface all the way to whee
 The DAP will rely on RCS from entry interface all the way to below Mach 1. You may disable RCS on the forward fuselage, but keep all actuation toggles enabled on the OMS pods.
 I do not advise you to disengage the DAP at all above Mach 2, if you do you definitely need the KSP SAS and RCS and even so you might lose control very quickly.
 
-
-# Entry guidance
+<details>
+<summary><h2>Entry guidance</h2></summary>
 
 This algorithm guides the Shuttle from Entry Interface (122km altitude, Mach 27/28) all the way to TAEM interface (30/35km altitude, 80km from the site, Mach 2.5).  
 
@@ -258,7 +258,10 @@ When Phase 2 is triggered, the initial hdot error is so large that Guidance keep
 
 Once the drag error becomes small enough, guidance will command a large roll, to stop the climb and re-establish the reference hdot value. This roll will exceed 90° which is normal and expected in this situation. The descent should not take too long to stabilise close to the reference drag and from there on the rest of reentry plays out pretty much normally.
 
-# Terminal Area Energy Management (TAEM) guidance
+</details>
+
+<details>
+<summary><h2> Terminal Area Energy Management (TAEM)</h2></summary>
 
 Entry guidance has delivered the Shuttle some 80km from the runway, some 30km altitude at Mach 2.5 or a little higher. In addition, the Angle of Attack has been lowered to transition to the front-side of the Lift-to-Drag curve. This just means that now the Shuttle can fly like an aircraft.
 
@@ -328,7 +331,11 @@ Remarks:
   - During Heading align and Prefinal, it's easier to manage altitude and acquire the altitude profile. You should keep an eye on the Altitude error slider and, if needed, deliberately over-correct your pitch inputs to track the profile. The important thing is to be reasonably close to 0 error by pre-final
 - The energy profile is calibrated intentionally to place the Shuttle above profile by HAC acquisition. If the HAC turn is less than 180°, there might not be enough time to null the altitude error by the end of TAEM, usually this is not a major issue for what follows.
 
-# Glide-RTLS abort guidance
+</details>
+
+<details>
+<summary><h2>Glide-RTLS abort guidance</h2></summary>
+
 
 Glide-RTLS is the atmospheric guidance mode used during an RTLS abort after MECO and External Tank separation.  
 The powered guidance part is taken care of by my OPS1 ascent program, it will automatically transition to OPS3 and GRTLS guidance at the right moment.  
@@ -378,9 +385,11 @@ The HUD will change to let you know you reached certain checkpoints:
 Speed-wise, the Orbiter should be at around 180 m/s at the start of A/L, slow down in a controlled manner to about 145 m/s at the start of the flare, complete the flare around 120m/s and decelerating and touchdown between 90 and 80 m/s. If the dap is on AUTO, there will be some oscillations during Final Flare as it attempts to stabilise the vertical speed, I still haven't been able to dampen these out reliably 
 
 
+</details>
 
+<details>
+<summary><h2>Results from a test reentry to Edwards Runway 23</h2></summary>
 
-# Results from a test reentry to Edwards Runway 23
 
 ![sample_traj](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/traj.png)
 
@@ -401,3 +410,4 @@ This plot is the Energy-over-Weight vs range-to-go during TAEM. The three profil
 As evidenced by the trajectory plto above, Energy was within limits and strayed above the S-turn line just a little. The S-turn increases range-to-go and brings the Shuttle back insde the corridor.
 
 
+</details>
