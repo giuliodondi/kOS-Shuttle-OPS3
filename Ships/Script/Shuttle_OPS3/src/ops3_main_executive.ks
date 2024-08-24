@@ -5,7 +5,10 @@ FUNCTION ops3_main_exec {
 	parameter tal_flag.
 	parameter grtls_flag.
 	parameter cont_flag.
+	parameter ecal_flag.
 	parameter force_tgt_select is "".
+	
+	clearscreen.
 	
 	GLOBAL quit_program IS FALSE.
 
@@ -29,7 +32,7 @@ FUNCTION ops3_main_exec {
 	
 	//force target selection logic goes here
 	if (not nominal_flag) {
-		force_target_selection(force_tgt_select, TRUE).
+		force_target_selection(force_tgt_select, FALSE).
 	}
 	
 	local skip_2_taem_flag is false.
@@ -319,6 +322,8 @@ FUNCTION ops3_main_exec {
 												"y", rwystate["y"], 
 												"surfv", rwystate["surfv"],
 												"surfv_h", rwystate["surfv_h"],
+												"rwy_r", rwystate["rwy_r"], 
+												"rwy_rdot", rwystate["rwy_rdot"], 
 												"xdot", rwystate["xdot"], 
 												"ydot", rwystate["ydot"], 
 												"psd", rwystate["rwy_rel_crs"], 
@@ -334,6 +339,8 @@ FUNCTION ops3_main_exec {
 												"ovhd", tgtrwy["overhead"],
 												"rwid", tgtrwy["name"],
 												"grtls", grtls_flag,
+												"cont", cont_flag,
+												"ecal", ecal_flag,
 												"debug", parameters["full_debug"]
 										).
 

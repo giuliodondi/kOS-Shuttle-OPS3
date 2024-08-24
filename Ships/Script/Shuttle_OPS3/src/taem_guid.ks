@@ -69,6 +69,8 @@ FUNCTION taemg_wrapper {
 										"y", taemg_input["y"] * mt2ft,		//ft y component on runway coord
 										"surfv", taemg_input["surfv"] * mt2ft, 		//ft/s earth relative velocity mag 			//was v
 										"surfv_h", taemg_input["surfv_h"] * mt2ft,		//ft/s earth relative velocity horizintal component 				//was vh
+										"rwy_r", taemg_input["rwy_r"] * mt2ft, 						//ft/s direct distance to runway threshold
+										"rwy_rdot", taemg_input["rwy_rdot"] * mt2ft, 						//ft/s downrange velocity to runway threshold
 										"xdot", taemg_input["xdot"] * mt2ft, 	//ft/s component along x direction of earth velocity in runway coord
 										"ydot", taemg_input["ydot"] * mt2ft, 	//ft/s component along y direction of earth velocity in runway coord
 										"psd", taemg_input["psd"], 		//deg course wrt runway centerline 
@@ -83,10 +85,12 @@ FUNCTION taemg_wrapper {
 										"xlfac", taemg_input["xlfac"]/taemg_constants["g"],      //gs total load factor acceleration 
 										"ovhd", taemg_input["ovhd"],  		// ovhd/straight-in flag , it's a 2-elem list, one for each value of rwid 			//changed into a simple flag
 										"rwid", taemg_input["rwid"],		//runway id flag  (only needed to detect a runway change, the runway number is fine)
-										"grtls", taemg_input["grtls"]		//grtls flag
+										"grtls", taemg_input["grtls"],		//grtls flag
+										"cont", taemg_input["cont"],		//contingency flag
+										"ecal", taemg_input["ecal"]		//ecal flag
 								).
 	
-	local dump_overwrite is (NOT entryg_internal["fpflag"]).
+	local dump_overwrite is (NOT taemg_internal["fpflag"]).
 	
 	tgexec(tg_input).
 	
