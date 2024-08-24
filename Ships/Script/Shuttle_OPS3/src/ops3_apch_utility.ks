@@ -133,12 +133,14 @@ FUNCTION get_runway_rel_state {
 	
 	LOCAL rwy_heading IS rwy["heading"].
 	LOCAL rwy_ship_bng IS bearingg(cur_pos, rwy["position"]).
+	LOCAL ship_rwy_bng IS fixangle(rwy_ship_bng + 180).
 	LOCAL ship_heading IS compass_for(cur_surfv,cur_pos).
 	
 	LOCAL ship_rwy_dist_mt IS greatcircledist(rwy["position"],cur_pos) * 1000.
 	
 	LOCAL pos_rwy_rel_angle IS unfixangle( rwy_ship_bng - rwy_heading).
 	LOCAL vel_rwy_rel_angle IS unfixangle( ship_heading - rwy_heading).
+	LOCAL vel_pos_rel_angle IS unfixangle( ship_heading - ship_rwy_bng).
 	
 	LOCAL cur_h IS pos_rwy_alt(cur_pos, rwy).
 	
@@ -158,7 +160,8 @@ FUNCTION get_runway_rel_state {
 			"surfv", cur_surfv:MAG,
 			"surfv_h", cur_surfv_h,
 			"rwy_rel_crs", vel_rwy_rel_angle,
-			"rwy_dist", ship_rwy_dist_mt
+			"rwy_r", ship_rwy_dist_mt,
+			"rwy_rdot", - cur_surfv_h*COS(vel_pos_rel_angle)		//will be negative if we're moving towards the site
 	).
 }
 
