@@ -157,6 +157,7 @@ FUNCTION taemg_wrapper {
 					"itran", taemg_internal["itran"], 	//phase transition flag 
 					"tg_end", taemg_internal["tg_end"], 	//termination flag 
 					"al_end", taemg_internal["al_end"], 	//termination flag 
+					"eowlof", taemg_internal["eowlof"],		//lo energy flag
 					"freezetgt", taemg_internal["freezetgt"],	
 					"freezeapch", taemg_internal["freezeapch"],	
 					"al_resetpids", taemg_internal["al_resetpids"],	
@@ -842,6 +843,8 @@ FUNCTION tginit {
 		set taemg_internal["istp4"] to 1.
 	}
 	
+	set taemg_internal["eowlof"] to FALSE.
+	
 	SET taemg_internal["tg_end"] TO FALSE.
 	
 	SET taemg_internal["ireset"] TO FALSE.
@@ -1217,7 +1220,7 @@ FUNCTION tgtran {
 		//just to make sure we don't end up here during a/l and vice-versa
 	
 		//transition to a/l 
-		if (taemg_internal["iphase"] = 3) {
+		if (taemg_internal["iphase"] = 3) and (NOT taemg_internal["eowlof"]) {
 			//modifications to transition criteria
 			if (
 				(taemg_input["h"] <= taemg_constants["hali"][taemg_internal["igs"]])
@@ -1235,10 +1238,10 @@ FUNCTION tgtran {
 		}
 		
 		//transition to pre-final based on distance, turn angle or altitude if on a low energy profile
-		if (
+		if (NOT taemg_internal["eowlof"]) and ((
 			(taemg_internal["rpred"] < taemg_internal["rpred3"])
 			and (ABS(taemg_internal["psha"]) < taemg_constants["psha3"])
-		) or (taemg_input["h"] < taemg_constants["hmin3"]) {
+		) or (taemg_input["h"] < taemg_constants["hmin3"])) {
 			set taemg_internal["iphase"] to 3.
 			set taemg_internal["itran"] to TRUE.
 			set taemg_internal["phic"] to taemg_internal["phic_at"].
@@ -1251,7 +1254,7 @@ FUNCTION tgtran {
 		//my modification, turn off s-turn when below es
 		
 		//transition from s-turn to acq when below an energy band
-		if (taemg_internal["iphase"] = 0) and (taemg_internal["eow"] < taemg_internal["est"]) {
+		if (taemg_internal["iphase"] = 0) and (taemg_internal["eow"] <= taemg_internal["est"]) {
 			set taemg_internal["iphase"] to 1.
 			set taemg_internal["itran"] to TRUE.
 			set taemg_internal["philim"] to taemg_constants["philm1"].
@@ -1260,7 +1263,7 @@ FUNCTION tgtran {
 			//check if we can still do an s-turn  to avoid geometry problems
 			//refactoring if we came in from grtls
 			local pshalim is taemg_constants["psstrn"].
-			if (taemg_input["grtls"]) {
+			if (taemg_internal["grtls_flag"]) {
 				set pshalim to taemg_constants["grpsstrn"].	
 			}
 			//slight refactoring 
@@ -1302,12 +1305,17 @@ FUNCTION tgtran {
 			
 			//suggest downmoding to straight-in
 			//modification: moved emoh calculation to tgcomp
-			if (taemg_internal["eow"] < taemg_internal["emoh"]) and (taemg_internal["psha"] > taemg_constants["psohal"]) and (taemg_internal["rpred"] > taemg_constants["rmoh"]) {
-				set taemg_internal["ohalrt"] to TRUE.
+			//modification - do this only in overhead 
+			if (taemg_input["ovhd"]) {
+				if (taemg_internal["eow"] < taemg_internal["emoh"]) and (taemg_internal["psha"] > taemg_constants["psohal"]) and (taemg_internal["rpred"] > taemg_constants["rmoh"]) {
+					set taemg_internal["ohalrt"] to TRUE.
+				} else {
+					set taemg_internal["ohalrt"] to FALSE.
+				}
 			}
 			
 			//transition to hac heading when close to the hac radius 
-			if (taemg_internal["rcir"] < taemg_constants["p2trnc1"] * taemg_internal["rturn"]) {
+			if (NOT taemg_internal["eowlof"]) and (taemg_internal["rcir"] < taemg_constants["p2trnc1"] * taemg_internal["rturn"]) {
 				SET taemg_internal["iphase"] to 2.
 				set taemg_internal["itran"] to TRUE.
 				set taemg_internal["philim"] to taemg_constants["philm2"].
@@ -1318,12 +1326,9 @@ FUNCTION tgtran {
 				set taemg_internal["gdhfit"][1] to gdhlin.
 				
 			}
-			
 		}
-	
 	}
-
-}		
+}	
 	
 //calculate nz command 
 // my modification - vertical guidance now is commanded hdot and not nz, but do it here regardless
