@@ -377,6 +377,21 @@ FUNCTION aimAndRoll {
 	RETURN outdir.
 }
 
+//	Returns a kOS direction for given aim vector, reference up vector and roll angle.
+//does not correct for thrust offset
+FUNCTION aimAndRollDirect {
+	PARAMETER aimVec.
+	PARAMETER refVec.
+	PARAMETER tgtRollAng.
+		
+	LOCAL steerVec IS aimVec.
+	
+	LOCAL topVec IS VXCL(steerVec,refVec):NORMALIZED.
+	SET topVec TO rodrigues(topVec, steerVec, tgtRollAng).
+
+	RETURN LOOKDIRUP(steerVec, topVec).
+}
+
 //converts between absolute throttle value (percentage of max thrust)
 //and throttle percentage relative to the range min-max which KSP uses
 FUNCTION throtteValueConverter {

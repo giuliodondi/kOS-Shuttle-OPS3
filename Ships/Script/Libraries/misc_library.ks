@@ -298,7 +298,7 @@ declare function sectotime {
 	local hours is 0.
 	local mins is 0.
 	local secs is 0.
-	local sign_str is " ".
+	local sign_str is "+".
 	
 	if t_local<0 {
 		set sign_str to "-". 
@@ -340,6 +340,10 @@ declare function sectotime {
 	}
 	
 	set sec_str to secs + "s" + space.
+	
+	if (secs < 10) {
+		set sec_str to "0" + sec_str.
+	}
 	
 	return sign_str + day_str + hour_str + min_str + sec_str.
 	
