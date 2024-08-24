@@ -1428,11 +1428,30 @@ FUNCTION tgnzc {
 		
 		local dhdcd is midval((taemg_internal["hderrc_eowl"] - taemg_internal["hderrc"]) * taemg_constants["cqg"], -taemg_constants["hdherrcmax"], taemg_constants["hdherrcmax"]).
 		set taemg_internal["hderrc"] to taemg_internal["hderrc"] + dhdcd * taemg_input["dtg"].
-		
-		
 	} else {
 		set taemg_internal["hderrc"] to taemg_internal["hderrcl"].
 		set taemg_internal["nzc"] to taemg_internal["dnzcl"].
+	}
+	
+	//my modification: add filters on hderrc 
+
+	//add low-energy hderrc filter here
+	//use emoh to deduce low energy condition 
+	local eowerr_emoh is taemg_internal["eowerror"] / (taemg_internal["emoh"] - taemg_internal["en"]).
+	
+	if (eowerr_emoh >= taemg_constants["eowlogemoh"]) {
+		set taemg_internal["eowlof"] to TRUE.
+		//measure eow error in units of the emoh delta 
+		//gain on hderrc that goes from 1 to 0 if the error is above eowlogemoh
+		local hderrc_geow is midval(1 + taemg_constants["eowlogemoh"] - eowerr_emoh, 0, 1).
+		
+		//in low energy use the outer glideslope as the hdot profile
+		//use the gain to ramp hderrc to the low energy profile
+		local eowlohd is -taemg_constants["tggs"][taemg_internal["igs"]] * taemg_input["surfv_h"].
+		local eowlohderr is eowlohd - taemg_input["hdot"].
+		set taemg_internal["hderrc"] to eowlohderr + (taemg_internal["hderrc"] - eowlohderr) * hderrc_geow.
+	} else {
+		set taemg_internal["eowlof"] to FALSE.
 	}
 
 	set taemg_internal["hdrefc"] to taemg_input["hdot"] + taemg_internal["hderrc"].
