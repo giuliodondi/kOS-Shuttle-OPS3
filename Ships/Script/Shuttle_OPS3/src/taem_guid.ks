@@ -994,9 +994,13 @@ FUNCTION tgcomp {
 	SET taemg_internal["emep"] TO taemg_constants["emep_c1"][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["emep_c2"][taemg_internal["iel"]].
 	SET taemg_internal["es"] TO taemg_constants["es_c1"][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["es_c2"][taemg_internal["iel"]].
 	
-	SET taemg_internal["est"] TO taemg_internal["en"] + taemg_constants["est_gain"] * (taemg_internal["es"] - taemg_internal["en"]).
-	
+	local eowerr_p is taemg_internal["eowerror"].
 	set taemg_internal["eowerror"] to taemg_internal["eow"] - taemg_internal["en"].
+	set taemg_internal["deowerr"] to (taemg_internal["eowerror"] - eowerr_p)/taemg_input["dtg"].
+	
+	//my modification: est is calculated given derivative of the eow error
+	//SET taemg_internal["est"] TO taemg_internal["en"] + taemg_constants["est_gain"] * (taemg_internal["es"] - taemg_internal["en"]).
+	SET taemg_internal["est"] TO midval(taemg_internal["en"] - taemg_constants["est_t"] * taemg_internal["deowerr"], taemg_internal["en"], taemg_internal["es"]).
 	
 	//my modification - emoh is emep biased
 	//set taemg_internal["emoh"] to  taemg_constants["emohc1"][taemg_internal["igs"]] + taemg_constants["emohc2"][taemg_internal["igs"]] * taemg_internal["drpred"].
