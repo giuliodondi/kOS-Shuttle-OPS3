@@ -177,7 +177,7 @@ global taemg_constants is lexicon (
 									"alpulc1", 3.4637,		//linear coef of upper alpha limit with mach
 									"alpulc2", 9.2353,		//° constant coef of upper alpha limit with mach
 									"alpulc3", 13.7,		//° max upper alpha limit
-									"alpulc4", 47,		//° min upper alpha limit		
+									"alpulc4", 60,		//° min upper alpha limit		
 									"alpulc5", 37.5,		//linear coef of upper alpha limit with mach
 									"alpulc6", -130,			//° constant coef of upper alpha limit with mach								
 									"alpllcm1", 2.02,		// mach breakpoint for lower alpha limit vs mach 
@@ -189,7 +189,7 @@ global taemg_constants is lexicon (
 									"alpllc4", -10.6194,		//° constant coef of lower alpha limit with mach
 									"alpllc5", 2.5637,		//linear coef of lower alpha limit with mach 
 									"alpllc6", 0.218935,		//° constant coef of lower alpha limit with mach
-									"alpllc7", 40,		//° max lower alpha limit
+									"alpllc7", 35,		//° max lower alpha limit
 									"alpllc8", -2,		//° min lower alpha limit
 									"alpllc9", 37.5,	//linear coef of lower alpha limit with mach 
 									"alpllc10", -185,    	//° constant coef of lower alpha limit with mach 
@@ -244,6 +244,7 @@ global taemg_constants is lexicon (
 									"eow_spt", list(530000, 120000, -100000), 	//ft range at which to change slope and y-intercept on the mep and nom energy line 
 									
 									"est_gain", 0.75,		//est gain 
+									"est_t", 8,		//s time to reach en given derivative of eow error
 									"eow_rtan0", 130000,		//ft my addition
 
 									"g", 32.174,					//ft/s^2 earth gravity 
@@ -266,7 +267,7 @@ global taemg_constants is lexicon (
 									"gsbe", 1.5, 			//deg/psf-s 	spdbk prop. gain on qberr 
 									"gsbi", 0.1, 		//deg/psf-s gain on qberr integral in computing spdbk cmd
 									"gy", 0.075,			//deg/ft gain on y in computing pfl roll angle cmd 
-									"gydot", 0.38,		//deg/fps gain on ydot on computing pfl roll angle cmd 
+									"gydot", 0.5,		//deg/fps gain on ydot on computing pfl roll angle cmd 
 									"h_error", 1000,		//ft altitude error bound	//deprecated
 									"hdherrcmax", 120,		//ft/s max herror correction to ref. hdot //my addition
 									"hderr_lag_k", 0.9,		//ft/s lag filter gain for hderr feedback	//my addition
@@ -426,18 +427,19 @@ global taemg_constants is lexicon (
 									"gralpi",6.712,	//° constant coef of alpha transition aoa vs mach
 									"gralpl", 10,	//° min alpha transition aoa
 									"gralpu", 17.55,	//° max alpha transition aoa
-									"hdtrn", -347.5,	//ft/s hdot for transition to phase 4
-									"smnzc1", 0.125,		//gs initial value of smnz1
+									"hdtrn", -250,	//ft/s hdot for transition to phase 4
+									"smnzc1", 0.13,		//gs initial value of smnz1
 									"smnzc2", 0.6,		//gs initial value of smnz2
 									"smnzc3", 0.7314,		//coefficient for smnz1
 									"smnzc4", 0.023,		//gs constant nz value for computing smnz2
+									"smnzc5", 0.02,		//gs coefficient for smnz3
 									"smnz2l", -0.05,
 									"grnzc1", 1.2,		//gs desired normal accel for nz hold 
 									"nzxlfacg", 1,	//gain for xlfac feedback into nzc
 									//"alprec", 50,		//° aoa during alpha recovery	//taem paper
-									"alprec", 45,		//° aoa during alpha recovery
-									"hdnom", -1558, 	//Nominal maximum sink rate during alpha recovery
-									"dhdnz", 0.002, 		//Gain on max sink rate difference to compute DGRNZ
+									"alprec", 46,		//° aoa during alpha recovery
+									"hdnom", -1480, 	//Nominal maximum sink rate during alpha recovery
+									"dhdnz", 0.001, 		//Gain on max sink rate difference to compute DGRNZ
 									"dhdll", -0.3, 			//Lower limit on DGRNZ
 									"dhdul", 0.2,			//Upper limit on DGRNZ
 									"grall", -0.5,			//° limit on dgralp
@@ -449,7 +451,35 @@ global taemg_constants is lexicon (
 									"machsbs", 19.5,			//linear coef for speedbrake
 									"machsbi", 2.6,			//constant coef for speedbrake
 									"grpsstrn", 1000,		//° pshac limit for s-turns, high so that s-turns are always performed
+									"gralpll", 10,			//° lower aoa for grtls alprec and nzhold
+									"grphilm", 45,			//° roll limit for grtls
 									
+									//contingency / ecal stuff 
+									
+									"gralpsa", 2.54,	//linear coef of alpha transition aoa vs mach
+									"gralpia",9.45,	//° constant coef of alpha transition aoa vs mach
+									"gralpla", 10,	//° min alpha transition aoa
+									"gralpua", 40,	//° max alpha transition aoa
+									"hdtrna", -250,	//ft/s hdot for transition to phase 4
+									"dnzb", 2,		//gs constant term for max nzhold contingency gs
+									"dnzmin", 2,		//gs min nzhold contingency gs
+									"dnzmax", 3.9,		//gs max nzhold contingency gs
+									"nztotallima", 3.5,		//gs contingency max g for nzc limiting
+									"alprecs", 0.004,	//°/ft/s contingency alprec linear term
+									"alpreci", 7,	//° contingency alprec const term
+									"alprecl", 22,	//° contingency alprec min
+									"alprecu", 50,	//° contingency alprec min
+									"smnzc1a", 0.13,		//gs initial value of smnz1
+									"smnzc2a", 1.8,		//gs initial value of smnz2
+									"smnzc3a", 0.7314,		//coefficient for smnz1
+									"smnzc4a", 0.1,		//gs constant nz value for computing smnz2
+									"smnzc5a", 0.065,		//gs coefficient for smnz3
+									"smnz2la", -0.5,
+									"grnzc1a", 2.9,		//gs desired normal accel for nz hold 
+									"nzsw1a", 1,		//gs initial value of nzsw	//taem paper
+									"grphilma", 22,			//° roll limit for grtls
+									"eowlogemoh", 1.5,		//	low energy eow error thresh w.r.t. emoh delta
+								
 									
 									"dummy", 0			//can't be arsed to add commas all the time
 									
@@ -480,7 +510,9 @@ global taemg_internal is lexicon(
 								"emep", 0,		//ft energy/weight at which the mep is selected 
 								"emoh", 0,		//ft energy/weight at which ohalrt is set
 								"eow", 0,			//ft energy/weight
+								"eowlof", FALSE,		//signal that we're too far below eow
 								"eowerror", 0,			//ft energy/weight error
+								"deowerr", 0,			//ft/s rate of energy/weight error
 								"eowhdul", 0,			//ft energy/weight hdot upper limit
 								"eowhdll", 0,			//ft energy/weight hdot lower limit
 								"en", 0,			//energy/weight reference
@@ -576,11 +608,13 @@ global taemg_internal is lexicon(
 								
 								
 								// GRTLS stuff 
+								"dgrnzcgt", 0,		//gs delta of nzc if we exceed maximum total gs
 								"dgrnz", 0,			//gs phase 5 nzc increment based on maximum hdot
 								"dgrnzt", 0,			//gs phase 5 target nzc
 								"nzsw", 0, 			//gs Nz level at which Phase 6 to Phase 5 transition occurs
 								"smnz1", 0, 		//gs exponential nz lead term
 								"smnz2", 0, 		//gs linear nz lead term
+								"smnz3", 0, 		//gs linear nz rampdown term
 								"gralpr", 0,		//° reference aoa
 								"alpcmd", 0, 		//° commanded alpha
 								"hdmax", 0, 		//ft/s maximum negative hdot reached during alpha recovery
@@ -588,6 +622,11 @@ global taemg_internal is lexicon(
 								"dsbc_at1", 0,		//incremented speedbrake command
 								"istp4", 1,		//phase 4 s-turn variable, will match phase at taem transition 
 								"xlfmax", 0,	//g max load factor reached during grtls
+								
+								//my addition: control flags 
+								"grtls_flag", FALSE,		//grtls flag
+								"cont_flag", FALSE,		//contingency flag
+								"ecal_flag", FALSE,		//ecal flag
 								
 								"dummy", 0			//can't be arsed to add commas all the time
 ).
