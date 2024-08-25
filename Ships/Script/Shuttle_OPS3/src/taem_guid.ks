@@ -695,11 +695,9 @@ function tgexec {
 
 		tgcomp(taemg_input).
 
-		if (taemg_internal["iphase"] = 5){
-			grnzc(taemg_input).
-		} else {
-			gralpc(taemg_input).
-		}
+		grnzc(taemg_input).
+		
+		gralpc(taemg_input).
 		
 		grsbc(taemg_input).
 		
@@ -1608,7 +1606,10 @@ function grtrn {
 	}
 	
 	if (taemg_internal["iphase"] = 6) {
-		if (taemg_input["nz"] > taemg_internal["nzsw"] + taemg_internal["dgrnz"]) {
+		//my addition: check that we're descending
+		//my modification: lower limit for nzsw
+		local nzsw is max(taemg_internal["nzsw"], taemg_internal["nzsw"] + taemg_internal["dgrnz"]).
+		if (taemg_input["nz"] > nzsw) and (taemg_input["hdot"] < taemg_constants["hdtrn"]) {
 			set taemg_internal["iphase"] to 5.
 			set taemg_internal["itran"] to TRUE.
 		}
@@ -1616,17 +1617,28 @@ function grtrn {
 	}
 	
 	//alpha recovery aoa profile
-	set taemg_internal["gralpr"] to midval(taemg_constants["gralps"] * taemg_input["mach"] + taemg_constants["gralpi"], taemg_constants["gralpl"], taemg_constants["gralpu"]).
-	//skip amaxld limitation
-	set taemg_internal["gralpr"] to taemg_internal["gralpr"] / abs(taemg_input["cosphi"]).
+	if (NOT taemg_internal["cont_flag"]) {
+		set taemg_internal["gralpr"] to midval(taemg_constants["gralps"] * taemg_input["mach"] + taemg_constants["gralpi"], taemg_constants["gralpl"], taemg_constants["gralpu"]).
+		//skip amaxld limitation
+		set taemg_internal["gralpr"] to taemg_internal["gralpr"] / abs(taemg_input["cosphi"]).
+	} else {
+		set taemg_internal["gralpr"] to midval(taemg_constants["gralpsa"] * taemg_input["mach"] + taemg_constants["gralpia"], taemg_constants["gralpla"], taemg_constants["gralpua"]).
+		
+	}
 	
 	if (taemg_internal["iphase"] = 5) { 
 		//my modification: force switch to alptran if we start climbing and haven't switched by then
-		if (
-			((taemg_input["hdot"] > taemg_constants["hdtrn"]) and (taemg_input["alpha"] >= taemg_internal["gralpr"]))
-			or (taemg_input["hdot"] > 0)
-		) {
+		//my addition: add g-based check
+		if (taemg_input["xlfac"] <= taemg_constants["nztotallim"]) 
+			and ((taemg_internal["cont_flag"] and taemg_input["hdot"] > taemg_constants["hdtrna"])
+				or ((NOT taemg_internal["cont_flag"]) 
+					and ((taemg_input["hdot"] > 0)
+						or (taemg_input["hdot"] > taemg_constants["hdtrn"] and taemg_input["alpha"] >= taemg_internal["gralpr"])
+					)
+				)
+			) {
 			set taemg_internal["iphase"] to 4.
+			set taemg_internal["philim"] to taemg_constants["grphilm"].
 			set taemg_internal["itran"] to TRUE.
 			SET taemg_internal["qbarf"] TO taemg_input["qbar"].
 			
@@ -1635,10 +1647,20 @@ function grtrn {
 		return.
 	}
 	
-	if (taemg_internal["iphase"] = 4) and (taemg_input["mach"] < taemg_constants["msw1"]) { 
-		//the idea is to maintain the s-turn status when transitioning from grtls to taem
-		set taemg_internal["iphase"] to taemg_internal["istp4"].
-		set taemg_internal["itran"] to TRUE.
+	if (taemg_internal["iphase"] = 4) {
+		//my addition: switch if we're descending and moving towards the site
+		if (taemg_input["mach"] < taemg_constants["msw1"]) and (taemg_input["hdot"] < 0) and (taemg_input["rwy_rdot"] < 0) { 
+		
+			if (taemg_internal["ecal_flag"]) {
+				set taemg_internal["ecal_flag"] to FALSE.
+				set taemg_internal["cont_flag"] to FALSE.
+			}
+			
+			set taemg_internal["philim"] to taemg_constants["philm1"].
+			//the idea is to maintain the s-turn status when transitioning from grtls to taem
+			set taemg_internal["iphase"] to taemg_internal["istp4"].
+			set taemg_internal["itran"] to TRUE.
+		}
 	}
 }
 
@@ -1646,39 +1668,94 @@ function grtrn {
 function grnzc {
 	PARAMETER taemg_input.	
 	
+	if (taemg_internal["iphase"] <> 5) {
+		return.
+	}
+	
 	if (taemg_input["xlfac"] > taemg_internal["xlfmax"]) {
 		set taemg_internal["xlfmax"] to taemg_input["xlfac"].
 	}
 	
-	//correct coefficients for different iteration time 
-	set taemg_internal["smnz1"] to taemg_internal["smnz1"] * (taemg_constants["smnzc3"]^taemg_input["dtg"]).
-	set taemg_internal["smnz2"] to MAX(taemg_internal["smnz2"] - (taemg_constants["smnzc4"] * taemg_input["dtg"]), taemg_constants["smnz2l"]).
+	//my modification - two similar but different flows for grtls and contingency
+	
+	local grnzc1 is 0.
+	local nz_upper_lim is 0.
+	
+	if (taemg_internal["cont_flag"]) {
+		set nz_upper_lim to taemg_constants["nztotallima"].
+		set grnzc1 to taemg_constants["grnzc1a"].
+		
+		//correct coefficients for different iteration time 
+		set taemg_internal["smnz1"] to taemg_internal["smnz1"] * (taemg_constants["smnzc3a"]^taemg_input["dtg"]).
+		set taemg_internal["smnz2"] to MAX(taemg_internal["smnz2"] - (taemg_constants["smnzc4a"] * taemg_input["dtg"]), taemg_constants["smnz2la"]).
+		//start ramping down if we're climbing
+		if (taemg_input["hdot"] >= 0) {
+			set taemg_internal["smnz3"] to taemg_internal["smnz3"] + (taemg_constants["smnzc5a"]*taemg_input["dtg"]).
+		}
+	} else {
+		set nz_upper_lim to taemg_constants["nztotallim"].
+		set grnzc1 to taemg_constants["grnzc1"].
+		
+		//correct coefficients for different iteration time 
+		set taemg_internal["smnz1"] to taemg_internal["smnz1"] * (taemg_constants["smnzc3"]^taemg_input["dtg"]).
+		set taemg_internal["smnz2"] to MAX(taemg_internal["smnz2"] - (taemg_constants["smnzc4"] * taemg_input["dtg"]), taemg_constants["smnz2l"]).
+		//start ramping down if we're climbing
+		if (taemg_input["hdot"] >= 0) {
+			set taemg_internal["smnz3"] to taemg_internal["smnz3"] + (taemg_constants["smnzc5"] * taemg_input["dtg"]).
+		}
+	}
 	
 	// constant value minus linear and exponential terms that ramp down with time 
 	//use the nzc profile directly without adding 1
-	set taemg_internal["nzc"] to taemg_constants["grnzc1"] - taemg_internal["smnz1"] - taemg_internal["smnz2"] + taemg_internal["dgrnz"].
+	//my addition: add rampdown term
+	set taemg_internal["nzc"] to grnzc1 - taemg_internal["smnz1"] - taemg_internal["smnz2"] - taemg_internal["smnz3"] + taemg_internal["dgrnz"].
 	
 	//my addition: use the max total load factor to correct target nzc
-	set taemg_internal["nzc"] to taemg_internal["nzc"] - max(0, taemg_constants["nzxlfacg"] * (taemg_internal["xlfmax"] - taemg_constants["nztotallim"])).
 	
-	set taemg_internal["nztotal"] to midval(taemg_internal["nzc"], -taemg_constants["nztotallim"], taemg_constants["nztotallim"]).
+	set taemg_internal["dgrnzcgt"] to max(0, taemg_constants["nzxlfacg"] * (taemg_internal["xlfmax"] - nz_upper_lim)).
+	set taemg_internal["nzc"] to taemg_internal["nzc"] - taemg_internal["dgrnzcgt"].
+	
+	set taemg_internal["nztotal"] to midval(taemg_internal["nzc"], -taemg_constants["nztotallim"], nz_upper_lim).
 }
 
 // alpha recovery and transition aoa command
 // will also override alpha upper limit
+//refactoring: clal this during nzhold as well
 function gralpc {
 	PARAMETER taemg_input.	
 	
 	if (taemg_internal["iphase"] = 6) {
-		set taemg_internal["alpcmd"] to taemg_constants["alprec"].
+		if (NOT taemg_internal["cont_flag"]) {
+			set taemg_internal["alpcmd"] to taemg_constants["alprec"].
+		} else {
+			//do not ramp alpha cmd back down if we start decelerating before nzhold
+			set taemg_internal["alpcmd"] to max(taemg_internal["alpcmd"], midval(taemg_constants["alprecs"] * taemg_input["surfv"] + taemg_constants["alpreci"], taemg_constants["alprecl"], taemg_constants["alprecu"])).
+		}
+		
+		//my addition: cross-limit the alpha recovery and the upper alpha limit
+		//removed because we directly override alpul above 
 		
 		if (taemg_input["hdot"] < taemg_internal["hdmax"]) {
 			set taemg_internal["hdmax"] to taemg_input["hdot"].
-		} else {
+		}
+		
+		if (NOT taemg_internal["cont_flag"]) {
+			//my modification : calculate this repeatedly as hdmax becomes more negative
 			set taemg_internal["dgrnz"] to midval(( taemg_constants["hdnom"] - taemg_internal["hdmax"]) * taemg_constants["dhdnz"], taemg_constants["dhdll"], taemg_constants["dhdul"]).
 			set taemg_internal["dgrnzt"] to taemg_constants["grnzc1"] + taemg_internal["dgrnz"] + 1.
+		} else {
+			set taemg_internal["dgrnzt"] to midval(taemg_constants["dnzb"] - taemg_internal["hdmax"] * taemg_constants["dhdnz"], taemg_constants["dnzmin"], taemg_constants["dnzmax"]).
+			
+			//skip dnztherm calculations
+
+			//skip smnz1 calculation
+			
+			set taemg_internal["dgrnz"] to taemg_internal["dgrnzt"] - taemg_constants["grnzc1a"] - 1.
+			//my modification - removed the 1 addition to be consistent
+			set taemg_internal["nzsw"] to taemg_constants["grnzc1a"] - taemg_internal["smnz1"] - taemg_internal["smnz2"].
 		}
-	} else {
+		
+	} else if (taemg_internal["iphase"] = 4) {
 		//igra = 0 : first pass, =1 : smooth transition to reference aoa, =2: reference aoa
 		if (taemg_internal["igra"] = 0) {
 			set taemg_internal["alpcmd"] to taemg_input["alpha"].
@@ -1699,7 +1776,6 @@ function gralpc {
 		if (taemg_internal["igra"] = 2) {
 			set taemg_internal["alpcmd"] to taemg_internal["gralpr"].
 		}
-		
 	}
 }
 
@@ -1707,12 +1783,20 @@ function gralpc {
 function grsbc {
 	PARAMETER taemg_input.
 	
+	//my addition: if contingency force closed until alpha transition
+	if (taemg_internal["cont_flag"]) and (taemg_internal["iphase"] > 4) {
+		set taemg_internal["dsbc_at"] to 0.
+		return.
+	}
+	
 	//closed until qbar 20, then ramp up to grsbl1, then at mach 4 down to grsbl2
 	
 	if (taemg_input["qbar"] <= taemg_constants["sbq"]) {
 		set taemg_internal["dsbc_at"] to 0.
 		return.
 	}
+	
+	//skip contingency speedbrake checks
 	
 	set taemg_internal["dsbc_at1"] to taemg_internal["dsbc_at1"] + taemg_constants["del1sb"].
 	local dsbc_at2 is midval(taemg_constants["machsbs"] * taemg_input["mach"] + taemg_constants["machsbi"], taemg_constants["grsbl1"], taemg_constants["grsbl2"]).
@@ -1728,7 +1812,9 @@ function grphic {
 	set taemg_internal["betac_at"] to 0.
 	
 	//zero roll before  alpha tran and before we are on gralpr profile 
-	if (taemg_internal["iphase"] > 4) OR (taemg_internal["igra"] < 2) {
+	if ((NOT taemg_internal["cont_flag"]) and (taemg_internal["iphase"] > 4 OR taemg_internal["igra"] < 2))
+		or (taemg_internal["cont_flag"] and taemg_internal["iphase"] > 4)
+	{
 		set taemg_internal["phic_at"] to 0.
 		return.
 	}

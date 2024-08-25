@@ -151,6 +151,9 @@ FUNCTION ops3_main_exec {
 	).
 
 	local guidance_timer IS timer_factory().
+	
+	//necessary so the timer updates once 
+	wait 0.1.
 
 	if (NOT (grtls_flag OR cont_flag)) AND (NOT skip_2_taem_flag) {
 		//entry guidance loop
