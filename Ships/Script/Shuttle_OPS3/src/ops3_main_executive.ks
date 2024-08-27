@@ -118,7 +118,7 @@ FUNCTION ops3_main_exec {
 					dap:measure_cur_state().
 				}
 				
-				if (guid_id > 11) OR (dap:aero:load >= parameters["xlfac_trim_on"]) {
+				if (SHIP:ALTITUDE <= parameters["alt_trim_on"]) OR (dap:aero:load >= parameters["xlfac_trim_on"]) {
 					aerosurfaces_control:update(is_autoflap(), is_autoairbk()).
 				}
 				
@@ -425,6 +425,7 @@ FUNCTION ops3_main_exec {
 									"herror", taemg_out["herror"],
 									"ottstin", taemg_out["ohalrt"],
 									"mep", taemg_out["mep"],
+									"eowlof", taemg_out["eowlof"],
 									"tgthdot", taemg_out["hdref"],
 									"xlfac", dap:aero:load / taemg_constants["g"], 
 									"spdbkcmd", taemg_out["dsbc_at"],

@@ -759,6 +759,22 @@ FUNCTION tginit {
 	SET taemg_internal["rwid0"] TO taemg_input["rwid"].
 	SET taemg_internal["ovhd0"] TO taemg_input["ovhd"].
 	
+	set taemg_internal["grtls_flag"] to taemg_input["grtls"].
+	set taemg_internal["cont_flag"] to taemg_input["cont"].
+	set taemg_internal["ecal_flag"] to taemg_input["ecal"].
+	
+	//flag checks 
+	if (taemg_input["ecal"]) {
+		set taemg_internal["ecal_flag"] to true.
+		set taemg_internal["cont_flag"] to true.
+		set taemg_internal["grtls_flag"] to true.
+	} else if (taemg_input["cont"]) {
+		set taemg_internal["cont_flag"] to true.
+		set taemg_internal["grtls_flag"] to true.
+	} else if (taemg_input["grtls"]) {
+		set taemg_internal["grtls_flag"] to true.
+	} 
+	
 	//requirements:
 	//on first pass, set to 1 if normal taem and 6 if grtls 
 	//after first pass, we only want to reset the phase if we're in an s-turn
@@ -766,7 +782,7 @@ FUNCTION tginit {
 	//and don't reset during grtls phases 6 through 4
 	local firstpassflag is (taemg_internal["iphase"] = -1).
 	if (firstpassflag) {
-		if (taemg_input["grtls"]) {
+		if (taemg_internal["grtls_flag"]) {
 			SET taemg_internal["iphase"] TO 6.
 		} else {
 			SET taemg_internal["iphase"] TO 1.	
@@ -835,9 +851,18 @@ FUNCTION tginit {
 	}
 	
 	if (firstpassflag) {
-		set taemg_internal["nzsw"] to taemg_constants["nzsw1"].
-		set taemg_internal["smnz1"] to taemg_constants["smnzc1"].
-		set taemg_internal["smnz2"] to taemg_constants["smnzc2"].
+		if (taemg_internal["cont_flag"]) {
+			set taemg_internal["philim"] to taemg_constants["grphilma"].
+			set taemg_internal["nzsw"] to taemg_constants["nzsw1a"].
+			set taemg_internal["smnz1"] to taemg_constants["smnzc1a"].
+			set taemg_internal["smnz2"] to taemg_constants["smnzc2a"].
+		} else if (taemg_internal["grtls_flag"]) {
+			set taemg_internal["philim"] to taemg_constants["grphilm"].
+			set taemg_internal["nzsw"] to taemg_constants["nzsw1"].
+			set taemg_internal["smnz1"] to taemg_constants["smnzc1"].
+			set taemg_internal["smnz2"] to taemg_constants["smnzc2"].
+		}
+		set taemg_internal["smnz3"] to 0.
 		set taemg_internal["istp4"] to 1.
 	}
 	
@@ -1099,21 +1124,25 @@ FUNCTION tgcomp {
 	//cmd eas 
 	set taemg_internal["eas_cmd"] to 17.1865 * sqrt(taemg_internal["qbref"]).
 	
-	//my addition: alpha limits for taem and grtls
-	if (taemg_input["mach"] < taemg_constants["alpulcm1"]) {
-		set taemg_internal["alpul"] to midval(taemg_constants["alpulc1"] * taemg_input["mach"] + taemg_constants["alpulc2"], taemg_constants["alpulc3"], taemg_constants["alpulc4"]).
+		//my addition: alpha limits for taem and grtls
+	//my modification : override limits during grtls alpha recovery and nzhold
+	if (taemg_internal["iphase"] = 6) or (taemg_internal["iphase"] = 5) {
+		set taemg_internal["alpul"] to taemg_internal["alpcmd"].
+		set taemg_internal["alpll"] to taemg_constants["gralpll"].
 	} else {
-		set taemg_internal["alpul"] to midval(taemg_constants["alpulc5"] * taemg_input["mach"] + taemg_constants["alpulc6"], taemg_constants["alpulc3"], taemg_constants["alpulc4"]).
-	}
-	
-	if (taemg_input["mach"] < taemg_constants["alpllcm1"]) {
-		set taemg_internal["alpll"] to midval(taemg_constants["alpllc1"] * taemg_input["mach"] + taemg_constants["alpllc2"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
-	} else if (taemg_input["mach"] < taemg_constants["alpllcm2"]) {
-		set taemg_internal["alpll"] to midval(taemg_constants["alpllc3"] * taemg_input["mach"] + taemg_constants["alpllc4"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
-	} else if (taemg_input["mach"] < taemg_constants["alpllcm3"]) {
-		set taemg_internal["alpll"] to midval(taemg_constants["alpllc5"] * taemg_input["mach"] + taemg_constants["alpllc6"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
-	} else {
-		set taemg_internal["alpll"] to midval(taemg_constants["alpllc9"] * taemg_input["mach"] + taemg_constants["alpllc10"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
+		if (taemg_input["mach"] < taemg_constants["alpulcm1"]) {
+			set taemg_internal["alpul"] to midval(taemg_constants["alpulc1"] * taemg_input["mach"] + taemg_constants["alpulc2"], taemg_constants["alpulc3"], taemg_constants["alpulc4"]).
+		} else {
+			set taemg_internal["alpul"] to midval(taemg_constants["alpulc5"] * taemg_input["mach"] + taemg_constants["alpulc6"], taemg_constants["alpulc3"], taemg_constants["alpulc4"]).
+		}
+		
+		if (taemg_input["mach"] < taemg_constants["alpllcm1"]) {
+			set taemg_internal["alpll"] to midval(taemg_constants["alpllc1"] * taemg_input["mach"] + taemg_constants["alpllc2"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
+		} else if (taemg_input["mach"] < taemg_constants["alpllcm2"]) {
+			set taemg_internal["alpll"] to midval(taemg_constants["alpllc3"] * taemg_input["mach"] + taemg_constants["alpllc4"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
+		} else {
+			set taemg_internal["alpll"] to midval(taemg_constants["alpllc5"] * taemg_input["mach"] + taemg_constants["alpllc6"], taemg_constants["alpllc7"], taemg_constants["alpllc8"]).
+		} 
 	}
 
 }	
