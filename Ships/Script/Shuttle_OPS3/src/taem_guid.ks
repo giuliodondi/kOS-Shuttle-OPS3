@@ -480,6 +480,7 @@ global taemg_constants is lexicon (
 									"nzsw1a", 1,		//gs initial value of nzsw	//taem paper
 									"grphilma", 22,			//° roll limit for grtls
 									"eowlogemoh", 1.5,		//	low energy eow error thresh w.r.t. emoh delta
+									"grsbl1a", 45,			//upper contingency speedbrake limit
 								
 									
 									"dummy", 0			//can't be arsed to add commas all the time
@@ -1812,12 +1813,6 @@ function gralpc {
 function grsbc {
 	PARAMETER taemg_input.
 	
-	//my addition: if contingency force closed until alpha transition
-	if (taemg_internal["cont_flag"]) and (taemg_internal["iphase"] > 4) {
-		set taemg_internal["dsbc_at"] to 0.
-		return.
-	}
-	
 	//closed until qbar 20, then ramp up to grsbl1, then at mach 4 down to grsbl2
 	
 	if (taemg_input["qbar"] <= taemg_constants["sbq"]) {
@@ -1825,10 +1820,20 @@ function grsbc {
 		return.
 	}
 	
+	local grsbl1 is taemg_constants["grsbl1"].
+	
 	//skip contingency speedbrake checks
+	if (taemg_internal["cont_flag"])  {
+		if (taemg_internal["iphase"] > 5) {
+			set taemg_internal["dsbc_at"] to 0.
+			return.
+		}
+		
+		set grsbl1 to taemg_constants["grsbl1a"].
+	}
 	
 	set taemg_internal["dsbc_at1"] to taemg_internal["dsbc_at1"] + taemg_constants["del1sb"].
-	local dsbc_at2 is midval(taemg_constants["machsbs"] * taemg_input["mach"] + taemg_constants["machsbi"], taemg_constants["grsbl1"], taemg_constants["grsbl2"]).
+	local dsbc_at2 is midval(taemg_constants["machsbs"] * taemg_input["mach"] + taemg_constants["machsbi"], grsbl1, taemg_constants["grsbl2"]).
 	
 	set taemg_internal["dsbc_at"] to min(taemg_internal["dsbc_at1"], dsbc_at2).
 }

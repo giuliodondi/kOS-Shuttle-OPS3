@@ -1120,9 +1120,9 @@ function update_taem_vsit_disp {
 	set vsitrightdata5:text to "LOAD FAC    " + round(gui_data["xlfac"], 1) + " G".
 	
 	if (gui_data["xlfac"] > 3.2) {
-		set vsitrightdata5:text to "<color=" + guitextredhex + ">" + vsitrightdata5:text + "</color>".
+		set vsitrightdata5:text to "<color=#" + guitextredhex + ">" + vsitrightdata5:text + "</color>".
 	} else if (gui_data["xlfac"] > 2.2) {
-		set vsitrightdata5:text to "<color=" + guitextyellowhex + ">" + vsitrightdata5:text + "</color>".
+		set vsitrightdata5:text to "<color=#" + guitextyellowhex + ">" + vsitrightdata5:text + "</color>".
 	}
 	
 	set vsitleftdata1:text to "R  " + round(gui_data["prog_roll"], 0).
