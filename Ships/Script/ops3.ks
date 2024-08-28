@@ -12,6 +12,7 @@ local nominal_flag is false.
 local tal_flag is false.
 local grtls_flag is false.
 local cont_flag is false.
+local ecal_flag is false.
 
 if (mode_ = "nominal") {
 	set nominal_flag to true.
@@ -21,6 +22,11 @@ if (mode_ = "nominal") {
 	set grtls_flag to true.
 } else if (mode_ = "cont") {
 	set cont_flag to true.
+	set grtls_flag to true.
+} else if (mode_ = "ecal") {
+	set ecal_flag to true.
+	set cont_flag to true.
+	set grtls_flag to true.
 }
 
 RUNPATH("0:/Shuttle_OPS3/parameters").
@@ -53,6 +59,7 @@ If nominal_flag and (SHIP:ALTITUDE >= parameters["interfalt"]) {
 					tal_flag, 
 					grtls_flag,
 					cont_flag,
+					ecal_flag,
 					force_tgt_select
 	).
 }

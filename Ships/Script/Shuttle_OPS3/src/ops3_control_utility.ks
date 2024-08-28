@@ -140,11 +140,19 @@ FUNCTION dap_controller_factory {
 	}).
 	
 	this:add("set_grtls_gains", {
-
-		set this:nz_pitch_pid:Kp to 2.2.
-		set this:nz_pitch_pid:Ki to 0.
-		set this:nz_pitch_pid:Kd to 2.8.
+	
+		if (this:tgt_nz > 2.2) {
+			//will only be used in a contingency nzhold
+			set this:nz_pitch_pid:Kp to 1.1.
+			set this:nz_pitch_pid:Ki to 0.
+			set this:nz_pitch_pid:Kd to 1.4.
+		} else {
+			set this:nz_pitch_pid:Kp to 2.2.
+			set this:nz_pitch_pid:Ki to 0.
+			set this:nz_pitch_pid:Kd to 2.8.
+		}
 	}).
+	
 	
 	this:add("nz_mass_gain", {return 0.8 + 0.007 * (SHIP:MASS - 80).}).
 	

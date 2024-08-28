@@ -8,6 +8,7 @@ global trajbgblack IS RGB(5/255,8/255,8/255).
 
 GLOBAL guitextgreenhex IS "14ff15".
 GLOBAL guitextredhex IS "ff1514".
+GLOBAL guitextyellowhex IS "fff600".
 
 //global and initialised by the gui toggle
 GLOBAL loglex IS LEXICON().
@@ -747,7 +748,7 @@ function update_entry_traj_disp {
 	set trajrightdata2:text TO "ALPCMD    " + ROUND(gui_data["pitch_cmd"],0).
 	
 	if (gui_data["pitch_mod"]) {
-		set trajrightdata3:text TO "<color=#fff600> ALP MODULN </color>".
+		set trajrightdata3:text TO "<color=#" + guitextyellowhex + "> ALP MODULN </color>".
 	} else {
 		set trajrightdata3:text TO "".
 	}
@@ -756,7 +757,7 @@ function update_entry_traj_disp {
 	set trajrightdata5:text TO "ROLREF     " + ROUND(gui_data["roll_ref"],0).
 	
 	if (gui_data["roll_rev"]) {
-		set trajrightdata6:text TO "<color=#fff600>ROLL REVERSAL</color>".
+		set trajrightdata6:text TO "<color=#" + guitextyellowhex + ">ROLL REVERSAL</color>".
 	} else {
 		set trajrightdata6:text TO "".
 	}
@@ -1098,14 +1099,16 @@ function update_taem_vsit_disp {
 	
 	set herror_slider:value to CLAMP(set_taem_vsit_herror_slider(gui_data["herror"]),herror_slider:MIN,herror_slider:MAX).
 	
-	if (gui_data["ottstin"]) {
-		set vsitrightdata0:text TO "<color=#fff600>OTT ST IN</color>".
+	if (gui_data["eowlof"]) {
+		set vsitrightdata0:text TO "<color=#" + guitextredhex + ">LO ENERGY</color>".
+	} else if (gui_data["ottstin"]) {
+		set vsitrightdata0:text TO "<color=#" + guitextyellowhex + ">OTT ST IN</color>".
 	} else {
 		set vsitrightdata0:text TO "".
 	}
 	
 	if (gui_data["mep"]) {
-		set vsitrightdata1:text TO "         /  " + "<color=#fff600>MEP</color>".
+		set vsitrightdata1:text TO "         /  " + "<color=#" + guitextyellowhex + ">MEP</color>".
 	} ELSE {
 		set vsitrightdata1:text TO "NEP  /".
 	}
@@ -1116,8 +1119,10 @@ function update_taem_vsit_disp {
 	
 	set vsitrightdata5:text to "LOAD FAC    " + round(gui_data["xlfac"], 1) + " G".
 	
-	if (gui_data["xlfac"] > 2.2) {
-		set vsitrightdata5:text to "<color=#fff600>" + vsitrightdata5:text + "</color>".
+	if (gui_data["xlfac"] > 3.2) {
+		set vsitrightdata5:text to "<color=" + guitextredhex + ">" + vsitrightdata5:text + "</color>".
+	} else if (gui_data["xlfac"] > 2.2) {
+		set vsitrightdata5:text to "<color=" + guitextyellowhex + ">" + vsitrightdata5:text + "</color>".
 	}
 	
 	set vsitleftdata1:text to "R  " + round(gui_data["prog_roll"], 0).
