@@ -104,7 +104,7 @@ global entryg_constants is lexicon (
 									"ak", -3.5,	//temp control dD/dV factor	
 									"ak1", -5.5,	//temp control dD/dV factor
 									//"alfm", 33.0,	//ft/s2 	desired const drag STS-1
-									"alfmax", 40,	//ft/s2 	maximum drag
+									"alfmax", 43,	//ft/s2 	maximum allowable drag
 									"alfm", 33,	//ft/s2 	desired const drag
 									"tal_alfm", 35,	//ft/s2 	my addition: desired const drag for tal
 									"alim", 70.84,	//ft/s2 max accel in transition
