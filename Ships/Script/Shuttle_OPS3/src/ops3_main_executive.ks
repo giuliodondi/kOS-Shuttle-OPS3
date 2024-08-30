@@ -431,7 +431,7 @@ FUNCTION ops3_main_exec {
 				gui_data:ADD("xtrack_err",  -taemg_out["yerrc"]).
 			} else if (guid_id = 22) {
 				set hud_datalex["delaz"] to taemg_out["ysgn"] * taemg_out["psha"].
-				gui_data:ADD("xtrack_err",  -taemg_out["ysgn"] * taemg_out["rerrc"] / 50).
+				gui_data:ADD("xtrack_err",  taemg_out["ysgn"] * taemg_out["rerrc"] / 50).
 			} else if (guid_id <= 21 OR guid_id>23) {
 				set hud_datalex["delaz"] to taemg_out["dpsac"].
 				gui_data:ADD("hac_entry_t",  taemg_out["tth"]).
@@ -477,9 +477,10 @@ FUNCTION ops3_main_exec {
 		clear_ops3_disp().
 	}
 
-
+	disengage_dap().
 	control_loop:stop_execution().
 	close_all_GUIs().
 	clearscreen.
+	wait 0.2.
 
 }

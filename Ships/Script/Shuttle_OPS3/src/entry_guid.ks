@@ -266,10 +266,15 @@ global entryg_constants is lexicon (
 									//my addition: speedbrake constants ported form taem
 									"dsblim", 98.6,	//deg dsbc max value 
 									"del1sb", 3.125,		//speedbrake open rate
-									"egsbl0", 0,			//upper speedbrake limit
-									"egsbl1", 65,			//upper speedbrake limit
-									"vesbs1", -0.217,			//linear coef for speedbrake
-									"vesbi1", 759.5,			//constant coef for speedbrake
+									"vsbsw", 6000,			// ft/s velocity for switching speedbrake segment
+									"egsbl1", 0,			//upper speedbrake limit
+									"egsbu1", 81,			//upper speedbrake limit
+									"vesbs1", -0.081,			//linear coef for speedbrake
+									"vesbi1", 810,			//constant coef for speedbrake
+									"egsbl2", 65,			//upper speedbrake limit
+									"egsbu2", 81,			//upper speedbrake limit
+									"vesbs2", 0.02,			//linear coef for speedbrake
+									"vesbi2", -1,			//constant coef for speedbrake
 									
 									//other misc stuff added by me 
 									"drolcmdfil", 15,	//° roll cmd value band to apply filtering
@@ -1251,5 +1256,9 @@ function egrolcmd {
 function egsbcmd {
 	PARAMETER entryg_input.
 	
-	set entryg_internal["spdbcmd"] to midval(entryg_constants["vesbs1"] * entryg_input["ve"] + entryg_constants["vesbi1"], entryg_constants["egsbl0"], entryg_constants["egsbl1"]).
+	if (entryg_input["ve"]  >=  entryg_constants["vsbsw"]) {
+		set entryg_internal["spdbcmd"] to midval(entryg_constants["vesbs1"] * entryg_input["ve"] + entryg_constants["vesbi1"], entryg_constants["egsbl1"], entryg_constants["egsbu1"]).
+	} else {
+		set entryg_internal["spdbcmd"] to midval(entryg_constants["vesbs2"] * entryg_input["ve"] + entryg_constants["vesbi2"], entryg_constants["egsbl2"], entryg_constants["egsbu2"]).
+	}
 }
