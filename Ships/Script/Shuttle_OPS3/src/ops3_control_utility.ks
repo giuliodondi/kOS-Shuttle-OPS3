@@ -583,3 +583,10 @@ FUNCTION aerosurfaces_control_factory {
 	
 	RETURN this.
 }
+
+
+
+function engines_off {
+	SET SHIP:CONTROL:PILOTMAINTHROTTLE TO 0.
+	shutdown_all_engines().
+}
