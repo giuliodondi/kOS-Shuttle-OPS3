@@ -104,8 +104,9 @@ global entryg_constants is lexicon (
 									"ak", -3.5,	//temp control dD/dV factor	
 									"ak1", -5.5,	//temp control dD/dV factor
 									//"alfm", 33.0,	//ft/s2 	desired const drag STS-1
+									"alfmax", 40,	//ft/s2 	maximum drag
 									"alfm", 33,	//ft/s2 	desired const drag
-									"tal_alfm", 37,	//ft/s2 	my addition: desired const drag for tal
+									"tal_alfm", 35,	//ft/s2 	my addition: desired const drag for tal
 									"alim", 70.84,	//ft/s2 max accel in transition
 									"almn1", 0.7986355,	//max l/d cmd outside heading err deadband
 									"almn2", 0.9659258,	//max l/d cmd inside heading err deadband
@@ -600,6 +601,21 @@ function eginit {
 	
 	set entryg_internal["rrflag"] to FALSE. 
 	
+	//in case of a tal abort 
+	//refactored before the calculations that use alfm
+	IF (entryg_input["ital"]) {
+		set entryg_constants["alfm"] to entryg_constants["tal_alfm"].
+		
+		
+		set entryg_constants["valp"] to entryg_constants["tal_valp"].
+		set entryg_constants["calp0"] to entryg_constants["tal_calp0"].
+		set entryg_constants["calp1"] to entryg_constants["tal_calp1"].
+		set entryg_constants["calp2"] to entryg_constants["tal_calp2"].
+		
+		set entryg_constants["vnoalp"] to entryg_constants["tal_vnoalp"].
+		set entryg_constants["dlallm"] to entryg_constants["tal_dlallm"].
+	}
+	
 	//nominal transition range at vtran (nmi)
 	//this is kept fixed for range calculations of phase 2,3,4
 	//changed the sign of rpt and tmp1 from the papers
@@ -628,20 +644,6 @@ function eginit {
 	//component of constant drag phase 
 	set entryg_internal["rcg1"] to entryg_constants["cnmfs"] * (entryg_internal["vsit2"]  - entryg_internal["vq2"]) / (2*entryg_constants["alfm"]).
 	set entryg_internal["ialp"] to entryg_constants["nalp"].
-	
-	//in case of a tal abort 
-	IF (entryg_input["ital"]) {
-		set entryg_constants["alfm"] to entryg_constants["tal_alfm"].
-		
-		
-		set entryg_constants["valp"] to entryg_constants["tal_valp"].
-		set entryg_constants["calp0"] to entryg_constants["tal_calp0"].
-		set entryg_constants["calp1"] to entryg_constants["tal_calp1"].
-		set entryg_constants["calp2"] to entryg_constants["tal_calp2"].
-		
-		set entryg_constants["vnoalp"] to entryg_constants["tal_vnoalp"].
-		set entryg_constants["dlallm"] to entryg_constants["tal_dlallm"].
-	}
 	
 	//my addition: do stuff if we resume entry halfway and in transition phase
 	if (entryg_input["ve"] <= entryg_constants["vtran"]) {
@@ -1029,9 +1031,10 @@ function eglodvcmd {
 	}
 	local c4 is entryg_internal["hs"]*cddotc/entryg_internal["cdcal"]. 
 	
-	//limit drag values based on max allowable drag alfm
-	local d1 is min(entryg_internal["drefp"], entryg_constants["alfm"]).
-	local d2 is min(entryg_input["drag"], entryg_constants["alfm"]).
+	//limit drag values based on max allowable drag alfmax
+	//modification - do not limit input drag so that error terms are accurate
+	local d1 is min(entryg_internal["drefp"], entryg_constants["alfmax"]).
+	local d2 is entryg_input["drag"].
 	local dd is d2 - d1.
 	
 	//test for alpha modulation
