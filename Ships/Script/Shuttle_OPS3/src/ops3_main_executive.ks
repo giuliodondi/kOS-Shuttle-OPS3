@@ -25,9 +25,8 @@ FUNCTION ops3_main_exec {
 	make_main_ops3_gui().
 	make_hud_gui().
 	
-	//will implement some custom oms dump logic to handle contingency
 	if (nominal_flag) {
-		shutdown_all_engines().
+		engines_off().
 	}
 	
 	//force target selection logic goes here
@@ -65,6 +64,7 @@ FUNCTION ops3_main_exec {
 		}
 		preserve.
 	}
+
 
 	//main control loop
 	local control_loop is loop_executor_factory(
@@ -404,6 +404,10 @@ FUNCTION ops3_main_exec {
 			//gui outputs
 			
 			if (taemg_out["itran"]) {
+				if (guid_id <= 21) {
+					engines_off().
+				}
+				
 				hud_decluttering(guid_id).
 				if (guid_id = 22) {
 					make_xtrackerr_slider().
