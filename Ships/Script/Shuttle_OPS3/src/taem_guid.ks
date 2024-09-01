@@ -461,15 +461,15 @@ global taemg_constants is lexicon (
 									"gralpia",9.45,	//° constant coef of alpha transition aoa vs mach
 									"gralpla", 10,	//° min alpha transition aoa
 									"gralpua", 40,	//° max alpha transition aoa
-									"hdtrna", -250,	//ft/s hdot for transition to phase 4
+									"hdtrna", 0,	//ft/s hdot for transition to phase 4
 									"dnzb", 2,		//gs constant term for max nzhold contingency gs
 									"dnzmin", 2,		//gs min nzhold contingency gs
 									"dnzmax", 3.9,		//gs max nzhold contingency gs
 									"nztotallima", 3.5,		//gs contingency max g for nzc limiting
-									"alprecs", 0.004,	//°/ft/s contingency alprec linear term
-									"alpreci", 7,	//° contingency alprec const term
-									"alprecl", 22,	//° contingency alprec min
-									"alprecu", 50,	//° contingency alprec min
+									"alprecs", 0.0035,	//°/ft/s contingency alprec linear term
+									"alpreci", 15.5,	//° contingency alprec const term
+									"alprecl", 25	,	//° contingency alprec min
+									"alprecu", 42,	//° contingency alprec max
 									"smnzc1a", 0.13,		//gs initial value of smnz1
 									"smnzc2a", 1.8,		//gs initial value of smnz2
 									"smnzc3a", 0.7314,		//coefficient for smnz1
@@ -480,7 +480,7 @@ global taemg_constants is lexicon (
 									"nzsw1a", 1,		//gs initial value of nzsw	//taem paper
 									"grphilma", 22,			//° roll limit for grtls
 									"eowlogemoh", 1.5,		//	low energy eow error thresh w.r.t. emoh delta
-									"grsbl1a", 45,			//upper contingency speedbrake limit
+									"grsbl1a", 40,			//upper contingency speedbrake limit
 								
 									
 									"dummy", 0			//can't be arsed to add commas all the time
@@ -624,6 +624,7 @@ global taemg_internal is lexicon(
 								"dsbc_at1", 0,		//incremented speedbrake command
 								"istp4", 1,		//phase 4 s-turn variable, will match phase at taem transition 
 								"xlfmax", 0,	//g max load factor reached during grtls
+								"igrpo", FALSE,		//my addition - grtls pullout flag
 								
 								//my addition: control flags 
 								"grtls_flag", FALSE,		//grtls flag
@@ -1635,6 +1636,11 @@ function grtrn {
 		set taemg_internal["itran"] to FALSE.
 	}
 	
+	//my addition - track pullout
+	if (NOT taemg_internal["igrpo"]) and (taemg_input["hdot"] > 0) {
+		set taemg_internal["igrpo"] to TRUE.
+	}
+	
 	if (taemg_internal["iphase"] = 6) {
 		//my addition: check that we're descending
 		//my modification: lower limit for nzsw
@@ -1662,8 +1668,7 @@ function grtrn {
 		if (taemg_input["xlfac"] <= taemg_constants["nztotallim"]) 
 			and ((taemg_internal["cont_flag"] and taemg_input["hdot"] > taemg_constants["hdtrna"])
 				or ((NOT taemg_internal["cont_flag"]) 
-					and ((taemg_input["hdot"] > 0)
-						or (taemg_input["hdot"] > taemg_constants["hdtrn"] and taemg_input["alpha"] >= taemg_internal["gralpr"])
+					and (taemg_internal["igrpo"]	or (taemg_input["hdot"] > taemg_constants["hdtrn"] and taemg_input["alpha"] >= taemg_internal["gralpr"])
 					)
 				)
 			) {
@@ -1730,7 +1735,7 @@ function grnzc {
 		set taemg_internal["smnz1"] to taemg_internal["smnz1"] * (taemg_constants["smnzc3"]^taemg_input["dtg"]).
 		set taemg_internal["smnz2"] to MAX(taemg_internal["smnz2"] - (taemg_constants["smnzc4"] * taemg_input["dtg"]), taemg_constants["smnz2l"]).
 		//start ramping down if we're climbing
-		if (taemg_input["hdot"] >= 0) {
+		if (taemg_internal["igrpo"]) {
 			set taemg_internal["smnz3"] to taemg_internal["smnz3"] + (taemg_constants["smnzc5"] * taemg_input["dtg"]).
 		}
 	}
@@ -1847,7 +1852,7 @@ function grphic {
 	
 	//zero roll before  alpha tran and before we are on gralpr profile 
 	if ((NOT taemg_internal["cont_flag"]) and (taemg_internal["iphase"] > 4 OR taemg_internal["igra"] < 2))
-		or (taemg_internal["cont_flag"] and taemg_internal["iphase"] > 4)
+		or (taemg_internal["cont_flag"] and (NOT taemg_internal["igrpo"] or taemg_internal["iphase"] > 5))
 	{
 		set taemg_internal["phic_at"] to 0.
 		return.
