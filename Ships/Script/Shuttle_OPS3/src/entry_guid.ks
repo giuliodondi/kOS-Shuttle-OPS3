@@ -212,7 +212,7 @@ global entryg_constants is lexicon (
 									"radeg", 57.29578,	//deg/rad radians to degrees
 									"rdmax", 12,	//max roll bias 
 									"rlmndzfac", 2.2,	//min roll delaz gain 
-									"rlmc0", 85,	//rlm max above verolc
+									"rlmc0", 95,	//rlm max above verolc
 									"tal_rlmc0", 120,	//rlm max above tal_verolc for tal
 									"rlmdz", 70,		//max roll delaz limiting
 									"rlmc1", 70,	//rlm max
