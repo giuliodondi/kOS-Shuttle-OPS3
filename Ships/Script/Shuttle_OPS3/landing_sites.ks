@@ -91,6 +91,20 @@ GLOBAL ldgsiteslex IS LEXICON(
 							"length",3876.55,
 							"heading",186.85
 							
+						),
+						"Bermuda",LEXICON(
+							"position",LATLNG(32.362764,-64.687587),
+							"elevation",28.4,
+							"length",3009.64,
+							"heading",287.41
+							
+						),
+						"Dover",LEXICON(
+							"position",LATLNG(39.126604,-75.462997),
+							"elevation",19.9,
+							"length",3768.36,
+							"heading",305.95
+							
 						)
 						
 ).
