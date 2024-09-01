@@ -466,8 +466,8 @@ global taemg_constants is lexicon (
 									"dnzmin", 2,		//gs min nzhold contingency gs
 									"dnzmax", 3.9,		//gs max nzhold contingency gs
 									"nztotallima", 3.5,		//gs contingency max g for nzc limiting
-									"alprecs", 0.0035,	//°/ft/s contingency alprec linear term
-									"alpreci", 15.5,	//° contingency alprec const term
+									"alprecs", 0.0027,	//°/ft/s contingency alprec linear term
+									"alpreci", 16,	//° contingency alprec const term
 									"alprecl", 25	,	//° contingency alprec min
 									"alprecu", 42,	//° contingency alprec max
 									"smnzc1a", 0.13,		//gs initial value of smnz1
@@ -480,6 +480,7 @@ global taemg_constants is lexicon (
 									"nzsw1a", 1,		//gs initial value of nzsw	//taem paper
 									"grphilma", 22,			//° roll limit for grtls
 									"eowlogemoh", 1.5,		//	low energy eow error thresh w.r.t. emoh delta
+									"macheowlo", 0.95,		//	mach at which to enable eowlo override
 									"grsbl1a", 40,			//upper contingency speedbrake limit
 								
 									
@@ -1474,15 +1475,18 @@ FUNCTION tgnzc {
 	
 	if (eowerr_emoh >= taemg_constants["eowlogemoh"]) {
 		set taemg_internal["eowlof"] to TRUE.
-		//measure eow error in units of the emoh delta 
-		//gain on hderrc that goes from 1 to 0 if the error is above eowlogemoh
-		local hderrc_geow is midval(1 + taemg_constants["eowlogemoh"] - eowerr_emoh, 0, 1).
 		
-		//in low energy use the outer glideslope as the hdot profile
-		//use the gain to ramp hderrc to the low energy profile
-		local eowlohd is -taemg_constants["tggs"][taemg_internal["igs"]] * taemg_input["surfv_h"].
-		local eowlohderr is eowlohd - taemg_input["hdot"].
-		set taemg_internal["hderrc"] to eowlohderr + (taemg_internal["hderrc"] - eowlohderr) * hderrc_geow.
+		if (taemg_input["mach"] <= taemg_constants["macheowlo"]) {
+			//measure eow error in units of the emoh delta 
+			//gain on hderrc that goes from 1 to 0 if the error is above eowlogemoh
+			local hderrc_geow is midval(1 + taemg_constants["eowlogemoh"] - eowerr_emoh, 0, 1).
+			
+			//in low energy use the outer glideslope as the hdot profile
+			//use the gain to ramp hderrc to the low energy profile
+			local eowlohd is -taemg_constants["tggs"][taemg_internal["igs"]] * taemg_input["surfv_h"].
+			local eowlohderr is eowlohd - taemg_input["hdot"].
+			set taemg_internal["hderrc"] to eowlohderr + (taemg_internal["hderrc"] - eowlohderr) * hderrc_geow.
+		}
 	} else {
 		set taemg_internal["eowlof"] to FALSE.
 	}
