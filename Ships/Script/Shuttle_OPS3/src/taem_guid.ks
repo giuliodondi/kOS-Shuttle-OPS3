@@ -479,6 +479,8 @@ global taemg_constants is lexicon (
 									"grnzc1a", 2.9,		//gs desired normal accel for nz hold 
 									"nzsw1a", 1,		//gs initial value of nzsw	//taem paper
 									"grphilma", 22,			//° roll limit for grtls
+									"grphisgn", -1,			//	force roll to the left before alptran
+									"grdpsacsgn", 90,			//° threshold on dpsac to override bank sign 
 									"eowlogemoh", 1.5,		//	low energy eow error thresh w.r.t. emoh delta
 									"macheowlo", 0.95,		//	mach at which to enable eowlo override
 									"grsbl1a", 40,			//upper contingency speedbrake limit
@@ -506,6 +508,7 @@ global taemg_internal is lexicon(
 								"dnzll", 0,		//lower lim on load fac
 								"dnzul", 0,		//upper lim on load fac
 								"dpsac", 0,		//deg heading error to the hac tangent 
+								"idpsacdec", FALSE,		//is the heading errot decreasing? - my addition
 								"drpred", 0,	//ft range to go to a/l transition
 								"dsbc_at", 0,		//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
 								"dsbi", 0,	//integral component of delta speedbrake cmd
@@ -958,7 +961,11 @@ FUNCTION gtp {
 	
 	set taemg_internal["pst"] to unfixangle(taemg_internal["pst"]).
 
+	local dpsacp is taemg_internal["dpsac"].
 	set taemg_internal["dpsac"] to unfixangle(taemg_internal["pst"] - taemg_input["psd"]).
+	
+	//my addition
+	set taemg_internal["idpsacdec"] to ((abs(taemg_internal["dpsac"]) - abs(dpsacp)) < 0).
 	
 	//calculate hac turn angle 
 	local pshan is -taemg_internal["pst"] * taemg_internal["ysgn"].
@@ -1669,8 +1676,9 @@ function grtrn {
 	if (taemg_internal["iphase"] = 5) { 
 		//my modification: force switch to alptran if we start climbing and haven't switched by then
 		//my addition: add g-based check
+		// my addition: in contingency transition if delaz is decreasing
 		if (taemg_input["xlfac"] <= taemg_constants["nztotallim"]) 
-			and ((taemg_internal["cont_flag"] and taemg_input["hdot"] > taemg_constants["hdtrna"])
+			and ((taemg_internal["cont_flag"] and taemg_internal["idpsacdec"] and taemg_input["hdot"] > taemg_constants["hdtrna"])
 				or ((NOT taemg_internal["cont_flag"]) 
 					and (taemg_internal["igrpo"]	or (taemg_input["hdot"] > taemg_constants["hdtrn"] and taemg_input["alpha"] >= taemg_internal["gralpr"])
 					)
@@ -1888,6 +1896,18 @@ function grphic {
 	} else if (taemg_internal["istp4"] = 1) {
 		//acq bank proportional to heading error
 		set taemg_internal["phic"] to taemg_constants["gphi"] * taemg_internal["dpsac"].
+	}
+	
+	//my addition: override bank angle if contingency and before alptran 
+	if (taemg_internal["cont_flag"] and (taemg_internal["iphase"] > 4)) {
+	
+		local ysgn_ is sign(taemg_internal["phic"]).
+		
+		if (abs(taemg_internal["dpsac"]) >= taemg_constants["grdpsacsgn"]) {
+			set ysgn_ to taemg_constants["grphisgn"].
+		}
+		
+		set taemg_internal["phic"] to ysgn_ * abs(taemg_internal["phic"]).
 	}
 	
 	set taemg_internal["phic_at"] to midval ( taemg_internal["phic"], -taemg_internal["philim"], taemg_internal["philim"]).
