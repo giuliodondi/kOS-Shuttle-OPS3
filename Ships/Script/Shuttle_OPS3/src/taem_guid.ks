@@ -486,6 +486,7 @@ global taemg_constants is lexicon (
 									"eowlogemoh", 1.5,		//	low energy eow error thresh w.r.t. emoh delta
 									"macheowlo", 0.95,		//	mach at which to enable eowlo override
 									"grsbl1a", 40,			//upper contingency speedbrake limit
+									"mswa", 0.95,		// mach to force transition out of alptran
 								
 									
 									"dummy", 0			//can't be arsed to add commas all the time
@@ -1698,9 +1699,10 @@ function grtrn {
 	
 	if (taemg_internal["iphase"] = 4) {
 		//my addition: switch if we're descending and moving towards the site
-		if (taemg_input["mach"] < taemg_constants["msw1"]) and (taemg_input["hdot"] < 0) and (taemg_input["rwy_rdot"] < 0) { 
-		
-			if (taemg_internal["ecal_flag"]) {
+		//my addition: safety mach transition
+		if ((taemg_input["mach"] < taemg_constants["msw1"]) and (taemg_input["hdot"] < 0) and (taemg_input["rwy_rdot"] < 0)) 
+			or (taemg_input["mach"] <= taemg_constants["mswa"]) { 
+			if (taemg_internal["ecal_flag"]) {	
 				set taemg_internal["ecal_flag"] to FALSE.
 				set taemg_internal["cont_flag"] to FALSE.
 			}
