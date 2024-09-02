@@ -486,7 +486,7 @@ global taemg_constants is lexicon (
 									"eowlogemoh", 1.5,		//	low energy eow error thresh w.r.t. emoh delta
 									"macheowlo", 0.95,		//	mach at which to enable eowlo override
 									"grsbl1a", 40,			//upper contingency speedbrake limit
-									"mswa", 0.95,		// mach to force transition out of alptran
+									"mswa", 0.7,		// mach to force transition out of alptran
 								
 									
 									"dummy", 0			//can't be arsed to add commas all the time
