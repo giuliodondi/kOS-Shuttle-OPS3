@@ -478,6 +478,8 @@ global taemg_constants is lexicon (
 									"smnz2la", -0.5,
 									"grnzc1a", 2.9,		//gs desired normal accel for nz hold 
 									"nzsw1a", 1,		//gs initial value of nzsw	//taem paper
+									"grphihds", 0.017,		//°/(ft/s) 	linear term for phi as a function of hdot
+									"grphihdi", 20,		//°  	const term for phi as a function of hdot
 									"grphilma", 22,			//° roll limit for grtls
 									"grphisgn", -1,			//	force roll to the left before alptran
 									"grdpsacsgn", 90,			//° threshold on dpsac to override bank sign 
@@ -1864,7 +1866,7 @@ function grphic {
 	
 	//zero roll before  alpha tran and before we are on gralpr profile 
 	if ((NOT taemg_internal["cont_flag"]) and (taemg_internal["iphase"] > 4 OR taemg_internal["igra"] < 2))
-		or (taemg_internal["cont_flag"] and (NOT taemg_internal["igrpo"] or taemg_internal["iphase"] > 5))
+		or (taemg_internal["cont_flag"] and (taemg_internal["iphase"] > 5))
 	{
 		set taemg_internal["phic_at"] to 0.
 		return.
@@ -1907,7 +1909,7 @@ function grphic {
 			set ysgn_ to taemg_constants["grphisgn"].
 		}
 		
-		set taemg_internal["phic"] to ysgn_ * abs(taemg_internal["phic"]).
+		set taemg_internal["phic"] to ysgn_ * MAX(taemg_constants["grphihdi"] + taemg_constants["grphihds"] * taemg_input["hdot"], 0).
 	}
 	
 	set taemg_internal["phic_at"] to midval ( taemg_internal["phic"], -taemg_internal["philim"], taemg_internal["philim"]).
