@@ -2,7 +2,7 @@
 
 # Kerbal Space Program Space Shuttle OPS3 Entry Guidance
 
-## updated August 2024
+## updated September 2024
 
 <p align="center">
   <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/ops3_cover.png" width="700" >
@@ -250,13 +250,23 @@ Some remarks:
   - If you want manual speedbrakes, I suggest to leave them closed until about Mach 3 and then open them about 2/3 before TAEM
 - Flying CSS is tricky because Guidance will comand continuous corrections of bank angle to track the drag profile. In particular, it will overbank right after a roll reversal to counter the extra lift gained. **You MUST be focussed closely on the HUD and follow the commands if you fly CSS**
 
-## Entry guidance during a TAL abort
+</details>
+
+<details>
+<summary><h2>Entry guidance during aborts</h2></summary>
+  
+## Transatlantic Abort Landing (TAL) reentry
 
 The trajectory after an ascent TAL abort is suborbital, with not enough velocity to keep the flight-path angle within the nominal reentry values. As a result, the Shuttle will unavoidably descent rapidly and experience a drag spike.  
 
 When Phase 2 is triggered, the initial hdot error is so large that Guidance keeps wings level for much longer than usual. Drag will rise rapidly, and possibly even break the high-drag limit for a short while. Drag will peak at the moment the descent is arrested, but guidance will stay at wings level for even longer as the drag error term is still large. The Shuttle will start climbing and drag will decrease down towards the reference profile.  
 
 Once the drag error becomes small enough, guidance will command a large roll, to stop the climb and re-establish the reference hdot value. This roll will exceed 90° which is normal and expected in this situation. The descent should not take too long to stabilise close to the reference drag and from there on the rest of reentry plays out pretty much normally.
+
+
+## Low-energy reentry guidance 
+
+### Not implemented yet
 
 </details>
 
@@ -334,10 +344,11 @@ Remarks:
 </details>
 
 <details>
-<summary><h2>Glide-RTLS abort guidance</h2></summary>
+<summary><h2>Glide-RTLS and Contingency abort guidance</h2></summary>
 
+## Glide-RTLS (GRTLS) guidance
 
-Glide-RTLS is the atmospheric guidance mode used during an RTLS abort after MECO and External Tank separation.  
+GRTLS is the atmospheric guidance mode used during an RTLS abort after MECO and External Tank separation.  
 The powered guidance part is taken care of by my OPS1 ascent program, it will automatically transition to OPS3 and GRTLS guidance at the right moment.  
 
 The orbiter will be around 70km of altitude and travelling far too slowly to glide in a controlled manner, and so it will start falling very soon. Things happen fast in a GRTLS. As soon as the program engages you must enable the DAP (AUTO or CSS) and auto flaps and spoilers.  
@@ -351,7 +362,7 @@ The display during GRTLS is VERT SIT 1 like for early TAEM, but you only focus o
 
 The phases of GRTLs are:  
 
-- **Alpha-recovery (ALPREC)**, the Orbiter will maintain 0 bank and 45° Aoa as it plunges in the atmosphere The vertical load factor (NZ) will start climbing as the wings generate lift, above a threshold the program will transition to NZHOLD. The orbiter shoudl climb abobe the solid pitch limit line.
+- **Alpha-recovery (ALPREC)**, the Orbiter will maintain 0 bank and 45° Aoa as it plunges in the atmosphere The vertical load factor (NZ) will start climbing as the wings generate lift, above a threshold the program will transition to NZHOLD. The orbiter should climb abobe the solid pitch limit line.
 - **NZ-hold (NZHOLD)**, the program will keep wings level and modulate the Orbiter's pitch to maintain a target NZ. The target value is a canned profile plus corrections to keep the total load factor (lift plus drag) within the structural limit of 2.5G. You will see the orbiter bug descend a little as pitch is modulated, and the total load factor value possibly turn yellow. The program transitions to ALPTRN when the vertical speed rises above a threshold
 - **Alpha-transition (ALPTRN)**, the pitch is lowered in a controlled manner from whatever value it had at the end of NZHOLD to a profile of Mach. Once the pitch profile is established, the program will start banking for lateral guidance. S-turns might be performed if energy is very high. The orbiter pitch bug will descend gently and should settle on the dashed line.
 
@@ -359,9 +370,16 @@ At Mach 3.2 the program will transition to regular TAEM guidance, either ACQ or 
 
 - The energy state at the end of GTLS depends on the Range-Velocity line targeted by Powered RTLS guidance and also depends on payload, since a heavier orbiter is less affected by drag. At times the orbiter might be in a low energy condition at TAEM interface, with the **OTT ST IN** message suggesting a downmode to a Straight-In approach
 
+## Contingency GRTLS guidance
 
+WIP
 
-# Approach & Landing (A/L) guidance
+<img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/nzhold.png" width="800">
+
+</details>
+
+<details>
+<summary><h2> Approach & Landing (A/L)</h2></summary>
 
 TAEM has delivered the Shuttle on final approach, with hopefully small errors in the vertical and cross-track. The last step is to make fine alignment corrections and flare to achieve a shallow glide right over the runway, until the wheels touch down. The guidance and control algorithms are superficially similar to TAEM (actually they are incorporated in the same routines).
 
