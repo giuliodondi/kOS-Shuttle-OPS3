@@ -433,7 +433,7 @@ global taemg_constants is lexicon (
 									"smnzc2", 0.6,		//gs initial value of smnz2
 									"smnzc3", 0.7314,		//coefficient for smnz1
 									"smnzc4", 0.023,		//gs constant nz value for computing smnz2
-									"smnzc5", 0.02,		//gs coefficient for smnz3
+									"smnzc5", 0.028,		//gs coefficient for smnz3
 									"smnz2l", -0.05,
 									"grnzc1", 1.2,		//gs desired normal accel for nz hold 
 									"nzxlfacg", 1,	//gain for xlfac feedback into nzc
@@ -1874,13 +1874,14 @@ function grphic {
 		return.
 	}
 	
+	//modificaton: use es instead of est for grtls sturn
 	if (taemg_internal["istp4"] = 0) {
 		//grtls s-turn termination check
 		if (taemg_internal["eow"] < taemg_internal["est"]) {
 			set taemg_internal["istp4"] to 1.
 		}	
 	} else if (taemg_internal["istp4"] = 1) {
-		if (taemg_internal["eow"] >= taemg_internal["est"]) and (taemg_input["mach"] < taemg_constants["msw3"]) and (taemg_internal["psha"] < taemg_constants["grpsstrn"]) {
+		if (taemg_internal["eow"] >= taemg_internal["es"]) and (taemg_input["mach"] < taemg_constants["msw3"]) and (taemg_internal["psha"] < taemg_constants["grpsstrn"]) {
 			//direction of s-turn 
 			set taemg_internal["istp4"] to 0.
 			set taemg_internal["ysturn"] to -taemg_internal["ysgn"].
