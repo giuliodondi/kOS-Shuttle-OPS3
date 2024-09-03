@@ -404,7 +404,7 @@ FUNCTION ops3_main_exec {
 			//gui outputs
 			
 			if (taemg_out["itran"]) {
-				if (guid_id <= 21) {
+				if (not nominal_flag) and (guid_id <= 21) {
 					engines_off().
 				}
 				
