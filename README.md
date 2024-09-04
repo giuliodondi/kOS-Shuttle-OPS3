@@ -2,7 +2,7 @@
 
 # Kerbal Space Program Space Shuttle OPS3 Entry Guidance
 
-## updated September 2024
+## Updated September 2024
 
 <p align="center">
   <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/ops3_cover.png" width="700" >
@@ -362,7 +362,7 @@ The display during GRTLS is VERT SIT 1 like for early TAEM, but you only focus o
 
 The phases of GRTLs are:  
 
-- **Alpha-recovery (ALPREC)**, the Orbiter will maintain 0 bank and 45° Aoa as it plunges in the atmosphere The vertical load factor (NZ) will start climbing as the wings generate lift, above a threshold the program will transition to NZHOLD. The orbiter should climb abobe the solid pitch limit line.
+- **Alpha-recovery (ALPREC)**, the Orbiter will maintain 0 bank and 46° Aoa as it plunges in the atmosphere The vertical load factor (NZ) will start climbing as the wings generate lift, above a threshold the program will transition to NZHOLD. The orbiter should climb abobe the solid pitch limit line.
 - **NZ-hold (NZHOLD)**, the program will keep wings level and modulate the Orbiter's pitch to maintain a target NZ. The target value is a canned profile plus corrections to keep the total load factor (lift plus drag) within the structural limit of 2.5G. You will see the orbiter bug descend a little as pitch is modulated, and the total load factor value possibly turn yellow. The program transitions to ALPTRN when the vertical speed rises above a threshold
 - **Alpha-transition (ALPTRN)**, the pitch is lowered in a controlled manner from whatever value it had at the end of NZHOLD to a profile of Mach. Once the pitch profile is established, the program will start banking for lateral guidance. S-turns might be performed if energy is very high. The orbiter pitch bug will descend gently and should settle on the dashed line.
 
@@ -372,9 +372,20 @@ At Mach 3.2 the program will transition to regular TAEM guidance, either ACQ or 
 
 ## Contingency GRTLS guidance
 
-WIP
-
 <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/nzhold.png" width="800">
+
+The mode is used during a 2EO or 3EO contingency entry, again as called by OPS1. The guidance scheme is the same used in GRTLS but the behaviour is different, as the initial trajectory is much steeper. 
+
+- The plot above compares vertical aerodynamic load (Nz) and Pitch (Aoa) during the GRTLS phases. The lines are synchronized at the moment where NZHOLD starts to lower pitch
+- The red dashed line is pitch for a normal GRTLS, the orange dashed line is for a contingency scenario
+- The solid blue line is vertical Nz in a normal RTLS while cyan is G-forces for a contingency
+- In a normal GRTLs ALPREC raises pitch very high, while for contingency it's lower to help maintain stability
+- G-forces are more than twice as high in a contingency scenario
+- During NZHOLD in a contingency, the pullout is invariably reversed and a phugoid is established. This usually does not happen in normal GRTLS
+- In a contingency, the lower aoa limit can be hit. The Orbiter is not allowed to lower pitch further which causes high Gs and pitch oscillations
+- To ramp down the contingency G curve gently, pitch actually starts to raise slightly after peak Gs. By this time the orbiter is in a phugoid
+- The latter parts of the plot ALPTRN show a flat G-forces curve in a normal GRTLS indicative of a stable glide
+- in a contingency, G-forces have an inverted curve which is indicative of the phugoid. The phugoid is followed by a second plunge and pullout, which is gentler and can be handled by ALPTRN
 
 </details>
 
