@@ -372,7 +372,7 @@ At Mach 3.2 the program will transition to regular TAEM guidance, either ACQ or 
 
 ## Contingency GRTLS guidance
 
-<img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/nzhold.png" width="800">
+<img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/nzhold.png" width="500">
 
 The mode is used during a 2EO or 3EO contingency entry, again as called by OPS1. The guidance scheme is the same used in GRTLS but the behaviour is different, as the initial trajectory is much steeper. 
 
@@ -394,7 +394,7 @@ The mode is used during a 2EO or 3EO contingency entry, again as called by OPS1.
 
 TAEM has delivered the Shuttle on final approach, with hopefully small errors in the vertical and cross-track. The last step is to make fine alignment corrections and flare to achieve a shallow glide right over the runway, until the wheels touch down. The guidance and control algorithms are superficially similar to TAEM (actually they are incorporated in the same routines).
 
-<img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/a_l_profile.png" width="800">
+<img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/a_l_profile.png" width="600">
 
 The phases of A/L are as follows:
 - **Capture (CAPT)**, the Shuttle will use the same guidance laws as TAEM prefinal but monitor the vertical and cross-track errors. The phase terminates when the errors stay small enough for 4 seconds
