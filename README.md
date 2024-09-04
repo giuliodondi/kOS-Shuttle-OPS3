@@ -324,10 +324,14 @@ The TAEM displays are **VERT SIT** and show the energy situation against distanc
 
 <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/vsit_low.png" width="350">
 
-Finally, this is the Vert Sit display in a very low energy situation:
+Finally, this is the Vert Sit display in a low energy situation:
 - The MEP selection is displayed instead of NEP
-- A message OTT ST IN appears: guidance is signalling that it would be a good idea to switch to a Straight-in approach
+- A message **OTT ST IN** appears: guidance is signalling that it would be a good idea to switch to a Straight-in approach
   - remember that you need to switch manually, the program will never do it for you
+ 
+## Contingency Low energy
+
+In a contingency, the Orbiter might be so low on energy that nothing can be done. In this case you will see a red **LO ENERGY** in place of **OTT ST IN**. This signals that guidance will no longer try to recover the altitude profile and instead achieve a stable glide for bailing your Kerbals out. You can take CSS steering and try a water ditching if you wish
 
 Remarks:
 - The moment S-turns are disabled is also the moment the program will not allow you to change runway or approach anymore. You will notice because all GUI button selectors become frozen
@@ -387,6 +391,13 @@ The mode is used during a 2EO or 3EO contingency entry, again as called by OPS1.
 - To ramp down the contingency G curve gently, pitch actually starts to raise slightly after peak Gs. By this time the orbiter is in a phugoid
 - The latter parts of the plot ALPTRN show a flat G-forces curve in a normal GRTLS indicative of a stable glide
 - in a contingency, G-forces have an inverted curve which is indicative of the phugoid. The phugoid is followed by a second plunge and pullout, which is gentler and can be handled by ALPTRN
+
+Other things only pertaining to contingency:  
+- The speedbrake is set to a lower limit
+- The Orbiter will start banking gently during the pullout to a maximum of 20°
+- **The bank will always be to the LEFT** because in a contingency this will always bring the Orbiter closer to land, both for KSC and Vandenberg launches
+- The transition from NZHOLD to ALPTRN happens when Gs are low enough and delaz to whichever targeted site is decreasing
+- The transition from ALPTRN to regular TAEM guidance happens when the Orbiter is descending and moving towards the target site instead of away from it
 
 </details>
 
