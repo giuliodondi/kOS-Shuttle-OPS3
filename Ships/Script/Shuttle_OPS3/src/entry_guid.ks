@@ -282,6 +282,14 @@ global entryg_constants is lexicon (
 									"drolcmdfil", 15,	//° roll cmd value band to apply filtering
 									"rolcmdfildt", 10,	//° roll cmd value filtering time const
 									"n_iter", 10,		// guidance iterations before steering commands should be accepted
+									
+									// low energy logic
+									"rtbfac", xxx,		//Low–energy logic: range bias factor
+									"dzbias", xxx,		//° Low–energy logic: DELAZ value for range biasing
+									"dlzfac", xxx,		//Low–energy logic: DELAZ factor for roll command computations
+									"dzfmin", xxx,		//Low–energy logic: minimum value for DZFDEL
+									"dzfdl1", xxx,		//Low–energy logic: constant for DZFDEL equation
+									"dzfdl2", xxx,		//s/ft Low–energy logic: VI coefficient for DZFDEL equation
 
 									"dummy", 0
 ).
@@ -389,6 +397,20 @@ global entryg_internal is lexicon(
 									"tgtsite0", 0,		//my addition, keep track of the tgt site to reset guidance
 									"n_iter", -1, 		//do not initialise to zero
 									
+									
+									// low energy logic
+									"icntal", false,		//Low–energy logic engagement discrete
+									"ileint", false,		//Low–energy logic first pass flag
+									"icnvrg", 0,		//Low–energy logic: drag profile convergence flag
+									"ncnvrg", 0,		//Low–energy logic: drag profile convergence counter
+									"trngle", 0,		//Low–energy logic: biased range to the runway threshold
+									"alpca1", 0,		//Low–energy logic: filtered alpha command
+									"ialcnv", 0,		//Low–energy logic: alpha profile convergence flag
+									"dzfctr", 0,		//Low–energy logic: variable DELAZ factor for roll command computation
+									"dzfdel", 0,		//Low–energy logic: DZFCTR increment / decrement
+									
+									
+									
 									"dummy", 0
 ).
 
@@ -436,6 +458,33 @@ function egexec {
 		eginit(entryg_input).
 	}
 	
+	//low energy guidance stuff 
+	if (entryg_input["ileflg"]) {
+		set entryg_internal["icntal"] to false.
+		set entryg_internal["ileint"] to false.
+	} else if (not entryg_internal["ileint"]) {
+		set entryg_internal["icntal"] to true.
+		set entryg_internal["icnvrg"] to 0.
+		set entryg_internal["ncnvrg"] to 0.
+		set entryg_internal["alpca1"] to entryg_input["alpha"].
+		set entryg_internal["ialcnv"] to 0.
+		set entryg_internal["dzfctr"] to entryg_constants["dlzfac"].
+		//doesn't it make more sense as a function of ve?
+		set entryg_internal["dzfdel"] to max(entryg_constants["dzfmin"], entryg_constants["dzfdl1"] + entryg_constants["dzfdl2"] * entryg_input["vi"]).
+		
+		set entryg_internal["ileint"] to true.
+	}
+	
+	if (entryg_internal["icntal"]) {
+		local rtbias is 0.
+		local dzabs is abs(entryg_input["delaz"]).
+		if (dzabs > entryg_constants["dzbias"]) and (dzabs < 90) {
+			set rtbias to entryg_input["trange"] * sin(dzabs)*tan(dzabs).
+		} 
+		set entryg_internal["trngle"] to entryg_input["trange"] + entryg_constants["rtbfac"] * rtbias.
+		
+	}
+	
 	egcomn(entryg_input).
 	
 	//aoa command
@@ -450,7 +499,8 @@ function egexec {
 	}
 	
 	//used to transition from 1 to 5 if we resume entryg when ve less than v transition
-	if (entryg_internal["islect"] = 1) and (entryg_input["ve"] < entryg_constants["vtran"]) {
+	//also do this regardless of phase if low-energy
+	if (entryg_internal["islect"] = 1 or entryg_internal["icntal"]) and (entryg_input["ve"] < entryg_constants["vtran"]) {
 		set entryg_internal["islect"] to 5.
 		set entryg_internal["tran5f_vtran"] to TRUE.
 	}
