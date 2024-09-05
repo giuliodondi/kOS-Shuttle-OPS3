@@ -1842,6 +1842,7 @@ function grsbc {
 	}
 	
 	local grsbl1 is taemg_constants["grsbl1"].
+	local grsbl2 is taemg_constants["grsbl2"].
 	
 	//skip contingency speedbrake checks
 	if (taemg_internal["cont_flag"])  {
@@ -1851,10 +1852,11 @@ function grsbc {
 		}
 		
 		set grsbl1 to taemg_constants["grsbl1a"].
+		set grsbl2 to taemg_constants["grsbl1a"].
 	}
 	
 	set taemg_internal["dsbc_at1"] to taemg_internal["dsbc_at1"] + taemg_constants["del1sb"].
-	local dsbc_at2 is midval(taemg_constants["machsbs"] * taemg_input["mach"] + taemg_constants["machsbi"], grsbl1, taemg_constants["grsbl2"]).
+	local dsbc_at2 is midval(taemg_constants["machsbs"] * taemg_input["mach"] + taemg_constants["machsbi"], grsbl1, grsbl2).
 	
 	set taemg_internal["dsbc_at"] to min(taemg_internal["dsbc_at1"], dsbc_at2).
 }
