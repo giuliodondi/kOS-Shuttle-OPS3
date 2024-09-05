@@ -84,6 +84,7 @@ FUNCTION entryg_wrapper {
 								"pitch_mod", entryg_internal["ict"],
 								"vcg", entryg_internal["vcg"]/mt2ft,
 								"eowd", entryg_internal["eowd"],
+								"ileflg", entryg_input["ileflg"],
 								"eg_end", entryg_internal["eg_end"],
 								"eg_conv", (entryg_internal["n_iter"] = 0)		//my addition: signal that enough iterations have been done
 	).
@@ -290,6 +291,28 @@ global entryg_constants is lexicon (
 									"dzfmin", xxx,		//Low–energy logic: minimum value for DZFDEL
 									"dzfdl1", xxx,		//Low–energy logic: constant for DZFDEL equation
 									"dzfdl2", xxx,		//s/ft Low–energy logic: VI coefficient for DZFDEL equation
+									"alphpo", list(0, xxx, xxx, xxx),		//° Low-energy logic (1): minimum initial pullout alpha command (2): maximum initial pullout alpha command for small heading errors (3): maximum initial pullout alpha command for large heading errors
+									"dlz_lm_alp_hi", xxx,	//° Low-energy logic: heading error limit to establish maximum initial pullout alpha command
+									"vturn1", xxx,			//Low–energy logic: VI coefficient for VTURN equation
+									"vturn2", xxx,			//Low–energy logic: const coefficient for VTURN equation
+									"eqglm1", list(0, xxx, xxx),		//ft/s2 beqglm const terms
+									"eqglm2", list(0, xxx, xxx),		//ft/s2 beqglm linear terms
+									"cnvtst", xxx,		//° Low–energy logic: alpha profile convergence test criterion
+									"rdotpo", xxx,		//ft/s Low–energy logic: pullout altitude rate
+									"rollim", xxx,		//° Low–energy logic: roll command limit for convergence to drag profile
+									"dlzdb1", xxx,		//° Low–energy logic: upper delaz limit for roll command calculations
+									"dlzdb2", xxx,		//° Low–energy logic: lower delaz limit for roll command calculations
+									"rolmn1", xxx,		//° Low–energy logic: roll command lower limit
+									"rolmn2", xxx,		//° Low–energy logic: roll command upper limit
+									"dxrchk", xxx,		//° Low–energy logic: drag margin w.r.t. BEQGLM for DZFCTR incrementing
+									"dlzlm1", xxx,		//° Low–energy logic: DELAZ limit for DZFCTR incrementing
+									"dlzlm2", xxx,		//° Low–energy logic: DELAZ limit for DZFCTR decrementing
+									"alptmc", xxx,		// Low–energy logic: alpha ramp filter constant
+									"alprat", xxx,		//°/s Low–energy logic: alpha convergence rate
+									"alphca", xxx,		//° Low–energy logic: contingency abort alpha command limit – post–pullout
+									"alphmx", xxx,		//° Low–energy logic: contingency abort alpha command – maximum L/D
+									"alphtm", xxx,		//°Low–energy logic: contingency abort alpha command – entry–TAEM interface
+									"valpmx", xxx,		//ft/s Low–energy logic: velocity to begin contingency abort alpha command ramp
 
 									"dummy", 0
 ).
@@ -401,13 +424,19 @@ global entryg_internal is lexicon(
 									// low energy logic
 									"icntal", false,		//Low–energy logic engagement discrete
 									"ileint", false,		//Low–energy logic first pass flag
-									"icnvrg", 0,		//Low–energy logic: drag profile convergence flag
-									"ncnvrg", 0,		//Low–energy logic: drag profile convergence counter
 									"trngle", 0,		//Low–energy logic: biased range to the runway threshold
-									"alpca1", 0,		//Low–energy logic: filtered alpha command
-									"ialcnv", 0,		//Low–energy logic: alpha profile convergence flag
+									"alpca1", 0,		//Low–energy logic: filtered alpha command limit to protect thermal
+									"alpca2", 0,		//Low–energy logic: unfiltered alpha command
+									"ialcnv", FALSE,		//Low–energy logic: alpha profile convergence flag
 									"dzfctr", 0,		//Low–energy logic: variable DELAZ factor for roll command computation
 									"dzfdel", 0,		//Low–energy logic: DZFCTR increment / decrement
+									"vturn", 0,			//ft/s Low–energy logic: maximum velocity for nonzero roll commands 
+									"vi_init", 0,			//ft/s Low-energy logic: initial value of inertial velocity
+									"alp_wle", 0,			//° Low-energy logic:  angle-of-attack command limit to protect wing leading edge thermal
+									"alphpo_hi", 0,			//° Low-energy logic: maximum initial pullout alphacommand limit
+									"irdot", 0,			//Low–energy logic: pullout completion indicator
+									"beqglm", 0,		//ft/s2 Low–energy logic: biased equilibrium glide boundary
+									"rollmn", 0,		//° Low–energy logic: roll command
 									
 									
 									
@@ -458,18 +487,16 @@ function egexec {
 		eginit(entryg_input).
 	}
 	
-	//low energy guidance stuff 
-	if (entryg_input["ileflg"]) {
+	//low energy guidance stuff 	
+	if (NOT entryg_input["ileflg"]) {
 		set entryg_internal["icntal"] to false.
 		set entryg_internal["ileint"] to false.
 	} else if (not entryg_internal["ileint"]) {
 		set entryg_internal["icntal"] to true.
-		set entryg_internal["icnvrg"] to 0.
-		set entryg_internal["ncnvrg"] to 0.
 		set entryg_internal["alpca1"] to entryg_input["alpha"].
-		set entryg_internal["ialcnv"] to 0.
+		set entryg_internal["ialcnv"] to FALSE.
 		set entryg_internal["dzfctr"] to entryg_constants["dlzfac"].
-		//doesn't it make more sense as a function of ve?
+		//increment per second
 		set entryg_internal["dzfdel"] to max(entryg_constants["dzfmin"], entryg_constants["dzfdl1"] + entryg_constants["dzfdl2"] * entryg_input["vi"]).
 		
 		set entryg_internal["ileint"] to true.
@@ -657,7 +684,6 @@ function eginit {
 	IF (entryg_input["ital"]) {
 		set entryg_constants["alfm"] to entryg_constants["tal_alfm"].
 		
-		
 		set entryg_constants["valp"] to entryg_constants["tal_valp"].
 		set entryg_constants["calp0"] to entryg_constants["tal_calp0"].
 		set entryg_constants["calp1"] to entryg_constants["tal_calp1"].
@@ -665,6 +691,30 @@ function eginit {
 		
 		set entryg_constants["vnoalp"] to entryg_constants["tal_vnoalp"].
 		set entryg_constants["dlallm"] to entryg_constants["tal_dlallm"].
+	}
+	
+	//low-energy init 
+	if (entryg_input["ileflg"]) {
+		set entryg_internal["vturn"] to entryg_constants["vturn1"] * entryg_input["vi"] + entryg_constants["vturn2"].
+		set entryg_internal["vi_init"] to entryg_input["vi"].
+		
+		if (abs(entryg_input["delaz"]) < entryg_constants["dlz_lm_alp_hi"]) {
+			set entryg_internal["alphpo_hi"] to entryg_constants["alphpo"][2].
+		} else {
+			set entryg_internal["alphpo_hi"] to entryg_constants["alphpo"][3].
+		}
+		
+		//my addition - no min roll 
+		set entryg_constants["verlmndz"] to 0.
+		
+		set entryg_input["ileint"] to false.
+	}
+	
+	//initialise pullout indicator
+	if (entryg_input["rdot"] > 0) {
+		set entryg_internal["irdot"] to 0.
+	} else {
+		set entryg_internal["irdot"] to 1.
 	}
 	
 	//nominal transition range at vtran (nmi)
@@ -735,7 +785,7 @@ function egcomn {
 		//low energy biased range
 		local trange is entryg_input["trange"].
 		if (entryg_internal["icntal"]) {
-			set trange to entryg_internal["trngle"]
+			set trange to entryg_internal["trngle"].
 		}
 		
 		//calculate constant drag level to reach phase 5 at range rtp
@@ -875,7 +925,7 @@ function egrp {
 		//low energy biased range
 		local trange is entryg_input["trange"].
 		if (entryg_internal["icntal"]) {
-			set trange to entryg_internal["trngle"]
+			set trange to entryg_internal["trngle"].
 		}
 		
 		//the actual range we must fly during phases 2 and 3
@@ -1006,7 +1056,7 @@ function egtran {
 	//low energy biased range
 	local trange is entryg_input["trange"].
 	if (entryg_internal["icntal"]) {
-		set trange to entryg_internal["trngle"]
+		set trange to entryg_internal["trngle"].
 	}
 	
 	//update reference drag but ensure it doesn't exceed elevon higne moment limits through alim, I assume
@@ -1185,8 +1235,11 @@ function eglodvcmd {
 	
 	set entryg_internal["lmn"] to entryg_constants["almn2"].
 	
+	local dzsgn is abs(entryg_input["delaz"]) - abs(entryg_internal["dzold"]).
+	set entryg_internal["dzold"] to entryg_input["delaz"].
+	
 	//calculate l/d limits given whether delaz is increasing or decreasing
-	if (abs(entryg_input["delaz"]) - abs(entryg_internal["dzold"]) > 0) {
+	if (dzsgn > 0) {
 		if ((yl - entryg_constants["ylmin"]) < abs(entryg_input["delaz"]))  {
 			set entryg_internal["lmn"] to entryg_constants["almn1"].
 		}
@@ -1196,8 +1249,28 @@ function eglodvcmd {
 		}
 	}
 	
-	//moved from above
-	set entryg_internal["dzold"] to entryg_input["delaz"].
+	//low-energy roll command
+	if (entryg_internal["icntal"]) {
+		local dzabs is abs(entryg_input["delaz"].
+		if (entryg_input["ve"] > entryg_internal["vturn"]) 
+			or ((dzsgn > 0) and (dzabs <= entryg_constants["dlzdb1"])
+			or ((dzsgn <= 0) and (dzabs <= entryg_constants["dlzdb2"]) {
+			set entryg_internal["rollmn"] to 0. 
+		} else {
+			set entryg_internal["rk2rol"] to -sign(entryg_input["delaz"]).
+			if (entryg_internal["dzfctr"]*dzabs < entryg_constants["rolmn2"])
+				and (entryg_internal["drefp"] >= (entryg_internal["beqglm"] - entryg_constants["dxrchk"]))
+				and (dzabs >= entryg_constants["dlzlm1"]) and (dzsgn > 0) {
+				set entryg_internal["dzfctr"] to  entryg_internal["dzfctr"] * (1 + entryg_internal["dzfdel"] * entryg_input["dtegd"]).
+			}
+			
+			if (dzabs < entryg_constants["dlzlm2"]) and (dzsgn < 0) {
+				set entryg_internal["dzfctr"] to  max(entryg_constants["dlzfac"], entryg_internal["dzfctr"] * (1 - entryg_internal["dzfdel"] * entryg_input["dtegd"])).
+			}
+			
+			set entryg_internal["rollmn"] to entryg_internal["rk2rol"] * midval(entryg_internal["dzfctr"] * dzabs , entryg_constants["rolmn1"], entryg_constants["rolmn2"]).
+		}
+	}
 	
 	//added a check?
 	if (entryg_input["ve"] > entryg_constants["vylmax"]) {
@@ -1305,6 +1378,79 @@ function egrolcmd {
 	} else {
 		set entryg_internal["rlmndz"] to 0.
 	}
+	
+	//pullout tests 
+	if (entryg_internal["irdot"]< 2) {
+		if (entryg_input["rdot"] < 0) {
+			set entryg_internal["irdot"] to 0.
+		}
+		if ((entryg_input["rdot"] > entryg_constants["rdotpo"]) and (entryg_internal["irdot"]>0)) or (entryg_input["ve"] < entryg_constants["vnoalp"]) {
+			set entryg_internal["irdot"] to 2.
+		}		
+	}
+	
+	//low-energy stuff 
+	if (entryg_internal["icntal"]) {
+		//disengagement test if pullout is complete
+		if (entryg_internal["irdot"] > 1) {
+			if (entryg_input["ve"] >= entryg_constants["velmn"]) {
+				set entryg_internal["beqglm"] to entryg_constants["eqglm1"][1] + entryg_constants["eqglm2"][1]*entryg_input["ve"].
+			} else {
+				set entryg_internal["beqglm"] to entryg_constants["eqglm1"][2] + entryg_constants["eqglm2"][2]*entryg_input["ve"].
+			}
+			
+			if (entryg_internal["drefp"] > entryg_internal["beqglm"]) {
+				set entryg_internal["icntal"] to false.
+			}
+		}
+		
+		//low energy roll cmd 
+		set entryg_internal["rollc"][1] to entryg_internal["rollmn"].
+		
+		//wle thermal alpha command
+		set entryg_internal["alp_wle"]  to xxxx.
+	
+		if (entryg_internal["irdot"] < 2) {
+			//alpha cmd for initial pullout
+			
+			set entryg_internal["alpcmd"] to midval(entryg_internal["alp_wle"], entryg_constants["alphpo"][1], entryg_internal["alphpo_hi"]).
+			
+			//skip vi_alp_lo/hi checks
+			
+			set entryg_internal["alpca1"] to entryg_input["alpha"].
+		} else {
+			//alpha cmd for the subsequent phugoids
+			
+			//contingency alpha rampdown
+			if (entryg_input["ve"] < entryg_constants["valpmx"]) {
+				set entryg_internal["alpcmd"] to entryg_constants["alphtm"] + (entryg_constants["alphmx"] - entryg_constants["alphtm"]) * (entryg_input["ve"] - entryg_constants["v_taem"])/(entryg_input["valpmx"] - entryg_constants["v_taem"]).
+			} else {
+			
+				//skip all the alp_vt calculations
+				set entryg_internal["alpca2"] to entryg_internal["alp_wle"].
+				
+				set entryg_internal["alpca1"] to entryg_constants["alptmc"]*entryg_internal["alpca1"] + entryg_internal["alpca2"]*(1 - entryg_constants["alptmc"]).
+				
+				set entryg_internal["alpcmd"] to midval(entryg_internal["alpca1"], entryg_internal["aclim"] , entryg_constants["alphmx"]).
+			}
+		}
+	} else {
+		//convergence to nominal alpha profile
+		if (not entryg_internal["ialcnv"]) {
+			local dalp_ is entryg_internal["alpcmd"] - entryg_input["alpha"].
+			if (abs(dalp_) < entryg_constants["cnvtst"]) {
+				set entryg_internal["ialcnv"] to true.
+			} else {
+				set entryg_internal["alpcmd"] to entryg_input["alpha"] + entryg_constants["alprat"] * entryg_input["dtegd"] * sign(dalp_).
+			}
+		} else {
+			//if low energy disabled and alpha converged, signal low energy flag off 
+			set entryg_input["ileflg"] to false.
+		}
+		
+		//skip drag convergence checks
+	}
+	
 	
 	//my modification: limit the new roll command from above by the unlimited roll 
 	LOCAL rollca IS MIN(ABS(entryg_internal["rollc"][1]), ABS(entryg_internal["rollc"][2])).

@@ -3,7 +3,7 @@
 FUNCTION ops3_main_exec {
 	parameter nominal_flag.
 	parameter tal_flag.
-	parameter loen_flag.
+	parameter ileflg.
 	parameter grtls_flag.
 	parameter cont_flag.
 	parameter ecal_flag.
@@ -202,12 +202,13 @@ FUNCTION ops3_main_exec {
 												"lod", dap:aero:lod,
 												"egflg", 0, 
 												"ital", tal_flag,
-												"ileflg", loen_flag,
+												"ileflg", ileflg,
 												"debug", parameters["full_debug"]
 										)
 			).
 			
 			set guid_id to entryg_out["guid_id"].
+			set ileflg to  entryg_out["ileflg"].
 			
 			IF (is_autoairbk()) {
 				SET aerosurfaces_control:spdbk_defl TO entryg_out["spdbcmd"].
