@@ -732,10 +732,16 @@ function egcomn {
 		
 		local t2old is entryg_internal["t2"].
 		
+		//low energy biased range
+		local trange is entryg_input["trange"].
+		if (entryg_internal["icntal"]) {
+			set trange to entryg_internal["trngle"]
+		}
+		
 		//calculate constant drag level to reach phase 5 at range rtp
 		//my modification: only update t2 before phase 4 so it's constant
 		if (entryg_internal["islect"] < 4) {
-			set entryg_internal["t2"] to entryg_constants["cnmfs"] * (entryg_internal["ve2"] - entryg_internal["vq2"]) / (2*( entryg_input["trange"] - entryg_internal["rpt"])).
+			set entryg_internal["t2"] to entryg_constants["cnmfs"] * (entryg_internal["ve2"] - entryg_internal["vq2"]) / (2*( trange - entryg_internal["rpt"])).
 			//my addition- limit t2, effectively disables early transition to phase 4
 			set entryg_internal["t2"] to min(entryg_internal["t2"], entryg_constants["alfm"]).
 		}
@@ -865,9 +871,16 @@ function egrp {
 		
 		// phases 2-3 predicted tange * d23
 		set entryg_internal["r231"] to entryg_internal["rff1"] + entryg_internal["req1"].
+		
+		//low energy biased range
+		local trange is entryg_input["trange"].
+		if (entryg_internal["icntal"]) {
+			set trange to entryg_internal["trngle"]
+		}
+		
 		//the actual range we must fly during phases 2 and 3
 		//added phase-dependent bias 
-		set entryg_internal["r23"] to  entryg_input["trange"] - entryg_internal["rcg"] - entryg_internal["rpt"].
+		set entryg_internal["r23"] to  trange - entryg_internal["rcg"] - entryg_internal["rpt"].
 		
 		//first updated value of d23
 		set entryg_internal["d231"] to entryg_internal["r231"] / entryg_internal["r23"].
@@ -990,8 +1003,14 @@ function egtran {
 	set entryg_internal["rer1"] to entryg_constants["cnmfs"] * ln(entryg_internal["drefp"] / entryg_constants["df"]) / c1.
 	set entryg_internal["drdd"] to min(entryg_constants["cnmfs"] * 1/(c1 * entryg_internal["drefp"]) - entryg_internal["rer1"] / drefpt , entryg_constants["drddl"]).
 	
+	//low energy biased range
+	local trange is entryg_input["trange"].
+	if (entryg_internal["icntal"]) {
+		set trange to entryg_internal["trngle"]
+	}
+	
 	//update reference drag but ensure it doesn't exceed elevon higne moment limits through alim, I assume
-	set entryg_internal["drefp"] to entryg_internal["drefp"] + (entryg_input["trange"] - entryg_internal["rer1"] - entryg_constants["rpt1"]) / entryg_internal["drdd"].
+	set entryg_internal["drefp"] to entryg_internal["drefp"] + (trange - entryg_internal["rer1"] - entryg_constants["rpt1"]) / entryg_internal["drdd"].
 	local dlim is entryg_constants["alim"] * entryg_input["drag"] / entryg_input["xlfac"].
 	if (entryg_internal["drefp"] > dlim) {
 		set entryg_internal["drefp"] to dlim.
