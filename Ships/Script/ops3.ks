@@ -10,6 +10,7 @@ SET CONFIG:IPU TO 1800.
 //determine mode flags
 local nominal_flag is false.
 local tal_flag is false.
+local loen_flag is false.
 local grtls_flag is false.
 local cont_flag is false.
 local ecal_flag is false.
@@ -18,6 +19,9 @@ if (mode_ = "nominal") {
 	set nominal_flag to true.
 } else if (mode_ = "tal") {
 	set tal_flag to true.
+} else if (mode_ = "tal_loen") {
+	set tal_flag to true.
+	set loen_flag to true.
 } else if (mode_ = "grtls") {
 	set grtls_flag to true.
 } else if (mode_ = "cont") {
@@ -57,6 +61,7 @@ If nominal_flag and (SHIP:ALTITUDE >= ops3_parameters["interfalt"]) {
 	ops3_main_exec(
 					nominal_flag,
 					tal_flag, 
+					loen_flag, 
 					grtls_flag,
 					cont_flag,
 					ecal_flag,

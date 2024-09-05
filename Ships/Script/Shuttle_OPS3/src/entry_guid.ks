@@ -50,7 +50,8 @@ FUNCTION entryg_wrapper {
 							"cd", entryg_input["cd"],      //drag coef from FAR
 							"mm304ph", entryg_constants["mm304phi0"],    	//preentry bank 
 							"mm304al", entryg_constants["mm304alp0"],    	//preentry aoa ,
-							"ital", entryg_input["ital"]				//is tal abort flag
+							"ital", entryg_input["ital"],				//is tal abort flag
+							"ileflg", entryg_input["ileflg"]				//is low energy flag
 	).
 	
 	local dump_overwrite is (NOT entryg_internal["fpflag"]).

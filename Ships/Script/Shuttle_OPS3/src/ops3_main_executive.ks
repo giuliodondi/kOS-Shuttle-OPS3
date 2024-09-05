@@ -3,6 +3,7 @@
 FUNCTION ops3_main_exec {
 	parameter nominal_flag.
 	parameter tal_flag.
+	parameter loen_flag.
 	parameter grtls_flag.
 	parameter cont_flag.
 	parameter ecal_flag.
@@ -201,7 +202,8 @@ FUNCTION ops3_main_exec {
 												"lod", dap:aero:lod,
 												"egflg", 0, 
 												"ital", tal_flag,
-												"debug", ops3_parameters["full_debug"]
+												"ileflg", loen_flag,
+												"debug", parameters["full_debug"]
 										)
 			).
 			
