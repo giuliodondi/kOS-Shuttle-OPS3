@@ -1035,9 +1035,11 @@ function increment_taem_vsit_disp_counter {
 }
 
 function set_taem_vsit_disp_title {
+	parameter title_str is "VERT".
+
 	local text_ht is ops3_main_display_titlebox:style:height*0.75.
 	
-	set ops3_main_display_title:text to "<b><size=" + text_ht + "> VERT SIT " + taem_vsit_disp_counter + "</size></b>".
+	set ops3_main_display_title:text to "<b><size=" + text_ht + "> " + title_str + " SIT " + taem_vsit_disp_counter + "</size></b>".
 }
 
 
@@ -1076,6 +1078,18 @@ function update_taem_vsit_disp {
 		set taem_vsit_disp_counter_p to taem_vsit_disp_counter.
 		reset_taem_vsit_disp().
 	}
+	
+	local title_str is "VERT".
+	
+	if (gui_data["ecal_flag"]) {
+		set title_str to "ECAL".
+	} else if (gui_data["cont_flag"]) {
+		set title_str to "CONT".
+	} else if (gui_data["grtls_flag"]) {
+		set title_str to "GRTLS".
+	}
+	
+	set_taem_vsit_disp_title(title_str).
 	
 	if (taem_vsit_disp_counter=2) {
 		//horiz slider 

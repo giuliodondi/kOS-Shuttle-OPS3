@@ -438,7 +438,10 @@ FUNCTION ops3_main_exec {
 									"mach", taemg_in["mach"],
 									"prog_pch", dap:prog_pitch,
 									"prog_roll", dap:prog_roll,
-									"prog_yaw", dap:prog_yaw
+									"prog_yaw", dap:prog_yaw,
+									"grtls_flag", taemg_out["grtls_flag"],
+									"cont_flag", taemg_out["cont_flag"],
+									"ecal_flag", taemg_out["ecal_flag"]
 			).
 			
 			if (guid_id >= 30 OR guid_id=23) {

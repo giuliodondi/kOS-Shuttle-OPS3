@@ -163,7 +163,10 @@ FUNCTION taemg_wrapper {
 					"al_resetpids", taemg_internal["al_resetpids"],	
 					"geardown", taemg_internal["geardown"],	
 					"brakeson", taemg_internal["brakeson"],
-					"dapoff", taemg_internal["dapoff"]
+					"dapoff", taemg_internal["dapoff"],
+					"ecal_flag",  taemg_internal["ecal_flag"],
+					"cont_flag",  taemg_internal["cont_flag"],
+					"grtls_flag",  taemg_internal["grtls_flag"]
 	
 	).
 }
@@ -480,7 +483,7 @@ global taemg_constants is lexicon (
 									"nzsw1a", 1,		//gs initial value of nzsw	//taem paper
 									"grphihds", 0.017,		//°/(ft/s) 	linear term for phi as a function of hdot
 									"grphihdi", 20,		//°  	const term for phi as a function of hdot
-									"grphilma", 22,			//° roll limit for grtls
+									"grphilma", 35,			//° roll limit for grtls
 									"grphisgn", -1,			//	force roll to the left before alptran
 									"grdpsacsgn", 160,			//° threshold on dpsac to override bank sign 
 									"eowlogemoh", 1.5,		//	low energy eow error thresh w.r.t. emoh delta
@@ -767,10 +770,6 @@ FUNCTION tginit {
 	
 	SET taemg_internal["rwid0"] TO taemg_input["rwid"].
 	SET taemg_internal["ovhd0"] TO taemg_input["ovhd"].
-	
-	set taemg_internal["grtls_flag"] to taemg_input["grtls"].
-	set taemg_internal["cont_flag"] to taemg_input["cont"].
-	set taemg_internal["ecal_flag"] to taemg_input["ecal"].
 	
 	//flag checks 
 	if (taemg_input["ecal"]) {
@@ -1702,10 +1701,9 @@ function grtrn {
 		//my addition: safety mach transition
 		if ((taemg_input["mach"] < taemg_constants["msw1"]) and (taemg_input["hdot"] < 0) and (taemg_input["rwy_rdot"] < 0)) 
 			or (taemg_input["mach"] <= taemg_constants["mswa"]) { 
-			if (taemg_internal["ecal_flag"]) {	
-				set taemg_internal["ecal_flag"] to FALSE.
-				set taemg_internal["cont_flag"] to FALSE.
-			}
+			set taemg_internal["ecal_flag"] to FALSE.
+			set taemg_internal["cont_flag"] to FALSE.
+			set taemg_internal["grtls_flag"] to FALSE.
 			
 			set taemg_internal["philim"] to taemg_constants["philm1"].
 			//the idea is to maintain the s-turn status when transitioning from grtls to taem
