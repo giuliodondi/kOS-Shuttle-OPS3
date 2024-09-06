@@ -458,7 +458,7 @@ global taemg_constants is lexicon (
 									"gralpll", 10,			//° lower aoa for grtls alprec and nzhold
 									"grphilm", 45,			//° roll limit for grtls
 									
-									//contingency / ecal stuff 
+									//contingency stuff 
 									
 									"gralpsa", 2.54,	//linear coef of alpha transition aoa vs mach
 									"gralpia",9.45,	//° constant coef of alpha transition aoa vs mach
@@ -491,6 +491,11 @@ global taemg_constants is lexicon (
 									"grsbl1a", 40,			//upper contingency speedbrake limit
 									"mswa", 0.7,		// mach to force transition out of alptran
 								
+									//ecal stuff
+									"phistn", 70,		//° ecal sturn roll lim
+									"dphislp", 3.125,		//° slope of dpsaclmt vs mach
+									"dphiint", 5,		//° intercept of dpsaclmt vs mach
+									"dpsaclmt_max", 30, 	//° max val of dpsaclmt
 									
 									"dummy", 0			//can't be arsed to add commas all the time
 									
@@ -640,6 +645,12 @@ global taemg_internal is lexicon(
 								"grtls_flag", FALSE,		//grtls flag
 								"cont_flag", FALSE,		//contingency flag
 								"ecal_flag", FALSE,		//ecal flag
+								
+								//ecal stuff 
+								"dpsaci", 0, 			//ECAL initial roll direction for high energy
+								"dpsact", 0, 			//ECAL target heading error for high energy
+								"dpsaclmt", 0, 			//ECAL target DPSAC limit for high energy
+								"dpsac_init", false,		//ECAL high energy heading error init flag
 								
 								"dummy", 0			//can't be arsed to add commas all the time
 ).
@@ -860,12 +871,10 @@ FUNCTION tginit {
 	
 	if (firstpassflag) {
 		if (taemg_internal["cont_flag"]) {
-			set taemg_internal["philim"] to taemg_constants["grphilma"].
 			set taemg_internal["nzsw"] to taemg_constants["nzsw1a"].
 			set taemg_internal["smnz1"] to taemg_constants["smnzc1a"].
 			set taemg_internal["smnz2"] to taemg_constants["smnzc2a"].
 		} else if (taemg_internal["grtls_flag"]) {
-			set taemg_internal["philim"] to taemg_constants["grphilm"].
 			set taemg_internal["nzsw"] to taemg_constants["nzsw1"].
 			set taemg_internal["smnz1"] to taemg_constants["smnzc1"].
 			set taemg_internal["smnz2"] to taemg_constants["smnzc2"].
@@ -1040,6 +1049,8 @@ FUNCTION tgcomp {
 	//my modification - emoh is emep biased
 	//set taemg_internal["emoh"] to  taemg_constants["emohc1"][taemg_internal["igs"]] + taemg_constants["emohc2"][taemg_internal["igs"]] * taemg_internal["drpred"].
 	set taemg_internal["emoh"] to taemg_internal["emep"] - taemg_constants["emepdelemoh"].
+	
+	//skip ecal energy biasing
 	
 	//calculate ref altitude profile
 	//calculate tangent of ref. fpa
@@ -1676,6 +1687,13 @@ function grtrn {
 	}
 	
 	if (taemg_internal["iphase"] = 5) { 
+		//my addition: phi limits for ecal and contingency nzhold 
+		if (taemg_internal["cont_flag"]) {
+			set taemg_internal["philim"] to taemg_constants["grphilma"].
+		} else {
+			set taemg_internal["philim"] to taemg_constants["grphilm"].
+		}
+		
 		//my modification: force switch to alptran if we start climbing and haven't switched by then
 		//my addition: add g-based check
 		// my addition: in contingency transition if delaz is decreasing
@@ -1687,7 +1705,6 @@ function grtrn {
 				)
 			) {
 			set taemg_internal["iphase"] to 4.
-			set taemg_internal["philim"] to taemg_constants["grphilm"].
 			set taemg_internal["itran"] to TRUE.
 			SET taemg_internal["qbarf"] TO taemg_input["qbar"].
 			
@@ -1697,6 +1714,14 @@ function grtrn {
 	}
 	
 	if (taemg_internal["iphase"] = 4) {
+	
+		//my addition: phi limits 
+		if (taemg_internal["ecal_flag"]) {
+			set taemg_internal["philim"] to taemg_constants["phistn"].
+		} else {
+			set taemg_internal["philim"] to taemg_constants["grphilm"].
+		}
+	
 		//my addition: switch if we're descending and moving towards the site
 		//my addition: safety mach transition
 		if ((taemg_input["mach"] < taemg_constants["msw1"]) and (taemg_input["hdot"] < 0) and (taemg_input["rwy_rdot"] < 0)) 
@@ -1879,9 +1904,34 @@ function grphic {
 		//grtls s-turn termination check
 		if (taemg_internal["eow"] < taemg_internal["est"]) {
 			set taemg_internal["istp4"] to 1.
+			set taemg_internal["dpsac_init"] to false.
 		}	
+		
+		//ecal heading stuff allowing for high-energy roll reversals
+		if (taemg_internal["ecal_flag"]) {
+			if (not taemg_internal["dpsac_init"]) {
+				set taemg_internal["dpsaci"] to taemg_internal["dpsac"].
+				set taemg_internal["dpsac_init"] to true.
+			}
+		
+			set taemg_internal["phic"] to taemg_constants["phistn"] * sign(taemg_internal["dpsaci"]).
+			set taemg_internal["dpsaclmt"] to  min(taemg_constants["dphislp"] * taemg_input["mach"] + taemg_constants["dphiint"], taemg_constants["dpsaclmt_max"]).
+			set taemg_internal["dpsact"] to - taemg_internal["dpsaclmt"] * sign(taemg_internal["dpsaci"]).
+			
+			if ((taemg_internal["dpsact"] >= 0) and (taemg_internal["dpsac"] >= taemg_internal["dpsact"]))
+				or ((taemg_internal["dpsact"] < 0) and (taemg_internal["dpsac"] <= taemg_internal["dpsact"])) {
+				set taemg_internal["dpsac_init"] to false. 
+			}
+		
+		}
+		
 	} else if (taemg_internal["istp4"] = 1) {
-		if (taemg_internal["eow"] >= taemg_internal["es"]) and (taemg_input["mach"] < taemg_constants["msw3"]) and (taemg_internal["psha"] < taemg_constants["grpsstrn"]) {
+		local eowesflag is (taemg_internal["eow"] >= taemg_internal["es"]).
+		local msw3flag is (taemg_input["mach"] < taemg_constants["msw3"]).
+		local pshaflg is (taemg_internal["psha"] < taemg_constants["grpsstrn"]).
+		
+		if ((not taemg_internal["ecal_flag"]) and eowesflag and msw3flag and pshaflg)
+			or (taemg_internal["ecal_flag"] and eowesflag) {
 			//direction of s-turn 
 			set taemg_internal["istp4"] to 0.
 			set taemg_internal["ysturn"] to -taemg_internal["ysgn"].
@@ -1890,29 +1940,32 @@ function grphic {
 			if (spsi < 0) and (taemg_internal["psha"] < 90) {
 				set taemg_internal["ysturn"] to -taemg_internal["ysturn"].
 			}
+			
 		}
 	}
 	
-	//these are equations 1.4 and 1.5 of grphic from the level-c document
-	//to me they make sense after the if block so that a roll command is generated for either case
-	if (taemg_internal["istp4"] = 0) {
-		//higher s-turn bank angle
-		set taemg_internal["phic"] to taemg_internal["ysturn"] * taemg_internal["philim"].
-	} else if (taemg_internal["istp4"] = 1) {
-		//acq bank proportional to heading error
-		set taemg_internal["phic"] to taemg_constants["gphi"] * taemg_internal["dpsac"].
-	}
-	
-	//my addition: override bank angle if contingency and before alptran 
-	if (taemg_internal["cont_flag"] and (taemg_internal["iphase"] > 4)) {
-	
-		local ysgn_ is sign(taemg_internal["phic"]).
-		
-		if (abs(taemg_internal["dpsac"]) >= taemg_constants["grdpsacsgn"]) {
-			set ysgn_ to taemg_constants["grphisgn"].
+	if (not taemg_internal["ecal_flag"]) {
+		//these are equations 1.4 and 1.5 of grphic from the level-c document
+		//to me they make sense after the if block so that a roll command is generated for either case
+		if (taemg_internal["istp4"] = 0) {
+			//higher s-turn bank angle
+			set taemg_internal["phic"] to taemg_internal["ysturn"] * taemg_internal["philim"].
+		} else if (taemg_internal["istp4"] = 1) {
+			//acq bank proportional to heading error
+			set taemg_internal["phic"] to taemg_constants["gphi"] * taemg_internal["dpsac"].
 		}
 		
-		set taemg_internal["phic"] to ysgn_ * MAX(taemg_constants["grphihdi"] + taemg_constants["grphihds"] * taemg_input["hdot"], 0).
+		//my addition: override bank angle if contingency and before alptran 
+		if (taemg_internal["cont_flag"] and (taemg_internal["iphase"] > 4)) {
+		
+			local ysgn_ is sign(taemg_internal["phic"]).
+			
+			if (abs(taemg_internal["dpsac"]) >= taemg_constants["grdpsacsgn"]) {
+				set ysgn_ to taemg_constants["grphisgn"].
+			}
+			
+			set taemg_internal["phic"] to ysgn_ * MAX(taemg_constants["grphihdi"] + taemg_constants["grphihds"] * taemg_input["hdot"], 0).
+		}
 	}
 	
 	set taemg_internal["phic_at"] to midval ( taemg_internal["phic"], -taemg_internal["philim"], taemg_internal["philim"]).
