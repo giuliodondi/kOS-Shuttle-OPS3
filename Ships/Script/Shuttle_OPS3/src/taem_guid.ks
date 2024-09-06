@@ -482,7 +482,7 @@ global taemg_constants is lexicon (
 									"grphihdi", 20,		//°  	const term for phi as a function of hdot
 									"grphilma", 22,			//° roll limit for grtls
 									"grphisgn", -1,			//	force roll to the left before alptran
-									"grdpsacsgn", 90,			//° threshold on dpsac to override bank sign 
+									"grdpsacsgn", 160,			//° threshold on dpsac to override bank sign 
 									"eowlogemoh", 1.5,		//	low energy eow error thresh w.r.t. emoh delta
 									"macheowlo", 0.95,		//	mach at which to enable eowlo override
 									"grsbl1a", 40,			//upper contingency speedbrake limit
@@ -1847,12 +1847,12 @@ function grsbc {
 	//skip contingency speedbrake checks
 	if (taemg_internal["cont_flag"])  {
 		if (taemg_internal["iphase"] > 5) {
-			set taemg_internal["dsbc_at"] to 0.
-			return.
+			set grsbl1 to 0.
+			set grsbl2 to 0.
+		} else {
+			set grsbl1 to taemg_constants["grsbl1a"].
+			set grsbl2 to taemg_constants["grsbl1a"].
 		}
-		
-		set grsbl1 to taemg_constants["grsbl1a"].
-		set grsbl2 to taemg_constants["grsbl1a"].
 	}
 	
 	set taemg_internal["dsbc_at1"] to taemg_internal["dsbc_at1"] + taemg_constants["del1sb"].
