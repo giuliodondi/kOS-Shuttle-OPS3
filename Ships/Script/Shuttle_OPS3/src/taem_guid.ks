@@ -496,6 +496,14 @@ global taemg_constants is lexicon (
 									"dphislp", 3.125,		//° slope of dpsaclmt vs mach
 									"dphiint", 5,		//° intercept of dpsaclmt vs mach
 									"dpsaclmt_max", 30, 	//° max val of dpsaclmt
+									"enlimhifac", 0.75,		// factor for calculating enlimhi					
+									"enlimlofac", 0.75,		// factor for calculating enlimlo	
+									"dpsac2", 25,			//° delaz limit for alpha bias 
+									"enalpl", -5,			//° lower alpha bias 
+									"enalpu", 7,			//° max alpha bias 
+									"en_bias1", -2.5,			//° low energy alpha bias 
+									"en_bias2", 2.5,			//° high energy alpha bias 
+									"en_bias3", 5,			//° high energy alpha bias 
 									
 									"dummy", 0			//can't be arsed to add commas all the time
 									
@@ -651,6 +659,7 @@ global taemg_internal is lexicon(
 								"dpsact", 0, 			//ECAL target heading error for high energy
 								"dpsaclmt", 0, 			//ECAL target DPSAC limit for high energy
 								"dpsac_init", false,		//ECAL high energy heading error init flag
+								"en_alpha_bias", 0,		//alpha bias eow-dependent
 								
 								"dummy", 0			//can't be arsed to add commas all the time
 ).
@@ -1682,7 +1691,36 @@ function grtrn {
 		//skip amaxld limitation
 		set taemg_internal["gralpr"] to taemg_internal["gralpr"] / abs(taemg_input["cosphi"]).
 	} else {
+		
 		set taemg_internal["gralpr"] to midval(taemg_constants["gralpsa"] * taemg_input["mach"] + taemg_constants["gralpia"], taemg_constants["gralpla"], taemg_constants["gralpua"]).
+		
+		if taemg_internal["ecal_flag"] and (taemg_internal["iphase"] = 4) {
+			//alpha biases considering eow and delaz 
+			//simplified logic
+			local enlimhi is taemg_constants["enlimhifac"] * (taemg_internal["es"] - taemg_internal["en"]).	//positive
+			local enlimlo is taemg_constants["enlimlofac"] * (taemg_internal["emep"] - taemg_internal["en"]).	//negative
+			
+			//skip alpha mach limits 
+			
+			if (taemg_internal["eowerror"] < 0) {
+				if (taemg_internal["eowerror"] < enlimlo) and (abs(taemg_internal["dpsac"]) < taemg_constants["dpsac2"]) {
+					set taemg_internal["en_alpha_bias"] to taemg_constants["enalpl"].
+				} else {
+					set taemg_internal["en_alpha_bias"] to taemg_constants["en_bias1"].
+				}
+			} else if (taemg_internal["eowerror"] < enlimhi) {
+				
+				if (taemg_internal["deowerr"] < 0) {
+					set taemg_internal["en_alpha_bias"] to taemg_constants["en_bias2"].
+				} else {
+					set taemg_internal["en_alpha_bias"] to taemg_constants["en_bias3"].
+				}
+			} else {
+				set taemg_internal["en_alpha_bias"] to taemg_constants["enalpu"].
+			}
+			
+			set taemg_internal["gralpr"] to midval(taemg_internal["gralpr"] + taemg_internal["en_alpha_bias"], taemg_constants["gralpla"], taemg_constants["gralpua"]).
+		} 
 		
 	}
 	
@@ -1967,6 +2005,8 @@ function grphic {
 			set taemg_internal["phic"] to ysgn_ * MAX(taemg_constants["grphihdi"] + taemg_constants["grphihds"] * taemg_input["hdot"], 0).
 		}
 	}
+	
+	//skip ecal bank protection logic
 	
 	set taemg_internal["phic_at"] to midval ( taemg_internal["phic"], -taemg_internal["philim"], taemg_internal["philim"]).
 }
