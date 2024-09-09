@@ -322,12 +322,12 @@ The TAEM displays are **VERT SIT** and show the energy situation against distanc
   - during late Acquisition, a **Time-to-HAC** indicator that will start to move when the Shuttle is about 7 seconds away from the HAC
   - This is replaced by the **Cross-track XTRACK** indicator during Heading align and pre-final, as well as Approach and Landing
 
-<img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/vsit_low.png" width="350">
+![vsit_disp](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/vsit_low.png.png)
 
-Finally, this is the Vert Sit display in a low energy situation:
-- The MEP selection is displayed instead of NEP
-- A message **OTT ST IN** appears: guidance is signalling that it would be a good idea to switch to a Straight-in approach
-  - remember that you need to switch manually, the program will never do it for you
+Finally, this is the Vert Sit display in various low energy situations:
+- The yellow **MEP** indicator instead of the green NEP means the program is shortening the approach to save energy
+- The yellow **OTT ST IN** message means the program is asking to switch to Straight-In to save even more energy: **YOU NEED TO DO THIS MANUALLY**
+- The red **LO ENERGY** message means the program has given up on following the vertical profile and you won't make the runway: **YOU MUST TAKE CSS OR BAILOUT**
  
 ## Contingency Low energy
 
@@ -362,8 +362,10 @@ The display during GRTLS is VERT SIT 1 like for early TAEM, but you only focus o
 <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/vsit_grtls.png" width="350">
 
 - The mini plot in the top-left corner is Pitch vs. Mach number. THe bug will move to the left as you slow down. It is designed to give a reference to monitor what guidance is trying to do or if you fly CSS
-- The solid zig-zagged line is the lower limit, you should always stay above this line
-- The dashed line is the pitch profile during Alpha Transition, you should see the bug settle on this line eventually.
+- The top solid line is the targeted Alpha Recovery pitch for GRTLS
+- The red dashed line is the Alpha Recovery for a contingency abort
+- The green dashed line is the nominal pitch profile during Alpha Transition, you should see the bug settle on this line eventually.
+- The lower solid line is the nominal lower pitch limit, contingency guidance will override this if needed to keep Gs under control
 
 The phases of GRTLs are:  
 
