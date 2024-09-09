@@ -1430,8 +1430,8 @@ FUNCTION make_hud_gui {
 
 //set to the centre of the screen
 FUNCTION recenter_hud {
-	SET hud_gui:X TO (parameters["game_resolution_width"] - hudwidth)/2.
-	SET hud_gui:Y TO (parameters["game_resolution_height"] - hudheight)/2.
+	SET hud_gui:X TO (ops3_parameters["game_resolution_width"] - hudwidth)/2.
+	SET hud_gui:Y TO (ops3_parameters["game_resolution_height"] - hudheight)/2.
 }
 
 //sets bright or dark hud background based on the local time at the target
