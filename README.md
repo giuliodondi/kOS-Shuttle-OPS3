@@ -322,16 +322,13 @@ The TAEM displays are **VERT SIT** and show the energy situation against distanc
   - during late Acquisition, a **Time-to-HAC** indicator that will start to move when the Shuttle is about 7 seconds away from the HAC
   - This is replaced by the **Cross-track XTRACK** indicator during Heading align and pre-final, as well as Approach and Landing
 
-![vsit_disp](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/vsit_low.png.png)
+![vsit_disp](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/vsit_low.png)
 
 Finally, this is the Vert Sit display in various low energy situations:
 - The yellow **MEP** indicator instead of the green NEP means the program is shortening the approach to save energy
 - The yellow **OTT ST IN** message means the program is asking to switch to Straight-In to save even more energy: **YOU NEED TO DO THIS MANUALLY**
 - The red **LO ENERGY** message means the program has given up on following the vertical profile and you won't make the runway: **YOU MUST TAKE CSS OR BAILOUT**
  
-## Contingency Low energy
-
-In a contingency, the Orbiter might be so low on energy that nothing can be done. In this case you will see a red **LO ENERGY** in place of **OTT ST IN**. This signals that guidance will no longer try to recover the altitude profile and instead achieve a stable glide for bailing your Kerbals out. You can take CSS steering and try a water ditching if you wish
 
 Remarks:
 - The moment S-turns are disabled is also the moment the program will not allow you to change runway or approach anymore. You will notice because all GUI button selectors become frozen
