@@ -37,7 +37,7 @@ FUNCTION ops3_main_exec {
 	local skip_2_taem_flag is false.
 	
 	//if skip to taem select first target ahead 
-	if (SHIP:VELOCITY:SURFACE:MAG < parameters["surfv_skip_to_taem"]) {
+	if (SHIP:VELOCITY:SURFACE:MAG < ops3_parameters["surfv_skip_to_taem"]) {
 		set skip_2_taem_flag to true.
 		
 		local closest_site is get_closest_site(ldgsiteslex)[0].
@@ -68,9 +68,9 @@ FUNCTION ops3_main_exec {
 
 	//main control loop
 	local control_loop is loop_executor_factory(
-			parameters["control_loop_dt"],
+			ops3_parameters["control_loop_dt"],
 			{
-				IF (ADDONS:FAR:MACH < parameters["mach_rcs_off"]) {
+				IF (ADDONS:FAR:MACH < ops3_parameters["mach_rcs_off"]) {
 					RCS OFF.
 				} else {
 					RCS ON.
@@ -80,7 +80,7 @@ FUNCTION ops3_main_exec {
 				if (dap_engaged) {
 					set css_flag to is_dap_css().
 					if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) OR (guid_id = 27) OR (guid_id = 36) {
-						aerosurfaces_control["set_aoa_feedback"](parameters["entry_aoa_feedback"]).
+						aerosurfaces_control["set_aoa_feedback"](ops3_parameters["entry_aoa_feedback"]).
 						//reentry, alpha recovery, alpha transition, slapdown/rollout
 						if (css_flag) {
 							dap:update_css_prograde().
@@ -88,7 +88,7 @@ FUNCTION ops3_main_exec {
 							dap:update_auto_prograde().
 						}
 					} else {
-						aerosurfaces_control["set_aoa_feedback"](parameters["taem_aoa_feedback"]).
+						aerosurfaces_control["set_aoa_feedback"](ops3_parameters["taem_aoa_feedback"]).
 						
 						if (css_flag) {
 							local direct_pitch_flag is (guid_id >= 34).
@@ -118,7 +118,7 @@ FUNCTION ops3_main_exec {
 					dap:measure_cur_state().
 				}
 				
-				if (SHIP:ALTITUDE <= parameters["alt_trim_on"]) OR (dap:aero:load >= parameters["xlfac_trim_on"]) {
+				if (SHIP:ALTITUDE <= ops3_parameters["alt_trim_on"]) OR (dap:aero:load >= ops3_parameters["xlfac_trim_on"]) {
 					aerosurfaces_control:update(is_autoflap(), is_autoairbk()).
 				}
 				
@@ -201,7 +201,7 @@ FUNCTION ops3_main_exec {
 												"lod", dap:aero:lod,
 												"egflg", 0, 
 												"ital", tal_flag,
-												"debug", parameters["full_debug"]
+												"debug", ops3_parameters["full_debug"]
 										)
 			).
 			
@@ -252,7 +252,7 @@ FUNCTION ops3_main_exec {
 			).
 			update_entry_traj_disp(gui_data).
 			
-			if (parameters["full_debug"]) {
+			if (ops3_parameters["full_debug"]) {
 				dap:print_debug(2).
 			}
 			
@@ -284,7 +284,7 @@ FUNCTION ops3_main_exec {
 				set eg_end_flag to TRUE.
 			}
 			
-			WAIT parameters["entry_loop_dt"].
+			WAIT ops3_parameters["entry_loop_dt"].
 		}
 		
 		clear_ops3_disp().
@@ -344,7 +344,7 @@ FUNCTION ops3_main_exec {
 												"grtls", grtls_flag,
 												"cont", cont_flag,
 												"ecal", ecal_flag,
-												"debug", parameters["full_debug"]
+												"debug", ops3_parameters["full_debug"]
 										).
 
 			//call taem guidance here
@@ -454,7 +454,7 @@ FUNCTION ops3_main_exec {
 			
 			update_taem_vsit_disp(gui_data).
 			
-			if (parameters["full_debug"]) {
+			if (ops3_parameters["full_debug"]) {
 				dap:print_debug(2).
 			}
 			
@@ -486,7 +486,7 @@ FUNCTION ops3_main_exec {
 				set al_end_flag to TRUE.
 			}
 			
-			WAIT parameters["taem_loop_dt"].
+			WAIT ops3_parameters["taem_loop_dt"].
 		}
 		
 		clear_ops3_disp().

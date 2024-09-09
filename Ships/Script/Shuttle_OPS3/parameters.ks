@@ -2,7 +2,7 @@
 
 //general parameters to control main executive
 
-GLOBAL parameters is LEXICON(
+GLOBAL ops3_parameters is LEXICON(
 					"full_debug", FALSE,	//will dump the input and internal lexicons of entryg and taemg separately, in imperial units, and print dap data
 					"atmalt",140000,
 					"interfalt",122000,

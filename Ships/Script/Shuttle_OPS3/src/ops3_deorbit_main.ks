@@ -55,7 +55,7 @@ FUNCTION ops3_deorbit_predict{
 	LOCAL initial_simstate IS current_simstate().
 	LOCAL initial_t IS TIME:SECONDS.
 	
-	LOCAL ei_radius IS BODY:RADIUS + parameters["interfalt"].
+	LOCAL ei_radius IS BODY:RADIUS + ops3_parameters["interfalt"].
 
 	UNTIL FALSE {
 	
@@ -110,7 +110,7 @@ FUNCTION ops3_deorbit_predict{
 		
 		} ELSE {
 			SET drawburnvec TO FALSE.
-			IF SHIP:ORBIT:periapsis>=parameters["interfalt"] {
+			IF SHIP:ORBIT:periapsis>=ops3_parameters["interfalt"] {
 				PRINT "Orbit does not have a manoeuvre node and does not re-enter the atmosphere".
 				RETURN.
 			}
