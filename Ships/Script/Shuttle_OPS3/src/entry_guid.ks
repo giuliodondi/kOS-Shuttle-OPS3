@@ -1248,10 +1248,10 @@ function eglodvcmd {
 	
 	//low-energy roll command
 	if (entryg_internal["icntal"]) {
-		local dzabs is abs(entryg_input["delaz"].
+		local dzabs is abs(entryg_input["delaz"]).
 		if (entryg_input["ve"] > entryg_constants["vturn"]) 
-			or ((dzsgn > 0) and (dzabs <= entryg_constants["dlzdb1"])
-			or ((dzsgn <= 0) and (dzabs <= entryg_constants["dlzdb2"]) {
+			or ((dzsgn > 0) and (dzabs <= entryg_constants["dlzdb1"]))
+			or ((dzsgn <= 0) and (dzabs <= entryg_constants["dlzdb2"])) {
 			set entryg_internal["rollmn"] to 0. 
 		} else {
 			set entryg_internal["rk2rol"] to -sign(entryg_input["delaz"]).
