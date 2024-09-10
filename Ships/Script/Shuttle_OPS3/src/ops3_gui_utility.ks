@@ -621,8 +621,10 @@ FUNCTION make_entry_traj_GUI {
 	set trajleftdata4:style:margin:v to -4.
 	GLOBAL trajleftdata5 IS traj_disp_leftdatabox:ADDLABEL("PHASE xxxxxx").
 	set trajleftdata5:style:margin:v to -4.
+	GLOBAL trajleftdata6 IS traj_disp_leftdatabox:ADDLABEL("LO ENERGY").
+	set trajleftdata6:style:margin:v to -4.
 	
-	traj_disp_leftdatabox:addspacing(14).
+	traj_disp_leftdatabox:addspacing(10).
 	
 	GLOBAL traj_disp_attitudebox IS traj_disp_leftdatabox:ADDVLAYOUT().
 	SET traj_disp_attitudebox:STYLE:ALIGN TO "left".
@@ -754,6 +756,13 @@ function update_entry_traj_disp {
 	set trajleftdata3:text TO "DRAG      " + ROUND(gui_data["drag"],1).
 	set trajleftdata4:text TO "D REF     " + ROUND(gui_data["drag_ref"],1).
 	set trajleftdata5:text TO "PHASE     " + ROUND(gui_data["phase"],0).
+	
+	if (gui_data["ileflg"]) {	
+		set trajleftdata6:text TO "<color=#" + guitextyellowhex + ">LO ENERGY</color>".
+	} else {
+		set trajleftdata6:text TO "".
+	}
+	
 	
 	set trajattdata1:text to "R  " + round(gui_data["prog_roll"], 0).
 	set trajattdata2:text to "P  " + round(gui_data["prog_pch"], 0).
