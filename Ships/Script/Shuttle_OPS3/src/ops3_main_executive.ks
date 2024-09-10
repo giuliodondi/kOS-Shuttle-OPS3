@@ -250,7 +250,7 @@ FUNCTION ops3_main_exec {
 									"roll_ref",entryg_out["roll_ref"],
 									"pitch_mod",entryg_out["pitch_mod"],
 									"roll_rev",entryg_out["roll_rev"],
-									"ileflg", true,
+									"ileflg", ileflg,
 									"prog_pch", dap:prog_pitch,
 									"prog_roll", dap:prog_roll,
 									"prog_yaw", dap:prog_yaw
