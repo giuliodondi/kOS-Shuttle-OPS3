@@ -203,7 +203,7 @@ FUNCTION ops3_main_exec {
 												"egflg", 0, 
 												"ital", tal_flag,
 												"ileflg", ileflg,
-												"debug", parameters["full_debug"]
+												"debug", ops3_parameters["full_debug"]
 										)
 			).
 			
@@ -358,6 +358,9 @@ FUNCTION ops3_main_exec {
 			).
 			
 			set guid_id to taemg_out["guid_id"].
+			set grtls_flag to taemg_out["grtls_flag"].
+			set cont_flag to taemg_out["cont_flag"].
+			set ecal_flag to taemg_out["ecal_flag"].
 			
 			IF (is_autoairbk()) {
 				SET aerosurfaces_control:spdbk_defl TO taemg_out["dsbc_at"].
