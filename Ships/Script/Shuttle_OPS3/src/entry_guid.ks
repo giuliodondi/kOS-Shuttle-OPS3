@@ -236,7 +236,7 @@ global entryg_constants is lexicon (
 									"velmn", 8000,	//ft/s	max vel for limiting lmn by almn3
 									"verolc", 8000,	//max vel for limiting bank cmd
 									"verlmndz", 18000,	//max vel for delaz min bank
-									"tal_verolc", 20000,	//max vel for limiting bank cmd by tal_rlmc0
+									"tal_verolc", 18000,	//max vel for limiting bank cmd by tal_rlmc0
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
 									//"vnoalp", 20500,	//pch mod start velocity//	//took the value from the sts-1 paper
