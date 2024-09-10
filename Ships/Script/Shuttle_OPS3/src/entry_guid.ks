@@ -288,11 +288,13 @@ global entryg_constants is lexicon (
 									"n_iter", 10,		// guidance iterations before steering commands should be accepted
 									
 									// low energy logic
+									"alpwle_c1", 16.45,		//° wle alpha const coef
+									"alpwle_c2", 2.02e-3,		//°/(ft/s) wle alpha linear coef
+									"alpwle_c3", -3.58e-8,		//°/(ft/s2) wle alpha linear coef
 									"rtbfac", 0.05,		//Low–energy logic: range bias factor
 									"dzbias", 8,		//° Low–energy logic: DELAZ value for range biasing
 									"dlzfac", 2.2,		//Low–energy logic: DELAZ factor for roll command computations
 									"dzfdel", 0.003,	//1/s Low–energy logic: constant for  DZFCTR increment / decrement
-									"alphpo", list(0, 37, 43),		//° Low-energy logic (1): minimum initial pullout alpha command (2): maximum initial pullout alpha command 
 									"vturn", 18000,			//ft/s Low–energy logic: maximum velocity for nonzero roll commands 
 									"beqglmbs", 1,		//ft/s2 bias for beqglm check
 									"eqglm1", list(0, 46.341, 26.129, 8.1893),		//ft/s2 beqglm const terms
@@ -1416,13 +1418,13 @@ function egrolcmd {
 		//low energy roll cmd 
 		set entryg_internal["rollc"][1] to entryg_internal["rollmn"].
 		
-		//wle thermal alpha command
-		set entryg_internal["alp_wle"]  to xxxx.
+		//wle thermal alpha command - simple quadratic
+		set entryg_internal["alp_wle"] to min(entryg_constants["alpwle_c1"] + entryg_input["ve"] * (entryg_constants["alpwle_c2"] + entryg_input["ve"] * entryg_constants["alpwle_c3"]), entryg_internal["aclam"]).
 	
 		if (entryg_internal["irdot"] < 2) {
 			//alpha cmd for initial pullout
 			
-			set entryg_internal["alpcmd"] to midval(entryg_internal["alp_wle"], entryg_constants["alphpo"][1], entryg_constants["alphpo"][2]).
+			set entryg_internal["alpcmd"] to entryg_internal["alp_wle"].
 			
 			//skip vi_alp_lo/hi checks
 			
@@ -1437,11 +1439,10 @@ function egrolcmd {
 				set entryg_internal["alpcmd"] to entryg_internal["aclim"].
 			} else {
 				//skip all the alp_vt calculations
-				set entryg_internal["alpca2"] to entryg_internal["alp_wle"].
 				
 				//refactored to implement the rddot based rampdown from the procedures
-				set entryg_internal["alpca1"] to entryg_internal["alpca1"]  + entryg_internal["rddot"] * entryg_constants["alprddot"].
-				set entryg_internal["alpca1"] to midval(entryg_internal["alpca1"], entryg_internal["aclim"] , entryg_constants["alphmx"]).
+				set entryg_internal["alpca1"] to entryg_internal["alpca1"]  + entryg_internal["rddot"] * entryg_constants["alprddot"] * entryg_input["dtegd"].
+				set entryg_internal["alpca1"] to midval(entryg_internal["alpca1"], entryg_internal["aclim"] , entryg_internal["alp_wle"]).
 					
 				set entryg_internal["alpcmd"] to entryg_internal["alpca1"].
 			}
