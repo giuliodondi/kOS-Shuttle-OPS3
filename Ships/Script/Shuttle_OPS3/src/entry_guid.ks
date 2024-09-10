@@ -916,7 +916,7 @@ function egtran {
 	
 	if (entryg_internal["itran"] = FALSE) {
 		SET entryg_internal["itran"] TO TRUE.
-		set entryg_internal["drefp"] to entryg_constants["alfm"].
+		set entryg_internal["drefp"] to entryg_constants["alfmax"].
 	}
 	
 	local drefpt is entryg_internal["drefp"] - entryg_constants["df"].
