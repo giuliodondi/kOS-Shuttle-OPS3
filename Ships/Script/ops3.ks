@@ -34,8 +34,8 @@ RUNPATH("0:/Shuttle_OPS3/parameters").
 //hard-coded check to run the script only in atmosphere
 // modification : do this only in the nominal case
 // we might be in a weird situation at TAL and it's an irrelevant check for grtls and cont
-If nominal_flag and (SHIP:ALTITUDE >= parameters["interfalt"]) {
-	PRINT "Not yet below Entry Interface (" + round(parameters["interfalt"]/1000, 0) + "km),  aborting." .
+If nominal_flag and (SHIP:ALTITUDE >= ops3_parameters["interfalt"]) {
+	PRINT "Not yet below Entry Interface (" + round(ops3_parameters["interfalt"]/1000, 0) + "km),  aborting." .
 } ELSE {
 
 	RUNPATH("0:/Shuttle_OPS3/landing_sites").
