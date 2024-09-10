@@ -916,7 +916,7 @@ function egtran {
 	
 	if (entryg_internal["itran"] = FALSE) {
 		SET entryg_internal["itran"] TO TRUE.
-		set entryg_internal["drefp"] to entryg_constants["alfmax"].
+		set entryg_internal["drefp"] to entryg_constants["alfm"].
 	}
 	
 	local drefpt is entryg_internal["drefp"] - entryg_constants["df"].
@@ -953,7 +953,7 @@ function egtran {
 	
 	//my addition
 	//in any case do not exceed the previous constant drag
-	set entryg_internal["drefp"] to min(entryg_internal["drefp"], entryg_internal["t2"]).
+	//no, very bad
 	
 	//my addition - drefp is never negative
 	set entryg_internal["drefp"] to MAX(0, entryg_internal["drefp"]).
