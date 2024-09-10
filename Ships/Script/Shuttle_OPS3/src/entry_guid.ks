@@ -94,12 +94,16 @@ FUNCTION entryg_wrapper {
 //input constants
 
 global entryg_constants is lexicon (
-									"aclam1", 9,	//deg
+									"aclam1", 9.59,	//deg
 									"aclam2", 3.3e-3,	//deg / (ft/s)
-									"aclim1", 31,	//deg
-									"aclim2", 10,	//deg
-									"aclim3", 17,	//deg
-									"aclim4", 0.00115,	//deg / (ft/s)
+									"aclim1", 37,	//deg
+									"aclim2", 25,	//deg
+									"aclim3", -18.5,	//deg
+									"aclim4", 2.5e-3,	//deg / (ft/s)
+									"aclim5", 10,	//deg
+									"aclim6", 5.95,	//deg
+									"aclim7", 3e-3,	//deg / (ft/s)
+									"vaclim", 12000,	//ft/s
 									
 									"acn1", 50,	//time const for hdot feedback
 									//"ak", -3.4573,	//temp control dD/dV factor	STS_1
@@ -122,16 +126,16 @@ global entryg_constants is lexicon (
 									//"calp2", list(0, 0, -1.66667e-6, 0, 1.25e-6, 0, -1.25e-6, 0),	//deg-s2/ft2 	alpcmd quadratic term in ve 	//38-28 profile
 									
 									//3B profile
-									"valp", list(0, 0, 7500, 8500, 18000, 19000, 22000, 23000),	//ft/s alpcmd vs ve boundaries 	//38-28 profile
-									"calp0", list(5, 5.385, -77.44, 30, 350.4, -16.25, -646.55, 40),	//deg alpcmd constant term in ve 	//40-30 profile
-									"calp1", list(0, 0.003077, 0.02522, 0, -0.0358, 0.0025, 0.05975, 0),	//deg-s/ft 	alpcmd linear term in ve 	//40-30 profile
-									"calp2", list(0, 0, -0.148e-5, 0, 0.1e-5, 0, -0.13e-5, 0),	//deg-s2/ft2 	alpcmd quadratic term in ve 	//40-30 profile
+									"valp", list(0, 500, 7070, 8070, 18000, 19000, 22000, 23000),	//ft/s alpcmd vs ve boundaries 	//38-28 profile
+									"calp0", list(5, 7.285, -67.4424, 30, 435, -16.25, -646.55, 40),	//deg alpcmd constant term in ve 	//40-30 profile
+									"calp1", list(0, 0.003, 0.02414, 0, -0.045, 0.0025, 0.05975, 0),	//deg-s/ft 	alpcmd linear term in ve 	//40-30 profile
+									"calp2", list(0, 0, -1.495e-6, 0, 1.25e-6, 0, -0.13e-5, 0),	//deg-s2/ft2 	alpcmd quadratic term in ve 	//40-30 profile
 									
 									//TAL profile 
-									"tal_valp", list(0, 500, 7500, 8500, 17500, 18500, 20000, 21000),
-									"tal_calp0", list(5, 5.385, -77.44, 30, 826.25, -63.6, -1103.6, 43),
-									"tal_calp1", list(0, 0.003077, 0.02522, 0, -0.091, 0.0052, 0.1092, 0),
-									"tal_calp2", list(0, 0, -0.148e-5, 0, 2.6e-6, 0, -2.6e-6, 0),
+									"tal_valp", list(0, 500, 7070, 8070, 17500, 18500, 20000, 21000),
+									"tal_calp0", list(5, 7.285, -67.4424, 30, 826.25, -63.6, -1103.6, 43),
+									"tal_calp1", list(0, 0.003, 0.02414, 0, -0.091, 0.0052, 0.1092, 0),
+									"tal_calp2", list(0, 0, -1.495e-6, 0, 2.6e-6, 0, -2.6e-6, 0),
 									
 
 									//original cd coefficients
@@ -182,7 +186,6 @@ global entryg_constants is lexicon (
 									//"df", 21.0,	//ft/s2 final drag in transition phase	STS-1
 									"df", 19.09,	//ft/s2 final drag in transition phase	STS-1
 									"dlallm", 43,	//deg max constant
-									"tal_dlallm", 45,	//deg max constant for tal
 									"dlaplm", 2,		//deg delalp lim
 									"dlrdotl", 150,		//ft/s???? clamp value for rdot feedback 
 									"d23c", 15.5,	//ft/s2 etg canned d23
@@ -683,7 +686,6 @@ function eginit {
 		set entryg_constants["calp2"] to entryg_constants["tal_calp2"].
 		
 		set entryg_constants["vnoalp"] to entryg_constants["tal_vnoalp"].
-		set entryg_constants["dlallm"] to entryg_constants["tal_dlallm"].
 	}
 	
 	//low-energy init 
@@ -1343,7 +1345,11 @@ function egrolcmd {
 	
 	//calculate absolute pitch limits 
 	set entryg_internal["aclam"] to min(entryg_constants["dlallm"], entryg_constants["aclam1"] + entryg_constants["aclam2"]*entryg_input["ve"]).
-	set entryg_internal["aclim"] to midval(entryg_constants["aclim3"] + entryg_constants["aclim4"]*entryg_input["ve"], entryg_constants["aclim1"], entryg_constants["aclim2"]).
+	if (entryg_input["ve"] >= entryg_constants["vaclim"]) {
+		set entryg_internal["aclim"] to midval(entryg_constants["aclim3"] + entryg_constants["aclim4"]*entryg_input["ve"], entryg_constants["aclim1"], entryg_constants["aclim2"]).
+	} else {
+		set entryg_internal["aclim"] to midval(entryg_constants["aclim6"] + entryg_constants["aclim7"]*entryg_input["ve"], entryg_constants["aclim2"], entryg_constants["aclim5"]).
+	}
 	
 	//calculate absolute roll angle limits
 	//refactored this block 
