@@ -1390,7 +1390,7 @@ function egrolcmd {
 	//refactored calculation of eq glide boundary plus do it every time 
 	local k is entryg_constants["veeqglm"]:length - 1.
 	until (k = 0) {
-		if (ve <= entryg_constants["veeqglm"][k]) {
+		if (entryg_input["ve"] <= entryg_constants["veeqglm"][k]) {
 			set entryg_internal["beqglm"] to max(entryg_constants["eqglm1"][k] + entryg_constants["eqglm2"][k]*entryg_input["ve"], 0).
 			break.
 		}
