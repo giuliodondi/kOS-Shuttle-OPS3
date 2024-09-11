@@ -656,6 +656,26 @@ FUNCTION make_entry_traj_GUI {
 	GLOBAL trajrightdata6 IS traj_disp_rightdatabox:ADDLABEL("ROLL REVERSAL").
 	set trajrightdata6:style:margin:v to -4.
 	
+	global traj_disp_trail_boxes_list is list().
+	global traj_disp_trail_list is list().
+	global traj_disp_trail_handler is traj_disp_trail_handler_fac().
+	
+	
+	
+	FROM {local k is 0.} UNTIL k >= traj_disp_trail_handler:num_points STEP {set k to k+1.} DO {
+		local trail_box is traj_disp_mainbox:ADDHLAYOUT().
+		SET trail_box:STYLE:ALIGN TO "Center".
+		SET trail_box:STYLe:WIDTH TO 1.
+		SET trail_box:STYLe:HEIGHT TO 1.
+		
+		traj_disp_trail_boxes_list:add(trail_box).
+	
+		local trail_marker IS trail_box:ADDLABEL().
+		SET trail_marker:IMAGE TO "Shuttle_OPS3/src/gui_images/empty_bug.png".
+		SET trail_marker:STYLe:WIDTH TO 12.
+		traj_disp_trail_list:add(trail_marker).
+	}
+	
 	GLOBAL traj_disp_orbiter_box IS traj_disp_mainbox:ADDVLAYOUT().
 	SET traj_disp_orbiter_box:STYLE:ALIGN TO "Center".
 	SET traj_disp_orbiter_box:STYLe:WIDTH TO 1.
@@ -674,18 +694,16 @@ FUNCTION make_entry_traj_GUI {
 	SET traj_disp_pred_bug_:IMAGE TO "Shuttle_OPS3/src/gui_images/traj_pred_bug.png".
 	SET traj_disp_pred_bug_:STYLe:WIDTH TO 8.
 	
-	//GLOBAL traj_disp_trail IS traj_disp_mainbox:ADDLABEL().
-	//SET traj_disp_trail:IMAGE TO "Shuttle_OPS3/src/gui_images/traj_trail_bug.png".
-	//SET traj_disp_trail:STYLe:WIDTH TO 10.
-	//SET traj_disp_trail:STYLE:margin:v to 10.
-	//SET traj_disp_trail:STYLE:margin:h to 10.
-	
 	reset_entry_traj_disp().
 }
 
 function reset_entry_traj_disp {
 	set_entry_traj_disp_title().
 	set_entry_traj_disp_bg().
+	traj_disp_trail_handler:reset().
+	for m_ in traj_disp_trail_list {
+		SET m_:IMAGE TO "Shuttle_OPS3/src/gui_images/empty_bug.png".
+	}
 }
 
 function update_entry_traj_disp {
@@ -722,18 +740,15 @@ function update_entry_traj_disp {
 		local drefd_bug_pos is set_entry_drag_error_bug(v(entry_traj_disp_x_convert(gui_data["ve"], gui_data["drag_ref"]), entry_traj_disp_y_convert(gui_data["ve"]), 0)).
 		SET traj_disp_pred_bug_:STYLE:margin:h to drefd_bug_pos[0].
 		
+		traj_disp_trail_handler:update(gui_data["time"], gui_data["ve"], gui_data["drag"]).
 	} else {
 		SET traj_disp_pred_bug_:STYLE:margin:h to orbiter_bug_pos[0] - drag_err_delta + 5.
 	}
 	
 	SET traj_disp_pred_bug_:STYLE:margin:v to orbiter_bug_pos[1] + 10.
-	
-	
 
 	
-	
-	
-	
+
 	set trajleftdata1:text TO "XLFAC     " + ROUND(gui_data["xlfac"],1).
 	set trajleftdata2:text TO "L/D          " + ROUND(gui_data["lod"],2).
 	set trajleftdata3:text TO "DRAG      " + ROUND(gui_data["drag"],1).
@@ -790,7 +805,7 @@ function set_entry_traj_disp_bug {
 	
 	//print "calc_x: " + bug_pos:X + " calc_y: " +  + bug_pos:Y  + "  " at (0, 4).
 	
-	local pos_x is 1.04693*bug_pos:X  - 8.133.
+	local pos_x is 1.04693*bug_pos:X  - 8.133 - 1.
 	local pos_y is 395.55 - 1.1685*bug_pos:Y.
 	
 	//print "disp_x: " + pos_x + " disp_y: " + pos_y + "  " at (0, 5).
@@ -807,8 +822,8 @@ function set_entry_drag_error_bug {
 	parameter bug_pos.
 	parameter bias is 0.
 	
-	local bounds_x is list(10, traj_disp_mainbox:STYLe:WIDTH - 5).
-	local bounds_y is list(traj_disp_mainbox:STYLe:HEIGHT - 5, 0).
+	local bounds_x is list(10, traj_disp_mainbox:STYLe:WIDTH - 32).
+	local bounds_y is list(traj_disp_mainbox:STYLe:HEIGHT - 29, 0).
 	
 	local pos_x is 1.04693*bug_pos:X  - 8.133 + 5.
 	local pos_y is 395.55 - 1.1685*bug_pos:Y + bias.
@@ -817,6 +832,46 @@ function set_entry_drag_error_bug {
 	set pos_y to clamp(pos_y, bounds_y[0], bounds_y[1]).
 	
 	return list(pos_x,pos_y).
+}
+
+function set_entry_trail_marker {
+	parameter marker_pos.
+	parameter marker_obj_handle.
+	
+	local bounds_x is list(15, traj_disp_mainbox:STYLe:WIDTH - 32).
+	local bounds_y is list(traj_disp_mainbox:STYLe:HEIGHT - 29, 5).
+	
+	local pos_x is 1.04693*marker_pos:X  - 8.133 + 5.
+	local pos_y is 395.55 - 1.1685*marker_pos:Y + 10.
+
+	//if (pos_x >= bounds_x[1]) {
+	//	set pos_x to bounds_x[1].
+	//	SET marker_obj_handle:IMAGE TO "Shuttle_OPS3/src/gui_images/empty_bug.png".
+	//} else if (pos_x <= bounds_x[0]) {
+	//	set pos_x to bounds_x[0].	
+	//	SET marker_obj_handle:IMAGE TO "Shuttle_OPS3/src/gui_images/empty_bug.png".
+	//} else {
+	//	SET marker_obj_handle:IMAGE TO "Shuttle_OPS3/src/gui_images/traj_trail_bug.png".
+	//}
+	//
+	//if (pos_y >= bounds_y[1]) {
+	//	set pos_y to bounds_y[1].
+	//	SET marker_obj_handle:IMAGE TO "Shuttle_OPS3/src/gui_images/empty_bug.png".
+	//} else if (pos_y <= bounds_y[0]) {
+	//	set pos_y to bounds_y[0].	
+	//	SET marker_obj_handle:IMAGE TO "Shuttle_OPS3/src/gui_images/empty_bug.png".
+	//} else {
+	//	SET marker_obj_handle:IMAGE TO "Shuttle_OPS3/src/gui_images/traj_trail_bug.png".
+	//}
+	
+	SET marker_obj_handle:IMAGE TO "Shuttle_OPS3/src/gui_images/traj_trail_bug.png".
+	
+	set pos_x to clamp(pos_x, bounds_x[0], bounds_x[1] ).
+	set pos_y to clamp(pos_y, bounds_y[0], bounds_y[1]).
+	
+	
+	SET marker_obj_handle:STYLE:margin:v to pos_y.
+	SET marker_obj_handle:STYLE:margin:h to pos_x.
 }
 
 function entry_traj_disp_x_convert {
@@ -871,6 +926,53 @@ function entry_traj_disp_y_convert {
 	
 	return 59.5 + 280.2 * out.
 
+}
+
+
+function traj_disp_trail_handler_fac {
+	local this is lexicon().
+
+	this:add("last_update", TIMe:SECONDs).
+	this:add("update_interval", 25).
+	
+	this:add("num_points", 6).
+	this:add("traj_points", fixed_list_factory(this:num_points)).
+
+	this:add("update", {
+		parameter time_.
+		parameter ve.
+		parameter drag.
+		
+		if (time_ < (this:last_update + this:update_interval)) {
+			return.
+		}
+		
+		set this:last_update to time_.
+		
+		this:traj_points:push(lexicon("drag", drag, "ve", ve)).
+		
+		this:refresh_trail().
+	}).
+	
+	this:add("refresh_trail", {
+	
+		FROM {local k is 0.} UNTIL k >= this:traj_points:list:length STEP {set k to k+1.} DO {
+			local m_ is traj_disp_trail_list[k].
+			local data_ is this:traj_points:list[k].
+			
+			set_entry_trail_marker(
+					v(entry_traj_disp_x_convert(data_["ve"], data_["drag"]), entry_traj_disp_y_convert(data_["ve"]), 0),
+					m_
+			).
+		}
+
+	}).
+	
+	this:add("reset", {
+		set this:traj_points to fixed_list_factory(this:num_points).
+	}).
+
+	return this.
 }
 
 

@@ -233,6 +233,7 @@ FUNCTION ops3_main_exec {
 			
 			
 			local gui_data is lexicon(
+									"time", guidance_timer:last_sampled_t,
 									"range",entry_state["tgt_range"],
 									"ve",ve:MAG,
 									"xlfac",dap:aero:load,
