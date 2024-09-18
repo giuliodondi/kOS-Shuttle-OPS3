@@ -45,35 +45,35 @@ GLOBAL ldgsiteslex IS LEXICON(
 						),
 						"Istres",LEXICON(
 							"position",LATLNG(43.5247397,4.9527536),
-							"elevation",102,
+							"elevation",45,
 							"length",5028,
 							"heading",332.6
 							
 						),
 						"Zaragoza",LEXICON(
 							"position",LATLNG(41.6707970,-1.05230687),
-							"elevation",261,
+							"elevation",281,
 							"length",5028,
 							"heading",120.3
 							
 						),
 						"Rota",LEXICON(
 							"position",LATLNG(36.6354140,-6.3257163),
-							"elevation",45,
+							"elevation",40,
 							"length",5028,
 							"heading",276.78
 							
 						),
 						"Ben Guerir",LEXICON(
 							"position",LATLNG(32.123550,-7.877701),
-							"elevation",466,
+							"elevation",457,
 							"length",5028,
 							"heading",356.53
 							
 						),
 						"Banjul",LEXICON(
 							"position",LATLNG(13.337200,-16.6513127),
-							"elevation",87,
+							"elevation",46,
 							"length",5028,
 							"heading",310.5
 							
@@ -97,6 +97,13 @@ GLOBAL ldgsiteslex IS LEXICON(
 							"elevation",28.4,
 							"length",3009.64,
 							"heading",287.41
+							
+						),
+						"Cherry Pt",LEXICON(
+							"position",LATLNG(34.902011,-76.87854),
+							"elevation",19.2,
+							"length",3038,
+							"heading",315.54
 							
 						),
 						"Dover",LEXICON(
