@@ -457,7 +457,7 @@ global taemg_constants is lexicon (
 									"grpsstrn", 1000,		//° pshac limit for s-turns, high so that s-turns are always performed
 									"gralpll", 10,			//° lower aoa for grtls alprec and nzhold
 									"grphilm", 45,			//° roll limit for grtls
-									"grgphi", 2.2, 		// grtls heading err gain for phic 
+									"grgphi", 2, 		// grtls heading err gain for phic 
 									
 									//contingency stuff 
 									
@@ -471,7 +471,7 @@ global taemg_constants is lexicon (
 									"dnzmax", 3.9,		//gs max nzhold contingency gs
 									"nztotallima", 3.5,		//gs contingency max g for nzc limiting
 									"alprecs", 0.0027,	//°/ft/s contingency alprec linear term
-									"alpreci", 16,	//° contingency alprec const term
+									"alpreci", 18,	//° contingency alprec const term
 									"alprecl", 25	,	//° contingency alprec min
 									"alprecu", 42,	//° contingency alprec max
 									"smnzc1a", 0.13,		//gs initial value of smnz1
@@ -493,18 +493,18 @@ global taemg_constants is lexicon (
 									"mswa", 0.7,		// mach to force transition out of alptran
 								
 									//ecal stuff
-									"phistn", 70,		//° ecal sturn roll lim
+									"phistn", 60,		//° ecal sturn roll lim
 									"dphislp", 3.125,		//° slope of dpsaclmt vs mach
 									"dphiint", 5,		//° intercept of dpsaclmt vs mach
 									"dpsaclmt_max", 30, 	//° max val of dpsaclmt
 									"enlimhifac", 0.75,		// factor for calculating enlimhi					
 									"enlimlofac", 0.75,		// factor for calculating enlimlo	
 									"dpsac2", 25,			//° delaz limit for alpha bias 
-									"enalpl", -5,			//° lower alpha bias 
-									"enalpu", 7,			//° max alpha bias 
-									"en_bias1", -2.5,			//° low energy alpha bias 
-									"en_bias2", 2.5,			//° high energy alpha bias 
-									"en_bias3", 5,			//° high energy alpha bias 
+									"enalpl", 6,			//° lower alpha bias 
+									"enalpu", -5,			//° max alpha bias 
+									"en_bias1", 2.5,			//° low energy alpha bias 
+									"en_bias2", -2.5,			//° high energy alpha bias 
+									"en_bias3", -5,			//° high energy alpha bias 
 									
 									"dummy", 0			//can't be arsed to add commas all the time
 									
@@ -1303,7 +1303,8 @@ FUNCTION tgtran {
 		
 		//transition to pre-final based on distance, turn angle or altitude if on a low energy profile
 		if (NOT taemg_internal["eowlof"]) and ((
-			(taemg_internal["rpred"] < taemg_internal["rpred3"])
+			(taemg_internal["iphase"] = 2)
+			and (taemg_internal["rpred"] < taemg_internal["rpred3"])
 			and (ABS(taemg_internal["psha"]) < taemg_constants["psha3"])
 		) or (taemg_input["h"] < taemg_constants["hmin3"])) {
 			set taemg_internal["iphase"] to 3.
@@ -1991,7 +1992,8 @@ function grphic {
 		}
 		
 		//acq bank proportional to heading error
-		set taemg_internal["phic"] to taemg_constants["grgphi"] * taemg_internal["dpsac"].
+		//modification: limit this 
+		set taemg_internal["phic"] to midval(taemg_constants["grgphi"] * taemg_internal["dpsac"], -taemg_constants["grphilm"], taemg_constants["grphilm"]).
 	}
 	
 	//roll commands refactored above 
@@ -1999,7 +2001,7 @@ function grphic {
 	//skip ecal bank protection logic
 	
 	//my addition: override bank angle if contingency and before alptran 
-	if (taemg_internal["cont_flag"] and (not taemg_internal["ecal_flag"]) and (taemg_internal["iphase"] > 4)) {
+	if taemg_internal["cont_flag"] and (taemg_internal["iphase"] > 4) {
 	
 		local ysgn_ is sign(taemg_internal["phic"]).
 		
