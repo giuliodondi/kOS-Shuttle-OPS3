@@ -457,6 +457,7 @@ global taemg_constants is lexicon (
 									"grpsstrn", 1000,		//° pshac limit for s-turns, high so that s-turns are always performed
 									"gralpll", 10,			//° lower aoa for grtls alprec and nzhold
 									"grphilm", 45,			//° roll limit for grtls
+									"grgphi", 2.2, 		// grtls heading err gain for phic 
 									
 									//contingency stuff 
 									
@@ -1685,14 +1686,14 @@ function grtrn {
 		return.
 	}
 	
-	//alpha recovery aoa profile
+	//alpha reference profile
 	if (NOT taemg_internal["cont_flag"]) {
 		set taemg_internal["gralpr"] to midval(taemg_constants["gralps"] * taemg_input["mach"] + taemg_constants["gralpi"], taemg_constants["gralpl"], taemg_constants["gralpu"]).
 		//skip amaxld limitation
 		set taemg_internal["gralpr"] to taemg_internal["gralpr"] / abs(taemg_input["cosphi"]).
 	} else {
-		
-		set taemg_internal["gralpr"] to midval(taemg_constants["gralpsa"] * taemg_input["mach"] + taemg_constants["gralpia"], taemg_constants["gralpla"], taemg_constants["gralpua"]).
+	
+		local gralpra is taemg_constants["gralpsa"] * taemg_input["mach"] + taemg_constants["gralpia"].
 		
 		if taemg_internal["ecal_flag"] and (taemg_internal["iphase"] = 4) {
 			//alpha biases considering eow and delaz 
@@ -1719,9 +1720,10 @@ function grtrn {
 				set taemg_internal["en_alpha_bias"] to taemg_constants["enalpu"].
 			}
 			
-			set taemg_internal["gralpr"] to midval(taemg_internal["gralpr"] + taemg_internal["en_alpha_bias"], taemg_constants["gralpla"], taemg_constants["gralpua"]).
+			set gralpra to gralpra + taemg_internal["en_alpha_bias"].
 		} 
 		
+		set taemg_internal["gralpr"] to midval(gralpra, taemg_constants["gralpla"], taemg_constants["gralpua"]).
 	}
 	
 	if (taemg_internal["iphase"] = 5) { 
@@ -1919,7 +1921,15 @@ function grsbc {
 	set taemg_internal["dsbc_at1"] to taemg_internal["dsbc_at1"] + taemg_constants["del1sb"].
 	local dsbc_at2 is midval(taemg_constants["machsbs"] * taemg_input["mach"] + taemg_constants["machsbi"], grsbl1, grsbl2).
 	
-	set taemg_internal["dsbc_at"] to min(taemg_internal["dsbc_at1"], dsbc_at2).
+	//modification: low-energy speedbrake logic borrowed from taem 
+	if (taemg_internal["iphase"] = 4) {
+		LOCAL delta_emep IS ABS(taemg_internal["en"] - taemg_internal["emep"]).
+		IF (taemg_internal["eowerror"] < -delta_emep) {
+			set taemg_internal["dsbc_at"] to 0.
+		}
+	} else {
+		set taemg_internal["dsbc_at"] to min(taemg_internal["dsbc_at1"], dsbc_at2).
+	}	
 }
 
 //grtls lateral guidance 
@@ -1937,7 +1947,6 @@ function grphic {
 		return.
 	}
 	
-	//modificaton: use es instead of est for grtls sturn
 	if (taemg_internal["istp4"] = 0) {
 		//grtls s-turn termination check
 		if (taemg_internal["eow"] < taemg_internal["est"]) {
@@ -1945,7 +1954,7 @@ function grphic {
 			set taemg_internal["dpsac_init"] to false.
 		}	
 		
-		//ecal heading stuff allowing for high-energy roll reversals
+		//ecal s-turning actually works like entry guidance roll reversals
 		if (taemg_internal["ecal_flag"]) {
 			if (not taemg_internal["dpsac_init"]) {
 				set taemg_internal["dpsaci"] to taemg_internal["dpsac"].
@@ -1960,7 +1969,8 @@ function grphic {
 				or ((taemg_internal["dpsact"] < 0) and (taemg_internal["dpsac"] <= taemg_internal["dpsact"])) {
 				set taemg_internal["dpsac_init"] to false. 
 			}
-		
+		} else {
+			set taemg_internal["phic"] to taemg_internal["ysturn"] * taemg_internal["philim"].
 		}
 		
 	} else if (taemg_internal["istp4"] = 1) {
@@ -1978,35 +1988,27 @@ function grphic {
 			if (spsi < 0) and (taemg_internal["psha"] < 90) {
 				set taemg_internal["ysturn"] to -taemg_internal["ysturn"].
 			}
-			
 		}
+		
+		//acq bank proportional to heading error
+		set taemg_internal["phic"] to taemg_constants["grgphi"] * taemg_internal["dpsac"].
 	}
 	
-	if (not taemg_internal["ecal_flag"]) {
-		//these are equations 1.4 and 1.5 of grphic from the level-c document
-		//to me they make sense after the if block so that a roll command is generated for either case
-		if (taemg_internal["istp4"] = 0) {
-			//higher s-turn bank angle
-			set taemg_internal["phic"] to taemg_internal["ysturn"] * taemg_internal["philim"].
-		} else if (taemg_internal["istp4"] = 1) {
-			//acq bank proportional to heading error
-			set taemg_internal["phic"] to taemg_constants["gphi"] * taemg_internal["dpsac"].
-		}
-		
-		//my addition: override bank angle if contingency and before alptran 
-		if (taemg_internal["cont_flag"] and (taemg_internal["iphase"] > 4)) {
-		
-			local ysgn_ is sign(taemg_internal["phic"]).
-			
-			if (abs(taemg_internal["dpsac"]) >= taemg_constants["grdpsacsgn"]) {
-				set ysgn_ to taemg_constants["grphisgn"].
-			}
-			
-			set taemg_internal["phic"] to ysgn_ * MAX(taemg_constants["grphihdi"] + taemg_constants["grphihds"] * taemg_input["hdot"], 0).
-		}
-	}
+	//roll commands refactored above 
 	
 	//skip ecal bank protection logic
+	
+	//my addition: override bank angle if contingency and before alptran 
+	if (taemg_internal["cont_flag"] and (not taemg_internal["ecal_flag"]) and (taemg_internal["iphase"] > 4)) {
+	
+		local ysgn_ is sign(taemg_internal["phic"]).
+		
+		if (abs(taemg_internal["dpsac"]) >= taemg_constants["grdpsacsgn"]) {
+			set ysgn_ to taemg_constants["grphisgn"].
+		}
+		
+		set taemg_internal["phic"] to ysgn_ * MAX(taemg_constants["grphihdi"] + taemg_constants["grphihds"] * taemg_input["hdot"], 0).
+	}
 	
 	set taemg_internal["phic_at"] to midval ( taemg_internal["phic"], -taemg_internal["philim"], taemg_internal["philim"]).
 }
