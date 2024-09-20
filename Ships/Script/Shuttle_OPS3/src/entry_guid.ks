@@ -295,7 +295,7 @@ global entryg_constants is lexicon (
 									"dzbias", 8,		//° Low–energy logic: DELAZ value for range biasing
 									"dzfdel", 0.003,	//1/s Low–energy logic: constant for  DZFCTR increment / decrement
 									"vturn", 18000,			//ft/s Low–energy logic: maximum velocity for nonzero roll commands 
-									"beqglmbs", 1,		//ft/s2 bias for beqglm check
+									"beqglmbs", 0.5,		//ft/s2 bias for beqglm check
 									"eqglm1", list(0, 46.341, 26.129, 8.1893),		//ft/s2 beqglm const terms
 									"eqglm2", list(0, -0.0019, -0.0008, 0.0013),		//ft/s2 beqglm linear terms
 									"veeqglm", list(0, 30000, 18375, 8543),		//ft/s2 ve to switch beqglm segments
@@ -1401,9 +1401,9 @@ function egrolcmd {
 	}
 	
 	//my addition: use beqglm to engage low energy logic automatically on the next pass
-	if (not entryg_input["ileflg"]) {
+	if (not entryg_input["ileflg"]) and (entryg_internal["islect"] > 1) {
 		if (entryg_internal["beqglm"] > 0) and (entryg_internal["drefp"] < (entryg_internal["beqglm"] - entryg_constants["beqglmbs"])) {
-			set entryg_internal["ileflg"] to true.
+			set entryg_input["ileflg"] to true.
 		}
 	}
 	
