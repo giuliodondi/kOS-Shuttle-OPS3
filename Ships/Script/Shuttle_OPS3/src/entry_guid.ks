@@ -293,7 +293,6 @@ global entryg_constants is lexicon (
 									"alpwle_c3", -3.58e-8,		//°/(ft/s2) wle alpha linear coef
 									"rtbfac", 0.05,		//Low–energy logic: range bias factor
 									"dzbias", 8,		//° Low–energy logic: DELAZ value for range biasing
-									"dlzfac", 2.2,		//Low–energy logic: DELAZ factor for roll command computations
 									"dzfdel", 0.003,	//1/s Low–energy logic: constant for  DZFCTR increment / decrement
 									"vturn", 18000,			//ft/s Low–energy logic: maximum velocity for nonzero roll commands 
 									"beqglmbs", 1,		//ft/s2 bias for beqglm check
@@ -302,11 +301,11 @@ global entryg_constants is lexicon (
 									"veeqglm", list(0, 30000, 18375, 8543),		//ft/s2 ve to switch beqglm segments
 									"cnvtst", 0.5,		//° Low–energy logic: alpha profile convergence test criterion
 									"rdotpo", 200,		//ft/s Low–energy logic: pullout altitude rate
-									"dlzdb1", 3,		//° Low–energy logic: upper delaz limit for roll command calculations
-									"dlzdb2", 5,		//° Low–energy logic: lower delaz limit for roll command calculations
-									"rolmn1", 10,		//° Low–energy logic: roll command lower limit
+									"dlzdb1", 3,		//° Low–energy logic: delaz limit for zero roll if delaz increasing
+									"dlzdb2", 5,		//° Low–energy logic: delaz limit for zero roll if delaz decreasing
+									"rolmn1", 11,		//° Low–energy logic: roll command lower limit
 									"rolmn2", 70,		//° Low–energy logic: roll command upper limit
-									"dlzlm1", 12,		//° Low–energy logic: DELAZ limit for DZFCTR incrementing
+									"dlzlm1", 17,		//° Low–energy logic: DELAZ limit for DZFCTR incrementing
 									"dlzlm2", 17,		//° Low–energy logic: DELAZ limit for DZFCTR decrementing
 									"alprddot", -0.01,		// Low–energy logic: alpha ramp rddot gain	- needs testing
 									"alprat", 0.5,		//°/s Low–energy logic: alpha convergence rate
@@ -486,6 +485,7 @@ function egexec {
 	}
 	
 	//low energy guidance stuff 	
+	//stuff that needs to be re-initialised at every re-engagement of low-energy logic
 	if (NOT entryg_input["ileflg"]) {
 		set entryg_internal["icntal"] to false.
 		set entryg_internal["ileint"] to false.
@@ -493,7 +493,7 @@ function egexec {
 		set entryg_internal["icntal"] to true.
 		set entryg_internal["alpca1"] to entryg_input["alpha"].
 		set entryg_internal["ialcnv"] to FALSE.
-		set entryg_internal["dzfctr"] to entryg_constants["dlzfac"].
+		set entryg_internal["dzfctr"] to entryg_constants["rlmndzfac"].
 		
 		set entryg_internal["ileint"] to true.
 	}
@@ -696,9 +696,6 @@ function eginit {
 		set entryg_internal["vi_init"] to entryg_input["vi"].
 		
 		//removed alphpo_hi logic
-		
-		//my addition - no min roll 
-		set entryg_constants["verlmndz"] to 0.
 		
 		set entryg_input["ileint"] to false.
 	}
@@ -1232,37 +1229,43 @@ function eglodvcmd {
 	
 	set entryg_internal["lmn"] to entryg_constants["almn2"].
 	
-	local dzsgn is abs(entryg_input["delaz"]) - abs(entryg_internal["dzold"]).
+	local dzabs is abs(entryg_input["delaz"]).
+	
+	local dzsgn is dzabs - abs(entryg_internal["dzold"]).
 	set entryg_internal["dzold"] to entryg_input["delaz"].
 	
 	//calculate l/d limits given whether delaz is increasing or decreasing
 	if (dzsgn > 0) {
-		if ((yl - entryg_constants["ylmin"]) < abs(entryg_input["delaz"]))  {
+		if ((yl - entryg_constants["ylmin"]) < dzabs)  {
 			set entryg_internal["lmn"] to entryg_constants["almn1"].
 		}
 	} else {
-		if ((yl - entryg_constants["ylmn2"]) < abs(entryg_input["delaz"])) {
+		if ((yl - entryg_constants["ylmn2"]) < dzabs) {
 			set entryg_internal["lmn"] to entryg_constants["almn1"].
 		}
 	}
 	
 	//low-energy roll command
+	//needs to be here because we override rk2rol
 	if (entryg_internal["icntal"]) {
-		local dzabs is abs(entryg_input["delaz"]).
 		if (entryg_input["ve"] > entryg_constants["vturn"]) 
 			or ((dzsgn > 0) and (dzabs <= entryg_constants["dlzdb1"]))
 			or ((dzsgn <= 0) and (dzabs <= entryg_constants["dlzdb2"])) {
+			//zero roll if too fast or delaz too small
 			set entryg_internal["rollmn"] to 0. 
 		} else {
 			set entryg_internal["rk2rol"] to -sign(entryg_input["delaz"]).
 			//removed beqglm test
+			
+			//increase the delaz roll factor if delaz increasing and not too small or large
 			if (entryg_internal["dzfctr"]*dzabs < entryg_constants["rolmn2"])
 				and (dzabs >= entryg_constants["dlzlm1"]) and (dzsgn > 0) {
 				set entryg_internal["dzfctr"] to  entryg_internal["dzfctr"] * (1 + entryg_constants["dzfdel"] * entryg_input["dtegd"]).
 			}
 			
+			//decrease the delaz roll factor if delaz decreasing 
 			if (dzabs < entryg_constants["dlzlm2"]) and (dzsgn < 0) {
-				set entryg_internal["dzfctr"] to  max(entryg_constants["dlzfac"], entryg_internal["dzfctr"] * (1 - entryg_constants["dzfdel"] * entryg_input["dtegd"])).
+				set entryg_internal["dzfctr"] to  max(entryg_constants["rlmndzfac"], entryg_internal["dzfctr"] * (1 - entryg_constants["dzfdel"] * entryg_input["dtegd"])).
 			}
 			
 			set entryg_internal["rollmn"] to entryg_internal["rk2rol"] * midval(entryg_internal["dzfctr"] * dzabs , entryg_constants["rolmn1"], entryg_constants["rolmn2"]).
@@ -1293,7 +1296,7 @@ function eglodvcmd {
 		
 		//should do the roll reversal
 		//added condition on abs(delaz) plus flag to track reversal start and end
-		if (entryg_internal["dlzrl"] > 0) and (ABS(entryg_input["delaz"]) >= yl) {
+		if (entryg_internal["dlzrl"] > 0) and (dzabs >= yl) {
 			set entryg_internal["rk2rol"] to -entryg_internal["rk2rol"].
 			//moved it to the else block so delaz limits are changed after the roll is complete
 			
@@ -1301,7 +1304,7 @@ function eglodvcmd {
 				SET entryg_internal["rrflag"] TO TRUE.
 			}
 			
-		} else if (entryg_internal["rrflag"]) and (ABS(entryg_input["delaz"]) < yl) {
+		} else if (entryg_internal["rrflag"]) and (dzabs < yl) {
 			SET entryg_internal["rrflag"] TO FALSE.
 			set entryg_internal["idbchg"] to TRUE.
 		}
@@ -1314,7 +1317,7 @@ function egrolcmd {
 	 //1", cos(bank cmd), 2", cos(unlimited bank), 3", cos(ref bank)
 	local arg is list(0, entryg_internal["lodv"]/entryg_internal["xlod"], entryg_internal["lodx"]/entryg_internal["xlod"], entryg_internal["aldref"]/entryg_internal["xlod"] ).
 	
-	local rollcpa IS ABS(entryg_internal["rollc"][1]).
+	local rollcp1 IS ABS(entryg_internal["rollc"][1]).
 	
 	FROM {local i is 1.} UNTIL i > 3 STEP {set i to i + 1.} DO { 
 		//I think this limits the bank angle to +-90?
@@ -1404,6 +1407,8 @@ function egrolcmd {
 		}
 	}
 	
+	LOCAL rollc1 IS entryg_internal["rollc"][1].
+	
 	//low-energy stuff 
 	if (entryg_internal["icntal"]) {
 		//disengagement test if pullout is complete
@@ -1416,7 +1421,7 @@ function egrolcmd {
 		}
 		
 		//low energy roll cmd 
-		set entryg_internal["rollc"][1] to entryg_internal["rollmn"].
+		set rollc1 to entryg_internal["rollmn"].
 		
 		//wle thermal alpha command - simple quadratic
 		set entryg_internal["alp_wle"] to min(entryg_constants["alpwle_c1"] + entryg_input["ve"] * (entryg_constants["alpwle_c2"] + entryg_input["ve"] * entryg_constants["alpwle_c3"]), entryg_internal["aclam"]).
@@ -1447,39 +1452,42 @@ function egrolcmd {
 				set entryg_internal["alpcmd"] to entryg_internal["alpca1"].
 			}
 		}
-	} else if (entryg_input["ileflg"]) {
-		//convergence to nominal alpha profile
-		if (not entryg_internal["ialcnv"]) {
-			local dalp_ is entryg_internal["alpcmd"] - entryg_input["alpha"].
-			if (abs(dalp_) < entryg_constants["cnvtst"]) {
-				set entryg_internal["ialcnv"] to true.
+	} else {
+		if (entryg_input["ileflg"]) {
+			//convergence to nominal alpha profile
+			if (not entryg_internal["ialcnv"]) {
+				local dalp_ is entryg_internal["alpcmd"] - entryg_input["alpha"].
+				if (abs(dalp_) < entryg_constants["cnvtst"]) {
+					set entryg_internal["ialcnv"] to true.
+				} else {
+					set entryg_internal["alpcmd"] to entryg_input["alpha"] + entryg_constants["alprat"] * entryg_input["dtegd"] * sign(dalp_).
+				}
 			} else {
-				set entryg_internal["alpcmd"] to entryg_input["alpha"] + entryg_constants["alprat"] * entryg_input["dtegd"] * sign(dalp_).
+				//if low energy disabled and alpha converged, signal low energy flag off 
+				set entryg_input["ileflg"] to false.
 			}
-		} else {
-			//if low energy disabled and alpha converged, signal low energy flag off 
-			set entryg_input["ileflg"] to false.
+			
+			//skip drag convergence checks
 		}
 		
-		//skip drag convergence checks
+		//don't do these in low-energy logic 
+		//my modification: limit the new roll command from above by the unlimited roll 
+		set rollc1 to MIN(rollc1, ABS(entryg_internal["rollc"][2])).
+		//my modification: limit the new roll command from below by the min delaz roll
+		SET rollc1 TO MAX(rollc1, entryg_internal["rlmndz"]).
 	}
 	
 	//apply pitch limits in any case
 	set entryg_internal["alpcmd"] to midval(entryg_internal["alpcmd"], entryg_internal["aclam"], entryg_internal["aclim"]).
 	
-	//my modification: limit the new roll command from above by the unlimited roll 
-	LOCAL rollca IS MIN(ABS(entryg_internal["rollc"][1]), ABS(entryg_internal["rollc"][2])).
-	//my modification: limit the new roll command from below by the min delaz roll
-	SET rollca TO MAX(rollca, entryg_internal["rlmndz"]).
-	
 	//my addition: fiter changes in roll cmd if they are below a threshold enough
-	LOCAL delrollc IS rollca - rollcpa.
+	LOCAL delrollc IS rollc1 - rollcp1.
 	
 	IF (ABS(delrollc) < entryg_constants["drolcmdfil"]) {
-		SET rollca TO rollcpa + delrollc * (entryg_input["dtegd"] / entryg_constants["rolcmdfildt"]).
+		SET rollc1 TO rollcp1 + delrollc * (entryg_input["dtegd"] / entryg_constants["rolcmdfildt"]).
 	}
 	
-	set entryg_internal["rollc"][1] to midval(rollca * entryg_internal["rk2rol"], -entryg_internal["rlm"], entryg_internal["rlm"]).
+	set entryg_internal["rollc"][1] to midval(rollc1 * entryg_internal["rk2rol"], -entryg_internal["rlm"], entryg_internal["rlm"]).
 	
 	set entryg_internal["rolcmd"] to entryg_internal["rollc"][1].
 }
