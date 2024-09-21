@@ -26,8 +26,10 @@ FUNCTION ops3_main_exec {
 	make_main_ops3_gui().
 	make_hud_gui().
 	
+	local eng_off_f is false.
 	if (nominal_flag) {
 		engines_off().
+		set eng_off_f to true.
 	}
 	
 	//force target selection logic goes here
@@ -47,6 +49,10 @@ FUNCTION ops3_main_exec {
 	}
 	
 	local hud_datalex IS get_hud_datalex().
+	
+	local guidance_timer IS timer_factory().
+	//necessary so the timer updates once 
+	wait 0.1.
 	
 	//setup dap and aerosurface controllers
 	LOCAL dap IS dap_controller_factory().
@@ -75,6 +81,14 @@ FUNCTION ops3_main_exec {
 					RCS OFF.
 				} else {
 					RCS ON.
+				}
+				
+				//oms dump timer 
+				if (not eng_off_f) {
+					if (guidance_timer:elapsed >= ops3_parameters["oms_dump_timer"]) {
+						engines_off().
+						set eng_off_f to true.
+					}
 				}
 				
 				set dap_engaged to is_dap_engaged().
@@ -150,11 +164,6 @@ FUNCTION ops3_main_exec {
 				update_hud_gui(hud_datalex).
 			}
 	).
-
-	local guidance_timer IS timer_factory().
-	
-	//necessary so the timer updates once 
-	wait 0.1.
 
 	if (NOT (grtls_flag OR cont_flag)) AND (NOT skip_2_taem_flag) {
 		//entry guidance loop
@@ -413,10 +422,6 @@ FUNCTION ops3_main_exec {
 			//gui outputs
 			
 			if (taemg_out["itran"]) {
-				if (not nominal_flag) and (guid_id <= 21) {
-					engines_off().
-				}
-				
 				hud_decluttering(guid_id).
 				if (guid_id = 22) {
 					make_xtrackerr_slider().
