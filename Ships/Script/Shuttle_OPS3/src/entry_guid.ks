@@ -1501,6 +1501,10 @@ function egrolcmd {
 function egsbcmd {
 	PARAMETER entryg_input.
 	
+	if (entryg_internal["icntal"]) {
+		return.
+	}
+	
 	if (entryg_input["ve"]  >=  entryg_constants["vsbsw"]) {
 		set entryg_internal["spdbcmd"] to midval(entryg_constants["vesbs1"] * entryg_input["ve"] + entryg_constants["vesbi1"], entryg_constants["egsbl1"], entryg_constants["egsbu1"]).
 	} else {
