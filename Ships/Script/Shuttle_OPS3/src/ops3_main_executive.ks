@@ -3,7 +3,7 @@
 FUNCTION ops3_main_exec {
 	parameter nominal_flag.
 	parameter tal_flag.
-	parameter ileflg.
+	parameter ileflg_in.
 	parameter grtls_flag.
 	parameter cont_flag.
 	parameter ecal_flag.
@@ -159,6 +159,9 @@ FUNCTION ops3_main_exec {
 	if (NOT (grtls_flag OR cont_flag)) AND (NOT skip_2_taem_flag) {
 		//entry guidance loop
 		
+		//enable internal low energy flag 
+		set entryg_internal["ileflg"] to ileflg_in.
+		
 		make_entry_traj_GUI().
 		
 		LOCAL eg_end_flag IS FALSE.
@@ -202,13 +205,11 @@ FUNCTION ops3_main_exec {
 												"lod", dap:aero:lod,
 												"egflg", 0, 
 												"ital", tal_flag,
-												"ileflg", ileflg,
 												"debug", ops3_parameters["full_debug"]
 										)
 			).
 			
 			set guid_id to entryg_out["guid_id"].
-			set ileflg to  entryg_out["ileflg"].
 			
 			IF (is_autoairbk()) {
 				SET aerosurfaces_control:spdbk_defl TO entryg_out["spdbcmd"].
@@ -250,7 +251,7 @@ FUNCTION ops3_main_exec {
 									"roll_ref",entryg_out["roll_ref"],
 									"pitch_mod",entryg_out["pitch_mod"],
 									"roll_rev",entryg_out["roll_rev"],
-									"ileflg", ileflg,
+									"ileflg", entryg_out["ileflg"],
 									"prog_pch", dap:prog_pitch,
 									"prog_roll", dap:prog_roll,
 									"prog_yaw", dap:prog_yaw
