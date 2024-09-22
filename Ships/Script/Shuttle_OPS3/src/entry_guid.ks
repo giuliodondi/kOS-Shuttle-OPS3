@@ -306,7 +306,7 @@ global entryg_constants is lexicon (
 									"dlzlm1", 17,		//° Low–energy logic: DELAZ limit for DZFCTR incrementing
 									"dlzlm2", 17,		//° Low–energy logic: DELAZ limit for DZFCTR decrementing
 									"alprddot", 0.04,		// Low–energy logic: alpha ramp rddot gain
-									"alpdragdot", 0.5,		// Low–energy logic: alpha ramp dragdot gain	- needs testing
+									"alpdragdot", 0.4,		// Low–energy logic: alpha ramp dragdot gain	- needs testing
 									"alprat", 0.5,		//°/s Low–energy logic: alpha convergence rate
 									"alphmx", 31,		//° Low–energy logic: contingency abort alpha command – maximum L/D
 									"valpmx", 9000,		//ft/s Low–energy logic: velocity to begin contingency abort alpha command ramp
