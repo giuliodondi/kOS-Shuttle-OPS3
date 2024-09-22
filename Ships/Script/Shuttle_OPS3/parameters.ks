@@ -8,7 +8,7 @@ GLOBAL ops3_parameters is LEXICON(
 					"interfalt",122000,
 					"xlfac_trim_on", 2.5,		//ft/s load factor to enable flap trimming
 					"alt_trim_on", 30000,		//mt altitude to enable flap trimming
-					"oms_dump_timer", 300,			//s time before stopping the oms engines
+					"oms_dump_timer", 270,			//s time before stopping the oms engines
 					"surfv_skip_to_taem", 1000,	//m/s if the executive is called below this surfv, skip entry
 					"mach_rcs_off",0.9,		//this must be 1 or less
 					"entry_aoa_feedback", 0,	//should be zero
