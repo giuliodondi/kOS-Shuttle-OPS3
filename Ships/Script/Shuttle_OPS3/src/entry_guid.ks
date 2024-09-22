@@ -74,8 +74,8 @@ FUNCTION entryg_wrapper {
 								"spdbcmd", entryg_internal["spdbcmd"] / entryg_constants["dsblim"], 	//deg speedbrake command (angle at the hinge line, meaning each panel is deflected by half this????)
 								"drag_ref", entryg_internal["drefp"],
 								"drag", entryg_input["drag"],
-								"unl_roll", entryg_internal["rollc"][2],
-								"roll_ref", entryg_internal["rollc"][3],
+								"unl_roll", entryg_internal["rk2rol"] * entryg_internal["rollc"][2],
+								"roll_ref", entryg_internal["rk2rol"] * entryg_internal["rollc"][3],
 								"rlm", entryg_internal["rlm"],		//my addition, required by the dap
 								"hdot_ref", entryg_internal["rdtrf"]/mt2ft,
 								"islect", entryg_internal["islect"],
@@ -305,7 +305,8 @@ global entryg_constants is lexicon (
 									"rolmn2", 70,		//° Low–energy logic: roll command upper limit
 									"dlzlm1", 17,		//° Low–energy logic: DELAZ limit for DZFCTR incrementing
 									"dlzlm2", 17,		//° Low–energy logic: DELAZ limit for DZFCTR decrementing
-									"alprddot", 0.04,		// Low–energy logic: alpha ramp rddot gain	- needs testing
+									"alprddot", 0.04,		// Low–energy logic: alpha ramp rddot gain
+									"alpdragdot", 0.35,		// Low–energy logic: alpha ramp dragdot gain	- needs testing
 									"alprat", 0.5,		//°/s Low–energy logic: alpha convergence rate
 									"alphmx", 31,		//° Low–energy logic: contingency abort alpha command – maximum L/D
 									"valpmx", 9000,		//ft/s Low–energy logic: velocity to begin contingency abort alpha command ramp
@@ -341,6 +342,8 @@ global entryg_internal is lexicon(
 									"delalp", 0,   	//commanded alpha incr,   
 									"dlrdot", 0,   	//r feedback 
 									"dlzrl", 0,		//deg negative if we're rolling towards the site, positive if heading aways
+									"dragdot", 0,	//(ft/s2)/s 	derivative of drag
+									"dragp", 0,		//ft/s2 drag previous
 									"drdd", 0,   	//dRange / dD 
 									"drefp", 0,   	//drag ref used in controller 
 									"drefp1", 0,   	//eq glide
@@ -497,6 +500,7 @@ function egexec {
 		set entryg_internal["ileint"] to true.
 	}
 	
+	//keep for legacy but biasing is disabled
 	if (entryg_internal["icntal"]) {
 		local rtbias is 0.
 		local dzabs is abs(entryg_input["delaz"]).
@@ -504,7 +508,6 @@ function egexec {
 			set rtbias to entryg_input["trange"] * sin(dzabs)*tan(dzabs).
 		} 
 		set entryg_internal["trngle"] to entryg_input["trange"] + entryg_constants["rtbfac"] * rtbias.
-		
 	}
 	
 	egcomn(entryg_input).
@@ -674,6 +677,7 @@ function eginit {
 	set entryg_internal["rrflag"] to FALSE. 
 	
 	set entryg_internal["rdotp"] to entryg_input["rdot"].
+	set entryg_internal["dragp"] to entryg_input["drag"].
 	
 	//in case of a tal abort 
 	//refactored before the calculations that use alfm
@@ -754,10 +758,12 @@ function egcomn {
 		set entryg_internal["n_iter"] to entryg_internal["n_iter"] - 1.
 	}
 	
-	//my addition - measure rddot
-	
+	//my addition - measure rddot and drag dot 
 	set entryg_internal["rddot"] to (entryg_input["rdot"] - entryg_internal["rdotp"]) / entryg_input["dtegd"].
 	set entryg_internal["rdotp"] to entryg_input["rdot"].
+	set entryg_internal["dragdot"] to (entryg_input["drag"] - entryg_internal["dragp"]) / entryg_input["dtegd"].
+	set entryg_internal["dragp"] to entryg_input["drag"].
+	
 
 	set entryg_internal["xlod"] to max(entryg_input["lod"], entryg_constants["lodmin"]).
 	
@@ -775,16 +781,10 @@ function egcomn {
 		
 		local t2old is entryg_internal["t2"].
 		
-		//low energy biased range
-		local trange is entryg_input["trange"].
-		if (entryg_internal["icntal"]) {
-			set trange to entryg_internal["trngle"].
-		}
-		
 		//calculate constant drag level to reach phase 5 at range rtp
 		//my modification: only update t2 before phase 4 so it's constant
 		if (entryg_internal["islect"] < 4) {
-			set entryg_internal["t2"] to entryg_constants["cnmfs"] * (entryg_internal["ve2"] - entryg_internal["vq2"]) / (2*( trange - entryg_internal["rpt"])).
+			set entryg_internal["t2"] to entryg_constants["cnmfs"] * (entryg_internal["ve2"] - entryg_internal["vq2"]) / (2*( entryg_input["trange"] - entryg_internal["rpt"])).
 			//my addition- limit t2, effectively disables early transition to phase 4
 			set entryg_internal["t2"] to min(entryg_internal["t2"], entryg_constants["alfm"]).
 		}
@@ -913,16 +913,9 @@ function egrp {
 		
 		// phases 2-3 predicted tange * d23
 		set entryg_internal["r231"] to entryg_internal["rff1"] + entryg_internal["req1"].
-		
-		//low energy biased range
-		local trange is entryg_input["trange"].
-		if (entryg_internal["icntal"]) {
-			set trange to entryg_internal["trngle"].
-		}
-		
 		//the actual range we must fly during phases 2 and 3
 		//added phase-dependent bias 
-		set entryg_internal["r23"] to  trange - entryg_internal["rcg"] - entryg_internal["rpt"].
+		set entryg_internal["r23"] to  entryg_input["trange"] - entryg_internal["rcg"] - entryg_internal["rpt"].
 		
 		//first updated value of d23
 		set entryg_internal["d231"] to entryg_internal["r231"] / entryg_internal["r23"].
@@ -1045,14 +1038,8 @@ function egtran {
 	set entryg_internal["rer1"] to entryg_constants["cnmfs"] * ln(entryg_internal["drefp"] / entryg_constants["df"]) / c1.
 	set entryg_internal["drdd"] to min(entryg_constants["cnmfs"] * 1/(c1 * entryg_internal["drefp"]) - entryg_internal["rer1"] / drefpt , entryg_constants["drddl"]).
 	
-	//low energy biased range
-	local trange is entryg_input["trange"].
-	if (entryg_internal["icntal"]) {
-		set trange to entryg_internal["trngle"].
-	}
-	
 	//update reference drag but ensure it doesn't exceed elevon higne moment limits through alim, I assume
-	set entryg_internal["drefp"] to entryg_internal["drefp"] + (trange - entryg_internal["rer1"] - entryg_constants["rpt1"]) / entryg_internal["drdd"].
+	set entryg_internal["drefp"] to entryg_internal["drefp"] + (entryg_input["trange"] - entryg_internal["rer1"] - entryg_constants["rpt1"]) / entryg_internal["drdd"].
 	local dlim is entryg_constants["alim"] * entryg_input["drag"] / entryg_input["xlfac"].
 	if (entryg_internal["drefp"] > dlim) {
 		set entryg_internal["drefp"] to dlim.
@@ -1267,7 +1254,7 @@ function eglodvcmd {
 				set entryg_internal["dzfctr"] to  max(entryg_constants["rlmndzfac"], entryg_internal["dzfctr"] * (1 - entryg_constants["dzfdel"] * entryg_input["dtegd"])).
 			}
 			
-			set entryg_internal["rollmn"] to entryg_internal["rk2rol"] * midval(entryg_internal["dzfctr"] * dzabs , entryg_constants["rolmn1"], entryg_constants["rolmn2"]).
+			set entryg_internal["rollmn"] to midval(entryg_internal["dzfctr"] * dzabs , entryg_constants["rolmn1"], entryg_constants["rolmn2"]).
 		}
 	}
 	
@@ -1319,7 +1306,7 @@ function egrolcmd {
 	 //1", cos(bank cmd), 2", cos(unlimited bank), 3", cos(ref bank)
 	local arg is list(0, entryg_internal["lodv"]/entryg_internal["xlod"], entryg_internal["lodx"]/entryg_internal["xlod"], entryg_internal["aldref"]/entryg_internal["xlod"] ).
 	
-	local rollcp1 IS ABS(entryg_internal["rollc"][1]).
+	local rollcp1 IS entryg_internal["rollc"][1].
 	
 	FROM {local i is 1.} UNTIL i > 3 STEP {set i to i + 1.} DO { 
 		//I think this limits the bank angle to +-90?
@@ -1329,7 +1316,7 @@ function egrolcmd {
 		
 		//CAREFUL : KOS will give the arccos in degrees but the HAL-S manual says that all angles are supplied or delivered in radians
 		//we divide by deg2rad to transform it from rad to degrees so theoretically I should just remove the factor
-		set entryg_internal["rollc"][i] to entryg_internal["rk2rol"] * ARCCOS(arg[i]).	// / entryg_constants["dtr"].
+		set entryg_internal["rollc"][i] to ARCCOS(arg[i]).	// / entryg_constants["dtr"].
 	}
 	
 	// here we bias roll if we are deviating from the pitch profile 
@@ -1449,7 +1436,8 @@ function egrolcmd {
 				//skip all the alp_vt calculations
 				
 				//refactored to implement the rddot based rampdown from the procedures
-				set entryg_internal["alpca1"] to entryg_internal["alpca1"]  + entryg_internal["rddot"] * entryg_constants["alprddot"] * entryg_input["dtegd"].
+				//modifiction - use drag dot 
+				set entryg_internal["alpca1"] to entryg_internal["alpca1"]  + entryg_internal["dragdot"] * entryg_constants["alpdragdot"] * entryg_input["dtegd"].
 				set entryg_internal["alpca1"] to midval(entryg_internal["alpca1"], entryg_internal["aclim"] , entryg_internal["alp_wle"]).
 					
 				set entryg_internal["alpcmd"] to entryg_internal["alpca1"].
@@ -1490,9 +1478,7 @@ function egrolcmd {
 		SET rollc1 TO rollcp1 + delrollc * (entryg_input["dtegd"] / entryg_constants["rolcmdfildt"]).
 	}
 	
-	set entryg_internal["rollc"][1] to midval(rollc1 * entryg_internal["rk2rol"], -entryg_internal["rlm"], entryg_internal["rlm"]).
-	
-	set entryg_internal["rolcmd"] to entryg_internal["rollc"][1].
+	set entryg_internal["rolcmd"] to midval(rollc1 * entryg_internal["rk2rol"], -entryg_internal["rlm"], entryg_internal["rlm"]).
 }
 
 //my addition : deflect speedbrake on a fixed mach schedule 
