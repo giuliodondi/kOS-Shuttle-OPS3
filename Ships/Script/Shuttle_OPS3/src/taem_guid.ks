@@ -362,7 +362,7 @@ global taemg_constants is lexicon (
 									"psohal", 200, 			//deg min psha to issue ohalrt 
 									"psohqb", 0, 			//deg min psha for which qbmxnz is lowered 
 									//"psstrn", 200,			//deg max psha for s-turn //OTT
-									"psstrn", 330,			//deg max psha for s-turn 
+									"psstrn", 360,			//deg max psha for s-turn 
 									"qbref2", LISt(0, 185, 185),		//psf qbref at r2max 
 									"qbmsl1", -0.0288355,			//psf/slug slope of mxqbwt with mach 
 									"qbmsl2", -0.00570829,			//psf/slug slope of mxqbwt with mach 
