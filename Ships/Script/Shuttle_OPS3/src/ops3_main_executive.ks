@@ -3,7 +3,6 @@
 FUNCTION ops3_main_exec {
 	parameter nominal_flag.
 	parameter tal_flag.
-	parameter ileflg_in.
 	parameter grtls_flag.
 	parameter cont_flag.
 	parameter ecal_flag.
@@ -167,9 +166,6 @@ FUNCTION ops3_main_exec {
 
 	if (NOT (grtls_flag OR cont_flag)) AND (NOT skip_2_taem_flag) {
 		//entry guidance loop
-		
-		//enable internal low energy flag 
-		set entryg_internal["ileflg"] to ileflg_in.
 		
 		make_entry_traj_GUI().
 		
