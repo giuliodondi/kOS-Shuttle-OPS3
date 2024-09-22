@@ -59,9 +59,9 @@ FUNCTION dap_controller_factory {
 	this:add("hdot", 0).
 	this:add("aero", LEXICON(
 							"nz", 0,
-							"drag", 0,
-							"load", 0,
-							"lod", 0
+							"drag", average_value_factory(3),
+							"load", average_value_factory(3),
+							"lod", average_value_factory(3)
 	)).
 	
 	this:add("wow", FALSE).
@@ -84,12 +84,13 @@ FUNCTION dap_controller_factory {
 		//drag forces are alyways in imperial
 		LOCAL aeroacc IS cur_aeroaccel_ld().		
 		SET this:aero:nz to aeroacc["lift"] / g0.
-		SET this:aero:drag to aeroacc["drag"]*mt2ft.
-		SET this:aero:load to aeroacc["load"]:MAG*mt2ft.
-		if (this:aero:drag > 0) {
-			SET this:aero:lod to aeroacc["lift"]/aeroacc["drag"].
+		this:aero:drag:update(aeroacc["drag"]*mt2ft).
+		this:aero:load:update(aeroacc["load"]:MAG*mt2ft).
+
+		if (aeroacc["drag"] > 0) {
+			this:aero:lod:update(aeroacc["lift"]/aeroacc["drag"]).
 		} else {
-			SET this:aero:lod to 0.
+			this:aero:lod:update(0).
 		}
 
 		SET this:wow to measure_wow().
@@ -321,7 +322,7 @@ FUNCTION dap_controller_factory {
 		if (this:is_css) OR (abs(this:delta_roll) >= 10) {
 			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 5.5.
 		} else {
-			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 1.3.
+			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 0.8.
 		}
 		
 		SET this:steering_dir TO this:create_prog_steering_dir(

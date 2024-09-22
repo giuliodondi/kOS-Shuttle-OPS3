@@ -132,7 +132,7 @@ FUNCTION ops3_main_exec {
 					dap:measure_cur_state().
 				}
 				
-				if (SHIP:ALTITUDE <= ops3_parameters["alt_trim_on"]) OR (dap:aero:load >= ops3_parameters["xlfac_trim_on"]) {
+				if (SHIP:ALTITUDE <= ops3_parameters["alt_trim_on"]) OR (dap:aero:load:latest_value >= ops3_parameters["xlfac_trim_on"]) {
 					aerosurfaces_control:update(is_autoflap(), is_autoairbk()).
 				}
 				
@@ -191,28 +191,27 @@ FUNCTION ops3_main_exec {
 			}
 
 			//call entry guidance here
-			LOCAL entryg_out is entryg_wrapper(
-										lexicon(
-												"iteration_dt", guidance_timer:last_dt,
-												"tgtsite", get_selected_tgt(),
-												"tgt_range", entry_state["tgt_range"],
-												"delaz", entry_state["delaz"],   
-												"ve", ve:MAG,
-												"vi", vi:MAG,
-												"hls", entry_state["hls"],	
-												"hdot", entry_state["hdot"], 
-												"gamma", entry_state["fpa"], 							
-												"alpha", dap:prog_pitch,      
-												"roll", dap:prog_roll,  
-												"drag", dap:aero:drag,
-												"xlfac", dap:aero:load,  
-												"cd", ADDONS:FAR:CD,												
-												"lod", dap:aero:lod,
-												"egflg", 0, 
-												"ital", tal_flag,
-												"debug", ops3_parameters["full_debug"]
-										)
-			).
+			local entryg_in is lexicon(
+									"iteration_dt", guidance_timer:last_dt,
+									"tgtsite", get_selected_tgt(),
+									"tgt_range", entry_state["tgt_range"],
+									"delaz", entry_state["delaz"],   
+									"ve", ve:MAG,
+									"vi", vi:MAG,
+									"hls", entry_state["hls"],	
+									"hdot", entry_state["hdot"], 
+									"gamma", entry_state["fpa"], 							
+									"alpha", dap:prog_pitch,      
+									"roll", dap:prog_roll,  
+									"drag", dap:aero:drag:average(),
+									"xlfac", dap:aero:load:average(),  
+									"cd", ADDONS:FAR:CD,												
+									"lod", dap:aero:lod:average(),
+									"egflg", 0, 
+									"ital", tal_flag,
+									"debug", ops3_parameters["full_debug"]
+										).
+			LOCAL entryg_out is entryg_wrapper(entryg_in).
 			
 			set guid_id to entryg_out["guid_id"].
 			
@@ -245,9 +244,9 @@ FUNCTION ops3_main_exec {
 									"time", guidance_timer:last_sampled_t,
 									"range",entry_state["tgt_range"],
 									"ve",ve:MAG,
-									"xlfac",dap:aero:load,
-									"lod",dap:aero:lod,
-									"drag",dap:aero:drag,
+									"xlfac",entryg_in["xlfac"],
+									"lod",entryg_in["lod"],
+									"drag",entryg_in["drag"],
 									"drag_ref",entryg_out["drag_ref"],
 									"phase",entryg_out["islect"],
 									"hdot_ref",entryg_out["hdot_ref"],
@@ -280,7 +279,7 @@ FUNCTION ops3_main_exec {
 				SET loglex["range"] TO hud_datalex["distance"].
 				SET loglex["delaz"] TO hud_datalex["delaz"].
 				SET loglex["nz"] TO dap:aero:nz.
-				SET loglex["drag"] TO dap:aero:drag.
+				SET loglex["drag"] TO entryg_in["drag"].
 				SET loglex["eow"] TO entryg_out["eowd"].
 				SET loglex["prog_pch"] TO dap:prog_pitch.
 				SET loglex["prog_roll"] TO dap:prog_roll. 
@@ -328,40 +327,39 @@ FUNCTION ops3_main_exec {
 			}
 
 			local taemg_in is LEXICON(
-												"dtg", guidance_timer:last_dt,
-												"wow", dap:wow,
-												"h", rwystate["h"],
-												"hdot", rwystate["hdot"],
-												"x", rwystate["x"], 
-												"y", rwystate["y"], 
-												"surfv", rwystate["surfv"],
-												"surfv_h", rwystate["surfv_h"],
-												"rwy_r", rwystate["rwy_r"], 
-												"rwy_rdot", rwystate["rwy_rdot"], 
-												"xdot", rwystate["xdot"], 
-												"ydot", rwystate["ydot"], 
-												"psd", rwystate["rwy_rel_crs"], 
-												"m", SHIP:MASS,
-												"mach",  ADDONS:FAR:MACH,
-												"qbar", SHIP:Q,
-												"phi",  dap:prog_roll,
-												"theta", dap:lvlh_pitch,
-												"gamma", dap:fpa,
-												"alpha", dap:prog_pitch,
-												"nz", dap:aero:nz,
-												"xlfac", dap:aero:load, 
-												"ovhd", tgtrwy["overhead"],
-												"rwid", tgtrwy["name"],
-												"grtls", grtls_flag,
-												"cont", cont_flag,
-												"ecal", ecal_flag,
-												"debug", ops3_parameters["full_debug"]
-										).
+									"dtg", guidance_timer:last_dt,
+									"wow", dap:wow,
+									"h", rwystate["h"],
+									"hdot", rwystate["hdot"],
+									"x", rwystate["x"], 
+									"y", rwystate["y"], 
+									"surfv", rwystate["surfv"],
+									"surfv_h", rwystate["surfv_h"],
+									"rwy_r", rwystate["rwy_r"], 
+									"rwy_rdot", rwystate["rwy_rdot"], 
+									"xdot", rwystate["xdot"], 
+									"ydot", rwystate["ydot"], 
+									"psd", rwystate["rwy_rel_crs"], 
+									"m", SHIP:MASS,
+									"mach",  ADDONS:FAR:MACH,
+									"qbar", SHIP:Q,
+									"phi",  dap:prog_roll,
+									"theta", dap:lvlh_pitch,
+									"gamma", dap:fpa,
+									"alpha", dap:prog_pitch,
+									"nz", dap:aero:nz,
+									"drag", dap:aero:drag:average(),
+									"xlfac", dap:aero:load:average(), 
+									"ovhd", tgtrwy["overhead"],
+									"rwid", tgtrwy["name"],
+									"grtls", grtls_flag,
+									"cont", cont_flag,
+									"ecal", ecal_flag,
+									"debug", ops3_parameters["full_debug"]
+			).
 
 			//call taem guidance here
-			local taemg_out is taemg_wrapper(
-											taemg_in                        
-			).
+			local taemg_out is taemg_wrapper(taemg_in).
 			
 			set guid_id to taemg_out["guid_id"].
 			set grtls_flag to taemg_out["grtls_flag"].
@@ -441,7 +439,7 @@ FUNCTION ops3_main_exec {
 									"mep", taemg_out["mep"],
 									"eowlof", taemg_out["eowlof"],
 									"tgthdot", taemg_out["hdref"],
-									"xlfac", dap:aero:load / taemg_constants["g"], 
+									"xlfac", taemg_in["xlfac"] / taemg_constants["g"], 
 									"spdbkcmd", taemg_out["dsbc_at"],
 									"alpll", taemg_out["alpll"],
 									"alpul", taemg_out["alpul"],
@@ -484,7 +482,7 @@ FUNCTION ops3_main_exec {
 				SET loglex["range"] TO hud_datalex["distance"].
 				SET loglex["delaz"] TO hud_datalex["delaz"].
 				SET loglex["nz"] TO dap:aero:nz.
-				SET loglex["drag"] TO dap:aero:drag.
+				SET loglex["drag"] TO taemg_in["drag"].
 				SET loglex["eow"] TO taemg_out["eow"].
 				SET loglex["prog_pch"] TO dap:prog_pitch.
 				SET loglex["prog_roll"] TO dap:prog_roll. 
