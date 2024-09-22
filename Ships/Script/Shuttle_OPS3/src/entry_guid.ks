@@ -299,14 +299,14 @@ global entryg_constants is lexicon (
 									"veeqglm", list(0, 30000, 18375, 8543),		//ft/s2 ve to switch beqglm segments
 									"cnvtst", 0.5,		//° Low–energy logic: alpha profile convergence test criterion
 									"rdotpo", 200,		//ft/s Low–energy logic: pullout altitude rate
-									"dlzdb1", 3,		//° Low–energy logic: delaz limit for zero roll if delaz increasing
-									"dlzdb2", 5,		//° Low–energy logic: delaz limit for zero roll if delaz decreasing
+									"dlzdb1", 5,		//° Low–energy logic: delaz limit for zero roll if delaz increasing
+									"dlzdb2", 4,		//° Low–energy logic: delaz limit for zero roll if delaz decreasing
 									"rolmn1", 11,		//° Low–energy logic: roll command lower limit
 									"rolmn2", 70,		//° Low–energy logic: roll command upper limit
 									"dlzlm1", 17,		//° Low–energy logic: DELAZ limit for DZFCTR incrementing
 									"dlzlm2", 17,		//° Low–energy logic: DELAZ limit for DZFCTR decrementing
 									"alprddot", 0.04,		// Low–energy logic: alpha ramp rddot gain
-									"alpdragdot", 0.35,		// Low–energy logic: alpha ramp dragdot gain	- needs testing
+									"alpdragdot", 0.5,		// Low–energy logic: alpha ramp dragdot gain	- needs testing
 									"alprat", 0.5,		//°/s Low–energy logic: alpha convergence rate
 									"alphmx", 31,		//° Low–energy logic: contingency abort alpha command – maximum L/D
 									"valpmx", 9000,		//ft/s Low–energy logic: velocity to begin contingency abort alpha command ramp
