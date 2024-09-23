@@ -319,8 +319,8 @@ FUNCTION dap_controller_factory {
 		SET this:steer_yaw TO CLAMP(this:steer_yaw, this:yaw_lims[0], this:yaw_lims[1]).
 		
 		//update steering manager
-		if (this:is_css) OR (abs(this:delta_roll) >= 10) {
-			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 5.5.
+		if (this:is_css) OR (abs(this:delta_roll) >= 8) {
+			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 8.
 		} else {
 			SET STEERINGMANAGER:MAXSTOPPINGTIME TO 0.8.
 		}
