@@ -891,15 +891,16 @@ function entry_traj_disp_x_convert {
 	
 	LOCAL drag2 IS drag * drag.
 	LOCAL vel2 IS vel * vel.
+	LOCAL vel3 IS vel2 * vel.
+	LOCAL drag3 IS drag2 * drag.
 	
 	if (entry_traj_disp_counter=1) {
-		LOCAL vel3 IS vel2 * vel.
-		LOCAL drag3 IS drag2 * drag.
-		set out to  1269.3735913802313 + -0.08206361592134565 * vel  + -153.9799520644858  * drag + -3.1466697000533627e-06 * vel2  + 0.01314221307938963 * vel * drag + 4.662789044310247  * drag2 + 7.728348100366489e-10 * vel3  + -4.161746084256363e-07 * vel2 * drag + -0.00015695195109508781 * vel * drag2 + -0.052420876333425334  * drag3.
-    
+	
+		set out to   -301.03675017070697 + 0.33855815734271033 * vel  + -60.60824776780207  * drag + -4.9417386634200165e-05 * vel2  + 0.005476770758642946 * vel * drag + 1.2917463262414464  * drag2 + 2.5832897487809703e-09 * vel3  + -2.410334538332365e-07 * vel2 * drag + -3.310567076068448e-05 * vel * drag2 + -0.010890925126885411  * drag3.
+
 	} else if (entry_traj_disp_counter=2) {
-		set out to -119.27311679936585 + 0.1310360825751968 * vel  + -14.509634466688668  * drag + -4.508956766569039e-07 * vel2  + 0.0014529141150055665 * vel * drag + -0.004804810480900542  * drag2.
-   
+		set out to  970.513742174761 + -0.30813459772818946 * vel  + -66.35018132660345  * drag + 6.925641359197617e-05 * vel2  + 0.00997745210980331 * vel * drag + 1.1326690671636324  * drag2 + -4.884222304379904e-09 * vel3  + -1.5918695213563983e-08 * vel2 * drag + -0.0001355676362552841 * vel * drag2 + -0.005495955515423207  * drag3.
+
 	} else if (entry_traj_disp_counter=3) {
 		set out to -169.89669862960386 + 0.19623953463938421 * vel + -13.736386540438081 * drag + -4.726735117477343e-07 * vel2 + 0.00040459906559150603 * vel * drag + 0.07268485357148893  * drag2.
    
@@ -921,9 +922,9 @@ function entry_traj_disp_y_convert {
 	local out is 0.
 	
 	if (entry_traj_disp_counter=1) {
-		set out to (0.00036443148 * vel - 1.88811953353).
+		set out to ( 0.00036 * vel - 1.85197).
 	} else if (entry_traj_disp_counter=2) {
-		set out to (0.0010940919 * vel - 4.66849015317).
+		set out to (0.0007300919 * vel - 2.92849015317).
 	} else if (entry_traj_disp_counter=3) {
 		set out to  (0.00093720712 * vel - 2.99906279288).
 	} else if (entry_traj_disp_counter=4) {
