@@ -102,7 +102,7 @@ global entryg_constants is lexicon (
 									"aclim5", 10,	//deg
 									"aclim6", 5.95,	//deg
 									"aclim7", 3e-3,	//deg / (ft/s)
-									"vaclim", 12000,	//ft/s
+									"vaclim", 12000,
 									
 									"acn1", 50,	//time const for hdot feedback
 									//"ak", -3.4573,	//temp control dD/dV factor	STS_1
@@ -285,7 +285,7 @@ global entryg_constants is lexicon (
 									"drolcmdfil", 15,	//° roll cmd value band to apply filtering
 									"rolcmdfildt", 10,	//° roll cmd value filtering time const
 									"n_iter", 10,		// guidance iterations before steering commands should be accepted
-									
+
 									// low energy logic
 									"alpwle_c1", 16.45,		//° wle alpha const coef
 									"alpwle_c2", 0.0018,		//°/(ft/s) wle alpha linear coef
@@ -421,7 +421,6 @@ global entryg_internal is lexicon(
 									"tgtsite0", 0,		//my addition, keep track of the tgt site to reset guidance
 									"n_iter", -1, 		//do not initialise to zero
 									
-									
 									// low energy logic
 									"ileflg", false,		//low-energy enable flag
 									"icntal", false,		//Low–energy logic engagement discrete
@@ -436,8 +435,6 @@ global entryg_internal is lexicon(
 									"irdot", 0,			//Low–energy logic: pullout completion indicator
 									"beqglm", 0,		//ft/s2 Low–energy logic: biased equilibrium glide boundary
 									"rollmn", 0,		//° Low–energy logic: roll command
-									
-									
 									
 									"dummy", 0
 ).
@@ -524,7 +521,6 @@ function egexec {
 	}
 	
 	//used to transition from 1 to 5 if we resume entryg when ve less than v transition
-	//also do this regardless of phase if low-energy
 	if (entryg_internal["islect"] = 1 or entryg_internal["icntal"]) and (entryg_input["ve"] < entryg_constants["vtran"]) {
 		set entryg_internal["islect"] to 5.
 		set entryg_internal["tran5f_vtran"] to TRUE.
@@ -684,6 +680,7 @@ function eginit {
 	IF (entryg_input["ital"]) {
 		set entryg_constants["alfm"] to entryg_constants["tal_alfm"].
 		
+		
 		set entryg_constants["valp"] to entryg_constants["tal_valp"].
 		set entryg_constants["calp0"] to entryg_constants["tal_calp0"].
 		set entryg_constants["calp1"] to entryg_constants["tal_calp1"].
@@ -763,7 +760,6 @@ function egcomn {
 	set entryg_internal["rdotp"] to entryg_input["rdot"].
 	set entryg_internal["dragdot"] to (entryg_input["drag"] - entryg_internal["dragp"]) / entryg_input["dtegd"].
 	set entryg_internal["dragp"] to entryg_input["drag"].
-	
 
 	set entryg_internal["xlod"] to max(entryg_input["lod"], entryg_constants["lodmin"]).
 	
@@ -800,6 +796,30 @@ function egcomn {
 		}
 	
 	}
+	
+	//moved up from egrolcmd
+	
+	//pullout tests 
+	//refactoring
+	if (entryg_internal["irdot"]< 2) {
+		if (entryg_input["rdot"] < 0) {
+			set entryg_internal["irdot"] to 0.
+		}
+		if (entryg_input["rdot"]>0) and ((entryg_input["rdot"] > entryg_constants["rdotpo"]) or (entryg_input["ve"] < entryg_constants["vnoalp"])) {
+			set entryg_internal["irdot"] to 2.
+		}		
+	}
+	
+	//refactored calculation of eq glide boundary plus do it every time 
+	local k is entryg_constants["veeqglm"]:length - 1.
+	until (k = 0) {
+		if (entryg_input["ve"] <= entryg_constants["veeqglm"][k]) {
+			set entryg_internal["beqglm"] to max(entryg_constants["eqglm1"][k] + entryg_constants["eqglm2"][k]*entryg_input["ve"], 0).
+			break.
+		}
+		set k to k - 1.
+	}
+	
 }
 
 //vertical l/d during preentry
@@ -1138,7 +1158,7 @@ function eglodvcmd {
 	
 	//test for alpha modulation
 	if (entryg_input["ve"] < entryg_constants["vnoalp"]) {
-		//re-working of alpha modularion logic
+		//re-working of alpha modulation logic
 		//modification - no alpmod in low energy
 		set entryg_internal["ict"] to (abs(dd) > entryg_constants["ddmin"]) and (not entryg_internal["icntal"]).
 		
@@ -1214,8 +1234,8 @@ function eglodvcmd {
 	
 	set entryg_internal["lmn"] to entryg_constants["almn2"].
 	
+	//moved from above
 	local dzabs is abs(entryg_input["delaz"]).
-	
 	local dzsgn is dzabs - abs(entryg_internal["dzold"]).
 	set entryg_internal["dzold"] to entryg_input["delaz"].
 	
@@ -1282,14 +1302,14 @@ function eglodvcmd {
 		
 		//should do the roll reversal
 		//added condition on abs(delaz) plus flag to track reversal start and end
-		//added rr flag check to avoid resetting the flag immediately 
+		//added rr flag check to avoid resetting the flag immediately
 		if (not entryg_internal["rrflag"]) and (entryg_internal["dlzrl"] > 0) and (dzabs >= yl) {
 			//refactoring of roll reversal logic 
 			//outside the limits always bank towards the site 
 			// rr flag is enabled if rk2rol changes 
 			set entryg_internal["rk2rol"] to sign(entryg_input["delaz"]).
 			SET entryg_internal["rrflag"] TO (entryg_internal["rk2rlp"] * entryg_internal["rk2rol"] < 0).
-			
+	
 		} else if (entryg_internal["rrflag"]) and (dzabs < yl) {
 			SET entryg_internal["rrflag"] TO FALSE.
 			//moved it there so delaz limits are changed after the roll is complete
@@ -1306,8 +1326,6 @@ function egrolcmd {
 	 //1", cos(bank cmd), 2", cos(unlimited bank), 3", cos(ref bank)
 	local arg is list(0, entryg_internal["lodv"]/entryg_internal["xlod"], entryg_internal["lodx"]/entryg_internal["xlod"], entryg_internal["aldref"]/entryg_internal["xlod"] ).
 	
-	local rollcp1 IS entryg_internal["rollc"][1].
-	
 	FROM {local i is 1.} UNTIL i > 3 STEP {set i to i + 1.} DO { 
 		//I think this limits the bank angle to +-90?
 		if (abs(arg[i]) >= 1) {
@@ -1316,6 +1334,7 @@ function egrolcmd {
 		
 		//CAREFUL : KOS will give the arccos in degrees but the HAL-S manual says that all angles are supplied or delivered in radians
 		//we divide by deg2rad to transform it from rad to degrees so theoretically I should just remove the factor
+		//modification - rollc_i are always positive
 		set entryg_internal["rollc"][i] to ARCCOS(arg[i]).	// / entryg_constants["dtr"].
 	}
 	
@@ -1344,7 +1363,7 @@ function egrolcmd {
 	} else {
 		set entryg_internal["aclim"] to midval(entryg_constants["aclim6"] + entryg_constants["aclim7"]*entryg_input["ve"], entryg_constants["aclim2"], entryg_constants["aclim5"]).
 	}
-	
+
 	//calculate absolute roll angle limits
 	//refactored this block 
 	//modification: check if tal and above tal_verolc
@@ -1369,27 +1388,6 @@ function egrolcmd {
 		set entryg_internal["rlmndz"] to 0.
 	}
 	
-	//pullout tests 
-	//refactoring
-	if (entryg_internal["irdot"]< 2) {
-		if (entryg_input["rdot"] < 0) {
-			set entryg_internal["irdot"] to 0.
-		}
-		if (entryg_input["rdot"]>0) and ((entryg_input["rdot"] > entryg_constants["rdotpo"]) or (entryg_input["ve"] < entryg_constants["vnoalp"])) {
-			set entryg_internal["irdot"] to 2.
-		}		
-	}
-	
-	//refactored calculation of eq glide boundary plus do it every time 
-	local k is entryg_constants["veeqglm"]:length - 1.
-	until (k = 0) {
-		if (entryg_input["ve"] <= entryg_constants["veeqglm"][k]) {
-			set entryg_internal["beqglm"] to max(entryg_constants["eqglm1"][k] + entryg_constants["eqglm2"][k]*entryg_input["ve"], 0).
-			break.
-		}
-		set k to k - 1.
-	}
-	
 	//my addition: use beqglm to engage low energy logic automatically on the next pass
 	if (not entryg_internal["ileflg"]) and (entryg_internal["islect"] > 1) {
 		if (entryg_internal["beqglm"] > 0) and (entryg_internal["drefp"] < (entryg_internal["beqglm"] - entryg_constants["beqglmbs"])) {
@@ -1397,7 +1395,7 @@ function egrolcmd {
 		}
 	}
 	
-	LOCAL rollc1 IS entryg_internal["rollc"][1].
+	LOCAL rollca IS entryg_internal["rollc"][1].
 	
 	//low-energy stuff 
 	if (entryg_internal["icntal"]) {
@@ -1411,7 +1409,7 @@ function egrolcmd {
 		}
 		
 		//low energy roll cmd 
-		set rollc1 to entryg_internal["rollmn"].
+		set rollca to entryg_internal["rollmn"].
 		
 		//wle thermal alpha command - simple quadratic
 		set entryg_internal["alp_wle"] to min(entryg_constants["alpwle_c1"] + entryg_input["ve"] * (entryg_constants["alpwle_c2"] + entryg_input["ve"] * entryg_constants["alpwle_c3"]), entryg_internal["aclam"]).
@@ -1460,25 +1458,24 @@ function egrolcmd {
 			
 			//skip drag convergence checks
 		}
-		
-		//don't do these in low-energy logic 
+	
 		//my modification: limit the new roll command from above by the unlimited roll 
-		set rollc1 to MIN(rollc1, ABS(entryg_internal["rollc"][2])).
+		set rollca to MIN(rollca, entryg_internal["rollc"][2]).
 		//my modification: limit the new roll command from below by the min delaz roll
-		SET rollc1 TO MAX(rollc1, entryg_internal["rlmndz"]).
+		SET rollca TO MAX(rollca, entryg_internal["rlmndz"]).
 	}
+	
+	//my addition: fiter changes in roll cmd if they are below a threshold enough
+	local rolcmdpa is abs(entryg_internal["rolcmd"]).
+	LOCAL delrollc IS rollca - rolcmdpa.
+	IF (ABS(delrollc) < entryg_constants["drolcmdfil"]) {
+		SET rollca TO rolcmdpa + delrollc * (entryg_input["dtegd"] / entryg_constants["rolcmdfildt"]).
+	}
+	
+	set entryg_internal["rolcmd"] to midval(rollca * entryg_internal["rk2rol"], -entryg_internal["rlm"], entryg_internal["rlm"]).
 	
 	//apply pitch limits in any case
 	set entryg_internal["alpcmd"] to midval(entryg_internal["alpcmd"], entryg_internal["aclam"], entryg_internal["aclim"]).
-	
-	//my addition: fiter changes in roll cmd if they are below a threshold enough
-	LOCAL delrollc IS rollc1 - rollcp1.
-	
-	IF (ABS(delrollc) < entryg_constants["drolcmdfil"]) {
-		SET rollc1 TO rollcp1 + delrollc * (entryg_input["dtegd"] / entryg_constants["rolcmdfildt"]).
-	}
-	
-	set entryg_internal["rolcmd"] to midval(rollc1 * entryg_internal["rk2rol"], -entryg_internal["rlm"], entryg_internal["rlm"]).
 }
 
 //my addition : deflect speedbrake on a fixed mach schedule 
@@ -1488,7 +1485,7 @@ function egsbcmd {
 	PARAMETER entryg_input.
 	
 	if (entryg_internal["icntal"]) {
-		return.
+		return 0.
 	}
 	
 	if (entryg_input["ve"]  >=  entryg_constants["vsbsw"]) {
