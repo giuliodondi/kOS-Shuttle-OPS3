@@ -1054,7 +1054,7 @@ FUNCTION tgcomp {
 	
 	//my modification: est is calculated given derivative of the eow error
 	//SET taemg_internal["est"] TO taemg_internal["en"] + taemg_constants["est_gain"] * (taemg_internal["es"] - taemg_internal["en"]).
-	SET taemg_internal["est"] TO midval(taemg_internal["en"] - taemg_constants["est_t"] * taemg_internal["deowerr"], taemg_internal["en"], taemg_internal["es"]).
+	SET taemg_internal["est"] TO max(taemg_internal["en"] - taemg_constants["est_t"] * taemg_internal["deowerr"], taemg_internal["en"]).
 	
 	//my modification - emoh is emep biased
 	//set taemg_internal["emoh"] to  taemg_constants["emohc1"][taemg_internal["igs"]] + taemg_constants["emohc2"][taemg_internal["igs"]] * taemg_internal["drpred"].
