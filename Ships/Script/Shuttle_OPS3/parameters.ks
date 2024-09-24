@@ -3,7 +3,7 @@
 //general parameters to control main executive
 
 GLOBAL ops3_parameters is LEXICON(
-					"full_debug", true,	//will dump the input and internal lexicons of entryg and taemg separately, in imperial units, and print dap data
+					"full_debug", false,	//will dump the input and internal lexicons of entryg and taemg separately, in imperial units, and print dap data
 					"atmalt",140000,
 					"interfalt",122000,
 					"xlfac_trim_on", 2.5,		//ft/s load factor to enable flap trimming
