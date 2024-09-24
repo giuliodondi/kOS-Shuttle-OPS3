@@ -716,7 +716,7 @@ function update_entry_traj_disp {
 	local vel_ is gui_data["ve"].
 
 	//check if we shoudl update entry traj counter 
-	if (entry_traj_disp_counter = 1 and vel_ <= 5181) {
+	if (entry_traj_disp_counter = 1 and vel_ <= 5290) {
 		increment_entry_entry_traj_disp_counter().
 	} else if (entry_traj_disp_counter = 2 and vel_ <= 4267) {
 		increment_entry_entry_traj_disp_counter().
@@ -943,6 +943,7 @@ function traj_disp_trail_handler_fac {
 	local this is lexicon().
 
 	this:add("last_update", TIMe:SECONDs).
+	this:add("force_update", FALSE).
 	this:add("update_interval", 25).
 	
 	this:add("num_points", 6).
@@ -953,10 +954,11 @@ function traj_disp_trail_handler_fac {
 		parameter ve.
 		parameter drag.
 		
-		if (time_ < (this:last_update + this:update_interval)) {
+		if (time_ < (this:last_update + this:update_interval)) and (NOT this:force_update) {
 			return.
 		}
 		
+		set this:force_update to false.
 		set this:last_update to time_.
 		
 		this:traj_points:push(lexicon("drag", drag, "ve", ve)).
@@ -980,6 +982,7 @@ function traj_disp_trail_handler_fac {
 	
 	this:add("reset", {
 		set this:traj_points to fixed_list_factory(this:num_points).
+		set this:force_update to true.
 	}).
 
 	return this.
