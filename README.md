@@ -185,8 +185,8 @@ Both the corridor and the profiles are defined as curves in the velocity-drag pr
 <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/drag_vel.png" width="800">
 
 In this plot, the Shuttle will move from left to right along the drag profile curves, and hopefully stay within the corridor boundaries:
-- The top curve is the _high drag_ or _hard_ limit. This is the envelope of all constraints the Shuttle is subject to (thermal, load factor, dynamic pressure). If the boundary is crossed, it doesn't mean instant death, but rather there is no guarantee that nothing catastrophic will happen
-- The bottom curve is the _low drag_ or _soft_ limit. The Shuttle only crosses this when it's in a low energy condition, nothing catastrophic will happen but the Shuttle might not make TAEM Interface with the proper energy
+- The top curve is the _high drag_ boundary. This is the envelope of all constraints the Shuttle is subject to (thermal, load factor, dynamic pressure). If the boundary is crossed, you're in danger of overheating or over-G-ing the Orbiter, but you will see overheating even before approaching this hard limit
+- The bottom curve is the _low drag_ boundary. It's actually the lower **equilibrium glide** boundary, the lowest drag at which you can generate at least enough vertical lift to control your descent. It's the lowest drag that you can achieve and keep stable control of
   
 The central curves instead show the _drag profile_. This is a piecewise curve made of several segments, each of which is tied to the **Phase** of the Entry guidance algorithm. The algorithm will adjust the current segment of the drag profile to try to bring the Shuttle back on profile , which is why you see three profile lines all converging to the same profile curve at the end.
 
@@ -206,10 +206,11 @@ The central plot is a little involved:
 - Drag is not on the horizontal, instead the dashed lines act as markers of the drag values. The corresponding drag value is written at the top (in ft/s^2)
 - The bundle of straight lines dislays the reentry corridor:  
   - The lines are approximately the same velocity-drag lines as the plot above
-  - The top-left line is always the high-drag line, the bottom-right is the low-drag line
+  - The top-left line is always the high-drag line, the bottom-right is the low-energy line
   - The reference profile is the centre-most line, TRAJ 1 and 2 have multiple reference curves to mark typical situations
 - The Shuttle bug will invariably move from top-right to bottom-left as it makes its way through the reentry corridor
 - The square box below the bug is the Drag error indicator, it follows the bug down the screen and is placed left or right based on the reference drag value. If it's to the left of the bug, it means that Guidance would like you to have more drag than the current value
+- the triangles show the drag-velocity history every 25 seconds, it's useful to predict the trend on the TRAJ display
 
 The other data printouts display useful information:
 - Top left you have a bunch of aerodynamic data:
@@ -267,7 +268,11 @@ Once the drag error becomes small enough, guidance will command a large roll, to
 
 ## Low-energy reentry guidance 
 
-### Not implemented yet
+Think back at the lower equilibrium glide boundary on the TRAJ displays. To keep stable control of drag and rate of descent, you need to generate at least enough lift to balance gravity and centrifugal force. But if you're so low on energy that your desired drag is less than the equilibrium glide boundary, even if you reach that drag value you can't keep it stable there, as you'll soon fall back down towards higher drag.
+
+In that case, you'll see a yellow **LO ENERGY** message in the left side of the display. Guidance will stretch your glide by exciting a phugoid trajectory, to try to keep you aloft as long as possible and minimise drag all the while keeping a small bank angle to reduce crossrange. Pitch will rise at the bottom of every phugoid to protect against heat and then lower at the top of the phugoid to minimise drag. This is a passive form of drag control and thus there is **no guarantee that you will reach your target**.
+
+Low energy guidance usually kicks in in a 2- or 3-engine-out TAL abort when desired drag is too low. If you manage to make it far enough, desired drag will rise above the equilibrium glide limit and low-energy will take you back to a nominal condition and then disengage itself.
 
 </details>
 
