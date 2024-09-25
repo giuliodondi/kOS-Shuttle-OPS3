@@ -294,9 +294,9 @@ global entryg_constants is lexicon (
 									"dzbias", 8,		//° Low–energy logic: DELAZ value for range biasing
 									"dzfdel", 0.003,	//1/s Low–energy logic: constant for  DZFCTR increment / decrement
 									"beqglmbs", 1,		//ft/s2 bias for beqglm check
-									"eqglm1", list(0, 46.341, 26.129, 8.1893),		//ft/s2 beqglm const terms
-									"eqglm2", list(0, -0.0019, -0.0008, 0.0013),		//ft/s2 beqglm linear terms
-									"veeqglm", list(0, 30000, 18375, 8543),		//ft/s2 ve to switch beqglm segments
+									"eqglm1", list(0, 43.688, 24.629, 12.054),		//ft/s2 beqglm const terms
+									"eqglm2", list(0, -0.0018, -0.0008, 0.0009),		//ft/s2 beqglm linear terms
+									"veeqglm", list(0, 30000, 19059, 7397),		//ft/s2 ve to switch beqglm segments
 									"cnvtst", 0.5,		//° Low–energy logic: alpha profile convergence test criterion
 									"rdotpo", 200,		//ft/s Low–energy logic: pullout altitude rate
 									"dlzdb1", 5,		//° Low–energy logic: delaz limit for zero roll if delaz increasing
