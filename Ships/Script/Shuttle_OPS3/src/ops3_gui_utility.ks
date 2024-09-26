@@ -716,9 +716,9 @@ function update_entry_traj_disp {
 	local vel_ is gui_data["ve"].
 
 	//check if we shoudl update entry traj counter 
-	if (entry_traj_disp_counter = 1 and vel_ <= 5290) {
+	if (entry_traj_disp_counter = 1 and vel_ <= 5350) {
 		increment_entry_entry_traj_disp_counter().
-	} else if (entry_traj_disp_counter = 2 and vel_ <= 4267) {
+	} else if (entry_traj_disp_counter = 2 and vel_ <= 4130) {
 		increment_entry_entry_traj_disp_counter().
 	} else if (entry_traj_disp_counter = 3 and vel_ <= 3200) {
 		increment_entry_entry_traj_disp_counter().
@@ -892,12 +892,14 @@ function entry_traj_disp_x_convert {
 	LOCAL drag2 IS drag * drag.
 	LOCAL vel2 IS vel * vel.
 	LOCAL vel3 IS vel2 * vel.
+	LOCAL vel4 IS vel3 * vel.
 	LOCAL drag3 IS drag2 * drag.
+	LOCAL drag4 IS drag3 * drag.
 	
 	if (entry_traj_disp_counter=1) {
 	
-		set out to   -301.03675017070697 + 0.33855815734271033 * vel  + -60.60824776780207  * drag + -4.9417386634200165e-05 * vel2  + 0.005476770758642946 * vel * drag + 1.2917463262414464  * drag2 + 2.5832897487809703e-09 * vel3  + -2.410334538332365e-07 * vel2 * drag + -3.310567076068448e-05 * vel * drag2 + -0.010890925126885411  * drag3.
-
+		set out to  -1190.7722620452096 + 0.0027024518826268907 * vel + 0.00538534434606765 * drag + 0.00018940081380127688 * vel2 + -0.017375478134632874 * vel * drag + 1.670707347968436 * drag2 + -3.411002979625118e-08 * vel3 + 2.0606713082751634e-06 * vel2 * drag + 3.733259732113594e-05 * vel * drag2 + -0.03105872441790243 * drag3 + 1.7322311120226974e-12 * vel4 + -5.7356708483880013e-11 * vel3 * drag + -8.52549424146499e-09 * vel2 * drag2 + 7.781200108707383e-07 * vel * drag3 + 0.00015708749158866602 * drag4.
+    
 	} else if (entry_traj_disp_counter=2) {
 		set out to  970.513742174761 + -0.30813459772818946 * vel  + -66.35018132660345  * drag + 6.925641359197617e-05 * vel2  + 0.00997745210980331 * vel * drag + 1.1326690671636324  * drag2 + -4.884222304379904e-09 * vel3  + -1.5918695213563983e-08 * vel2 * drag + -0.0001355676362552841 * vel * drag2 + -0.005495955515423207  * drag3.
 
@@ -922,7 +924,7 @@ function entry_traj_disp_y_convert {
 	local out is 0.
 	
 	if (entry_traj_disp_counter=1) {
-		set out to ( 0.00036 * vel - 1.85197).
+		set out to ( -4.9952 + vel*(0.0013 - 7e-08*vel)).
 	} else if (entry_traj_disp_counter=2) {
 		set out to (0.0007300919 * vel - 2.92849015317).
 	} else if (entry_traj_disp_counter=3) {
