@@ -95,7 +95,8 @@ FUNCTION entryg_wrapper {
 global entryg_constants is lexicon (
 									"aclam1", 9.59,	//deg
 									"aclam2", 3.3e-3,	//deg / (ft/s)
-									"aclim1", 37,	//deg
+									"aclam3", 55,	//deg / (ft/s)
+									"aclim1", 35,	//deg
 									"aclim2", 25,	//deg
 									"aclim3", -18.5,	//deg
 									"aclim4", 2.5e-3,	//deg / (ft/s)
@@ -185,7 +186,7 @@ global entryg_constants is lexicon (
 									//"df", 21.0,	//ft/s2 final drag in transition phase	STS-1
 									"df", 19.09,	//ft/s2 final drag in transition phase	STS-1
 									"dlallm", 43,	//deg max constant
-									"dlaplm", 2,		//deg delalp lim
+									"dlaplm", 3,		//deg delalp lim
 									"dlrdotl", 150,		//ft/s???? clamp value for rdot feedback 
 									"d23c", 15.5,	//ft/s2 etg canned d23
 									"d230", 15.5,	//ft/s2 initial d23 value
@@ -1357,7 +1358,7 @@ function egrolcmd {
 	}
 	
 	//calculate absolute pitch limits 
-	set entryg_internal["aclam"] to min(entryg_constants["dlallm"], entryg_constants["aclam1"] + entryg_constants["aclam2"]*entryg_input["ve"]).
+	set entryg_internal["aclam"] to min(entryg_constants["aclam3"], entryg_constants["aclam1"] + entryg_constants["aclam2"]*entryg_input["ve"]).
 	if (entryg_input["ve"] >= entryg_constants["vaclim"]) {
 		set entryg_internal["aclim"] to midval(entryg_constants["aclim3"] + entryg_constants["aclim4"]*entryg_input["ve"], entryg_constants["aclim1"], entryg_constants["aclim2"]).
 	} else {
@@ -1412,7 +1413,7 @@ function egrolcmd {
 		set rollca to entryg_internal["rollmn"].
 		
 		//wle thermal alpha command - simple quadratic
-		set entryg_internal["alp_wle"] to min(entryg_constants["alpwle_c1"] + entryg_input["ve"] * (entryg_constants["alpwle_c2"] + entryg_input["ve"] * entryg_constants["alpwle_c3"]), entryg_internal["aclam"]).
+		set entryg_internal["alp_wle"] to min(entryg_constants["alpwle_c1"] + entryg_input["ve"] * (entryg_constants["alpwle_c2"] + entryg_input["ve"] * entryg_constants["alpwle_c3"]), entryg_constants["dlallm"]).
 	
 		if (entryg_internal["irdot"] < 2) {
 			//alpha cmd for initial pullout
