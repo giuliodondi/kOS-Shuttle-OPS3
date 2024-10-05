@@ -494,6 +494,7 @@ global taemg_constants is lexicon (
 								
 									//ecal stuff
 									"phistn", 60,		//° ecal sturn roll lim
+									"phiecal", 45,		//° ecal normal roll lim
 									"dphislp", 3.125,		//° slope of dpsaclmt vs mach
 									"dphiint", 5,		//° intercept of dpsaclmt vs mach
 									"dpsaclmt_max", 30, 	//° max val of dpsaclmt
@@ -1758,7 +1759,11 @@ function grtrn {
 	
 		//my addition: phi limits 
 		if (taemg_internal["ecal_flag"]) {
-			set taemg_internal["philim"] to taemg_constants["phistn"].
+			if (taemg_internal["istp4"] = 0) {
+				set taemg_internal["philim"] to taemg_constants["phistn"].
+			} else if (taemg_internal["istp4"] = 1) {
+				set taemg_internal["philim"] to taemg_constants["phiecal"].
+			}
 		} else {
 			set taemg_internal["philim"] to taemg_constants["grphilm"].
 		}
@@ -1804,7 +1809,7 @@ function grnzc {
 		set taemg_internal["smnz1"] to taemg_internal["smnz1"] * (taemg_constants["smnzc3a"]^taemg_input["dtg"]).
 		set taemg_internal["smnz2"] to MAX(taemg_internal["smnz2"] - (taemg_constants["smnzc4a"] * taemg_input["dtg"]), taemg_constants["smnz2la"]).
 		//start ramping down if we're climbing
-		if (taemg_input["hdot"] >= 0) {
+		if (taemg_internal["igrpo"]) {
 			set taemg_internal["smnz3"] to taemg_internal["smnz3"] + (taemg_constants["smnzc5a"]*taemg_input["dtg"]).
 		}
 	} else {
@@ -1905,32 +1910,33 @@ function grsbc {
 		return.
 	}
 	
+	local dsbc is 0.
+	
 	local grsbl1 is taemg_constants["grsbl1"].
 	local grsbl2 is taemg_constants["grsbl2"].
 	
 	//skip contingency speedbrake checks
 	if (taemg_internal["cont_flag"])  {
-		if (taemg_internal["iphase"] > 5) {
-			set grsbl1 to 0.
-			set grsbl2 to 0.
-		} else {
-			set grsbl1 to taemg_constants["grsbl1a"].
-			set grsbl2 to taemg_constants["grsbl1a"].
-		}
+		set grsbl1 to taemg_constants["grsbl1a"].
+		set grsbl2 to taemg_constants["grsbl1a"].
 	}
 	
-	set taemg_internal["dsbc_at1"] to taemg_internal["dsbc_at1"] + taemg_constants["del1sb"].
+	set taemg_internal["dsbc_at1"] to taemg_internal["dsbc_at1"] + taemg_constants["del1sb"] * taemg_input["dtg"].
 	local dsbc_at2 is midval(taemg_constants["machsbs"] * taemg_input["mach"] + taemg_constants["machsbi"], grsbl1, grsbl2).
+	set dsbc to min(taemg_internal["dsbc_at1"], dsbc_at2).
 	
 	//modification: low-energy speedbrake logic borrowed from taem 
 	if (taemg_internal["iphase"] = 4) {
 		LOCAL delta_emep IS ABS(taemg_internal["en"] - taemg_internal["emep"]).
 		IF (taemg_internal["eowerror"] < -delta_emep) {
-			set taemg_internal["dsbc_at"] to 0.
+			set dsbc to 0.
 		}
-	} else {
-		set taemg_internal["dsbc_at"] to min(taemg_internal["dsbc_at1"], dsbc_at2).
-	}	
+	}
+	
+	// my addition - limit deflection rate 
+	local dsbc_delta is dsbc - taemg_internal["dsbc_at"].
+	set dsbc_delta to SIGN(dsbc_delta) * min(abs(dsbc_delta), taemg_constants["dsbdtg"] * taemg_input["dtg"]).
+	set taemg_internal["dsbc_at"] to taemg_internal["dsbc_at"] + dsbc_delta.
 }
 
 //grtls lateral guidance 
@@ -2001,7 +2007,8 @@ function grphic {
 	//skip ecal bank protection logic
 	
 	//my addition: override bank angle if contingency and before alptran 
-	if taemg_internal["cont_flag"] and (taemg_internal["iphase"] > 4) {
+	// modification: override also based on g
+	if taemg_internal["cont_flag"] and ((taemg_internal["iphase"] > 4) or (taemg_input["xlfac"] > taemg_constants["nztotallim"])) {
 	
 		local ysgn_ is sign(taemg_internal["phic"]).
 		
