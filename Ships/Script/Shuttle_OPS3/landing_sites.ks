@@ -112,6 +112,12 @@ GLOBAL ldgsiteslex IS LEXICON(
 							"length",3768.36,
 							"heading",305.95
 							
+						),
+						"Gander",LEXICON(
+							"position",LATLNG(48.943469,-54.561448),
+							"elevation",150.4,
+							"length",3769.29,
+							"heading",190.03
 						)
 						
 ).
