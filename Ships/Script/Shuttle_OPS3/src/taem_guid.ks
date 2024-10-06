@@ -94,7 +94,8 @@ FUNCTION taemg_wrapper {
 	
 	tgexec(tg_input).
 	
-	if (taemg_input["debug"]) {
+	//don't dump close to flare bc it slows down the program too much
+	if (taemg_input["debug"]) and (taemg_internal["p_mode"] < 3) {
 		taemg_dump(tg_input, dump_overwrite).
 	}
 	
