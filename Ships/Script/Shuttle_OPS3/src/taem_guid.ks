@@ -457,7 +457,7 @@ global taemg_constants is lexicon (
 									"grpsstrn", 1000,		//° pshac limit for s-turns, high so that s-turns are always performed
 									"gralpll", 10,			//° lower aoa for grtls alprec and nzhold
 									"grphilm", 45,			//° roll limit for grtls
-									"grgphi", 2, 		// grtls heading err gain for phic 
+									"grgphi", 2.2, 		// grtls heading err gain for phic 
 									
 									//contingency stuff 
 									
@@ -491,6 +491,7 @@ global taemg_constants is lexicon (
 									"macheowlo", 0.95,		//	mach at which to enable eowlo override
 									"grsbl1a", 40,			//upper contingency speedbrake limit
 									"mswa", 0.7,		// mach to force transition out of alptran
+									"grnzphicgn", 1.5,		//gain on excessive g for roll protection
 								
 									//ecal stuff
 									"phistn", 60,		//° ecal sturn roll lim
@@ -1546,7 +1547,7 @@ FUNCTION tgsbc {
 	//supersonic speedbrake cmd
 	if (taemg_input["mach"] > taemg_constants["dsbcm"]) {
 		set dsbc to  taemg_constants["dsbsup"].
-	} else {
+	} else { 
 
 		local dsbe is taemg_constants["gsbe"] * taemg_internal["qberr"].
 		
@@ -1740,7 +1741,7 @@ function grtrn {
 		//my addition: add g-based check
 		// my addition: in contingency transition if delaz is decreasing
 		if (taemg_input["xlfac"] <= taemg_constants["nztotallim"]) 
-			and ((taemg_internal["cont_flag"] and taemg_internal["idpsacdec"] and taemg_input["hdot"] > taemg_constants["hdtrna"])
+			and ((taemg_internal["cont_flag"] and taemg_input["hdot"] > taemg_constants["hdtrna"])
 				or ((NOT taemg_internal["cont_flag"]) 
 					and (taemg_internal["igrpo"]	or (taemg_input["hdot"] > taemg_constants["hdtrn"] and taemg_input["alpha"] >= taemg_internal["gralpr"])
 					)
@@ -2003,20 +2004,21 @@ function grphic {
 	}
 	
 	//roll commands refactored above 
-	
-	//skip ecal bank protection logic
-	
-	//my addition: override bank angle if contingency and before alptran 
-	// modification: override also based on g
-	if taemg_internal["cont_flag"] and ((taemg_internal["iphase"] > 4) or (taemg_input["xlfac"] > taemg_constants["nztotallim"])) {
-	
+
+	//my addition: contingency bank protection
+	if taemg_internal["cont_flag"] {
 		local ysgn_ is sign(taemg_internal["phic"]).
-		
 		if (abs(taemg_internal["dpsac"]) >= taemg_constants["grdpsacsgn"]) {
 			set ysgn_ to taemg_constants["grphisgn"].
 		}
 		
-		set taemg_internal["phic"] to ysgn_ * MAX(taemg_constants["grphihdi"] + taemg_constants["grphihds"] * taemg_input["hdot"], 0).
+		//hdot-based during nzhold, g-based during alptran
+		if (taemg_internal["iphase"] > 4) {
+			set taemg_internal["phic"] to ysgn_ * MAX(taemg_constants["grphihdi"] + taemg_constants["grphihds"] * taemg_input["hdot"], 0).	
+		} else {
+			local nzrolgn is  max(taemg_constants["grnzphicgn"] * abs(taemg_input["xlfac"]/taemg_constants["nztotallim"]), 1).
+			set taemg_internal["phic"] to ysgn_ * abs(taemg_internal["phic"]) / nzrolgn.
+		}
 	}
 	
 	set taemg_internal["phic_at"] to midval ( taemg_internal["phic"], -taemg_internal["philim"], taemg_internal["philim"]).
