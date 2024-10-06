@@ -449,6 +449,10 @@ FUNCTION fixed_list_factory {
 			"list", LIST()
 	).
 	
+	this:add("list_deep_copy", {
+		return this:list:copy.
+	}).
+	
 	this:add(
 			"maxlength", len
 	).
@@ -521,18 +525,17 @@ FUNCTION average_value_factory {
 		
 		local avg is 0.
 		
-		local values is this:list:list.
-		local len is values:length.
+		local values_ is this:list:list_deep_copy().
+		local len is values_:length.
 		
 		if (len=0) {return 0.}
 		
-		for v in values {
+		for v in values_ {
 			set avg to avg + v.
 		}
 		
 		return avg/len.
-	}
-	).
+	}).
 	
 	this:add("latest_value", 0).
 
