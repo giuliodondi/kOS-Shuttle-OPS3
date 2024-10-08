@@ -477,11 +477,11 @@ global taemg_constants is lexicon (
 									"alprecu", 42,	//° contingency alprec max
 									"smnzc1a", 0.13,		//gs initial value of smnz1
 									"smnzc2a", 1.8,		//gs initial value of smnz2
-									"smnzc3a", 0.7314,		//coefficient for smnz1
-									"smnzc4a", 0.1,		//gs constant nz value for computing smnz2
+									"smnzc3a", 0.8314,		//coefficient for smnz1
+									"smnzc4a", 0.35,		//gs constant nz value for computing smnz2
 									"smnzc5a", 0.065,		//gs coefficient for smnz3
 									"smnz2la", -0.5,
-									"grnzc1a", 2.9,		//gs desired normal accel for nz hold 
+									"grnzc1a", 3.5,		//gs desired normal accel for nz hold 
 									"nzsw1a", 1,		//gs initial value of nzsw	//taem paper
 									"grphihds", 0.017,		//°/(ft/s) 	linear term for phi as a function of hdot
 									"grphihdi", 20,		//°  	const term for phi as a function of hdot
@@ -724,10 +724,15 @@ function tgexec {
 	
 	gtp(taemg_input).
 	
-	if (taemg_internal["iphase"] >= 4) {
+	if (taemg_internal["grtls_flag"]) {
 		
 		//refactoring of this block to remove call to tgnzc
 		grtrn(taemg_input).
+		
+		//my addition - when grtrn resets iphase, exir immediately so that nothing is corrupted
+		if (not taemg_internal["grtls_flag"]) {
+			return.
+		}
 
 		tgcomp(taemg_input).
 
@@ -2014,12 +2019,15 @@ function grphic {
 		}
 		
 		//hdot-based during nzhold, g-based during alptran
+		local phic1 is 0.
 		if (taemg_internal["iphase"] > 4) {
-			set taemg_internal["phic"] to ysgn_ * MAX(taemg_constants["grphihdi"] + taemg_constants["grphihds"] * taemg_input["hdot"], 0).	
+			set phic1 to MAX(taemg_constants["grphihdi"] + taemg_constants["grphihds"] * taemg_input["hdot"], 0).	
 		} else {
 			local nzrolgn is  max(taemg_constants["grnzphicgn"] * abs(taemg_input["xlfac"]/taemg_constants["nztotallim"]), 1).
-			set taemg_internal["phic"] to ysgn_ * abs(taemg_internal["phic"]) / nzrolgn.
+			set phic1 to abs(taemg_internal["phic"]) / nzrolgn.
 		}
+		//don-t roll more than the delaz roll
+		set taemg_internal["phic"] to ysgn_ * min(phic1, abs(taemg_constants["grgphi"] * taemg_internal["dpsac"])).
 	}
 	
 	set taemg_internal["phic_at"] to midval ( taemg_internal["phic"], -taemg_internal["philim"], taemg_internal["philim"]).
