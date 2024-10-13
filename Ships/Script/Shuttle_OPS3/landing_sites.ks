@@ -93,10 +93,10 @@ GLOBAL ldgsiteslex IS LEXICON(
 							
 						),
 						"Bermuda",LEXICON(
-							"position",LATLNG(32.362764,-64.687587),
-							"elevation",28.4,
-							"length",3009.64,
-							"heading",287.41
+							"position",LATLNG(32.354593,-64.684681),
+							"elevation",15,
+							"length",3025.9,
+							"heading",287.44
 							
 						),
 						"Cherry Pt",LEXICON(
