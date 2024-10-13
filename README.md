@@ -394,14 +394,22 @@ The mode is used during a 2EO or 3EO contingency entry, again as called by OPS1.
 - In a contingency, the lower aoa limit can be hit. The Orbiter is not allowed to lower pitch further which causes high Gs and pitch oscillations
 - To ramp down the contingency G curve gently, pitch actually starts to raise slightly after peak Gs. By this time the orbiter is in a phugoid
 - The latter parts of the plot ALPTRN show a flat G-forces curve in a normal GRTLS indicative of a stable glide
-- in a contingency, G-forces have an inverted curve which is indicative of the phugoid. The phugoid is followed by a second plunge and pullout, which is gentler and can be handled by ALPTRN
+- in a contingency, G-forces have an inverted curve which is indicative of the phugoid. The phugoid is followed by a second plunge and pullout
 
 Other things only pertaining to contingency:  
-- The speedbrake is set to a lower limit
-- The Orbiter will start banking gently during the pullout to a maximum of 20°
-- **The bank will always be to the LEFT** because in a contingency this will always bring the Orbiter closer to land, both for KSC and Vandenberg launches
+- The speedbrake is set to a lower limit because at hypersonic speeds it can decrease yaw authority
+- The Orbiter will start banking gently during the pullout to a maximum of 35°
 - The transition from NZHOLD to ALPTRN happens when Gs are low enough and delaz to whichever targeted site is decreasing
+- Roll is limited during the APTRN phugoids to prevent the Orbiter from sinking too much when G-forces are building up
 - The transition from ALPTRN to regular TAEM guidance happens when the Orbiter is descending and moving towards the target site instead of away from it
+
+## ECAL contingency aborts
+
+ECAL abort guidance is the same as contignency GRTLS guidance but, instead of trying to survive the pullout and then glide stably for a bailout, it applies some additional logic to do energy management to try to reach the contingency runway:
+
+- During ALPTRN, iF the energy is high the program will pitch down to get more drag, if it's low it will bias pitch up to try to stay at low drag and extend the glide
+- S-turn logic does not work like regular TAEM but instead more like Entry guidance roll reversals, turning left and right within a delaz deadband until the energy state is good 
+
 
 </details>
 
