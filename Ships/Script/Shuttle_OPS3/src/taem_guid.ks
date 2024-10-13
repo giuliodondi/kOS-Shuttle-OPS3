@@ -2026,8 +2026,8 @@ function grphic {
 			local nzrolgn is  max(taemg_constants["grnzphicgn"] * abs(taemg_input["xlfac"]/taemg_constants["nztotallim"]), 1).
 			set phic1 to abs(taemg_internal["phic"]) / nzrolgn.
 		}
-		//don-t roll more than the delaz roll
-		set taemg_internal["phic"] to ysgn_ * min(phic1, abs(taemg_constants["grgphi"] * taemg_internal["dpsac"])).
+		//don-t roll more than the nominal roll cmd
+		set taemg_internal["phic"] to ysgn_ * min(phic1, abs(taemg_internal["phic"])).
 	}
 	
 	set taemg_internal["phic_at"] to midval ( taemg_internal["phic"], -taemg_internal["philim"], taemg_internal["philim"]).
