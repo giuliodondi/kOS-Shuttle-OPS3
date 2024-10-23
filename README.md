@@ -9,7 +9,7 @@
 </p>
 
 This is the kOS implementation of the real-world Shuttle Entry, TAEM and Approach guidance, also including GRTLS guidance.  
-Only designed for use in KSP with full RSS - Realism Overhaul andm y fork of Space Shuttle System
+Only designed for use in KSP with full RSS - Realism Overhaul and my fork of Space Shuttle System
 
 ## References
 - [MCC level C formulation requirements. Entry guidance and entry autopilot, optional TAEM targeting](https://ntrs.nasa.gov/api/citations/19800016873/downloads/19800016873.pdf)
@@ -52,10 +52,12 @@ In particular, you will have several scripts to run:
 # Setup
 
 ## Runways
-First, you need to place runways to land on. Use KK to place them wherever you like, or use my fork of STS Locations to have my own Shuttle sites across the globe.  
+First, you need to place runways to land on. They need to be at least 3km long or 1.5 times the stock Kerbal level-3 runway, better if it's 3.5+km.
+Use KK to place them wherever you like, or use my fork of STS Locations to have my own Shuttle sites across the globe. 
 
-**You will need to measure the runway manually in either case.** This is because the exact placement and altitude depends on your terrain map which is likely different from mine.  
-There is a helper script in the main kOS root **measurerwy.ks** just for that. Here is how you use it:  
+### YOU NEED TO MEASURE THE RUNWAY DATA BY HAND, or the autoland might screw up
+
+You can do it using the helper script in the main kOS root **measurerwy.ks**. Here is how you use it:  
 - spawn on the runway you want to measure in some kind of rover or wheeled vehicle
 - drive to the near edge behind you, exactly on the runway centerline
 - run the script and press Action Group 9
@@ -204,7 +206,7 @@ Since the velocity-drag profiles are important, they are visualised at a glance 
 The central plot is a little involved:
 - Velocity is on the vertical, decreasing going down the plot
 - Drag is not on the horizontal, instead the dashed lines act as markers of the drag values. The corresponding drag value is written at the top (in ft/s^2)
-- The bundle of straight lines dislays the reentry corridor:  
+- The bundle of straight lines displays the reentry corridor:  
   - The lines are approximately the same velocity-drag lines as the plot above
   - The top-left line is always the high-drag line, the bottom-right is the low-energy line
   - The reference profile is the centre-most line, TRAJ 1 and 2 have multiple reference curves to mark typical situations
@@ -247,9 +249,8 @@ Some remarks:
 - The aerodynamics of the Shuttle in KSP are close but not exactly like in real life. The biggest difference is during the Transition phase, which is usually entered high on energy. Guidance will consistently command high drag but the Shuttle never seems to reach it. In any case, ranging works fine
 - The Angle of Attack profile is 40° at Entry Interface, ramping down to 30° by Mach 18, and then ramping down again from Mach 8.
   - In reality the Shuttle used 40° fixed until the rampdown at Mach 12. Technical documents show that the 40/30 profile was suggested for high-crossrange missions such as the 3B once-around mission out of Vandenberg, which is why I chose it
-- If Speedbrakes are set to Auto, they will open at Mach 3.8
-  - In real life they would open at Mach 10 to help with trimming. I saw that this generates too much drag in KSP
-  - If you want manual speedbrakes, I suggest to leave them closed until about Mach 3 and then open them about 2/3 before TAEM
+- If Speedbrakes are set to Auto, they will start opening at Mach 10
+  - unless Low Energy logic is in effect, in which case they stay closed. More on low energy later
 - Flying CSS is tricky because Guidance will comand continuous corrections of bank angle to track the drag profile. In particular, it will overbank right after a roll reversal to counter the extra lift gained. **You MUST be focussed closely on the HUD and follow the commands if you fly CSS**
 
 </details>
@@ -332,7 +333,7 @@ The TAEM displays are **VERT SIT** and show the energy situation against distanc
 Finally, this is the Vert Sit display in various low energy situations:
 - The yellow **MEP** indicator instead of the green NEP means the program is shortening the approach to save energy
 - The yellow **OTT ST IN** message means the program is asking to switch to Straight-In to save even more energy: **YOU NEED TO DO THIS MANUALLY**
-- The red **LO ENERGY** message means the program has given up on following the vertical profile and you won't make the runway: **YOU MUST TAKE CSS OR BAILOUT**
+- The red **LO ENERGY** message means the program has given up on following the vertical profile and you won't make the runway: **YOU MUST BAILOUT OR TAKE CSS AND LAND MANUALLY**
  
 
 Remarks:
@@ -399,7 +400,7 @@ The mode is used during a 2EO or 3EO contingency entry, again as called by OPS1.
 Other things only pertaining to contingency:  
 - The speedbrake is set to a lower limit because at hypersonic speeds it can decrease yaw authority
 - The Orbiter will start banking gently during the pullout to a maximum of 35°
-- The transition from NZHOLD to ALPTRN happens when Gs are low enough and delaz to whichever targeted site is decreasing
+- The transition from NZHOLD to ALPTRN happens when Gs are low enough and vertical speed is under control
 - Roll is limited during the APTRN phugoids to prevent the Orbiter from sinking too much when G-forces are building up
 - The transition from ALPTRN to regular TAEM guidance happens when the Orbiter is descending and moving towards the target site instead of away from it
 
@@ -408,7 +409,8 @@ Other things only pertaining to contingency:
 ECAL abort guidance is the same as contignency GRTLS guidance but, instead of trying to survive the pullout and then glide stably for a bailout, it applies some additional logic to do energy management to try to reach the contingency runway:
 
 - During ALPTRN, iF the energy is high the program will pitch down to get more drag, if it's low it will bias pitch up to try to stay at low drag and extend the glide
-- S-turn logic does not work like regular TAEM but instead more like Entry guidance roll reversals, turning left and right within a delaz deadband until the energy state is good 
+- S-turn logic does not work like regular TAEM but instead more like Entry guidance roll reversals, setting a maximum bank angle of 60° and turning left and right within a delaz deadband until the energy state is good
+  - once again, bank angle is modulated as a function of the G-forces to avoid sinking too much during a phugoid pullout
 
 
 </details>
@@ -435,7 +437,9 @@ The HUD will change to let you know you reached certain checkpoints:
 - 1500m above the runway there is a checkpoint that forces guidance from Capture into Outer Glideslope mode even if the errors are not small by then. You will notice because flap trim, vertical speed and distance will all disappear from the HUD, and altitude will be displayed in a finer format
 - During final flare, the guidance pipper disappears. If you're flying CSS, guide yourself relative to the runway
 
-Speed-wise, the Orbiter should be at around 180 m/s at the start of A/L, slow down in a controlled manner to about 145 m/s at the start of the flare, complete the flare around 120m/s and decelerating and touchdown between 90 and 80 m/s. If the dap is on AUTO, there will be some oscillations during Final Flare as it attempts to stabilise the vertical speed, I still haven't been able to dampen these out reliably 
+Speed-wise, the Orbiter should be at around 180 m/s at the start of A/L, slow down in a controlled manner to about 145 m/s at the start of the flare, complete the flare around 120m/s and decelerating and touchdown between 90 and 80 m/s. 
+
+**The Final Flare guidance has a tendency to float on the runway.** This is to try to accomodate for dispersions after the main flare and avoid a hard landing. This might be a problem during an autoland if the runway is particularly short.
 
 
 </details>
