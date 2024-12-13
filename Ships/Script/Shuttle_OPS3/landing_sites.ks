@@ -86,10 +86,10 @@ GLOBAL ldgsiteslex IS LEXICON(
 							
 						),
 						"Hao",LEXICON(
-							"position",LATLNG(-17.743215,-140.643975),
-							"elevation",28.1,
-							"length",3876.55,
-							"heading",186.85
+							"position",LATLNG(-18.115915,-140.898939),
+							"elevation",25,
+							"length",4026.74,
+							"heading",135.15
 							
 						),
 						"Bermuda",LEXICON(
