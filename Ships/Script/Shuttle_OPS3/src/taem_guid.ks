@@ -674,23 +674,16 @@ function taemg_dump {
 	
 	local taemg_dumplex is lexicon().
 	
-	for k in taemg_input:keys {
-		taemg_dumplex:add(k, taemg_input[k]). 
+	local in_dump is lex2dump(taemg_input).
+	
+	for k in in_dump:keys {
+		taemg_dumplex:add(k, in_dump[k]). 
 	}
 	
-	for k in taemg_internal:keys {
-		LOCAL val IS taemg_internal[k].
-		
-		IF val:ISTYPE("List") {
-			LOCAL c_ IS 0.
-			for v_ in val {
-				LOCAL v_k IS k + "_" + c_.
-				taemg_dumplex:add(v_k, v_). 
-				set c_ to c_ + 1.
-			}
-		} ELSE {
-			taemg_dumplex:add(k, val). 
-		}
+	local int_dump is lex2dump(taemg_internal).
+	
+	for k in int_dump:keys {
+		taemg_dumplex:add(k, int_dump[k]). 
 	}
 	
 	log_data(taemg_dumplex,"0:/Shuttle_OPS3/LOGS/taem_dump", overwrite).

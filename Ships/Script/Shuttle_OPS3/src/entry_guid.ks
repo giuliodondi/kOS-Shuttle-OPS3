@@ -446,23 +446,16 @@ function entryg_dump {
 	
 	local entryg_dumplex is lexicon().
 	
-	for k in entryg_input:keys {
-		entryg_dumplex:add(k, entryg_input[k]). 
+	local in_dump is lex2dump(entryg_input).
+	
+	for k in in_dump:keys {
+		entryg_dumplex:add(k, in_dump[k]). 
 	}
 	
-	for k in entryg_internal:keys {
-		LOCAL val IS entryg_internal[k].
-		
-		IF val:ISTYPE("List") {
-			LOCAL c_ IS 0.
-			for v_ in val {
-				LOCAL v_k IS k + "_" + c_.
-				entryg_dumplex:add(v_k, v_). 
-				set c_ to c_ + 1.
-			}
-		} ELSE {
-			entryg_dumplex:add(k, val). 
-		}
+	local int_dump is lex2dump(entryg_internal).
+	
+	for k in int_dump:keys {
+		entryg_dumplex:add(k, int_dump[k]). 
 	}
 	
 	log_data(entryg_dumplex,"0:/Shuttle_OPS3/LOGS/entry_dump", overwrite).
