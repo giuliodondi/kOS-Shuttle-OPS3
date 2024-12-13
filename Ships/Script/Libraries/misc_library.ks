@@ -5,7 +5,7 @@ function padstring{
 	parameter fixed_length.
 	parameter left is true.
 	
-	local out is str.
+	local out is str + "".
 	
 	until (out:length >= fixed_length) {
 		if (left) {
