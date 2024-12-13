@@ -171,6 +171,8 @@ FUNCTION ops3_main_exec {
 		
 		LOCAL eg_end_flag IS FALSE.
 		
+		local entry_state is blank_reentry_state().
+		
 		UNTIL (quit_program OR eg_end_flag) {
 			clearvecdraws().
 			
@@ -179,11 +181,12 @@ FUNCTION ops3_main_exec {
 			local ve is SHIP:VELOCITY:SURFACE.
 			local vi is SHIP:VELOCITY:ORBIT.
 			
-			local entry_state IS get_reentry_state(
+			set entry_state to get_reentry_state(
 				-SHIP:ORBIT:BODY:POSITION,
 				SHIP:GEOPOSITION,
 				ve,
-				tgtrwy
+				tgtrwy,
+				entry_state
 			).
 			
 			if (is_guid_reset()) {
@@ -244,11 +247,13 @@ FUNCTION ops3_main_exec {
 									"time", guidance_timer:last_sampled_t,
 									"range",entry_state["tgt_range"],
 									"ve",ve:MAG,
-									"xlfac",entryg_in["xlfac"],
+									"xlfac",entryg_in["xlfac"] / entryg_constants["gs"],
 									"lod",entryg_in["lod"],
 									"drag",entryg_in["drag"],
 									"drag_ref",entryg_out["drag_ref"],
 									"phase",entryg_out["islect"],
+									"hdot", entry_state["hdot"],
+									"hddot", entry_state["hddot"],
 									"hdot_ref",entryg_out["hdot_ref"],
 									"pitch_cmd",entryg_out["alpcmd"],
 									"roll_cmd",entryg_out["rolcmd"],

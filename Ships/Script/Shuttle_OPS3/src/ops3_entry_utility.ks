@@ -71,6 +71,16 @@ FUNCTION deorbit_ei_calc {
 	return ei_calc.
 }
 
+function blank_reentry_state {
+	RETURN LEXICON(
+		"t", TIME:SECONDS - 10,
+		"tgt_range", 0,
+		"delaz", 0,
+		"hls", 0,	
+		"hdot", 0,
+		"fpa", 0
+	).
+}
 
 //measure stuff needed by entry guidance
 //needs attitude as a list(cur_pitch, cur_roll).
@@ -79,8 +89,19 @@ FUNCTION get_reentry_state {
 	PARAMETER cur_latlng.
 	PARAMETER cur_surfv.
 	PARAMETER rwy.
+	parameter prev_entry_state.
+	
+	local new_t is TIME:SECONDS.
+	
+	local dt is new_t - prev_entry_state["t"].
 	
 	local hdot_ is vspd(cur_surfv,cur_pos).
+	
+	local hddot_ is 0.
+
+	if (abs(dt) > 0) {
+		set hddot_ to (hdot_ - prev_entry_state["hdot"])/dt.
+	}
 	
 	//for entry simulation to work correctly these two must be calculated with geoposition
 	LOCAL delaz IS az_error(cur_latlng, rwy["position"], cur_surfv).
@@ -94,10 +115,12 @@ FUNCTION get_reentry_state {
 	local fpa is ARCTAN2(hdot_, surfv_h:MAG).
 
 	RETURN LEXICON(
+		"t", TIME:SECONDS,
 		"tgt_range", tgt_range,
 		"delaz", delaz,
 		"hls", hls,	
 		"hdot", hdot_,
+		"hddot", hddot_,
 		"fpa", fpa
 	).
 }

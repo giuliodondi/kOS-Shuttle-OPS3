@@ -643,8 +643,10 @@ FUNCTION make_entry_traj_GUI {
 	SET traj_disp_rightdatabox:STYLE:WIDTH TO 145.
     SET traj_disp_rightdatabox:STYLE:HEIGHT TO 115.
 	set traj_disp_rightdatabox:style:margin:h to 380.
-	set traj_disp_rightdatabox:style:margin:v to 90 + ops3_disp_vmargin.
+	set traj_disp_rightdatabox:style:margin:v to 82 + ops3_disp_vmargin.
 	
+	GLOBAL trajrightdata0 IS traj_disp_rightdatabox:ADDLABEL("Ḣ xxx | Ḧ xxx").
+	set trajrightdata0:style:margin:v to -4.
 	GLOBAL trajrightdata1 IS traj_disp_rightdatabox:ADDLABEL("HDT REF xxxxx").
 	set trajrightdata1:style:margin:v to -4.
 	GLOBAL trajrightdata2 IS traj_disp_rightdatabox:ADDLABEL("ALPCMD xxxxx").
@@ -749,9 +751,14 @@ function update_entry_traj_disp {
 	
 	SET traj_disp_pred_bug_:STYLE:margin:v to orbiter_bug_pos[1] + 10.
 
+	set trajleftdata1:text to "XLFAC    " + round(gui_data["xlfac"], 1) + " G".
 	
-
-	set trajleftdata1:text TO "XLFAC     " + ROUND(gui_data["xlfac"],1).
+	if (gui_data["xlfac"] > 3.2) {
+		set trajleftdata1:text to "<color=#" + guitextredhex + ">" + trajleftdata1:text + "</color>".
+	} else if (gui_data["xlfac"] > 2.2) {
+		set trajleftdata1:text to "<color=#" + guitextyellowhex + ">" + trajleftdata1:text + "</color>".
+	}
+	
 	set trajleftdata2:text TO "L/D          " + ROUND(gui_data["lod"],2).
 	set trajleftdata3:text TO "DRAG      " + ROUND(gui_data["drag"],1).
 	set trajleftdata4:text TO "D REF     " + ROUND(gui_data["drag_ref"],1).
@@ -768,7 +775,8 @@ function update_entry_traj_disp {
 	set trajattdata2:text to "P  " + round(gui_data["prog_pch"], 0).
 	set trajattdata3:text to "Y  " + round(gui_data["prog_yaw"], 0).
 	
-	set trajrightdata1:text TO "HDT REF    " + ROUND(gui_data["hdot_ref"],0).
+	set trajrightdata0:text TO "Ḣ " + padstring(ROUND(gui_data["hdot"],0), 3) + " | Ḧ " + padstring(ROUND(gui_data["hddot"],0), 3).
+	set trajrightdata1:text TO "Ḣ REF    " + ROUND(gui_data["hdot_ref"],0).
 	set trajrightdata2:text TO "ALPCMD    " + ROUND(gui_data["pitch_cmd"],0).
 	
 	if (gui_data["pitch_mod"]) {
