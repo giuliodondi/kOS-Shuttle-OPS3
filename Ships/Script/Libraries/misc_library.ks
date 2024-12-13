@@ -1,5 +1,22 @@
 
-
+//pad string wither to the left or right 
+function padstring{
+	parameter str.
+	parameter fixed_length.
+	parameter left is true.
+	
+	local out is str.
+	
+	until (out:length >= fixed_length) {
+		if (left) {
+			set out to " " + out.
+		} else {
+			set out to out + " ".
+		}
+	}
+	
+	return out.
+}
 
 
 //fancy function to print stuff to screen in a consistent format
@@ -33,6 +50,36 @@ FUNCTION PRINTPLACE{
 }
 
 
+//turn a lexicon of various datatypes into a lexicon for logging
+function lex2dump {
+	parameter lex_.
+	
+	local dumplex is lexicon().
+	
+	for k in lex_:keys {
+		LOCAL val IS lex_[k].
+		
+		IF val:ISTYPE("lexicon") {
+			local lex2_ is lex2dump(val).
+			for k2 in lex2_:keys {
+				dumplex:add(k2, lex2_[k2]).
+			}
+		} ELSE IF val:ISTYPE("List") {
+			LOCAL c_ IS 0.
+			for v_ in val {
+				LOCAL v_k IS k + "_" + c_.
+				dumplex:add(v_k, v_). 
+				set c_ to c_ + 1.
+			}
+		} ELSE IF val:ISTYPE("Vector") {
+			dumplex:add(k, val:mag). 
+		} ELSE {
+			dumplex:add(k, val). 
+		}
+	}
+	
+	return dumplex.
+}
 
 
 //log handler function, takes a lexicon as imput
