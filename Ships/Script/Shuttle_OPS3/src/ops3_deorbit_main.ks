@@ -4,13 +4,12 @@ SET CONFIG:IPU TO 1500.
 
 make_global_deorbit_GUI().
 	
-	
 ops3_deorbit_predict().
 
 close_all_GUIs().
 
 clearvecdraws().
-clearscreen.
+
 
 
 FUNCTION ops3_deorbit_predict{
@@ -21,9 +20,14 @@ FUNCTION ops3_deorbit_predict{
 		PRINT "No active engines,  aborting." .
 		RETURN.
 	}
+	
+	if (ALLNODES:LENGTH = 0) {
+		print "There is no KSP manoeuvre node,  aborting.".
+		return.
+	}
 
 	if (ALLNODES:LENGTH>1) {
-		print "Can handle at most one manoeuvre node".
+		print "Can handle at most one manoeuvre node,  aborting.".
 		return.
 	}
 
@@ -196,8 +200,8 @@ FUNCTION ops3_deorbit_predict{
 		
 		WAIT 0.5.
 	}
-
 	
+	clearscreen.
 }
 
 
