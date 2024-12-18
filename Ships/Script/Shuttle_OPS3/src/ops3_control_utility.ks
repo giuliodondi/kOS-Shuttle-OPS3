@@ -205,7 +205,7 @@ FUNCTION dap_controller_factory {
 		this:measure_cur_state().
 		
 		LOCAL rollgain IS 0.5.
-		LOCAL pitchgain IS 0.5.
+		LOCAL pitchgain IS 0.12.
 		
 		//required for continuous pilot input across several funcion calls
 		LOCAL time_gain IS ABS(this:iteration_dt/0.07).

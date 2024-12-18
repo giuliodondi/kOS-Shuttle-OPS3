@@ -76,7 +76,7 @@ FUNCTION entryg_wrapper {
 								"drag", entryg_input["drag"],
 								"unl_roll", entryg_internal["rk2rol"] * entryg_internal["rollc"][2],
 								"roll_ref", entryg_internal["rk2rol"] * entryg_internal["rollc"][3],
-								"rlm", entryg_internal["rlm"],		//my addition, required by the dap
+								"rlm", entryg_constants["rlm_css"],		//my addition, required by the dap
 								"hdot_ref", entryg_internal["rdtrf"]/mt2ft,
 								"islect", entryg_internal["islect"],
 								"roll_rev", entryg_internal["rrflag"],
@@ -95,8 +95,8 @@ FUNCTION entryg_wrapper {
 global entryg_constants is lexicon (
 									"aclam1", 9.59,	//deg
 									"aclam2", 3.3e-3,	//deg / (ft/s)
-									"aclam3", 55,	//deg / (ft/s)
-									"aclim1", 35,	//deg
+									"aclam3", 49.9,	//deg / (ft/s)
+									"aclim1", 30,	//deg
 									"aclim2", 25,	//deg
 									"aclim3", -18.5,	//deg
 									"aclim4", 2.5e-3,	//deg / (ft/s)
@@ -191,6 +191,7 @@ global entryg_constants is lexicon (
 									"d23c", 15.5,	//ft/s2 etg canned d23
 									"d230", 15.5,	//ft/s2 initial d23 value
 									"drddl", -1.5,	//nmi/s2/ft	minimum value of drdd
+									"drefplim", 193,		//ft/s2 my addition - upper limit on drefp, 6g acceleration
 									"dtegd", 1.92,	//s entry guidance computation interval
 									"dt2min", 0.008,	//ft/s3 min value of t2dot
 									"dtr", 0.0174532925,	//rad/deg 	degrees to radians
@@ -217,6 +218,7 @@ global entryg_constants is lexicon (
 									"radeg", 57.29578,	//deg/rad radians to degrees
 									"rdmax", 12,	//max roll bias 
 									"rlmndzfac", 2.2,	//min roll delaz gain 
+									"rlm_css", 180,	//rlm for css
 									"rlmc0", 95,	//rlm max above verolc
 									"tal_rlmc0", 120,	//rlm max above tal_verolc for tal
 									"rlmdz", 70,		//max roll delaz limiting
@@ -995,8 +997,8 @@ function egref {
 		}
 	}
 	
-	//my addition - drefp is never negative
-	set entryg_internal["drefp"] to MAX(0, entryg_internal["drefp"]).
+	//my addition - drefp is never negative and clamped to prevent singularities
+	set entryg_internal["drefp"] to midval(abs(entryg_internal["drefp"]), 1, entryg_constants["drefplim"]).
 	
 	//test value for drefp for transition to phase 4
 	set entryg_internal["drefp4"] to entryg_constants["gs3"] * (entryg_internal["rdtref"] + 2*entryg_internal["hs"]*entryg_internal["t2"] / entryg_input["ve"]) + entryg_internal["t2"].
@@ -1016,8 +1018,8 @@ function egref4 {
 	set entryg_internal["drdd"] to -(entryg_input["trange"] -  entryg_internal["rpt"]) / entryg_internal["drefp"].
 	set entryg_internal["c2"] to 0.
 	
-	//my addition - drefp is never negative
-	set entryg_internal["drefp"] to MAX(0, entryg_internal["drefp"]).
+	//my addition - drefp is never negative and clamped to prevent singularities
+	set entryg_internal["drefp"] to midval(abs(entryg_internal["drefp"]), 1, entryg_constants["drefplim"]).
 	
 	set entryg_internal["itran"] to TRUE.
 }
@@ -1068,8 +1070,8 @@ function egtran {
 	//in any case do not exceed the previous constant drag
 	//no, very bad
 	
-	//my addition - drefp is never negative
-	set entryg_internal["drefp"] to MAX(0, entryg_internal["drefp"]).
+	//my addition - drefp is never negative and clamped to prevent singularities
+	set entryg_internal["drefp"] to midval(abs(entryg_internal["drefp"]), 1, entryg_constants["drefplim"]).
 	
 	set entryg_internal["rdtref"] to -entryg_internal["hs"]*entryg_input["ve"]*(2*entryg_internal["drefp"] - c1*entryg_internal["ve2"]) / entryg_internal["cag"].
 	

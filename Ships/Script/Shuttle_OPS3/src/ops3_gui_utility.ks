@@ -611,7 +611,7 @@ FUNCTION make_entry_traj_GUI {
 	set traj_disp_leftdatabox:style:margin:h to 20.
 	set traj_disp_leftdatabox:style:margin:v to 10 + ops3_disp_vmargin.
 	
-	GLOBAL trajleftdata1 IS traj_disp_leftdatabox:ADDLABEL("XLFAC xxxxxx").
+	GLOBAL trajleftdata1 IS traj_disp_leftdatabox:ADDLABEL("LOAD FAC xxxxxx").
 	set trajleftdata1:style:margin:v to -4.
 	GLOBAL trajleftdata2 IS traj_disp_leftdatabox:ADDLABEL("L/D   xxxxxx").
 	set trajleftdata2:style:margin:v to -4.
@@ -751,7 +751,7 @@ function update_entry_traj_disp {
 	
 	SET traj_disp_pred_bug_:STYLE:margin:v to orbiter_bug_pos[1] + 10.
 
-	set trajleftdata1:text to "XLFAC    " + round(gui_data["xlfac"], 1) + " G".
+	set trajleftdata1:text to "LOAD FAC " + round(gui_data["xlfac"], 1) + " G".
 	
 	if (gui_data["xlfac"] > 3.2) {
 		set trajleftdata1:text to "<color=#" + guitextredhex + ">" + trajleftdata1:text + "</color>".

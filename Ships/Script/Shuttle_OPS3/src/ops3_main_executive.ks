@@ -9,6 +9,7 @@ FUNCTION ops3_main_exec {
 	parameter force_tgt_select is "".
 	
 	clearscreen.
+	SAS ON.
 	
 	GLOBAL quit_program IS FALSE.
 
