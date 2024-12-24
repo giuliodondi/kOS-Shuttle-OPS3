@@ -204,7 +204,7 @@ FUNCTION dap_controller_factory {
 		set this:is_css to TRUE.
 		this:measure_cur_state().
 		
-		LOCAL rollgain IS 0.5.
+		LOCAL rollgain IS 0.45.
 		LOCAL pitchgain IS 0.12.
 		
 		//required for continuous pilot input across several funcion calls
@@ -427,7 +427,7 @@ FUNCTION aerosurfaces_control_factory {
 									LEXICON(
 											"mod",SHIP:PARTSDUBBED("ShuttleBodyFlap")[0]:getmodule("FARControllableSurface"),
 											"flap_defl_max",22.5,
-											"flap_defl_min",-22.5,
+											"flap_defl_min",-25,
 											"spdbk_defl_max",-6
 									)
 										
