@@ -33,7 +33,7 @@ FUNCTION ops3_main_exec {
 	}
 	
 	//force target selection logic goes here
-	if (not nominal_flag) {
+	if (not nominal_flag) and (force_tgt_select <> "") {
 		force_target_selection(force_tgt_select, FALSE).
 	}
 	
