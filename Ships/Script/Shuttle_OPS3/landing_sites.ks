@@ -30,17 +30,17 @@ GLOBAL ldgsiteslex IS LEXICON(
 							
 						),
 						"Vandenberg",LEXICON(
-							"position",LATLNG(34.738592,-120.578419),
-							"elevation",137,
-							"length",5024,
-							"heading",136.4
+							"position",LATLNG(34.734915,-120.580092),
+							"elevation",166.8,
+							"length",4266.8,
+							"heading",136.44
 							
 						),
 						"Mataveri",LEXICON(
-							"position",LATLNG(-27.160261,-109.41134),
-							"elevation",90,
-							"length",3766,
-							"heading",355.17
+							"position",LATLNG(-27.176705,-109.422607),
+							"elevation",81.4,
+							"length",3261.5,
+							"heading",296.02
 							
 						),
 						"Istres",LEXICON(
