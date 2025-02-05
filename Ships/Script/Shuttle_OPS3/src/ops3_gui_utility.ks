@@ -145,7 +145,7 @@ FUNCTION update_deorbit_GUI {
 	SET textEI1:text TO "  Time to EI  : " + sectotime(interf_t).
 	
 	LOCAL text2_color IS guitextredhex.
-	if (ABS(ei_data["ei_delaz"]) < 15) {
+	if (ABS(ei_data["ei_delaz"]) < 20) {
 		SET text2_color TO guitextgreenhex.
 	}
 	LOCAL text2_str IS "  Delaz at EI : " + ROUND(ei_data["ei_delaz"],1) + " °".

@@ -12,22 +12,30 @@ FUNCTION shuttle_steep_ei_fpa {
 FUNCTION shuttle_ei_range {
 	PARAMETER ei_fpa.
 	PARAMETER ei_incl.
+	parameter ei_delaz.
 	
-	LOCAL range_bias IS 800.
+	LOCAL range_bias IS -0.1254.
+	
+	local base_rng is (ei_fpa/3 + 1.6638490566 + range_bias)*BODY:RADIUS/1000.
 	
 	//heuristic, 16km for every degree off from 40°
 	LOCAL incl_corr IS (ei_incl - 40) * 16.
 	
-	return (ei_fpa/3 + 1.6638490566)*BODY:RADIUS/1000 - range_bias  + incl_corr.
+	//delaz correction taken from level-c entyr low energy guidance
+	local delaz_corr is 2.5 * base_rng * sin(ei_delaz) * tan(ei_delaz).
+	
+	return base_rng + delaz_corr.
 }
 
 //need to be both in kilometres
 FUNCTION deorbit_ei_calc {
 	PARAMETER ap.
 	PARAMETER incl.
+	PARAMETER delaz.
 	PARAMETER ei_alt.
 	
 	LOCAL ei_incl IS ABS(incl).
+	LOCAL ei_delaz IS ABS(delaz).
 	
 	local ei_calc is lexicon(
 					"ei_eta",0,
@@ -36,7 +44,8 @@ FUNCTION deorbit_ei_calc {
 					"ei_range",0,
 					"ap",ap,
 					"pe",0,
-					"incl", ei_incl
+					"incl", ei_incl,
+					"delaz", ei_delaz
 	).
 	
 	LOCAL ei_h IS ei_alt*1000 + BODY:RADIUS.
@@ -66,7 +75,7 @@ FUNCTION deorbit_ei_calc {
 	}
 	
 	set ei_calc["pe"] to pe_guess.
-	set ei_calc["ei_range"] to shuttle_ei_range(ei_calc["ei_fpa"], ei_incl).
+	set ei_calc["ei_range"] to shuttle_ei_range(ei_calc["ei_fpa"], ei_incl, ei_delaz).
 	
 	return ei_calc.
 }

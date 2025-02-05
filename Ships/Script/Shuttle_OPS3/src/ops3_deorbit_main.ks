@@ -156,17 +156,15 @@ FUNCTION ops3_deorbit_predict{
 		
 		SET ei_simstate["altitude"] TO bodyalt(ei_simstate["position"]).
 		
-		//entry interface calculations
-		LOCAL ei_orb_elems IS state_vector_orb_elems(ei_simstate["position"], ei_simstate["velocity"]).
-		Local ei_ref_data is deorbit_ei_calc(ei_orb_elems["ap"], ei_orb_elems["incl"], ei_simstate["altitude"]/1000).
-		
 		LOCAL ei_fpa IS get_fpa(ei_simstate["position"], ei_simstate["velocity"]).
 		
 		//shift ei state forwards by the time to ei 
-		LOCAL ei_posvec IS pos2vec(shift_pos(ei_simstate["position"], ei_ETA)).
+		//modification: add reentry time bias
+		local ei_bias_t is ei_ETA + 30 * 60.
+		LOCAL ei_posvec IS pos2vec(shift_pos(ei_simstate["position"], ei_bias_t)).
 		
 		LOCAL ei_normvec IS VCRS(ei_simstate["position"], ei_simstate["velocity"]).
-		LOCAL normvec_rot IS pos2vec(shift_pos(ei_normvec,ei_ETA)):NORMALIZED.
+		LOCAL normvec_rot IS pos2vec(shift_pos(ei_normvec, ei_bias_t)):NORMALIZED.
 		LOCAL ei_vel_vec IS VCRS(normvec_rot,ei_posvec):NORMALIZED*ei_simstate["velocity"]:MAG.
 		SET ei_vel_vec TO rodrigues(ei_vel_vec,-normvec_rot,ei_fpa).
 		
@@ -180,6 +178,10 @@ FUNCTION ops3_deorbit_predict{
 						"ei_range", ei_range,
 						"ei_delaz", ei_delaz
 		).
+		
+		//entry interface calculations
+		LOCAL ei_orb_elems IS state_vector_orb_elems(ei_simstate["position"], ei_simstate["velocity"]).
+		Local ei_ref_data is deorbit_ei_calc(ei_orb_elems["ap"], ei_orb_elems["incl"], ei_delaz, ei_simstate["altitude"]/1000).
 		 
 		update_deorbit_GUI(ei_ETA, ei_data, ei_ref_data).
 		
