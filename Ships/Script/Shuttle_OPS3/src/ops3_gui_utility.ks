@@ -17,7 +17,7 @@ GLOBAL loglex IS LEXICON().
 						//DEORBIT GUI FUNCTIONS 
 						
 GLOBAL main_deorb_gui_width IS 300.
-GLOBAL main_deorb_gui_height IS 320.
+GLOBAL main_deorb_gui_height IS 360.
 
 GLOBAL deorbit_target_selected IS FALSE.
 
@@ -87,6 +87,15 @@ FUNCTION make_global_deorbit_GUI {
 		
 		SET deorbit_target_selected TO TRUE.
 	}.
+	
+	GLOBAL select_steepbox IS popup_box:ADDHLAYOUT().
+	GLOBAL steep_label IS select_steepbox:ADDLABEL("<size=15>         </size>").
+	GLOBAL select_steep IS select_steepbox:addpopupmenu().
+	SET select_steep:STYLE:WIDTH TO 120.
+	SET select_steep:STYLE:HEIGHT TO 25.
+	SET select_steep:STYLE:ALIGN TO "center".
+	select_tgt:addoption("STEEP").
+	select_tgt:addoption("SHALLOW").
 
 
 	GLOBAL all_box IS main_deorbit_gui:ADDVLAYOUT().
@@ -128,11 +137,6 @@ FUNCTION make_global_deorbit_GUI {
 	GLOBAL textEI8 IS entry_interface_databox:ADDLABEL("").
 	set textEI8:style:margin:v to -4.
 	SET textEI8:STYLE:ALIGN TO "center".
-	
-	
-	
-	
-
 
 	main_deorbit_gui:SHOW().
 }
@@ -183,6 +187,10 @@ FUNCTION update_deorbit_GUI {
 	SET textEI8:text TO "<color=#" + text8_color + ">" + text8_str + "</color>".
 
 
+}
+
+function deorbit_gui_is_steep_ei {
+	return (select_steep:VALUE = "STEEP"). 
 }
 
 

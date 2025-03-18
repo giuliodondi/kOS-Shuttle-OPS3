@@ -9,6 +9,12 @@ FUNCTION shuttle_steep_ei_fpa {
 	return 162.5208 - 0.03742578*ei_vel + 0.000002114297*ei_vel^2.
 }
 
+FUNCTION shuttle_shallow_ei_fpa {
+	PARAMETER ei_vel.
+	
+	return 335.85 - 0.0795*ei_vel + 0.00000467*ei_vel^2.
+}
+
 FUNCTION shuttle_ei_range {
 	PARAMETER ei_fpa.
 	PARAMETER ei_incl.
@@ -67,10 +73,12 @@ FUNCTION deorbit_ei_calc {
 		set ei_calc["ei_vel"] to orbit_alt_vel(ei_h, sma).
 		set ei_calc["ei_fpa"] to -orbit_eta_fpa(ei_calc["ei_eta"], sma, ecc).
 		
-		local steep_fpa is shuttle_steep_ei_fpa(ei_calc["ei_vel"]).
-		
-		set fpa_error to steep_fpa - ei_calc["ei_fpa"].
-		
+		if (deorbit_gui_is_steep_ei()) {
+			set fpa_error to shuttle_steep_ei_fpa(ei_calc["ei_vel"]) - ei_calc["ei_fpa"].
+		} else {
+			set fpa_error to shuttle_shallow_ei_fpa(ei_calc["ei_vel"]) - ei_calc["ei_fpa"].
+		}
+
 		set pe_guess to pe_guess + fpa_error * 100.
 	}
 	
