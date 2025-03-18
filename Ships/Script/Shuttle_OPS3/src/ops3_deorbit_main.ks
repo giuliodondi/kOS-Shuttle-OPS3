@@ -51,10 +51,11 @@ FUNCTION ops3_deorbit_predict{
 	local burn_pos IS 0.
 	local burn_dv IS v(0,0,0).
 	
-	LOCAL deorbit_base_dt IS 5.
+	LOCAL deorbit_base_dt IS 10.
 	//cover half a revolution
-	LOCAL max_steps IS FLOOR(45 * 60 / deorbit_base_dt).
-	local burn_steps is 30.
+	LOCAL patch_max_steps IS FLOOR(45 * 60 / deorbit_base_dt).
+	local burn_max_steps is 30.
+	local integrator is 
 	
 	LOCAL initial_simstate IS current_simstate().
 	LOCAL initial_t IS TIME:SECONDS.
@@ -204,6 +205,40 @@ FUNCTION ops3_deorbit_predict{
 	}
 	
 	clearscreen.
+}
+
+function predict_patch_coast {
+	parameter initial_simstate.
+	parameter predict_t.
+	parameter predict_base_t.
+	parameter predict_maxsteps.
+	parameter integrator is coast_rk3@.
+	
+	
+	LOCAL patch_steps IS CEILING(predict_t/predict_base_t).
+	
+	set patch_steps to min(patch_steps, predict_maxsteps).
+			
+	LOCAL patch_dt IS predict_t/patch_steps.
+	
+	LOCAL internal_simstate IS clone_simstate(initial_simstate).
+	
+	FROM {local s is 1.} UNTIL (s > patch_steps) STEP {set s to s+1.} DO {
+		SET internal_simstate TO clone_simstate(integrator:CALL(patch_dt, internal_simstate)).
+	}
+	
+	return internal_simstate.
+}
+
+function predict_patch_burn {
+	parameter initial_simstate.
+	parameter initial_burn_vec.
+	parameter predict_t.
+	parameter predict_base_t.
+	parameter predict_maxsteps.
+	parameter integrator is coast_rk3@.
+
+
 }
 
 
