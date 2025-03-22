@@ -6,6 +6,7 @@ FUNCTION blank_simstate {
 	
 	RETURN 	LEXICON(
 		"simtime",0,
+		"mass",ICS["mass"],
 		"position",ICS["position"],
 		"velocity",ICS["velocity"],
 		"surfvel",surfacevel(ICS["velocity"],ICS["position"]),
@@ -22,6 +23,7 @@ FUNCTION blank_simstate {
 FUNCTION current_simstate {
 	RETURN 	LEXICON(
 		"simtime",0,
+		"mass",ship:mass,
 		"position",-SHIP:ORBIT:BODY:POSITION,
 		"velocity",SHIP:VELOCITY:ORBIT,
 		"hdot",vspd(SHIP:VELOCITY:ORBIT,-SHIP:ORBIT:BODY:POSITION),
@@ -41,6 +43,7 @@ FUNCTION clone_simstate {
 	
 	RETURN 	LEXICON(
 		"simtime",simstate["simtime"],
+		"mass",simstate["mass"],
 		"position",simstate["position"],
 		"velocity",simstate["velocity"],
 		"hdot",simstate["hdot"],
@@ -59,22 +62,16 @@ FUNCTION clone_simstate {
 DEclare Function accel {
 	Parameter pos.
 	Parameter vel.
+	parameter mass_.
 	Parameter attitude.
 	parameter thrustvec is v(0,0,0).
-	
-	LOCAL mass_ IS ship:mass.
 	 
 	LOCAL surfvel IS vel - vcrs(BODY:angularvel, pos).
 	LOCAL outlex IS aeroforce(pos, surfvel, attitude).
 	
-	LOCAL acceltot TO outlex["load"]/mass_ + gravitacc(pos) + thrustvec/mass_.
+	LOCAL acceltot TO outlex["load"]/mass_ + simple_g(pos) + thrustvec/mass_.
 	return LIST(acceltot,outlex).
 
-}
-
-declare function gravitacc {
-	parameter pos.
-	return -BODY:mu * pos:normalized / pos:sqrmagnitude.
 }
 
 //wrapper that converts everything to acceleration
@@ -263,6 +260,7 @@ DECLARE FUNCTION rk2 {
 	
 	LOCAL pos IS state["position"].
 	LOCAL vel IS state["velocity"].
+	LOCAL mass_ IS state["mass"].
 	
 	set state["simtime"] to state["simtime"] + dt.
 	
@@ -271,13 +269,13 @@ DECLARE FUNCTION rk2 {
 	//RK2
 	LOCAL p1 IS pos.
 	LOCAL v1 IS vel.
-	SET out TO accel(p1, v1, attitude, thrustvec).
+	SET out TO accel(p1, v1, attitude, mass_, thrustvec).
 	LOCAL a1 IS out[0].
 	SET state["aero"] TO out[1].
 	 
 	LOCAL  p2 IS  pos + 0.5 * v1 * dt.
 	LOCAL  v2 IS vel + 0.5 * a1 * dt.
-	SET out TO accel(p2, v2, attitude, thrustvec).
+	SET out TO accel(p2, v2, attitude, mass_, thrustvec).
 	LOCAL  a2 IS out[0].
 
 	 
@@ -300,6 +298,7 @@ DECLARE FUNCTION rk3 {
 	
 	LOCAL pos IS state["position"].
 	LOCAL vel IS state["velocity"].
+	LOCAL mass_ IS state["mass"].
 	
 	set state["simtime"] to state["simtime"] + dt.
 	
@@ -308,18 +307,18 @@ DECLARE FUNCTION rk3 {
 	//RK3
 	LOCAL p1 IS pos.
 	LOCAL v1 IS vel.
-	SET out TO accel(p1, v1, attitude, thrustvec).
+	SET out TO accel(p1, v1, attitude, mass_, thrustvec).
 	LOCAL a1 IS out[0].
 	SET state["aero"] TO out[1].
 	 
 	LOCAL  p2 IS  pos + 0.5 * v1 * dt.
 	LOCAL  v2 IS vel + 0.5 * a1 * dt.
-	SET out TO accel(p2, v2, attitude, thrustvec).
+	SET out TO accel(p2, v2, attitude, mass_, thrustvec).
 	LOCAL a2 IS out[0].
 	 
 	LOCAL  p3 IS pos + (2*v2 - v1) * dt.
 	LOCAL  v3 IS vel + (2*a2 - a1) * dt.
-	SET out TO accel(p3, v3, attitude, thrustvec).
+	SET out TO accel(p3, v3, attitude, mass_, thrustvec).
 	LOCAL a3 IS out[0].
 	 
 	 
@@ -342,6 +341,7 @@ DECLARE FUNCTION rk4 {
 	
 	LOCAL pos IS state["position"].
 	LOCAL vel IS state["velocity"].
+	LOCAL mass_ IS state["mass"].
 	
 	set state["simtime"] to state["simtime"] + dt.
 	
@@ -350,23 +350,23 @@ DECLARE FUNCTION rk4 {
 	//RK4
 	LOCAL p1 IS pos.
 	LOCAL v1 IS vel.
-	SET out TO accel(p1, v1, attitude, thrustvec).
+	SET out TO accel(p1, v1, attitude, mass_, thrustvec).
 	LOCAL a1 IS out[0].
 	SET state["aero"] TO out[1].
 	 
 	LOCAL  p2 IS  pos + 0.5 * v1 * dt.
 	LOCAL  v2 IS vel + 0.5 * a1 * dt.
-	SET out TO accel(p2, v2, attitude, thrustvec).
+	SET out TO accel(p2, v2, attitude, mass_, thrustvec).
 	LOCAL a2 IS out[0].
 	 
 	LOCAL  p3 IS pos + 0.5 * v2 * dt.
 	LOCAL  v3 IS vel + 0.5 * a2 * dt.
-	SET out TO accel(p3, v3, attitude, thrustvec).
+	SET out TO accel(p3, v3, attitude, mass_, thrustvec).
 	LOCAL a3 IS out[0].
 	 
 	LOCAL  p4 IS pos + v3 * dt.
 	LOCAL  v4 IS vel + a3 * dt.
-	SET out TO accel(p4, v4, attitude, thrustvec).
+	SET out TO accel(p4, v4, attitude, mass_, thrustvec).
 	LOCAL a4 IS out[0].
 	 
 	SET pos TO pos + (dt / 6) * (v1 + 2 * v2 + 2 * v3 + v4).
@@ -508,12 +508,14 @@ FUNCTION cse_rk3 {
 	PARAMETER r0.
 	PARAMETER v0.
 	PARAMETER tgo.
+	parameter m0 is ship:mass.
 		
 	LOCAL nstep IS 30.
 	LOCAL dT Is tgo/nstep.
 	
 	LOCAl simstate IS blank_simstate(
 		LEXICON(
+				"mass", m0,
 				"position", r0,
 				"velocity", v0
 		)
