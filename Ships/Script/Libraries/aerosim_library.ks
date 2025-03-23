@@ -62,8 +62,8 @@ FUNCTION clone_simstate {
 DEclare Function accel {
 	Parameter pos.
 	Parameter vel.
-	parameter mass_.
 	Parameter attitude.
+	parameter mass_.
 	parameter thrustvec is v(0,0,0).
 	 
 	LOCAL surfvel IS vel - vcrs(BODY:angularvel, pos).
@@ -431,27 +431,31 @@ FUNCTION accurate_g {
 DECLARE FUNCTION coast_rk3 {
 	PARAMETER dt.
 	PARAMETER state.
+	parameter thrvec is v(0,0,0).
 	parameter grav_acc_func IS simple_g@.
 	
 	LOCAL pos IS state["position"].
 	LOCAL vel IS state["velocity"].
+	LOCAL mass_ IS state["mass"].
 	
 	set state["simtime"] to state["simtime"] + dt.
 	
 	LOCAL out IS LIST().
 	
+	local thr_acc is thrvec / mass_.
+	
 	//RK3
 	LOCAL p1 IS pos.
 	LOCAL v1 IS vel.
-	LOCAL a1 IS grav_acc_func(p1).
+	LOCAL a1 IS grav_acc_func(p1) + thr_acc.
 	 
 	LOCAL  p2 IS  pos + 0.5 * v1 * dt.
 	LOCAL  v2 IS vel + 0.5 * a1 * dt.
-	LOCAL a2 IS grav_acc_func(p2).
+	LOCAL a2 IS grav_acc_func(p2) + thr_acc.
 	 
 	LOCAL  p3 IS pos + (2*v2 - v1) * dt.
 	LOCAL  v3 IS vel + (2*a2 - a1) * dt.
-	LOCAL a3 IS grav_acc_func(p3).
+	LOCAL a3 IS grav_acc_func(p3) + thr_acc.
 	 
 	 
 	SET pos TO pos + (dt / 6) * (v1 + 4 * v2 + v3 ).
@@ -467,31 +471,35 @@ DECLARE FUNCTION coast_rk3 {
 FUNCTION coast_rk4 {
 	PARAMETER dt.
 	PARAMETER state.
+	parameter thrvec is v(0,0,0).
 	parameter grav_acc_func IS simple_g@.
 	
 	LOCAL pos IS state["position"].
 	LOCAL vel IS state["velocity"].
+	LOCAL mass_ IS state["mass"].
 	
 	set state["simtime"] to state["simtime"] + dt.
 	
 	LOCAL out IS LIST().
 	
+	local thr_acc is thrvec / mass_.
+	
 	//RK4
 	LOCAL p1 IS pos.
 	LOCAL v1 IS vel.
-	LOCAL a1 IS grav_acc_func(p1).
+	LOCAL a1 IS grav_acc_func(p1) + thr_acc.
 	 
 	LOCAL  p2 IS  pos + 0.5 * v1 * dt.
 	LOCAL  v2 IS vel + 0.5 * a1 * dt.
-	LOCAL a2 IS grav_acc_func(p2).
+	LOCAL a2 IS grav_acc_func(p2) + thr_acc.
 	 
 	LOCAL  p3 IS pos + 0.5 * v2 * dt.
 	LOCAL  v3 IS vel + 0.5 * a2 * dt.
-	LOCAL a3 IS grav_acc_func(p3).
+	LOCAL a3 IS grav_acc_func(p3) + thr_acc.
 	 
 	LOCAL  p4 IS pos + v3 * dt.
 	LOCAL  v4 IS vel + a3 * dt.
-	LOCAL a4 IS grav_acc_func(p4).
+	LOCAL a4 IS grav_acc_func(p4) + thr_acc.
 	 
 	SET pos TO pos + (dt / 6) * (v1 + 2 * v2 + 2 * v3 + v4).
 	SET vel TO vel + (dt / 6) * (a1 + 2 * a2 + 2 * a3 + a4).

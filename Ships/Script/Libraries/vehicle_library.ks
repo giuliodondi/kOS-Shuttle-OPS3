@@ -267,7 +267,10 @@ FUNCTION get_current_thrust_isp {
 		SET isp_ TO isp_/thr.
 	}
 	
-	RETURN LIST(thrvec, isp_).
+	return lexicon(
+				"thrvec", thrvec,
+				"isp", isp_
+	).
 }
 
 
@@ -291,21 +294,19 @@ FUNCTION get_max_thrust_isp{
 		SET isp_ TO isp_/thr.
 	}
 	
-	RETURN LIST(thrvec, isp_).
+	return lexicon(
+				"thrvec", thrvec,
+				"isp", isp_
+	).
 }
 
 //time to burn at constant thrust given active engines
 FUNCTION burnDT {
 	PARAMETER dV.
+	parameter engines_ is get_max_thrust_isp().
 	
-	
-	LOCAL out IS get_max_thrust_isp().
-	LOCAL iisp IS out[1].
-	LOCAL thr IS out[0]:MAG.
-	
-	LOCAL vex IS g0*iisp.
-	
-	LOCAL mdot IS thr/vex.
+	LOCAL vex IS g0*engines_["isp"].	
+	LOCAL mdot IS engines_["thrvec"]:mag/vex.
 	
 	RETURN (SHIP:MASS*1000/(mdot))*( 1 - CONSTANT:E^(-dV/vex) ).
 }
