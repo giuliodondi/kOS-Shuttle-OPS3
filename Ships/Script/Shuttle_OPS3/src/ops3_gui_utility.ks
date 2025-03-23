@@ -94,8 +94,9 @@ FUNCTION make_global_deorbit_GUI {
 	SET select_steep:STYLE:WIDTH TO 120.
 	SET select_steep:STYLE:HEIGHT TO 25.
 	SET select_steep:STYLE:ALIGN TO "center".
-	select_tgt:addoption("STEEP").
-	select_tgt:addoption("SHALLOW").
+	select_steep:addoption("STEEP").
+	select_steep:addoption("SHALLOW").
+	SET select_steep:ENABLED to FALSE.
 
 
 	GLOBAL all_box IS main_deorbit_gui:ADDVLAYOUT().
@@ -160,7 +161,7 @@ FUNCTION update_deorbit_GUI {
 	LOCAL text4_str IS "    FPA at EI : " + round(ei_data["ei_fpa"], 2) + " °".
 	
 	LOCAL text4_color IS guitextredhex.
-	if (ABS(ei_ref_data["ei_fpa"] - ei_data["ei_fpa"]) < 0.03) {
+	if (ABS(ei_ref_data["ei_fpa"] - ei_data["ei_fpa"]) < 0.05) {
 		SET text4_color TO guitextgreenhex.
 	}
 	
@@ -170,7 +171,7 @@ FUNCTION update_deorbit_GUI {
 	LOCAL text6_str IS "    Vel at EI : " + round(ei_data["ei_vel"], 1) + " m/s".
 	
 	LOCAL text6_color IS guitextredhex.
-	if (ABS(ei_ref_data["ei_vel"] - ei_data["ei_vel"]) < 2) {
+	if (ABS(ei_ref_data["ei_vel"] - ei_data["ei_vel"]) < 5) {
 		SET text6_color TO guitextgreenhex.
 	}
 	
@@ -180,7 +181,7 @@ FUNCTION update_deorbit_GUI {
 	LOCAL text8_str IS "    Rng at EI : " + round(ei_data["ei_range"], 0) + " km".
 	
 	LOCAL text8_color IS guitextredhex.
-	if (ABS(ei_ref_data["ei_range"] - ei_data["ei_range"]) < 100) {
+	if (ABS(ei_ref_data["ei_range"] - ei_data["ei_range"]) < 200) {
 		SET text8_color TO guitextgreenhex.
 	}
 	
@@ -189,8 +190,12 @@ FUNCTION update_deorbit_GUI {
 
 }
 
-function deorbit_gui_is_steep_ei {
-	return (select_steep:VALUE = "STEEP"). 
+function deorbit_gui_is_shallow_ei {
+	return (select_steep:VALUE = "SHALLOW"). 
+}
+
+function deorbit_gui_unfreeze_steep {
+	SET select_steep:ENABLED to TRUE.
 }
 
 

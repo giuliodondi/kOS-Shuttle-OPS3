@@ -20,16 +20,13 @@ FUNCTION ops3_deorbit_predict{
 		PRINT "No active engines,  aborting." .
 		RETURN.
 	}
-	
-	if (ALLNODES:LENGTH = 0) {
-		print "There is no KSP manoeuvre node,  aborting.".
-		return.
-	}
 
 	if (ALLNODES:LENGTH>1) {
 		print "Can handle at most one manoeuvre node,  aborting.".
 		return.
 	}
+	
+	local engines_lex is get_max_thrust_isp().
 
 	IF (DEFINED tgtrwy) {UNSET tgtrwy.}
 	GLOBAL tgtrwy IS LEXICON().
@@ -46,16 +43,17 @@ FUNCTION ops3_deorbit_predict{
 	}
 	
 	freeze_target_site().
+	deorbit_gui_unfreeze_steep().
 	
 	local drawburnvec IS false.
-	local burn_pos IS 0.
+	local burn_start_pos IS v(0,0,0).
 	local burn_dv IS v(0,0,0).
 	
 	LOCAL deorbit_base_dt IS 10.
 	//cover half a revolution
 	LOCAL patch_max_steps IS FLOOR(45 * 60 / deorbit_base_dt).
 	local burn_max_steps is 30.
-	local integrator is 
+	local integrator is coast_rk3@.
 	
 	LOCAL initial_simstate IS current_simstate().
 	LOCAL initial_t IS TIME:SECONDS.
@@ -63,6 +61,8 @@ FUNCTION ops3_deorbit_predict{
 	LOCAL ei_radius IS BODY:RADIUS + ops3_parameters["interfalt"].
 
 	UNTIL FALSE {
+	
+		clearvecdraws().
 	
 		LOCAL simstate IS clone_simstate(initial_simstate).
 		LOCAL dt_from_initial IS (TIME:SECONDS - initial_t).
@@ -78,40 +78,43 @@ FUNCTION ops3_deorbit_predict{
 			
 			set burn_dv to lastnode:deltav.
 			
-			LOCAL node_dt IS burnDT(burn_dv:MAG).
-			
 			LOCAL node_ETA IS dt_from_initial + lastnode:ETA.
 			
 			LOCAL patch1_steps IS CEILING(node_ETA/deorbit_base_dt).
-			
+			set patch1_steps to min(patch1_steps, patch_max_steps).	
 			LOCAL patch1_dt IS node_ETA/patch1_steps.
 			
 			LOCAL burn_simstate IS clone_simstate(simstate).
 			
 			FROM {local s is 1.} UNTIL (s > patch1_steps) STEP {set s to s+1.} DO {
-				SET burn_simstate TO clone_simstate(coast_rk4(patch1_dt, burn_simstate)).
+				SET burn_simstate TO clone_simstate(integrator:CALL(patch1_dt, burn_simstate)).
 			}
 			
-			LOCAL burn_patch_dt IS node_dt/burn_steps.
-			LOCAL burn_step_dv IS burn_dv/burn_steps.
-			FROM {local s is 1.} UNTIL (s > burn_steps) STEP {set s to s+1.} DO {
-				SET burn_simstate["velocity"] TO burn_simstate["velocity"] + burn_step_dv. 
-				SET burn_simstate TO clone_simstate(coast_rk3(burn_patch_dt, burn_simstate)).
-			}
+			set burn_start_pos to pos2vec(shift_pos(burn_simstate["position"], node_ETA)).
+			local burn_dt is burnDT(burn_dv:mag, engines_lex).
+			
+			set burn_simstate to predict_patch_burn(
+											burn_simstate,
+											burn_dv,
+											burn_dt,
+											deorbit_base_dt,
+											burn_max_steps,
+											engines_lex
+			).
 			
 			
 			SET burn_simstate["altitude"] TO bodyalt(burn_simstate["position"]).
 			
-			set burn_pos to pos2vec(shift_pos(burn_simstate["position"], node_ETA)).
+			set burn_end_pos to pos2vec(shift_pos(burn_simstate["position"], node_ETA + burn_dt)).
 			
 			SET simstate TO burn_simstate.
 			
-			SET ei_ETA tO ei_ETA + node_ETA.
+			SET ei_ETA tO ei_ETA + node_ETA + burn_dt.
 			
 			print "patch 1 steps: " + patch1_steps + "  " at (0,2).
 			print "time to node: " + round(node_ETA, 1) + "  "  at (0,3).
-			print "node burn dt: " + round(node_dt, 1) + "  "  at (0,4).
-			print "node burn Dv: " + round(burn_dv:MAG, 1) + "  "  at (0,5).
+			print "node burn Dv: " + round(burn_dv:MAG, 1) + "  "  at (0,4).
+			print "node burn dt: " + round(burn_dt, 1) + "  "  at (0,5).
 		
 		} ELSE {
 			SET drawburnvec TO FALSE.
@@ -132,10 +135,10 @@ FUNCTION ops3_deorbit_predict{
 		local patch2_dt is deorbit_base_dt.
 		LOCAL patch2_simtime IS 0.
 		
-		UNTIL(patch2_steps >= max_steps) {
+		UNTIL(patch2_steps >= patch_max_steps) {
 			SET patch2_steps TO patch2_steps + 1.
 			
-			SET ei_simstate TO clone_simstate(coast_rk4(patch2_dt, ei_simstate)).
+			SET ei_simstate TO clone_simstate(integrator:CALL(patch2_dt, ei_simstate)).
 			
 			SET patch2_simtime tO patch2_simtime + patch2_dt. 
 			
@@ -182,7 +185,7 @@ FUNCTION ops3_deorbit_predict{
 		
 		//entry interface calculations
 		LOCAL ei_orb_elems IS state_vector_orb_elems(ei_simstate["position"], ei_simstate["velocity"]).
-		Local ei_ref_data is deorbit_ei_calc(ei_orb_elems["ap"], ei_orb_elems["incl"], ei_delaz, ei_simstate["altitude"]/1000).
+		Local ei_ref_data is deorbit_ei_calc(ei_orb_elems["ap"], ei_orb_elems["incl"], ei_delaz, ei_simstate["altitude"]/1000, deorbit_gui_is_shallow_ei()).
 		 
 		update_deorbit_GUI(ei_ETA, ei_data, ei_ref_data).
 		
@@ -190,11 +193,12 @@ FUNCTION ops3_deorbit_predict{
 		print "patch 2 dt: " + round(patch2_simtime, 1) + "  "  at (0,11).
 		print "EI alt: " + round(ei_simstate["altitude"], 0) + "  "  at (0,12).
 		
-		clearvecdraws().
+		
 		arrow_body(ei_posvec,"entry_interface").
 		if (drawburnvec) {
-			arrow_body(burn_pos,"deorbit_burn").
-			arrow_bodyvec(burn_dv * 10000,"deltaV", burn_pos).
+			arrow_body(burn_start_pos,"burn_start").
+			arrow_body(burn_end_pos,"burn_end").
+			arrow_bodyvec(burn_dv * 10000,"deltaV", burn_start_pos).
 		}
 		
 		if (quit_program) {
@@ -207,38 +211,50 @@ FUNCTION ops3_deorbit_predict{
 	clearscreen.
 }
 
-function predict_patch_coast {
+function predict_patch_burn {
 	parameter initial_simstate.
-	parameter predict_t.
-	parameter predict_base_t.
+	parameter burn_dv_vec.
+	parameter burn_dt.
+	parameter predict_base_dt.
 	parameter predict_maxsteps.
+	parameter engines_.
 	parameter integrator is coast_rk3@.
 	
-	
-	LOCAL patch_steps IS CEILING(predict_t/predict_base_t).
-	
-	set patch_steps to min(patch_steps, predict_maxsteps).
-			
-	LOCAL patch_dt IS predict_t/patch_steps.
+	LOCAL patch_steps IS CEILING(burn_dt/predict_base_dt).
+	set patch_steps to min(patch_steps, predict_maxsteps).	
+	LOCAL patch_dt IS burn_dt/patch_steps.
 	
 	LOCAL internal_simstate IS clone_simstate(initial_simstate).
 	
+	local node_tangent is 0.
+	local node_normal is 0.
+	local node_binormal is 0.
+	
+	local g0 IS 9.80665.
+	local eng_thr is engines_["thrvec"]:mag / 1000.
+	local eng_mdot is eng_thr / (engines_["isp"] * g0).
+	
 	FROM {local s is 1.} UNTIL (s > patch_steps) STEP {set s to s+1.} DO {
-		SET internal_simstate TO clone_simstate(integrator:CALL(patch_dt, internal_simstate)).
+		
+		local i_tangent is internal_simstate["position"]:normalized.
+		local i_normal is internal_simstate["velocity"]:normalized.
+		local i_binormal is vcrs(i_normal, i_tangent).
+		
+		if (s=1) {
+			set node_tangent to vdot(burn_dv_vec:normalized, i_tangent).
+			set node_normal to vdot(burn_dv_vec:normalized, i_normal).
+			set node_binormal to vdot(burn_dv_vec:normalized, i_binormal).
+		}
+	
+		local burn_thrvec is node_tangent*i_tangent + node_normal*i_normal + node_binormal*i_binormal.
+		set burn_thrvec to burn_thrvec:normalized * eng_thr.
+	
+		SET internal_simstate TO clone_simstate(integrator:CALL(patch_dt, internal_simstate, burn_thrvec)).
+		
+		set internal_simstate["mass"] to internal_simstate["mass"] - patch_dt * eng_mdot.
 	}
 	
 	return internal_simstate.
-}
-
-function predict_patch_burn {
-	parameter initial_simstate.
-	parameter initial_burn_vec.
-	parameter predict_t.
-	parameter predict_base_t.
-	parameter predict_maxsteps.
-	parameter integrator is coast_rk3@.
-
-
 }
 
 

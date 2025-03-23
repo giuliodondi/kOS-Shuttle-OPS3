@@ -28,7 +28,7 @@ FUNCTION shuttle_ei_range {
 	LOCAL incl_corr IS (ei_incl - 40) * 16.
 	
 	//delaz correction taken from level-c entyr low energy guidance
-	local delaz_corr is 2.5 * base_rng * sin(ei_delaz) * tan(ei_delaz).
+	local delaz_corr is 2.8 * base_rng * sin(ei_delaz) * tan(ei_delaz).
 	
 	return base_rng + delaz_corr.
 }
@@ -39,6 +39,7 @@ FUNCTION deorbit_ei_calc {
 	PARAMETER incl.
 	PARAMETER delaz.
 	PARAMETER ei_alt.
+	parameter shallow_.
 	
 	LOCAL ei_incl IS ABS(incl).
 	LOCAL ei_delaz IS ABS(delaz).
@@ -73,10 +74,10 @@ FUNCTION deorbit_ei_calc {
 		set ei_calc["ei_vel"] to orbit_alt_vel(ei_h, sma).
 		set ei_calc["ei_fpa"] to -orbit_eta_fpa(ei_calc["ei_eta"], sma, ecc).
 		
-		if (deorbit_gui_is_steep_ei()) {
-			set fpa_error to shuttle_steep_ei_fpa(ei_calc["ei_vel"]) - ei_calc["ei_fpa"].
-		} else {
+		if (shallow_) {
 			set fpa_error to shuttle_shallow_ei_fpa(ei_calc["ei_vel"]) - ei_calc["ei_fpa"].
+		} else {
+			set fpa_error to shuttle_steep_ei_fpa(ei_calc["ei_vel"]) - ei_calc["ei_fpa"].
 		}
 
 		set pe_guess to pe_guess + fpa_error * 100.
