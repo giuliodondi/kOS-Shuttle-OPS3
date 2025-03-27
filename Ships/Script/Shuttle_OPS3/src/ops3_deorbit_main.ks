@@ -16,17 +16,28 @@ FUNCTION ops3_deorbit_predict{
 	GLOBAL quit_program IS FALSE.
 	
 	//check engines 
+	local engines_lex is lexicon().
+	local rcs_flag is false.
 	IF (get_running_engines():LENGTH = 0) {
-		PRINT "No active engines,  aborting." .
-		RETURN.
+		PRINT "No active engines,  falling back to RCS." .
+		set rcs_flag to true.
+		//hard-coded rcs params
+		set engines_lex to lexicon(
+				"thrvec", ship:facing:forevector * (7740 * 2),
+				"isp", 320
+	).
+	} else {
+		set engines_lex to get_max_thrust_isp().
 	}
+	
+	
 
 	if (ALLNODES:LENGTH>1) {
 		print "Can handle at most one manoeuvre node,  aborting.".
 		return.
 	}
 	
-	local engines_lex is get_max_thrust_isp().
+	
 
 	IF (DEFINED tgtrwy) {UNSET tgtrwy.}
 	GLOBAL tgtrwy IS LEXICON().
