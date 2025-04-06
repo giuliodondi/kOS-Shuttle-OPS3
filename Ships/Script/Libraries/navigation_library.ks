@@ -414,8 +414,8 @@ function state_vector_orb_elems {
 	
 	LOCAL sma_ IS 1/(2/posvec:MAG - velvec:MAG^2/BODY:MU).
 	
-	LOCAL ap IS (sma_*(1 + ecc_) - BODY:RADIUS)/1000.
-	LOCAL pe IS (sma_*(1 - ecc_) - BODY:RADIUS)/1000.
+	LOCAL ap IS orbit_smaecc_ap(sma_, ecc_).
+	LOCAL pe IS orbit_smaecc_pe(sma_, ecc_).
 	
 	RETURN LEXICON(
 			"ap", ap,
@@ -428,6 +428,22 @@ function state_vector_orb_elems {
 			"eta", eta_
 	).
 
+}
+
+//compute apoapsis in km given sma in metres and ecc 
+function orbit_smaecc_ap {
+	parameter sma_.
+	parameter ecc_.
+	
+	return (sma_*(1 + ecc_) - BODY:RADIUS)/1000.
+}
+
+//compute periapsis in km given sma in metres and ecc 
+function orbit_smaecc_pe {
+	parameter sma_.
+	parameter ecc_.
+	
+	return (sma_*(1 - ecc_) - BODY:RADIUS)/1000.
 }
 
 // compute sma given ap and pe in kilometres
@@ -567,6 +583,37 @@ FUNCTION orbit_alt_vsat {
 	
 	RETURN SQRT( BODY:MU / h ).
 
+}
+
+//given altitude and velocity at that point, calculates sma
+//altitude must be measured from the body centre 
+function orbit_altvel_sma {
+	parameter h.
+	parameter vel.
+	
+	local sma is 2/h - vel^2 / BODY:MU.
+	return 1/sma.
+}
+
+//specific orbital energy
+function orbit_specif_energy {
+	parameter h.
+	parameter vel.
+	
+	return vel^2/2 - BODY:MU/h.
+}
+
+//given altitude velocity and fpa at that point, calculates eccentricity
+//altitude must be measured from the body centre 
+function orbit_altvelfpa_ecc {
+	parameter h.
+	parameter vel.
+	parameter fpa.
+	
+	local eps is orbit_specif_energy(h, vel).
+	local angmom is h * vel * cos(fpa).
+	
+	return sqrt(1 + 2*eps*(angmom/BODY:MU)^2).
 }
 
 //VEHICLE-SPECIFIC FUNCTIONS
