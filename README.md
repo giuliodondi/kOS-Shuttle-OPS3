@@ -2,7 +2,7 @@
 
 # Kerbal Space Program Space Shuttle OPS3 Entry Guidance
 
-## Updated February 2025
+## Updated March 2025
 
 <p align="center">
   <img src="https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/ops3_cover.png" width="700" >
@@ -93,13 +93,15 @@ Do not reenter with the OMS pods more than 50% - 60% full or you might be too ta
 Entry Interface is the point at which reentry begins, defined as 122km (400kft) altitude. The goal of deorbit planning is to reach this point at the right conditions for a proper reentry.  
 The critical parameters to control are velocity, range, and flight-path-angle (FPA), the angle of descent with respect to the horizontal. All these depend on the initial orbit and the placement/magnitude of the deorbit burn.
 
-First, you need to place a deorbit manoeuvre node on the last orbital pass before the landing site, it's crucial that you use a surface-relative trajectory tool like Principia or Trajectories to pick the right orbital pass. The node need only be created coarsely at this stage, plan a periapsis of near 0km a bit downrange from the landing site.
+First, you need to place a deorbit manoeuvre node on the last orbital pass before the landing site, it's crucial that you use a surface-relative trajectory tool like Principia or Trajectories to pick the right orbital pass. The node need only be created coarsely at this stage, plan a periapsis of near 30km a bit downrange from the landing site.
 
 Then run **ops3_deorbit.ks** to fire up the planning tool. Choose carefully the landing site (it will be frozen after this).  
-The tool will predict your state at Entry Interface which you will use to adjust your deorbit burn. The _Ref_ numbers are your desired parameters, the actual parameters will be red if they're too far off from the reference numbers, you should try to get all numbers in the green.
 
 ![main_gui](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/deorbit_gui.png)
 
+The tool will predict your state at Entry Interface which you will use to adjust your deorbit burn. The _Ref_ numbers are your desired parameters, the actual parameters will be red if they're too far off from the reference numbers, you should try to get all numbers in the green.
+
+By default, your reentry desired state is **STEEP**, that's how it was normally in real-life. The **SHALLOW** reentry will set you up much further out on a shallower descent, and the burn will require between half and 2/3 the Delta-V of a normal burn. The **SHALLOW** option is only really intended to simulate an emergency situation where both OMS have failed and all you have is RCS to deorbit. Read yourself the real procedures if you want to attempt this.
 
 Rules of thumb:
 - Start from a near-circular orbit if you can
@@ -257,6 +259,12 @@ Some remarks:
 
 <details>
 <summary><h2>Entry guidance during aborts</h2></summary>
+
+## STEEP and SHALLOW reentries
+
+In the default **STEEP** case, you just set auto guidance upon starting the OPS3 program and let it go. If you had the **SHALLOW** option instead, you must set the DAP to CSS first and set a prebank angle of 90° or more towards the landing site. In the shallow reentry case, you need this to avoid a skip-out and messing up reentry ranging, and auto guidance will not do it for you.  
+Once the guidance program transitions from Pre-entry to Temp control, you may set the DAP pack to auto.
+
   
 ## Transatlantic Abort Landing (TAL) reentry
 
