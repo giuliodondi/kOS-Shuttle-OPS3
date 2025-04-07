@@ -114,6 +114,8 @@ global entryg_constants is lexicon (
 									"alfm", 33,	//ft/s2 	desired const drag
 									"tal_alfm", 35,	//ft/s2 	my addition: desired const drag for tal
 									"alim", 70.84,	//ft/s2 max accel in transition
+									"almndzgn", 0.05,	//my addition - gain for almn based on delaz
+									"almnmin", 0.65,	//max l/d cmd outside heading err deadband
 									"almn1", 0.7986355,	//max l/d cmd outside heading err deadband
 									"almn2", 0.9659258,	//max l/d cmd inside heading err deadband
 									"almn3", 0.93969,	//max l/d cmd below velmn
@@ -217,11 +219,9 @@ global entryg_constants is lexicon (
 									"mm304alp0", 40,	//standard preentry aoa
 									"radeg", 57.29578,	//deg/rad radians to degrees
 									"rdmax", 12,	//max roll bias 
-									"rlmndzfac", 2.2,	//min roll delaz gain 
 									"rlm_css", 180,	//rlm for css
 									"rlmc0", 95,	//rlm max above verolc
 									"tal_rlmc0", 120,	//rlm max above tal_verolc for tal
-									"rlmdz", 70,		//max roll delaz limiting
 									"rlmc1", 70,	//rlm max
 									"rlmc2", -47,	//coeff in first rlm seg 
 									"rlmc3", 0.03,		//deg/ft/s
@@ -242,7 +242,6 @@ global entryg_constants is lexicon (
 									"vc20", 2500,	//ft/s c20 vel break point
 									"velmn", 8000,	//ft/s	max vel for limiting lmn by almn3
 									"verolc", 8000,	//max vel for limiting bank cmd
-									"verlmndz", 18000,	//max vel for delaz min bank
 									"tal_verolc", 18000,	//max vel for limiting bank cmd by tal_rlmc0
 									"vhs1", 12310,	//ft/s scale height vs ve boundary
 									"vhs2", 19675.5,	//ft/s scale hgitht vs ve boundary 
@@ -325,6 +324,7 @@ global entryg_internal is lexicon(
 									"aclim", 0,  	//lower pitch limit
 									"acmd1", 0,   	//scheduled aoa
 									"aldref", 0,   	//vertical l/d ref
+									"almn1", 0,		//max l/d cmd outside heading err deadband
 									"alpcmd", 0,   	//aoa cmd (deg)
 									"rolcmd", 0,   	//roll cmd 	(deg)
 									"spdbcmd", 0,	//my addition: speedbrake cmd
@@ -388,7 +388,6 @@ global entryg_internal is lexicon(
 									"rk2rol", 0,   	//bank angle direction 
 									"rk2rlp", 0,   	//prev val 
 									"rlm", 0,		//roll limit
-									"rlmndz", 0, 	//min roll based on delaz
 									"rollc", list(0,0,0,0),	//1: roll angle command,  2: unlimited roll command,  3: roll ref //deg
 									"rolref", 0,	//deg 	//roll ref
 									"rpt", 0,   	//desired range at vq 
@@ -1228,6 +1227,8 @@ function eglodvcmd {
 	
 	local yl is midval(entryg_constants["cy0"] + entryg_constants["cy1"]*entryg_input["ve"], delaz_upper, delaz_lower).
 	
+	//lmn is an upper limit on lodv, i.e. a lower limit on roll, for xrange control
+	//thhe min roll is arccos(lmn/xlod)
 	set entryg_internal["lmn"] to entryg_constants["almn2"].
 	
 	//moved from above
@@ -1236,14 +1237,17 @@ function eglodvcmd {
 	set entryg_internal["dzold"] to entryg_input["delaz"].
 	
 	//calculate l/d limits given whether delaz is increasing or decreasing
+	//modification: adaptive lmn logic based on delaz outside deadband
+	local yldb is 0.
 	if (dzsgn > 0) {
-		if ((yl - entryg_constants["ylmin"]) < dzabs)  {
-			set entryg_internal["lmn"] to entryg_constants["almn1"].
-		}
+		set yldb to yl - entryg_constants["ylmin"].
 	} else {
-		if ((yl - entryg_constants["ylmn2"]) < dzabs) {
-			set entryg_internal["lmn"] to entryg_constants["almn1"].
-		}
+		set yldb to yl - entryg_constants["ylmn2"].
+	}
+	set entryg_internal["almn1"] to midval(entryg_constants["almn1"] * (1 - entryg_constants["almndzgn"] * dzabs/yldb), entryg_constants["almnmin"], entryg_constants["almn1"]).
+	
+	if (dzabs > yldb)  {
+		set entryg_internal["lmn"] to entryg_internal["almn1"].
 	}
 	
 	//low-energy roll command
@@ -1277,9 +1281,7 @@ function eglodvcmd {
 	//added a check?
 	if (entryg_input["ve"] > entryg_constants["vylmax"]) {
 		set entryg_internal["lmn"] to entryg_constants["almn4"].
-	}
-	
-	if (entryg_input["ve"] < entryg_constants["velmn"]) {
+	} else if (entryg_input["ve"] < entryg_constants["velmn"]) {
 		set entryg_internal["lmn"] to entryg_constants["almn3"].
 	}
 	
@@ -1294,7 +1296,7 @@ function eglodvcmd {
 		set entryg_internal["lodv"] to entryg_internal["lmn"]*sign(entryg_internal["lodv"]).
 	} else {
 		set entryg_internal["lmflg"] to FALSE.
-		set entryg_internal["lmn"] to entryg_internal["xlod"].
+		//moved the setting of lmn to egrolcmd - ict block 
 		
 		//should do the roll reversal
 		//added condition on abs(delaz) plus flag to track reversal start and end
@@ -1341,8 +1343,13 @@ function egrolcmd {
 		local delalf is (entryg_input["alpha"] - entryg_internal["acmd1"]).
 		set entryg_internal["rdealf"] to midval(entryg_constants["crdeaf"]*delalf, entryg_constants["rdmax"], -entryg_constants["rdmax"]).
 		
+		local almnxd is entryg_internal["lmn"]/entryg_internal["xlod"].
+		if (not entryg_internal["lmflg"]) {
+			set almnxd to 1.
+		}
+
 		//again skip conversion to degrees
-		local almnxd is ARCCOS(entryg_internal["lmn"]/entryg_internal["xlod"]).	// / entryg_constants["dtr"].
+		set almnxd to ARCCOS(almnxd).	// / entryg_constants["dtr"].
 		
 		//modification
 		//set entryg_internal["rollc"][1] to (abs(entryg_internal["rollc"][2]) + midval(entryg_internal["rdealf"], almnxd, -almnxd)) * entryg_internal["rk2rol"].
@@ -1375,13 +1382,6 @@ function egrolcmd {
 		} else {
 			set entryg_internal["rlm"] to max(entryg_constants["rlmc6"], entryg_constants["rlmc4"] + entryg_constants["rlmc5"]*entryg_input["ve"]).	//ramp down to 30° for taem
 		}
-	}
-	
-	//my addition: min roll logic 
-	if (entryg_internal["dlzrl"] < 0) and (entryg_input["ve"] < entryg_constants["verlmndz"])  {
-		set entryg_internal["rlmndz"] to MIN(entryg_constants["rlmndzfac"] * abs(entryg_input["delaz"]), entryg_constants["rlmdz"]).
-	} else {
-		set entryg_internal["rlmndz"] to 0.
 	}
 	
 	//my addition: use beqglm to engage low energy logic automatically on the next pass
@@ -1456,9 +1456,8 @@ function egrolcmd {
 		}
 	
 		//my modification: limit the new roll command from above by the unlimited roll 
-		set rollca to MIN(rollca, entryg_internal["rollc"][2]).
-		//my modification: limit the new roll command from below by the min delaz roll
-		SET rollca TO MAX(rollca, entryg_internal["rlmndz"]).
+		//why did I add this? it's only useful if lodx is ever less than lodv but it should be impossible
+		//set rollca to MIN(rollca, entryg_internal["rollc"][2]).
 	}
 	
 	//my addition: fiter changes in roll cmd if they are below a threshold enough
