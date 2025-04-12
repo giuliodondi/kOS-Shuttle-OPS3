@@ -268,7 +268,7 @@ FUNCTION ops3_main_exec {
 			).
 			update_entry_traj_disp(gui_data).
 			
-			if (ops3_parameters["full_debug"]) {
+			if (ops3_parameters["dap_debug"]) {
 				dap:print_debug(2).
 			}
 			
@@ -471,7 +471,7 @@ FUNCTION ops3_main_exec {
 			
 			update_taem_vsit_disp(gui_data).
 			
-			if (ops3_parameters["full_debug"]) {
+			if (ops3_parameters["dap_debug"]) {
 				dap:print_debug(2).
 			}
 			
