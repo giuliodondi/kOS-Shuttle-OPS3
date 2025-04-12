@@ -337,6 +337,7 @@ global entryg_internal is lexicon(
 									"cq3", list(0,0,0),   	//degree 2 for temp control quadratic 
 									"c16", 0,   		//d(l/d) / dD
 									"c17", 0,   		//d(l/d) / dH
+									"c1", 0,	//dD/dEow 	slope of drag energy profile
 									"c2", 0,   	//component of ref l/d 
 									"d23", 0,		//drag velocity profile is anchored at d23 at velocity vb1 - the phase 2/3 boundary
 									"d231", 0,		//initial value in the expansion of d23
@@ -777,17 +778,17 @@ function egcomn {
 		if (entryg_internal["islect"] < 4) {
 			set entryg_internal["t2"] to entryg_constants["cnmfs"] * (entryg_internal["ve2"] - entryg_internal["vq2"]) / (2*( entryg_input["trange"] - entryg_internal["rpt"])).
 			//my addition- limit t2, effectively disables early transition to phase 4
-			set entryg_internal["t2"] to min(entryg_internal["t2"], entryg_constants["alfm"]).
+			//removed
 		}
 		
 		set entryg_internal["t2dot"] to (entryg_internal["t2"] - t2old) / entryg_input["dtegd"].
 		
 		//stuff for transition to phase 5
 		if (entryg_input["ve"] < (entryg_constants["vtran"] + entryg_constants["delv"])) {
-			local c1 is (entryg_internal["t2"] - entryg_constants["df"]) / ( entryg_constants["etran"] - entryg_constants["eef4"]).
-			set entryg_internal["rdtrft"] to - (c1 * (entryg_constants["gs"]  * entryg_input["hls"] - entryg_constants["eef4"]) + entryg_constants["df"]) * 2 * entryg_input["ve"] * entryg_internal["hs"] / entryg_internal["cag"].
+			set entryg_internal["c1"] to (entryg_internal["t2"] - entryg_constants["df"]) / ( entryg_constants["etran"] - entryg_constants["eef4"]).
+			set entryg_internal["rdtrft"] to - (entryg_internal["c1"] * (entryg_constants["gs"]  * entryg_input["hls"] - entryg_constants["eef4"]) + entryg_constants["df"]) * 2 * entryg_input["ve"] * entryg_internal["hs"] / entryg_internal["cag"].
 			
-			set entryg_internal["drefp5"] to entryg_constants["df"] + (entryg_internal["eef"] - entryg_constants["eef4"]) * c1 + entryg_constants["gs4"] * (entryg_internal["rdtref"] - entryg_internal["rdtrft"]).
+			set entryg_internal["drefp5"] to entryg_constants["df"] + (entryg_internal["eef"] - entryg_constants["eef4"]) * entryg_internal["c1"] + entryg_constants["gs4"] * (entryg_internal["rdtref"] - entryg_internal["rdtrft"]).
 		}
 	
 	}
@@ -1011,14 +1012,15 @@ function egref4 {
 	PARAMETER entryg_input.
 	
 	set entryg_internal["drefp"] to entryg_internal["t2"].
+	//my addition - drefp is never negative and clamped to prevent singularities
+	set entryg_internal["drefp"] to midval(abs(entryg_internal["drefp"]), 1, entryg_constants["drefplim"]).
+	
 	set entryg_internal["rdtref"] to -2*entryg_internal["hs"]*entryg_internal["drefp"]/entryg_input["ve"].
+	
 	//DISCREPANCY!! sign of drdd
 	//phase 3 range to go
 	set entryg_internal["drdd"] to -(entryg_input["trange"] -  entryg_internal["rpt"]) / entryg_internal["drefp"].
 	set entryg_internal["c2"] to 0.
-	
-	//my addition - drefp is never negative and clamped to prevent singularities
-	set entryg_internal["drefp"] to midval(abs(entryg_internal["drefp"]), 1, entryg_constants["drefplim"]).
 	
 	set entryg_internal["itran"] to TRUE.
 }
@@ -1047,18 +1049,18 @@ function egtran {
 	
 	set drefpt to entryg_internal["drefp"] - entryg_constants["df"].
 	//slope of drag energy profile in phase 5
-	local c1 is drefpt / (entryg_internal["eef"] - entryg_constants["eef4"]).
+	set entryg_internal["c1"] to drefpt / (entryg_internal["eef"] - entryg_constants["eef4"]).
 	
 	//phase 5 range to go
-	set entryg_internal["rer1"] to entryg_constants["cnmfs"] * ln(entryg_internal["drefp"] / entryg_constants["df"]) / c1.
-	set entryg_internal["drdd"] to min(entryg_constants["cnmfs"] * 1/(c1 * entryg_internal["drefp"]) - entryg_internal["rer1"] / drefpt , entryg_constants["drddl"]).
+	set entryg_internal["rer1"] to entryg_constants["cnmfs"] * ln(entryg_internal["drefp"] / entryg_constants["df"]) / entryg_internal["c1"].
+	set entryg_internal["drdd"] to min(entryg_constants["cnmfs"] * 1/(entryg_internal["c1"] * entryg_internal["drefp"]) - entryg_internal["rer1"] / drefpt , entryg_constants["drddl"]).
 	
 	//update reference drag but ensure it doesn't exceed elevon higne moment limits through alim, I assume
 	set entryg_internal["drefp"] to entryg_internal["drefp"] + (entryg_input["trange"] - entryg_internal["rer1"] - entryg_constants["rpt1"]) / entryg_internal["drdd"].
 	local dlim is entryg_constants["alim"] * entryg_input["drag"] / entryg_input["xlfac"].
 	if (entryg_internal["drefp"] > dlim) {
 		set entryg_internal["drefp"] to dlim.
-		set c1 to 0.
+		set entryg_internal["c1"] to 0.
 	}
 	
 	if (entryg_internal["drefp"] < entryg_constants["e1"]) {
@@ -1072,7 +1074,7 @@ function egtran {
 	//my addition - drefp is never negative and clamped to prevent singularities
 	set entryg_internal["drefp"] to midval(abs(entryg_internal["drefp"]), 1, entryg_constants["drefplim"]).
 	
-	set entryg_internal["rdtref"] to -entryg_internal["hs"]*entryg_input["ve"]*(2*entryg_internal["drefp"] - c1*entryg_internal["ve2"]) / entryg_internal["cag"].
+	set entryg_internal["rdtref"] to -entryg_internal["hs"]*entryg_input["ve"]*(2*entryg_internal["drefp"] - entryg_internal["c1"]*entryg_internal["ve2"]) / entryg_internal["cag"].
 	
 	set entryg_internal["c2"] to 4*entryg_input["ve"]*entryg_internal["drefp"]*(1 - (entryg_internal["ve2"]/entryg_internal["cag"])^2) / entryg_internal["cag"].
 }
