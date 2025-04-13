@@ -305,6 +305,7 @@ global entryg_constants is lexicon (
 									"dlzdb2", 4,		//° Low–energy logic: delaz limit for zero roll if delaz decreasing
 									"rolmn1", 11,		//° Low–energy logic: roll command lower limit
 									"rolmn2", 70,		//° Low–energy logic: roll command upper limit
+									"rlmndzfac", 2.2,	//  Low–energy logic: min roll delaz gain 
 									"dlzlm1", 17,		//° Low–energy logic: DELAZ limit for DZFCTR incrementing
 									"dlzlm2", 17,		//° Low–energy logic: DELAZ limit for DZFCTR decrementing
 									"alprddot", 0.04,		// Low–energy logic: alpha ramp rddot gain
