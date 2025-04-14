@@ -48,8 +48,7 @@ FUNCTION entryg_wrapper {
 							"vi", entryg_input["vi"]*mt2ft,		   //inertial vel (ft/s)
 							"xlfac", entryg_input["xlfac"],      //load factor acceleration (ft/s2)
 							"cd", entryg_input["cd"],      //drag coef from FAR
-							"mm304ph", entryg_constants["mm304phi0"],    	//preentry bank 
-							"mm304al", entryg_constants["mm304alp0"],    	//preentry aoa ,
+							"css", entryg_input["css"],		//is css steering
 							"ital", entryg_input["ital"]				//is tal abort flag
 	).
 	
@@ -424,6 +423,8 @@ global entryg_internal is lexicon(
 									
 									"tgtsite0", 0,		//my addition, keep track of the tgt site to reset guidance
 									"n_iter", -1, 		//do not initialise to zero
+									"mm304ph", 0,		//°	preentry roll - moved from input 
+									"mm304al", 0,		//° preentry roll - moved from input
 									
 									// low energy logic
 									"ileflg", false,		//low-energy enable flag
@@ -536,6 +537,12 @@ function egexec {
 	//}
 	
 	if (entryg_internal["islect"] = 1) {
+		//my addition - save present attitude values if css and latch them 
+		if (entryg_input["css"]) {
+			set entryg_internal["mm304ph"] to entryg_input["roll"].
+			set entryg_internal["mm304al"] to entryg_input["alpha"].
+		}
+	
 		//compute vertical l/d during preentry 
 		egpep(entryg_input).
 	} else if (entryg_internal["islect"] = 2) OR (entryg_internal["islect"] = 3) {
@@ -671,6 +678,9 @@ function eginit {
 	
 	set entryg_internal["rdotp"] to entryg_input["rdot"].
 	set entryg_internal["dragp"] to entryg_input["drag"].
+	
+	set entryg_internal["mm304ph"] to entryg_constants["mm304phi0"].
+	set entryg_internal["mm304al"] to entryg_constants["mm304alp0"].
 	
 	//in case of a tal abort 
 	//refactored before the calculations that use alfm
@@ -823,7 +833,7 @@ function egcomn {
 function egpep {
 	PARAMETER entryg_input.
 	
-	set entryg_internal["lodx"] to entryg_internal["xlod"] * COS( entryg_input["mm304ph"] ).
+	set entryg_internal["lodx"] to entryg_internal["xlod"] * COS( entryg_internal["mm304ph"] ).
 	set entryg_internal["lodv"] to entryg_internal["lodx"].
 	//added this one 
 	set entryg_internal["aldref"] to entryg_internal["lodx"].

@@ -213,8 +213,9 @@ FUNCTION ops3_main_exec {
 									"lod", dap:aero:lod:average(),
 									"egflg", 0, 
 									"ital", tal_flag,
+									"css", css_flag,
 									"debug", ops3_parameters["full_debug"]
-										).
+			).
 			LOCAL entryg_out is entryg_wrapper(entryg_in).
 			
 			set guid_id to entryg_out["guid_id"].
