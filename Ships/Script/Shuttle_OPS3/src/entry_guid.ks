@@ -1460,7 +1460,8 @@ function egrolcmd {
 	
 		//my modification: limit the new roll command from above by the unlimited roll 
 		//why did I add this? it's only useful if lodx is ever less than lodv but it should be impossible
-		//set rollca to MIN(rollca, entryg_internal["rollc"][2]).
+		//I remember now - I did this for Tal to avoid prebanks before pullout
+		set rollca to MIN(rollca, entryg_internal["rollc"][2]).
 	}
 	
 	//my addition: fiter changes in roll cmd if they are below a threshold enough
