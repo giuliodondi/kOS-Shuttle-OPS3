@@ -488,10 +488,10 @@ FUNCTION aerosurfaces_control_factory {
 			}
 		}
 		
-		this["gimbal"]:DOACTION("free gimbal", TRUE).
-		//gg:DOEVENT("Show actuation toggles").
-		this["gimbal"]:DOACTION("toggle gimbal roll", TRUE).
-		this["gimbal"]:DOACTION("toggle gimbal yaw", TRUE).
+		set this["gimbal"]:LOCK to false.
+		set this["gimbal"]:pitch to true.
+		set this["gimbal"]:roll to true.
+		set this["gimbal"]:yaw to true.
 		
 	}).
 	
