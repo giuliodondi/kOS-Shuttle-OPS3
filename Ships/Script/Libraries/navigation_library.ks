@@ -886,12 +886,8 @@ FUNCTION launchAzimuth {
 	PARAMETER tgtIncl.
 	PARAMETER tgtVel.
 	PARAMETER southerly.
-	PARAMETER override_az_limits IS FALSE.
 
-	//	Expects global variables "target_orbit" as lexicons
-	LOCAL shippos IS SHIP:GEOPOSITION.
-	LOCAL shiplat IS shippos:LAT.
-	
+	LOCAL shiplat IS SHIP:GEOPOSITION:LAT.
 	LOCAL Binertial IS get_orbit_azimuth(tgtIncl, shiplat, southerly).
 	
 	//get launch azimuth angle wrt due east=0
@@ -904,34 +900,6 @@ FUNCTION launchAzimuth {
 	//transform it into an azimuth wrt the north direction
 	//this will subtract from 90° if it's a positive angle, due north, and add to 90° if it's due south. wrap around 360°
 	LOCAL azimuth IS fixangle(90 - azimuth).
-	
-	IF (NOT override_az_limits) {
-		//implement range azimuth limitation
-		//if the launchsite is within 50km of a known site
-		//apply its range restrictions
-		LOCAL site_azrange IS LEXICON(
-							"KSC",LEXICON(
-									"position",LATLNG(28.61938,-80.70092),
-									"min_az",35,
-									"max_az",120
-							),
-							"Vandenberg",LEXICON(
-									"position",LATLNG(34.67974,-120.53102),
-									"min_az",147,
-									"max_az",220
-							)
-		
-		).
-		
-		FOR s IN site_azrange:VALUES{
-			LOCAL sitepos IS s["position"].
-			
-			IF downrangedist(sitepos,shippos) < 50 {
-				SET azimuth TO CLAMP(azimuth, s["min_az"], s["max_az"]).
-				BREAK.
-			}
-		}
-	}
 	
 	RETURN azimuth.
 }
