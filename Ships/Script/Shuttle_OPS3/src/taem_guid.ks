@@ -553,6 +553,8 @@ global taemg_internal is lexicon(
 								"gdh", 0, 		// hdot gain for nzc
 								"gelrtan", 0, 		// my addition - rtan gain for eow lims
 								"hdreqg", 0, 		//gain for herror in nzc
+								"hddot", 0, 		//ft/s2 hdot derivative, my addition
+								"hdotp", 0, 		//ft/s hdot prev, my addition
 								"hderr", 0, 		//ft hdot error
 								"herror", 0, 		//ft altitude error
 								"hdref", 0,			//ft/s hdot reference
@@ -652,6 +654,7 @@ global taemg_internal is lexicon(
 								"istp4", 1,		//phase 4 s-turn variable, will match phase at taem transition 
 								"xlfmax", 0,	//g max load factor reached during grtls
 								"igrpo", FALSE,		//my addition - grtls pullout flag
+								"igrhd", FALSE,		//my addition - grtls vertical speed latch
 								
 								//my addition: control flags 
 								"grtls_flag", FALSE,		//grtls flag
@@ -1030,7 +1033,11 @@ FUNCTION gtp {
 
 //reference params, dyn press and spiral adjust function 
 FUNCTION tgcomp {
-	PARAMETER taemg_input.	
+	PARAMETER taemg_input.
+
+	//my addition - vertical accel 
+	set taemg_internal["hddot"] to (taemg_input["hdot"] - taemg_internal["hdotp"]) / taemg_input["dtg"].
+	set taemg_internal["hdotp"] to taemg_input["hdot"].
 	
 	//range to the a/l transition point
 	set taemg_internal["drpred"] to taemg_internal["rpred"] + taemg_internal["xali"].
@@ -1678,12 +1685,20 @@ function grtrn {
 	}
 	
 	if (taemg_internal["iphase"] = 6) {
-		//my addition: check that we're descending
-		//my modification: lower limit for nzsw
-		local nzsw is max(taemg_internal["nzsw"], taemg_internal["nzsw"] + taemg_internal["dgrnz"]).
-		if (taemg_input["nz"] > nzsw) and (taemg_input["hdot"] < taemg_constants["hdtrn"]) {
-			set taemg_internal["iphase"] to 5.
-			set taemg_internal["itran"] to TRUE.
+		//my addition: check that we're descending enough and don't run the checks prior to that
+		if (NOT taemg_internal["igrhd"]) {
+			set taemg_internal["igrhd"] to (taemg_input["hdot"] < taemg_constants["hdtrn"]). 
+		} else {
+			//my modification: lower limit for nzsw
+			local nzsw is max(taemg_internal["nzsw"], taemg_internal["nzsw"] + taemg_internal["dgrnz"]).
+			if (taemg_input["nz"] > nzsw) {
+				set taemg_internal["iphase"] to 5.
+				set taemg_internal["itran"] to TRUE.
+			} else if (taemg_internal["hddot"] > 0) and (taemg_input["hdot"] >= taemg_constants["hdtrn"]) {
+			//my addition : early transition to alptrn if we're in the pullout without hitting nzsw
+				set taemg_internal["iphase"] to 4.
+				set taemg_internal["itran"] to TRUE.
+			}
 		}
 		return.
 	}
