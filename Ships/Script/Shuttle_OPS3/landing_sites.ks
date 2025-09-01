@@ -118,6 +118,12 @@ GLOBAL ldgsiteslex IS LEXICON(
 							"elevation",150.4,
 							"length",3769.29,
 							"heading",190.03
+						),
+						"CCAFS",LEXICON(
+							"position",LATLNG(28.469585,-80.569177),
+							"elevation",6.5,
+							"length",2512,
+							"heading",307.93
 						)
 						
 ).
