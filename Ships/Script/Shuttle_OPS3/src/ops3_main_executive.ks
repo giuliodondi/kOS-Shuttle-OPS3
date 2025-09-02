@@ -454,6 +454,8 @@ FUNCTION ops3_main_exec {
 									"prog_pch", dap:prog_pitch,
 									"prog_roll", dap:prog_roll,
 									"prog_yaw", dap:prog_yaw,
+									"xtrack_err", 0,
+									"hac_entry_t", 0,
 									"grtls_flag", taemg_out["grtls_flag"],
 									"cont_flag", taemg_out["cont_flag"],
 									"ecal_flag", taemg_out["ecal_flag"]
@@ -461,13 +463,13 @@ FUNCTION ops3_main_exec {
 			
 			if (guid_id >= 30 OR guid_id=23) {
 				set hud_datalex["delaz"] to - rwystate["rwy_rel_crs"].
-				gui_data:ADD("xtrack_err",  -taemg_out["yerrc"]).
+				set gui_data["xtrack_err"] to -taemg_out["yerrc"].
 			} else if (guid_id = 22) {
 				set hud_datalex["delaz"] to taemg_out["ysgn"] * taemg_out["psha"].
-				gui_data:ADD("xtrack_err",  taemg_out["ysgn"] * taemg_out["rerrc"] / 50).
+				set gui_data["xtrack_err"] to taemg_out["ysgn"] * taemg_out["rerrc"] / 50.
 			} else if (guid_id <= 21 OR guid_id>23) {
 				set hud_datalex["delaz"] to taemg_out["dpsac"].
-				gui_data:ADD("hac_entry_t",  taemg_out["tth"]).
+				set gui_data["hac_entry_t"] to taemg_out["tth"].
 			}
 			
 			update_taem_vsit_disp(gui_data).
