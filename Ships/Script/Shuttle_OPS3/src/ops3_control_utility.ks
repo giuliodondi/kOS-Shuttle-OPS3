@@ -194,8 +194,6 @@ FUNCTION dap_controller_factory {
 	//these are meant to be set by guidance
 	this:add("roll_lims", LIST(-60, 60)).
 	this:add("pitch_lims", LIST(-10, 20)).
-	this:add("css_roll_lims", LIST(-180, 180)).
-	this:add("css_pitch_lims", LIST(-10, 20)).
 	this:add("yaw_lims", LIST(-5, 5)).
 	
 	// CSS steering modes
@@ -218,8 +216,6 @@ FUNCTION dap_controller_factory {
 		SET this:steer_pitch TO this:steer_pitch + deltapitch.
 		SET this:steer_roll TO this:steer_roll + deltaroll.
 		SET this:steer_yaw TO 0.
-		
-		set this:css_pitch_lims to LIST(this:pitch_lims[0]*0.8, this:pitch_lims[1]/0.8).
 		
 		this:update_steering().
 	}).
@@ -260,8 +256,6 @@ FUNCTION dap_controller_factory {
 			
 		SET this:steer_roll TO this:prog_roll + deltaroll.
 		SET this:steer_yaw TO deltayaw.
-		
-		set this:css_pitch_lims to LIST(this:pitch_lims[0]*0.65, this:pitch_lims[1]/0.65).
 		
 		this:update_steering().
 	}).
@@ -319,16 +313,10 @@ FUNCTION dap_controller_factory {
 	
 	
 	this:add("update_steering", {
-		local pchlm is this:pitch_lims.
-		local rllm is this:roll_lims.
-		if (this:is_css) {
-			set pchlm to this:css_pitch_lims.
-			set rllm to this:css_roll_lims.
-		}
 	
 		//limit absolute steering angles
-		SET this:steer_roll TO CLAMP(this:steer_roll, rllm[0], rllm[1]).
-		SET this:steer_pitch TO CLAMP(this:steer_pitch, pchlm[0], pchlm[1]).
+		SET this:steer_roll TO CLAMP(this:steer_roll, this:roll_lims[0], this:roll_lims[1]).
+		SET this:steer_pitch TO CLAMP(this:steer_pitch, this:pitch_lims[0], this:pitch_lims[1]).
 		SET this:steer_yaw TO CLAMP(this:steer_yaw, this:yaw_lims[0], this:yaw_lims[1]).
 		
 		//update steering manager
