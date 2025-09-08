@@ -77,7 +77,7 @@ FUNCTION ops3_main_exec {
 	local control_loop is loop_executor_factory(
 			ops3_parameters["control_loop_dt"],
 			{
-				IF (ADDONS:FAR:MACH < ops3_parameters["mach_rcs_off"]) {
+				IF (ADDONS:FAR:MACH < ops3_parameters["mach_rcs_off"]) and (not grtls_flag) {
 					RCS OFF.
 				} else {
 					RCS ON.
