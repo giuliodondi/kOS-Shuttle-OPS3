@@ -1207,8 +1207,10 @@ function update_taem_vsit_disp {
 	parameter gui_data.
 	
 	SET ops3_main_display_clock:text TO "MET " + sectotime_simple(MISSIONTIME, true).
+	
+	local grtls_flag is (gui_data["guid_id"] <= 26) AND (gui_data["guid_id"] >= 24).
 
-	if (taem_vsit_disp_counter = 1 and gui_data["rpred"] <= 64000) {
+	if (taem_vsit_disp_counter = 1 and gui_data["rpred"] <= 64000) and (not grtls_flag) {
 		increment_taem_vsit_disp_counter().
 	}
 	
@@ -1240,7 +1242,7 @@ function update_taem_vsit_disp {
 	
 	local orbiter_bug_pos is LIST(0,0).
 	
-	if (gui_data["guid_id"] <= 26) AND (gui_data["guid_id"] >= 24) {
+	if (grtls_flag) {
 		set orbiter_bug_pos to set_taem_vsit_disp_bug(v(grtls_disp_x_convert(gui_data["mach"]),grtls_disp_y_convert(gui_data["prog_pch"]), 0)).
 	} ELSE {
 		set orbiter_bug_pos to set_taem_vsit_disp_bug(v(taem_vsit_disp_x_convert(gui_data["rpred"]),taem_vsit_disp_y_convert(gui_data["eow"]), 0)).
