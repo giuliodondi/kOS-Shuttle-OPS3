@@ -127,11 +127,17 @@ FUNCTION dap_controller_factory {
 	
 	
 	this:add("reset_steering",{
-		set this:cur_mode to "".
-		set this:steer_pitch to this:prog_pitch.
-		set this:steer_roll to this:prog_roll.
-		set this:steer_yaw to 0.
-		set this:steer_lvlh_pitch TO this:lvlh_pitch.
+		local iscss is this:is_css.
+		local isgblk is this:in_gblk_region.
+		set this:cur_mode to "reset".
+		
+		if (NOT isgblk) {
+			set this:steer_pitch to this:prog_pitch.
+			set this:steer_roll to this:prog_roll.
+			set this:steer_yaw to 0.
+			set this:steer_lvlh_pitch TO this:lvlh_pitch.
+		}
+		
 		set this:tgt_pitch to this:prog_pitch.
 		set this:tgt_roll to this:prog_roll.
 		set this:tgt_yaw to 0.
@@ -222,7 +228,7 @@ FUNCTION dap_controller_factory {
 		this:measure_cur_state().
 		
 		LOCAL rollgain IS 0.45.
-		LOCAL pitchgain IS 0.12.
+		LOCAL pitchgain IS 0.16.
 		
 		//required for continuous pilot input across several funcion calls
 		LOCAL time_gain IS ABS(this:iteration_dt/0.07).
