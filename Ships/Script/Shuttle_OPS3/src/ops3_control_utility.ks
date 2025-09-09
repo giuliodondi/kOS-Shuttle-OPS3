@@ -35,6 +35,11 @@ FUNCTION dap_controller_factory {
 	
 	this:add("steering_dir", SHIP:FACINg).
 	
+	this:add("local_upvec", v(0,0,0)).
+	this:add("upvec", v(0,0,0)).
+	this:add("progvec", v(0,0,0)).
+	this:add("aimvec", v(0,0,0)).
+	
 	this:add("last_time", TIME:SECONDS).
 	
 	this:add("iteration_dt", 0).
@@ -68,6 +73,18 @@ FUNCTION dap_controller_factory {
 	
 	this:add("measure_cur_state", {
 		this:update_time().
+		
+		set this:progvec to SHIP:srfprograde:vector:NORMALIZED.
+		set this:local_upvec to -SHIP:ORBIT:BODY:POSITION:NORMALIZED.
+		
+		this:measure_gblk().
+	
+		if (NOT this:in_gblk_region) {
+			SET this:upvec TO this:local_upvec.
+		}
+		
+		SET this:upvec TO VXCL(this:progvec,this:upvec):NORMALIZED.
+		
 		SET this:prog_pitch TO get_pitch_prograde().
 		SET this:prog_roll TO get_roll_prograde().
 		SET this:prog_yaw TO get_yaw_prograde().
@@ -254,7 +271,7 @@ FUNCTION dap_controller_factory {
 			SET this:steer_pitch TO this:steer_lvlh_pitch / cosroll - (this:fpa /cosroll).
 		}
 			
-		SET this:steer_roll TO this:prog_roll + deltaroll.
+		SET this:steer_roll TO this:lvlh_roll + deltaroll.
 		SET this:steer_yaw TO deltayaw.
 		
 		this:update_steering().
@@ -315,8 +332,10 @@ FUNCTION dap_controller_factory {
 	this:add("update_steering", {
 	
 		//limit absolute steering angles
-		SET this:steer_roll TO CLAMP(this:steer_roll, this:roll_lims[0], this:roll_lims[1]).
-		SET this:steer_pitch TO CLAMP(this:steer_pitch, this:pitch_lims[0], this:pitch_lims[1]).
+		if (NOT this:is_css) {
+			SET this:steer_roll TO CLAMP(this:steer_roll, this:roll_lims[0], this:roll_lims[1]).
+			SET this:steer_pitch TO CLAMP(this:steer_pitch, this:pitch_lims[0], this:pitch_lims[1]).
+		}
 		SET this:steer_yaw TO CLAMP(this:steer_yaw, this:yaw_lims[0], this:yaw_lims[1]).
 		
 		//update steering manager
@@ -340,11 +359,10 @@ FUNCTION dap_controller_factory {
 		PARAMETER yaw_.
 		
 		//reference prograde vector about which everything is rotated
-		LOCAL progvec is SHIP:srfprograde:vector:NORMALIZED.
-		//vector pointing to local up and normal to prograde
-		LOCAL upvec IS -SHIP:ORBIT:BODY:POSITION:NORMALIZED.
+		local progvec is this:progvec.
 		
-		SET upvec TO VXCL(progvec,upvec):NORMALIZED.
+		//vector pointing to local up and normal to prograde
+		local upvec is this:upvec.
 		
 		//rotate the up vector by the new roll anglwe
 		SET upvec TO rodrigues(upvec, progvec, -rll).
@@ -354,45 +372,76 @@ FUNCTION dap_controller_factory {
 		SET upvec TO rodrigues(upvec, nv, pch).
 		LOCAL aimv IS rodrigues(progvec, nv, pch).
 		
-		//clearvecdraws().
-		//arrow_ship(upvec, "upvec", 30, 0.02).
-		//arrow_ship(aimv, "aimv", 30, 0.02).
-		
 		//rotate the aim vector by the yaw
 		if (ABS(yaw_)>0) {
 			SET aimv TO rodrigues(aimv, upvec, yaw_).
 		}
 		
-		//arrow_ship(aimv, "aimv", 30, 0.02).
+		set this:aimvec to aimv.
 		
 		RETURN LOOKDIRUP(aimv, upvec).
 	}).
 	
+	// implement gimbal lock protection
+	//when the prograde vector is too close to the vertical, preserve the up vector and rotate it to keep it consistent
+	//when exiting the region, re-update the vector and convert steering angles again to keep consistenct
+	
+	this:add("in_gblk_region", FALSE).
+	
+	this:add("measure_gblk", {
+		local normv is vcrs(this:upvec, this:local_upvec).
+		local xvec is vcrs(this:local_upvec, normv).
+		local is_gblk is (abs(vang(this:upvec, xvec)) < 10).
+		if this:in_gblk_region and (not is_gblk) {
+			this:gblk_reconvert_angles().
+		}
+		set this:in_gblk_region to is_gblk.
+	}).
+	
+	this:add("gblk_reconvert_angles", {
+		local local_upvec is VXCL(this:progvec,this:local_upvec):NORMALIZED.
+		local roll_cor is -signed_angle(local_upvec, this:upvec, this:progvec, 0).
+		
+		set this:steer_roll to unfixangle(this:steer_roll + roll_cor).
+	}).
+	
+	
 	this:add("print_debug",{
 		PARAMETER line.
 		
-		
+		parameter ll is line.
 		print "mode : " + this:cur_mode + "    " at (0,line).
 		
-		print "loop dt : " + round(this:iteration_dt(),3) + "    " at (0,line + 1).
+		print "loop dt : " + round(this:iteration_dt(),3) + "    " at (0,ll + 1).
 		
-		print "prog pitch : " + round(this:prog_pitch,3) + "    " at (0,line + 2).
-		print "prog roll : " + round(this:prog_roll,3) + "    " at (0,line + 3).
-		print "prog yaw : " + round(this:prog_yaw,3) + "    " at (0,line + 4).
-		print "lvlh pitch : " + round(this:lvlh_pitch,3) + "    " at (0,line + 5).
-		print "fpa : " + round(this:fpa,3) + "    " at (0,line + 6).
+		print "prog pitch : " + round(this:prog_pitch,3) + "    " at (0,ll + 2).
+		print "prog roll : " + round(this:prog_roll,3) + "    " at (0,ll + 3).
+		print "prog yaw : " + round(this:prog_yaw,3) + "    " at (0,ll + 4).
+		print "lvlh pitch : " + round(this:lvlh_pitch,3) + "    " at (0,ll + 5).
+		print "lvlh roll : " + round(this:lvlh_roll,3) + "    " at (0,ll + 6).
+		print "fpa : " + round(this:fpa,3) + "    " at (0,ll + 7).
+		
+		set ll to ll+8.
+		print "steer pitch : " + round(this:steer_pitch,3) + "    " at (0,ll + 1).
+		print "steer lvlh pitch : " + round(this:steer_lvlh_pitch,3) + "    " at (0,ll + 2).
+		print "steer roll : " + round(this:steer_roll,3) + "    " at (0,ll + 3).
+		print "steer yaw : " + round(this:steer_yaw,3) + "    " at (0,ll + 4).
+		
+		set ll to ll+5.
+		print "tgt hdot : " + round(this:tgt_hdot,3) + "    " at (0,ll + 1).
+		print "cur hdot : " + round(this:hdot,3) + "    " at (0,ll + 2).
+		
+		set ll to ll + 3.
+		print "tgt nz : " + round(this:tgt_nz,3) + "    " at (0,ll + 1).
+		print "cur nz : " + round(this:aero:nz,3) + "    " at (0,ll + 2).
+		
+		set ll to ll + 3.
+		print "in_gblk_region : " + this:in_gblk_region + "    " at (0,ll + 1).
 		
 		
-		print "steer pitch : " + round(this:steer_pitch,3) + "    " at (0,line + 8).
-		print "steer lvlh pitch : " + round(this:steer_lvlh_pitch,3) + "    " at (0,line + 9).
-		print "steer roll : " + round(this:steer_roll,3) + "    " at (0,line + 10).
-		print "steer yaw : " + round(this:steer_yaw,3) + "    " at (0,line + 11).
-		
-		print "tgt hdot : " + round(this:tgt_hdot,3) + "    " at (0,line + 13).
-		print "cur hdot : " + round(this:hdot,3) + "    " at (0,line + 14).
-		
-		print "tgt nz : " + round(this:tgt_nz,3) + "    " at (0,line + 16).
-		print "cur nz : " + round(this:aero:nz,3) + "    " at (0,line + 17).
+		clearvecdraws().
+		arrow_ship(this:upvec, "upvec").
+		arrow_ship(this:aimvec, "aimv").
 		
 	}).
 	
