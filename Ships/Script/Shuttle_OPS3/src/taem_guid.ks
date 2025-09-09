@@ -493,6 +493,7 @@ global taemg_constants is lexicon (
 									"grsbl1a", 40,			//upper contingency speedbrake limit
 									"mswa", 0.7,		// mach to force transition out of alptran
 									"grnzphicgn", 1.5,		//gain on excessive g for roll protection
+									"grhdddb", 5,		//ft/s deadband on hddot tests	- my addition
 								
 									//ecal stuff
 									"phistn", 60,		//° ecal sturn roll lim
@@ -1685,13 +1686,13 @@ function grtrn {
 			set taemg_internal["igrhd"] to (taemg_input["hdot"] < taemg_constants["hdtrn"]). 
 		} else {
 			if (NOT taemg_internal["igrhdd"])  {
-				SET taemg_internal["igrhdd"] to (taemg_internal["hddot"] > 0).
+				SET taemg_internal["igrhdd"] to (taemg_internal["hddot"] > taemg_constants["grhdddb"]).
 			} else {
 				local hdtrn is taemg_constants["hdtrn"].
 				if (taemg_internal["cont_flag"]) {
 					set hdtrn to taemg_constants["hdtrna"].
 				}
-				set taemg_internal["igrpo"] to (taemg_input["hdot"] > hdtrn) or (taemg_internal["hddot"] <= 0).
+				set taemg_internal["igrpo"] to (taemg_input["hdot"] > hdtrn) or (taemg_internal["hddot"] < -taemg_constants["grhdddb"]).
 			}
 		}
 	}
