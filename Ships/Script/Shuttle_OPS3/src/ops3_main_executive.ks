@@ -71,6 +71,10 @@ FUNCTION ops3_main_exec {
 		}
 		preserve.
 	}
+	ON (css_flag) {
+		dap:reset_steering().
+		preserve.
+	}
 
 
 	//main control loop
@@ -94,40 +98,53 @@ FUNCTION ops3_main_exec {
 				set dap_engaged to is_dap_engaged().
 				if (dap_engaged) {
 					set css_flag to is_dap_css().
-					if (guid_id < 20) OR (guid_id = 26) OR (guid_id = 24) OR (guid_id = 27) OR (guid_id = 36) {
+					local entry_flag is (guid_id < 20).
+					local a_l_flag is (guid_id >= 30).
+					local flare_flag is a_l_flag and (guid_id >= 34).
+					local rllt_flag is a_l_flag and (guid_id = 36).
+					local taem_flag is (not entry_flag) and (guid_id < 24).
+					local grtls_flag is (not entry_flag) and (not taem_flag) and (not a_l_flag).
+					local nz_flag is grtls_flag and (guid_id = 25).
+					
+					if (entry_flag) {
 						aerosurfaces_control["set_aoa_feedback"](ops3_parameters["entry_aoa_feedback"]).
-						//reentry, alpha recovery, alpha transition, slapdown/rollout
-						if (css_flag) {
-							dap:update_css_prograde().
-						} else {
-							dap:update_auto_prograde().
-						}
 					} else {
 						aerosurfaces_control["set_aoa_feedback"](ops3_parameters["taem_aoa_feedback"]).
-						
-						if (css_flag) {
-							local direct_pitch_flag is (guid_id >= 34).
+					}
+					
+					if (css_flag) {
+						if (taem_flag or a_l_flag) {
+							local direct_pitch_flag is a_l_flag and (flare_flag).
 							dap:update_css_lvlh(direct_pitch_flag).
 						} else {
-							 if (guid_id = 25) {
+							dap:update_css_prograde().
+						}
+					} else {
+						if (grtls_flag) {
+							if (nz_flag) {
 								//nz hold
 								dap:set_grtls_gains().
 								dap:update_auto_nz().
 							} else {
-								//hdot control
-								if (guid_id >= 34) {
-									dap:set_flare_gains().
-								} else {
-									dap:set_taem_gains().
-								}
-								
-								dap:update_auto_hdot().
+								dap:set_taem_gains().
+								// prograde 
+								dap:update_auto_prograde().
 							}
+						} else if (entry_flag) {
+							dap:update_auto_prograde().
+						} else {
+							//hdot control
+							if (flare_flag) {
+								dap:set_flare_gains().
+							} else {
+								dap:set_taem_gains().
+							}	
+							dap:update_auto_hdot().
 						}
-						//lock flaps after touchdown or during flare
-						if (dap:wow) {
-							set aerosurfaces_control:flap_engaged to FALSE.
-						}
+					}
+					
+					if (dap:wow) {
+						set aerosurfaces_control:flap_engaged to FALSE.
 					}
 				} else {
 					dap:measure_cur_state().
