@@ -130,7 +130,7 @@ FUNCTION ops3_main_exec {
 								// prograde 
 								dap:update_auto_prograde().
 							}
-						} else if (entry_flag) {
+						} else if (entry_flag) or (rllt_flag) {
 							dap:update_auto_prograde().
 						} else {
 							//hdot control
