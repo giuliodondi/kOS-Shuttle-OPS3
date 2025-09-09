@@ -655,6 +655,7 @@ global taemg_internal is lexicon(
 								"xlfmax", 0,	//g max load factor reached during grtls
 								"igrpo", FALSE,		//my addition - grtls pullout flag
 								"igrhd", FALSE,		//my addition - grtls vertical speed latch
+								"igrhdd", FALSE,		//my addition - grtls vertical speed increasing latch
 								
 								//my addition: control flags 
 								"grtls_flag", FALSE,		//grtls flag
@@ -1675,26 +1676,37 @@ function grtrn {
 	}
 	
 	//my addition - track pullout
-	if (NOT taemg_internal["igrpo"]) and (taemg_input["hdot"] > 0) {
-		set taemg_internal["igrpo"] to TRUE.
-	}
-	
-	if (taemg_internal["iphase"] = 6) {
-		//my addition: check that we're descending enough and don't run the checks prior to that
+	//requirements:
+	// 	- when we start descending faster than hdtrn, latch into igrhd
+	//	- when igrhd, start tracking derivative of hdot. when it turns positive, latch into igrhdd
+	//	- when igrhdd and hdot maxes out (hddot back to negative or becomes greater than hdtrn or hdtrna), latch igrpo
+	if (NOT taemg_internal["igrpo"]) {
 		if (NOT taemg_internal["igrhd"]) {
 			set taemg_internal["igrhd"] to (taemg_input["hdot"] < taemg_constants["hdtrn"]). 
 		} else {
+			if (NOT taemg_internal["igrhdd"])  {
+				SET taemg_internal["igrhdd"] to (taemg_internal["hddot"] > 0).
+			} else {
+				local hdtrn is taemg_constants["hdtrn"].
+				if (taemg_internal["cont_flag"]) {
+					set hdtrn to taemg_constants["hdtrna"].
+				}
+				set taemg_internal["igrpo"] to (taemg_input["hdot"] > hdtrn) or (taemg_internal["hddot"] <= 0).
+			}
+		}
+	}
+	
+	if (taemg_internal["iphase"] = 6) {
 			//my modification: lower limit for nzsw
 			local nzsw is max(taemg_internal["nzsw"], taemg_internal["nzsw"] + taemg_internal["dgrnz"]).
 			if (taemg_input["nz"] > nzsw) {
 				set taemg_internal["iphase"] to 5.
 				set taemg_internal["itran"] to TRUE.
-			} else if (taemg_internal["hddot"] > 0) and (taemg_input["hdot"] >= taemg_constants["hdtrn"]) {
+			} else if (taemg_internal["igrpo"]) {
 			//my addition : early transition to alptrn if we're in the pullout without hitting nzsw
 				set taemg_internal["iphase"] to 4.
 				set taemg_internal["itran"] to TRUE.
 			}
-		}
 		return.
 	}
 	
@@ -1746,16 +1758,11 @@ function grtrn {
 			set taemg_internal["philim"] to taemg_constants["grphilm"].
 		}
 		
-		//my modification: force switch to alptran if we start climbing and haven't switched by then
-		//my addition: add g-based check
-		// my addition: in contingency transition if delaz is decreasing
-		if (taemg_input["xlfac"] <= taemg_constants["nztotallim"]) 
-			and ((taemg_internal["cont_flag"] and taemg_input["hdot"] > taemg_constants["hdtrna"])
-				or ((NOT taemg_internal["cont_flag"]) 
-					and (taemg_internal["igrpo"]	or (taemg_input["hdot"] > taemg_constants["hdtrn"] and taemg_input["alpha"] >= taemg_internal["gralpr"])
-					)
-				)
-			) {
+		//revised transition checks with new pullout logic. only add gralpr check if grtls non-cont
+		if (
+			(taemg_input["xlfac"] <= taemg_constants["nztotallim"]) 
+			and (taemg_internal["igrpo"] and ((taemg_internal["cont_flag"]) or (taemg_input["alpha"] >= taemg_internal["gralpr"])))
+		) {
 			set taemg_internal["iphase"] to 4.
 			set taemg_internal["itran"] to TRUE.
 			SET taemg_internal["qbarf"] TO taemg_input["qbar"].
