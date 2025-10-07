@@ -444,8 +444,11 @@ global taemg_constants is lexicon (
 									//"alprec", 50,		//° aoa during alpha recovery	//taem paper
 									"alprec", 46,		//° aoa during alpha recovery
 									"hdnom", -1480, 	//Nominal maximum sink rate during alpha recovery
-									"dhdnz", 0.001, 		//Gain on max sink rate difference to compute DGRNZ
-									"dhdll", -0.3, 			//Lower limit on DGRNZ
+									"hdnmws", -0.7,		//ft/s/slug my addition - slope of equation for hdnom vs. vehicle weight
+									"hdnmwi", -475.5,		//ft/s/slug my addition - intercept of equation for hdnom vs. vehicle weight
+									//"dhdnz", 0.001, 		//Gain on max sink rate difference to compute DGRNZ	//OTT
+									"dhdnz", 0.0006, 		//Gain on max sink rate difference to compute DGRNZ
+									"dhdll", -0.2, 			//Lower limit on DGRNZ
 									"dhdul", 0.2,			//Upper limit on DGRNZ
 									"grall", -0.5,			//° limit on dgralp
 									"gralu", 0.5,			//° limit on dgralp
@@ -650,6 +653,7 @@ global taemg_internal is lexicon(
 								"gralpr", 0,		//° reference aoa
 								"alpcmd", 0, 		//° commanded alpha
 								"hdmax", 0, 		//ft/s maximum negative hdot reached during alpha recovery
+								"hdnom", 0, 		//ft/s my addition - nominal alpha recovery max hdot
 								"igra", 0,			//alpha transition aoa index
 								"dsbc_at1", 0,		//incremented speedbrake command
 								"istp4", 1,		//phase 4 s-turn variable, will match phase at taem transition 
@@ -898,6 +902,7 @@ FUNCTION tginit {
 		}
 		set taemg_internal["smnz3"] to 0.
 		set taemg_internal["istp4"] to 1.
+		set taemg_internal["hdnom"] to ( taemg_constants["hdnmws"] * taemg_input["weight"] + taemg_constants["hdnmwi"]).
 	}
 	
 	set taemg_internal["eowlof"] to FALSE.
@@ -1703,7 +1708,7 @@ function grcomp {
 		//calculate nzsw and modifiers based on hdot during pullout
 		if (NOT taemg_internal["cont_flag"]) {
 			//my modification : calculate this repeatedly as hdmax becomes more negative
-			set taemg_internal["dgrnz"] to midval(( taemg_constants["hdnom"] - taemg_internal["hdmax"]) * taemg_constants["dhdnz"], taemg_constants["dhdll"], taemg_constants["dhdul"]).
+			set taemg_internal["dgrnz"] to midval(( taemg_internal["hdnom"] - taemg_internal["hdmax"]) * taemg_constants["dhdnz"], taemg_constants["dhdll"], taemg_constants["dhdul"]).
 			set taemg_internal["dgrnzt"] to taemg_constants["grnzc1"] + taemg_internal["dgrnz"] + 1.
 		} else {
 			set taemg_internal["dgrnzt"] to midval(taemg_constants["dnzb"] - taemg_internal["hdmax"] * taemg_constants["dhdnz"], taemg_constants["dnzmin"], taemg_constants["dnzmax"]).
@@ -1772,8 +1777,7 @@ function grtrn {
 	
 	if (taemg_internal["iphase"] = 6) {
 		//my modification: lower limit for nzsw
-		local nzsw is max(taemg_internal["nzsw"], taemg_internal["nzsw"] + taemg_internal["dgrnz"]).
-		if (taemg_input["nz"] > nzsw) {
+		if (taemg_input["nz"] > (taemg_internal["nzsw"] + taemg_internal["dgrnz"])) {
 			set taemg_internal["iphase"] to 5.
 			set taemg_internal["itran"] to TRUE.
 		} else if (taemg_internal["igrpo"]) {
