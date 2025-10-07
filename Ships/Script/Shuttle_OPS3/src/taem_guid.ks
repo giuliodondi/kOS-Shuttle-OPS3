@@ -722,7 +722,12 @@ function tgexec {
 	
 	gtp(taemg_input).
 	
+	tgcomp(taemg_input).
+	
 	if (taemg_internal["grtls_flag"]) {
+	
+		//my addition
+		grcomp(taemg_input).
 		
 		//refactoring of this block to remove call to tgnzc
 		grtrn(taemg_input).
@@ -731,8 +736,6 @@ function tgexec {
 		if (not taemg_internal["grtls_flag"]) {
 			return.
 		}
-
-		tgcomp(taemg_input).
 
 		grnzc(taemg_input).
 		
@@ -743,8 +746,6 @@ function tgexec {
 		grphic(taemg_input).
 	
 	} else {
-		tgcomp(taemg_input).
-	
 		tgtran(taemg_input).
 		
 		tgnzc(taemg_input).
@@ -1667,14 +1668,11 @@ FUNCTION tgphic {
 								
 								
 								//GRTLS stuff 
-//grtls transitions								
-function grtrn {
-	PARAMETER taemg_input.	
-	
-	//my addition: signal when a phase transition occurs to the hud
-	if (taemg_internal["itran"]) {
-		set taemg_internal["itran"] to FALSE.
-	}
+								
+//my addition 
+//collect common grtls operations - pullout, alptran command, nz switching value 
+function grcomp {
+	PARAMETER taemg_input.
 	
 	//my addition - track pullout
 	//requirements:
@@ -1682,6 +1680,10 @@ function grtrn {
 	//	- when igrhd, start tracking derivative of hdot. when it turns positive, latch into igrhdd
 	//	- when igrhdd and hdot maxes out (hddot back to negative or becomes greater than hdtrn or hdtrna), latch igrpo
 	if (NOT taemg_internal["igrpo"]) {
+		//moved from gralpc
+		if (taemg_input["hdot"] < taemg_internal["hdmax"]) {
+			set taemg_internal["hdmax"] to taemg_input["hdot"].
+		}
 		if (NOT taemg_internal["igrhd"]) {
 			set taemg_internal["igrhd"] to (taemg_input["hdot"] < taemg_constants["hdtrn"]). 
 		} else {
@@ -1698,58 +1700,91 @@ function grtrn {
 	}
 	
 	if (taemg_internal["iphase"] = 6) {
-			//my modification: lower limit for nzsw
-			local nzsw is max(taemg_internal["nzsw"], taemg_internal["nzsw"] + taemg_internal["dgrnz"]).
-			if (taemg_input["nz"] > nzsw) {
-				set taemg_internal["iphase"] to 5.
-				set taemg_internal["itran"] to TRUE.
-			} else if (taemg_internal["igrpo"]) {
-			//my addition : early transition to alptrn if we're in the pullout without hitting nzsw
-				set taemg_internal["iphase"] to 4.
-				set taemg_internal["itran"] to TRUE.
-			}
+		//calculate nzsw and modifiers based on hdot during pullout
+		if (NOT taemg_internal["cont_flag"]) {
+			//my modification : calculate this repeatedly as hdmax becomes more negative
+			set taemg_internal["dgrnz"] to midval(( taemg_constants["hdnom"] - taemg_internal["hdmax"]) * taemg_constants["dhdnz"], taemg_constants["dhdll"], taemg_constants["dhdul"]).
+			set taemg_internal["dgrnzt"] to taemg_constants["grnzc1"] + taemg_internal["dgrnz"] + 1.
+		} else {
+			set taemg_internal["dgrnzt"] to midval(taemg_constants["dnzb"] - taemg_internal["hdmax"] * taemg_constants["dhdnz"], taemg_constants["dnzmin"], taemg_constants["dnzmax"]).
+			
+			//skip dnztherm calculations
+
+			//skip smnz1 calculation
+			
+			set taemg_internal["dgrnz"] to taemg_internal["dgrnzt"] - taemg_constants["grnzc1a"] - 1.
+			//my modification - removed the 1 addition to be consistent
+			set taemg_internal["nzsw"] to taemg_constants["grnzc1a"] - taemg_internal["smnz1"] - taemg_internal["smnz2"].
+		}
+	} else {
+		//alpha reference profile
+		if (NOT taemg_internal["cont_flag"]) {
+			set taemg_internal["gralpr"] to midval(taemg_constants["gralps"] * taemg_input["mach"] + taemg_constants["gralpi"], taemg_constants["gralpl"], taemg_constants["gralpu"]).
+			//skip amaxld limitation
+			set taemg_internal["gralpr"] to taemg_internal["gralpr"] / abs(taemg_input["cosphi"]).
+		} else {
+		
+			local gralpra is taemg_constants["gralpsa"] * taemg_input["mach"] + taemg_constants["gralpia"].
+			
+			if taemg_internal["ecal_flag"] and (taemg_internal["iphase"] = 4) {
+				//alpha biases considering eow and delaz 
+				//simplified logic
+				local enlimhi is taemg_constants["enlimhifac"] * (taemg_internal["es"] - taemg_internal["en"]).	//positive
+				local enlimlo is taemg_constants["enlimlofac"] * (taemg_internal["emep"] - taemg_internal["en"]).	//negative
+				
+				//skip alpha mach limits 
+				
+				if (taemg_internal["eowerror"] < 0) {
+					if (taemg_internal["eowerror"] < enlimlo) and (abs(taemg_internal["dpsac"]) < taemg_constants["dpsac2"]) {
+						set taemg_internal["en_alpha_bias"] to taemg_constants["enalpl"].
+					} else {
+						set taemg_internal["en_alpha_bias"] to taemg_constants["en_bias1"].
+					}
+				} else if (taemg_internal["eowerror"] < enlimhi) {
+					
+					if (taemg_internal["deowerr"] < 0) {
+						set taemg_internal["en_alpha_bias"] to taemg_constants["en_bias2"].
+					} else {
+						set taemg_internal["en_alpha_bias"] to taemg_constants["en_bias3"].
+					}
+				} else {
+					set taemg_internal["en_alpha_bias"] to taemg_constants["enalpu"].
+				}
+				
+				set gralpra to gralpra + taemg_internal["en_alpha_bias"].
+			} 
+			
+			set taemg_internal["gralpr"] to midval(gralpra, taemg_constants["gralpla"], taemg_constants["gralpua"]).
+		}
+	}
+}
+								
+//grtls transitions								
+function grtrn {
+	PARAMETER taemg_input.	
+	
+	//my addition: signal when a phase transition occurs to the hud
+	if (taemg_internal["itran"]) {
+		set taemg_internal["itran"] to FALSE.
+	}
+	
+	//pullout tests moved to grcomp
+	
+	if (taemg_internal["iphase"] = 6) {
+		//my modification: lower limit for nzsw
+		local nzsw is max(taemg_internal["nzsw"], taemg_internal["nzsw"] + taemg_internal["dgrnz"]).
+		if (taemg_input["nz"] > nzsw) {
+			set taemg_internal["iphase"] to 5.
+			set taemg_internal["itran"] to TRUE.
+		} else if (taemg_internal["igrpo"]) {
+		//my addition : early transition to alptrn if we're in the pullout without hitting nzsw
+			set taemg_internal["iphase"] to 4.
+			set taemg_internal["itran"] to TRUE.
+		}
 		return.
 	}
 	
-	//alpha reference profile
-	if (NOT taemg_internal["cont_flag"]) {
-		set taemg_internal["gralpr"] to midval(taemg_constants["gralps"] * taemg_input["mach"] + taemg_constants["gralpi"], taemg_constants["gralpl"], taemg_constants["gralpu"]).
-		//skip amaxld limitation
-		set taemg_internal["gralpr"] to taemg_internal["gralpr"] / abs(taemg_input["cosphi"]).
-	} else {
-	
-		local gralpra is taemg_constants["gralpsa"] * taemg_input["mach"] + taemg_constants["gralpia"].
-		
-		if taemg_internal["ecal_flag"] and (taemg_internal["iphase"] = 4) {
-			//alpha biases considering eow and delaz 
-			//simplified logic
-			local enlimhi is taemg_constants["enlimhifac"] * (taemg_internal["es"] - taemg_internal["en"]).	//positive
-			local enlimlo is taemg_constants["enlimlofac"] * (taemg_internal["emep"] - taemg_internal["en"]).	//negative
-			
-			//skip alpha mach limits 
-			
-			if (taemg_internal["eowerror"] < 0) {
-				if (taemg_internal["eowerror"] < enlimlo) and (abs(taemg_internal["dpsac"]) < taemg_constants["dpsac2"]) {
-					set taemg_internal["en_alpha_bias"] to taemg_constants["enalpl"].
-				} else {
-					set taemg_internal["en_alpha_bias"] to taemg_constants["en_bias1"].
-				}
-			} else if (taemg_internal["eowerror"] < enlimhi) {
-				
-				if (taemg_internal["deowerr"] < 0) {
-					set taemg_internal["en_alpha_bias"] to taemg_constants["en_bias2"].
-				} else {
-					set taemg_internal["en_alpha_bias"] to taemg_constants["en_bias3"].
-				}
-			} else {
-				set taemg_internal["en_alpha_bias"] to taemg_constants["enalpu"].
-			}
-			
-			set gralpra to gralpra + taemg_internal["en_alpha_bias"].
-		} 
-		
-		set taemg_internal["gralpr"] to midval(gralpra, taemg_constants["gralpla"], taemg_constants["gralpua"]).
-	}
+	//alpha ref profile moved to grcomp
 	
 	if (taemg_internal["iphase"] = 5) { 
 		//my addition: phi limits for ecal and contingency nzhold 
@@ -1873,25 +1908,7 @@ function gralpc {
 		//my addition: cross-limit the alpha recovery and the upper alpha limit
 		//removed because we directly override alpul above 
 		
-		if (taemg_input["hdot"] < taemg_internal["hdmax"]) {
-			set taemg_internal["hdmax"] to taemg_input["hdot"].
-		}
-		
-		if (NOT taemg_internal["cont_flag"]) {
-			//my modification : calculate this repeatedly as hdmax becomes more negative
-			set taemg_internal["dgrnz"] to midval(( taemg_constants["hdnom"] - taemg_internal["hdmax"]) * taemg_constants["dhdnz"], taemg_constants["dhdll"], taemg_constants["dhdul"]).
-			set taemg_internal["dgrnzt"] to taemg_constants["grnzc1"] + taemg_internal["dgrnz"] + 1.
-		} else {
-			set taemg_internal["dgrnzt"] to midval(taemg_constants["dnzb"] - taemg_internal["hdmax"] * taemg_constants["dhdnz"], taemg_constants["dnzmin"], taemg_constants["dnzmax"]).
-			
-			//skip dnztherm calculations
-
-			//skip smnz1 calculation
-			
-			set taemg_internal["dgrnz"] to taemg_internal["dgrnzt"] - taemg_constants["grnzc1a"] - 1.
-			//my modification - removed the 1 addition to be consistent
-			set taemg_internal["nzsw"] to taemg_constants["grnzc1a"] - taemg_internal["smnz1"] - taemg_internal["smnz2"].
-		}
+		//hdmax and nzsw stuff moved to grcomp
 		
 	} else if (taemg_internal["iphase"] = 4) {
 		//igra = 0 : first pass, =1 : smooth transition to reference aoa, =2: reference aoa
@@ -1909,9 +1926,7 @@ function gralpc {
 			{
 				set taemg_internal["igra"] to 2.
 			}
-		}
-		
-		if (taemg_internal["igra"] = 2) {
+		} else if (taemg_internal["igra"] = 2) {
 			set taemg_internal["alpcmd"] to taemg_internal["gralpr"].
 		}
 	}
