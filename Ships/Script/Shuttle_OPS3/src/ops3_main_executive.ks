@@ -135,7 +135,9 @@ FUNCTION ops3_main_exec {
 						} else {
 							//hdot control
 							if (flare_flag) {
-								dap:set_flare_gains().
+								dap:set_a_l_gains().
+							} else if (a_l_flag) {
+								dap:set_taem_gains().
 							} else {
 								dap:set_taem_gains().
 							}	

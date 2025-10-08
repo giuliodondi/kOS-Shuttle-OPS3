@@ -184,6 +184,20 @@ FUNCTION dap_controller_factory {
 		local kc is 0.004.
 
 		set this:hdot_nz_pid:Kp to kc.
+		set this:hdot_nz_pid:Ki to kc * 0.3.
+		set this:hdot_nz_pid:Kd to kc * 2.2.
+		
+		local nz_mass_gain IS this:nz_mass_gain().
+		
+		set this:nz_pitch_pid:Kp to nz_mass_gain * 3.3.
+		set this:nz_pitch_pid:Ki to 0.
+		set this:nz_pitch_pid:Kd to nz_mass_gain * 4.2.
+	}).
+	
+	this:add("set_a_l_gains", {
+		local kc is 0.004.
+
+		set this:hdot_nz_pid:Kp to kc.
 		set this:hdot_nz_pid:Ki to kc * 0.
 		set this:hdot_nz_pid:Kd to kc * 5.0.
 		
