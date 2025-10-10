@@ -154,7 +154,8 @@ FUNCTION dap_controller_factory {
 	this:add("hdot_nz_pid", PIDLOOP(0, 0, 0)).	
 	SET this:hdot_nz_pid:SETPOINT TO 0.
 	this:add("update_hdot_pid", {
-		return - this:hdot_nz_pid:UPDATE(this:last_time, this:tgt_hdot - this:hdot ).
+		local clamped_hdot_err is midval(this:tgt_hdot - this:hdot, -50, 50).
+		return - this:hdot_nz_pid:UPDATE(this:last_time, clamped_hdot_err).
 	}).
 	
 	this:add("nz_pitch_pid", PIDLOOP(4,0,5.7)).
@@ -209,7 +210,8 @@ FUNCTION dap_controller_factory {
 	}).
 	
 	//should be consistent with taem nz limits
-	this:add("nz_lims", LIST(-2.5, 2.5)).
+	//modification - limit the nz oscillation that auto guidance can produce
+	this:add("nz_lims", LIST(0.1, 2.2)).
 	this:add("delta_pch_lims", LIST(-3, 3)).
 	this:add("delta_lvlh_pch_lims", LIST(-8, 8)).
 	this:add("delta_roll_lims", LIST(-8, 8)).
@@ -443,6 +445,13 @@ FUNCTION dap_controller_factory {
 		
 		set ll to ll + 3.
 		print "in_gblk_region : " + this:in_gblk_region + "    " at (0,ll + 1).
+		
+		set ll to ll + 2.
+		print "nz_pid pterm : " +  round(this:hdot_nz_pid:pterm,3) + "    " at (0,ll + 1).
+		print "nz_pid dterm : " +  round(this:hdot_nz_pid:dterm,3) + "    " at (0,ll + 2).
+		print "nz_pid iterm : " +  round(this:hdot_nz_pid:iterm,3) + "    " at (0,ll + 3).
+		print "nz_pid input : " +  round(this:hdot_nz_pid:input,3) + "    " at (0,ll + 4).
+		print "nz_pid indot : " +  round(this:hdot_nz_pid:changerate,3) + "    " at (0,ll + 5).
 		
 		
 		clearvecdraws().
