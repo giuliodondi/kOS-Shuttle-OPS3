@@ -182,7 +182,7 @@ global taemg_constants is lexicon (
 									"alpulc1", 3.038391,		//linear coef of upper alpha limit with mach
 									"alpulc2", 18,		//° constant coef of upper alpha limit with mach
 									"alpulc3", 13.7,		//° max upper alpha limit
-									"alpulc4", 55,		//° min upper alpha limit		
+									"alpulc4", 48,		//° min upper alpha limit		
 									"alpulc5", 37.5,		//linear coef of upper alpha limit with mach
 									"alpulc6", -130,			//° constant coef of upper alpha limit with mach								
 									"alpllcm1", 2.02,		// mach breakpoint for lower alpha limit vs mach 
@@ -474,17 +474,17 @@ global taemg_constants is lexicon (
 									"dnzmin", 2,		//gs min nzhold contingency gs
 									"dnzmax", 3.9,		//gs max nzhold contingency gs
 									"nztotallima", 3.5,		//gs contingency max g for nzc limiting
-									"alprecs", 0.0027,	//°/ft/s contingency alprec linear term
-									"alpreci", 18,	//° contingency alprec const term
+									"alprecs", 0.00225,	//°/ft/s contingency alprec linear term
+									"alpreci", 19,	//° contingency alprec const term
 									"alprecl", 25	,	//° contingency alprec min
-									"alprecu", 42,	//° contingency alprec max
+									"alprecu", 37,	//° contingency alprec max
 									"smnzc1a", 0.13,		//gs initial value of smnz1
 									"smnzc2a", 1.8,		//gs initial value of smnz2
 									"smnzc3a", 0.8314,		//coefficient for smnz1
-									"smnzc4a", 0.35,		//gs constant nz value for computing smnz2
+									"smnzc4a", 0.07,		//gs constant nz value for computing smnz2
 									"smnzc5a", 0.065,		//gs coefficient for smnz3
-									"smnz2la", -0.5,
-									"grnzc1a", 3.5,		//gs desired normal accel for nz hold 
+									"smnz2la", -0.05,
+									"grnzc1a", 3.3,		//gs desired normal accel for nz hold 
 									"nzsw1a", 1,		//gs initial value of nzsw	//taem paper
 									"grphihds", 0.017,		//°/(ft/s) 	linear term for phi as a function of hdot
 									"grphihdi", 20,		//°  	const term for phi as a function of hdot
@@ -492,7 +492,7 @@ global taemg_constants is lexicon (
 									"grphisgn", -1,			//	force roll to the left before alptran
 									"grdpsacsgn", 160,			//° threshold on dpsac to override bank sign 
 									"eowlogemoh", 1.5,		//	low energy eow error thresh w.r.t. emoh delta
-									"macheowlo", 0.95,		//	mach at which to enable eowlo override
+									"macheowlo", 1.35,		//	mach at which to enable eowlo override
 									"grsbl1a", 40,			//upper contingency speedbrake limit
 									"mswa", 0.7,		// mach to force transition out of alptran
 									"grnzphicgn", 1.5,		//gain on excessive g for roll protection
@@ -892,10 +892,12 @@ FUNCTION tginit {
 	
 	if (firstpassflag) {
 		if (taemg_internal["cont_flag"]) {
+			set taemg_internal["alpcmd"] to midval(taemg_constants["alprecs"] * taemg_input["surfv"] + taemg_constants["alpreci"], taemg_constants["alprecl"], taemg_constants["alprecu"]).
 			set taemg_internal["nzsw"] to taemg_constants["nzsw1a"].
 			set taemg_internal["smnz1"] to taemg_constants["smnzc1a"].
 			set taemg_internal["smnz2"] to taemg_constants["smnzc2a"].
 		} else if (taemg_internal["grtls_flag"]) {
+			set taemg_internal["alpcmd"] to taemg_constants["alprec"].
 			set taemg_internal["nzsw"] to taemg_constants["nzsw1"].
 			set taemg_internal["smnz1"] to taemg_constants["smnzc1"].
 			set taemg_internal["smnz2"] to taemg_constants["smnzc2"].
@@ -1717,7 +1719,7 @@ function grcomp {
 
 			//skip smnz1 calculation
 			
-			set taemg_internal["dgrnz"] to taemg_internal["dgrnzt"] - taemg_constants["grnzc1a"] - 1.
+			set taemg_internal["dgrnz"] to midval(taemg_internal["dgrnzt"] - taemg_constants["grnzc1a"] - 1, taemg_constants["dhdll"], taemg_constants["dhdul"]).
 			//my modification - removed the 1 addition to be consistent
 			set taemg_internal["nzsw"] to taemg_constants["grnzc1a"] - taemg_internal["smnz1"] - taemg_internal["smnz2"].
 		}
@@ -1902,12 +1904,7 @@ function gralpc {
 	PARAMETER taemg_input.	
 	
 	if (taemg_internal["iphase"] = 6) {
-		if (NOT taemg_internal["cont_flag"]) {
-			set taemg_internal["alpcmd"] to taemg_constants["alprec"].
-		} else {
-			//do not ramp alpha cmd back down if we start decelerating before nzhold
-			set taemg_internal["alpcmd"] to max(taemg_internal["alpcmd"], midval(taemg_constants["alprecs"] * taemg_input["surfv"] + taemg_constants["alpreci"], taemg_constants["alprecl"], taemg_constants["alprecu"])).
-		}
+		//modification - alpcmd for alprec is set once in initialisation
 		
 		//my addition: cross-limit the alpha recovery and the upper alpha limit
 		//removed because we directly override alpul above 
