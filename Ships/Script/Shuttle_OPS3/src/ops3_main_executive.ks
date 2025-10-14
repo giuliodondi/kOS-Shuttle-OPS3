@@ -185,6 +185,10 @@ FUNCTION ops3_main_exec {
 	if (NOT (grtls_flag OR cont_flag)) AND (NOT skip_2_taem_flag) {
 		//entry guidance loop
 		
+		if (tal_flag) {
+			set_dap_auto().
+		}
+		
 		make_entry_traj_GUI().
 		
 		LOCAL eg_end_flag IS FALSE.
