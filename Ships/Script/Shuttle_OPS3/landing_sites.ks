@@ -99,6 +99,12 @@ GLOBAL ldgsiteslex IS LEXICON(
 							"heading",287.44
 							
 						),
+						"Myrtle Beach",LEXICON(
+							"position",LATLNG(33.682715,-78.929236),
+							"elevation",16.8,
+							"length",3268,
+							"heading",168.06
+						),
 						"Cherry Pt",LEXICON(
 							"position",LATLNG(34.902011,-76.87854),
 							"elevation",19.2,
@@ -106,11 +112,32 @@ GLOBAL ldgsiteslex IS LEXICON(
 							"heading",315.54
 							
 						),
+						"Oceana",LEXICON(
+							"position",LATLNG(36.817097,-76.037081),
+							"elevation",19.6,
+							"length",4021.04,
+							"heading",222.18
+							
+						),
 						"Dover",LEXICON(
 							"position",LATLNG(39.126604,-75.462997),
 							"elevation",19.9,
 							"length",3768.36,
 							"heading",305.95
+							
+						),
+						"Gabreski",LEXICON(
+							"position",LATLNG(40.846725,-72.626368),
+							"elevation",20.2,
+							"length",3016.45,
+							"heading",222.38
+							
+						),
+						"Pease",LEXICON(
+							"position",LATLNG(43.070178,-70.807297),
+							"elevation",34.2,
+							"length",3769.16,
+							"heading",168.97
 							
 						),
 						"Gander",LEXICON(
