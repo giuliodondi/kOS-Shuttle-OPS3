@@ -126,11 +126,25 @@ GLOBAL ldgsiteslex IS LEXICON(
 							"heading",305.95
 							
 						),
+						"Atlantic City",LEXICON(
+							"position",LATLNG(39.126604,-75.462997),
+							"elevation",19.9,
+							"length",3768.36,
+							"heading",305.95
+							
+						),
 						"Gabreski",LEXICON(
 							"position",LATLNG(40.846725,-72.626368),
 							"elevation",20.2,
 							"length",3016.45,
 							"heading",222.38
+							
+						),
+						"Otis",LEXICON(
+							"position",LATLNG(41.659284,-70.524180),
+							"elevation",44.2,
+							"length",3015.81,
+							"heading",127.26
 							
 						),
 						"Pease",LEXICON(
