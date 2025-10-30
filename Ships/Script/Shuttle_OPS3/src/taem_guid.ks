@@ -230,6 +230,7 @@ global taemg_constants is lexicon (
 									"edelnz", list(0, 4000, 4000),			// -/ft/ft eow delta from nominal energy line slope for s-turn  	//OTT paper			//deprecated
 									"edelnzu", 2000,			//eow delta from nominal energy line for emax
 									"edelnzl", 2000,			//eow delta from nominal energy line for emin
+									"edelnzmmg", 0.67,			//fraction of es-en, emep-en for calculation of emax,emin		//my addition
 									
 									//"edrs", list(0, 0.69946182, 0.69946182),		// -/ ft^2/ft / ft^2/ft slope for s-turn energy line   	//OTT paper
 									//"emep_c1", list(0, list(0,-3263, 12088), list(0, -3263, 12088)),		//all in ft mep energy line y intercept  	//OTT paper
@@ -261,8 +262,8 @@ global taemg_constants is lexicon (
 									"gdhll", 0.1, 			//gdh lower limit 	//OTT
 									"gdhs", 0.9e-5,		//1/ft	slope for computing gdh 		//ott
 									"gdhul", 0.18,			//gdh upper lim 
-									"gehdll", 0.025, 		//g/fps  gain used in computing eownzll
-									"gehdul", 0.025, 		//g/fps  gain used in computing eownzul
+									"gehdll", 0.01, 		//g/fps  gain used in computing eownzll
+									"gehdul", 0.01, 		//g/fps  gain used in computing eownzul
 									"gell", 0.03, 		//1/s  gain used in computing eownzll
 									"geul", 0.03, 		//1/s  gain used in computing eownzul
 									"geownzc", 0.0005, 		//1/s  gain used to correct eow error
@@ -1066,6 +1067,9 @@ FUNCTION tgcomp {
 	SET taemg_internal["emep"] TO taemg_constants["emep_c1"][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["emep_c2"][taemg_internal["iel"]].
 	SET taemg_internal["es"] TO taemg_constants["es_c1"][taemg_internal["iel"]] + taemg_internal["drpred"] * taemg_constants["es_c2"][taemg_internal["iel"]].
 	
+	SET taemg_internal["emax"] TO taemg_internal["en"] + (taemg_internal["es"] - taemg_internal["en"])*taemg_constants["edelnzmmg"].
+	SET taemg_internal["emin"] TO taemg_internal["en"] + (taemg_internal["emep"] - taemg_internal["en"])*taemg_constants["edelnzmmg"].
+	
 	local eowerr_p is taemg_internal["eowerror"].
 	set taemg_internal["eowerror"] to taemg_internal["eow"] - taemg_internal["en"].
 	set taemg_internal["deowerr"] to (taemg_internal["eowerror"] - eowerr_p)/taemg_input["dtg"].
@@ -1474,16 +1478,14 @@ FUNCTION tgnzc {
 	set taemg_internal["dnzcl"] to taemg_internal["dnzc"].
 
 	//my modification: transform energy nz filters into hdot error filters
-	//don't do energy filtering beyond acq phase
-	if (taemg_internal["iphase"] <= 1) {
+	if (taemg_internal["iphase"] <= 2) {
 	
 		//my addition 
 		//gain to widen the eow limits as we approach hac entry 
 		SET taemg_internal["gelrtan"] TO MAX(1, taemg_constants["eow_rtan0"] / taemg_internal["rtan"]).
 		
 		//eow limits
-		SET taemg_internal["emax"] TO taemg_internal["en"] + taemg_constants["edelnzu"] * taemg_internal["gelrtan"].
-		SET taemg_internal["emin"] TO taemg_internal["en"] - taemg_constants["edelnzl"] * taemg_internal["gelrtan"].
+		//moved emax,emin to tgcomp
 		
 		local eownzul is (taemg_constants["geul"] * taemg_internal["gdh"] * (taemg_internal["emax"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdul"] * taemg_internal["gdh"].
 		local eownzll is (taemg_constants["gell"] * taemg_internal["gdh"] * (taemg_internal["emin"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdll"] * taemg_internal["gdh"].
