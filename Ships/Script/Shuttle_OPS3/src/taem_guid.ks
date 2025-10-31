@@ -487,21 +487,21 @@ global taemg_constants is lexicon (
 									"smnz2la", -0.05,
 									"grnzc1a", 3.3,		//gs desired normal accel for nz hold 
 									"nzsw1a", 1,		//gs initial value of nzsw	//taem paper
-									"grphihds", 0.017,		//°/(ft/s) 	linear term for phi as a function of hdot
-									"grphihdi", 20,		//°  	const term for phi as a function of hdot
-									"grphilma", 35,			//° roll limit for grtls
+									"grphihds", 0.0651,		//°/(ft/s) 	linear term for phi as a function of hdot
+									"grphihdi", 70,		//°  	const term for phi as a function of hdot
+									"grphilma", 70,			//° roll limit for grtls
 									"grphisgn", -1,			//	force roll to the left before alptran
 									"grdpsacsgn", 160,			//° threshold on dpsac to override bank sign 
 									"eowlogemoh", 1.5,		//	low energy eow error thresh w.r.t. emoh delta
 									"macheowlo", 1.35,		//	mach at which to enable eowlo override
 									"grsbl1a", 40,			//upper contingency speedbrake limit
 									"mswa", 0.7,		// mach to force transition out of alptran
-									"grnzphicgn", 1.5,		//gain on excessive g for roll protection
+									"grnzphicgn", 1.2,		//gain on excessive g for roll protection
 									"grhdddb", 5,		//ft/s deadband on hddot tests	- my addition
 								
 									//ecal stuff
 									"phistn", 60,		//° ecal sturn roll lim
-									"phiecal", 45,		//° ecal normal roll lim
+									"phiecal", 70,		//° ecal normal roll lim
 									"dphislp", 3.125,		//° slope of dpsaclmt vs mach
 									"dphiint", 5,		//° intercept of dpsaclmt vs mach
 									"dpsaclmt_max", 30, 	//° max val of dpsaclmt
@@ -2035,7 +2035,7 @@ function grphic {
 		
 		//acq bank proportional to heading error
 		//modification: limit this 
-		set taemg_internal["phic"] to midval(taemg_constants["grgphi"] * taemg_internal["dpsac"], -taemg_constants["grphilm"], taemg_constants["grphilm"]).
+		set taemg_internal["phic"] to midval(taemg_constants["grgphi"] * taemg_internal["dpsac"], -taemg_internal["philim"], taemg_internal["philim"]).
 	}
 	
 	//roll commands refactored above 
