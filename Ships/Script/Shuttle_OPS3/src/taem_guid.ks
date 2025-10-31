@@ -65,6 +65,7 @@ FUNCTION taemg_wrapper {
 										"wow", taemg_input["wow"],
 										"h", taemg_input["h"] * mt2ft,		//ft height above rwy
 										"hdot", taemg_input["hdot"] * mt2ft,	//ft/s vert speed
+										"hddot", taemg_input["hddot"] * mt2ft,	//ft/s vert speed
 										"x", taemg_input["x"] * mt2ft,		//ft x component on runway coord
 										"y", taemg_input["y"] * mt2ft,		//ft y component on runway coord
 										"surfv", taemg_input["surfv"] * mt2ft, 		//ft/s earth relative velocity mag 			//was v
@@ -558,8 +559,6 @@ global taemg_internal is lexicon(
 								"gdh", 0, 		// hdot gain for nzc
 								"gelrtan", 0, 		// my addition - rtan gain for eow lims
 								"hdreqg", 0, 		//gain for herror in nzc
-								"hddot", 0, 		//ft/s2 hdot derivative, my addition
-								"hdotp", 0, 		//ft/s hdot prev, my addition
 								"hderr", 0, 		//ft hdot error
 								"herror", 0, 		//ft altitude error
 								"hdref", 0,			//ft/s hdot reference
@@ -1045,10 +1044,6 @@ FUNCTION gtp {
 //reference params, dyn press and spiral adjust function 
 FUNCTION tgcomp {
 	PARAMETER taemg_input.
-
-	//my addition - vertical accel 
-	set taemg_internal["hddot"] to (taemg_input["hdot"] - taemg_internal["hdotp"]) / taemg_input["dtg"].
-	set taemg_internal["hdotp"] to taemg_input["hdot"].
 	
 	//range to the a/l transition point
 	set taemg_internal["drpred"] to taemg_internal["rpred"] + taemg_internal["xali"].
@@ -1697,13 +1692,13 @@ function grcomp {
 			set taemg_internal["igrhd"] to (taemg_input["hdot"] < taemg_constants["hdtrn"]). 
 		} else {
 			if (NOT taemg_internal["igrhdd"])  {
-				SET taemg_internal["igrhdd"] to (taemg_internal["hddot"] > taemg_constants["grhdddb"]).
+				SET taemg_internal["igrhdd"] to (taemg_input["hddot"] > taemg_constants["grhdddb"]).
 			} else {
 				local hdtrn is taemg_constants["hdtrn"].
 				if (taemg_internal["cont_flag"]) {
 					set hdtrn to taemg_constants["hdtrna"].
 				}
-				set taemg_internal["igrpo"] to (taemg_input["hdot"] > hdtrn) or (taemg_internal["hddot"] < -taemg_constants["grhdddb"]).
+				set taemg_internal["igrpo"] to (taemg_input["hdot"] > hdtrn) or (taemg_input["hddot"] < -taemg_constants["grhdddb"]).
 			}
 		}
 	}
