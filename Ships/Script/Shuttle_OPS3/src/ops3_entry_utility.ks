@@ -131,12 +131,12 @@ FUNCTION get_reentry_state {
 	
 	local out is blank_reentry_state().
 	set out["t"] to new_t.
-	set out["tgt_range" to tgt_range.
-	set out["delaz" to delaz.
-	set out["hls" to hls.	
-	set out["hdot" to hdot_.
-	set out["hddot" to hddot_.
-	set out["fpa" to fpa.
+	set out["tgt_range"] to tgt_range.
+	set out["delaz"] to delaz.
+	set out["hls"] to hls.	
+	set out["hdot"] to hdot_.
+	set out["hddot"] to hddot_.
+	set out["fpa"] to fpa.
 
 	RETURN out.
 }

@@ -451,6 +451,8 @@ FUNCTION ops3_main_exec {
 				hud_decluttering(guid_id).
 				if (guid_id = 22) {
 					make_xtrackerr_slider().
+				} else if (guid_id = 23) {
+					make_herror_slider().
 				}
 			}
 
@@ -465,14 +467,18 @@ FUNCTION ops3_main_exec {
 			local gui_data is lexicon(
 									"guid_id", guid_id,
 									"rpred",taemg_out["rpred"],
-									"hdot", entry_state["hdot"],
-									"hddot", entry_state["hddot"],
+									"h", rwystate["h"],
+									"hdot", rwystate["hdot"],
+									"hddot", rwystate["hddot"],
 									"eow",taemg_out["eow"],
+									"en",taemg_out["en"],
+									"es",taemg_out["es"],
+									"emep",taemg_out["emep"],
 									"herror", taemg_out["herror"],
 									"ottstin", taemg_out["ohalrt"],
 									"mep", taemg_out["mep"],
 									"eowlof", taemg_out["eowlof"],
-									"tgthdot", taemg_out["hdref"],
+									"hdref", taemg_out["hdref"],
 									"xlfac", taemg_in["xlfac"] / taemg_constants["g"], 
 									"spdbkcmd", taemg_out["dsbc_at"],
 									"alpll", taemg_out["alpll"],
