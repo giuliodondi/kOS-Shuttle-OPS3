@@ -124,12 +124,33 @@ FUNCTION pos_rwy_alt {
 	RETURN altt - tgtrwy["elevation"].
 }
 
+function blank_runway_rel_state {
+	RETURN LEXICON(
+		"t", TIME:SECONDS - 10,
+		"x", 0,
+		"y", 0,
+		"h", 0,
+		"xdot", 0,
+		"ydot", 0,
+		"hdot", 0,
+		"hddot", 0,
+		"surfv", 0,
+		"surfv_h", 0,
+		"rwy_rel_crs", 0,
+		"rwy_r", 0,
+		"rwy_rdot", 0
+	).
+}
+
 //convert several ksp quantities in the runway-relative frame for taem
 FUNCTION get_runway_rel_state {
 	PARAMETER cur_pos.
 	PARAMETER cur_surfv.
 	PARAMETER rwy.
+	parameter prev_rwystate.
 	
+	local new_t is TIME:SECONDS.
+	local dt is new_t - prev_rwystate["t"].
 	
 	LOCAL rwy_heading IS rwy["heading"].
 	LOCAL rwy_ship_bng IS bearingg(cur_pos, rwy["position"]).
@@ -150,19 +171,26 @@ FUNCTION get_runway_rel_state {
 	LOCAL cur_surfv_h IS cur_surfv_h_vec:MAG.
 	LOCAL cur_hdot IS VDOT(cur_surfv, cur_pos:NORMALIZED).
 	
-	return LEXICON(
-			"x", ship_rwy_dist_mt*COS(pos_rwy_rel_angle),
-			"y", ship_rwy_dist_mt*SIN(pos_rwy_rel_angle),
-			"h", cur_h,
-			"xdot", cur_surfv_h*COS(vel_rwy_rel_angle),
-			"ydot", cur_surfv_h*SIN(vel_rwy_rel_angle),
-			"hdot", cur_hdot,
-			"surfv", cur_surfv:MAG,
-			"surfv_h", cur_surfv_h,
-			"rwy_rel_crs", vel_rwy_rel_angle,
-			"rwy_r", ship_rwy_dist_mt,
-			"rwy_rdot", - cur_surfv_h*COS(vel_pos_rel_angle)		//will be negative if we're moving towards the site
-	).
+	local hddot_ is 0.
+	if (abs(dt) > 0) {
+		set hddot_ to (cur_hdot - prev_rwystate["hdot"])/dt.
+	}
+	
+	local out is blank_runway_rel_state().
+	set out["t"] to new_t.
+	set out["x"] to ship_rwy_dist_mt*COS(pos_rwy_rel_angle).
+	set out["y"] to ship_rwy_dist_mt*SIN(pos_rwy_rel_angle).
+	set out["h"] to cur_h.
+	set out["xdot"] to cur_surfv_h*COS(vel_rwy_rel_angle).
+	set out["ydot"] to cur_surfv_h*SIN(vel_rwy_rel_angle).
+	set out["hdot"] to cur_hdot.
+	set out["hddot"] to hddot_.
+	set out["surfv"] to cur_surfv:MAG.
+	set out["surfv_h"] to cur_surfv_h.
+	set out["rwy_rel_crs"] to vel_rwy_rel_angle.
+	set out["rwy_r"] to ship_rwy_dist_mt.
+	set out["rwy_rdot"] to - cur_surfv_h*COS(vel_pos_rel_angle).
+	return out.
 }
 
 //measure vertical load factor in Gs

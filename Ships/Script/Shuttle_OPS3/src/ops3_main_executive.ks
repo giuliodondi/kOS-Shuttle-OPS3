@@ -339,15 +339,18 @@ FUNCTION ops3_main_exec {
 		
 		LOCAL al_end_flag Is FALSE.
 		
+		local rwystate is blank_runway_rel_state().
+		
 		until (quit_program OR al_end_flag) {
 			clearvecdraws().
 			
 			guidance_timer:update().
 		
-			local rwystate is get_runway_rel_state(
+			set rwystate to get_runway_rel_state(
 				-SHIP:ORBIT:BODY:POSITION,
 				SHIP:VELOCITY:SURFACE,
-				tgtrwy
+				tgtrwy,
+				rwystate
 			).
 
 			if (is_guid_reset()) {
@@ -359,6 +362,7 @@ FUNCTION ops3_main_exec {
 									"wow", dap:wow,
 									"h", rwystate["h"],
 									"hdot", rwystate["hdot"],
+									"hddot", rwystate["hddot"],
 									"x", rwystate["x"], 
 									"y", rwystate["y"], 
 									"surfv", rwystate["surfv"],
@@ -461,6 +465,8 @@ FUNCTION ops3_main_exec {
 			local gui_data is lexicon(
 									"guid_id", guid_id,
 									"rpred",taemg_out["rpred"],
+									"hdot", entry_state["hdot"],
+									"hddot", entry_state["hddot"],
 									"eow",taemg_out["eow"],
 									"herror", taemg_out["herror"],
 									"ottstin", taemg_out["ohalrt"],
