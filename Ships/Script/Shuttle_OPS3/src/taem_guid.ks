@@ -230,7 +230,7 @@ global taemg_constants is lexicon (
 									"edelnz", list(0, 4000, 4000),			// -/ft/ft eow delta from nominal energy line slope for s-turn  	//OTT paper			//deprecated
 									"edelnzu", 2000,			//eow delta from nominal energy line for emax
 									"edelnzl", 2000,			//eow delta from nominal energy line for emin
-									"edelnzmmg", 0.67,			//fraction of es-en, emep-en for calculation of emax,emin		//my addition
+									"edelnzmmg", 0.34,			//fraction of es-en, emep-en for calculation of emax,emin		//my addition
 									
 									//"edrs", list(0, 0.69946182, 0.69946182),		// -/ ft^2/ft / ft^2/ft slope for s-turn energy line   	//OTT paper
 									//"emep_c1", list(0, list(0,-3263, 12088), list(0, -3263, 12088)),		//all in ft mep energy line y intercept  	//OTT paper
