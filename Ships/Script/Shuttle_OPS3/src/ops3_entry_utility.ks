@@ -110,13 +110,10 @@ FUNCTION get_reentry_state {
 	parameter prev_entry_state.
 	
 	local new_t is TIME:SECONDS.
-	
 	local dt is new_t - prev_entry_state["t"].
 	
 	local hdot_ is vspd(cur_surfv,cur_pos).
-	
 	local hddot_ is 0.
-
 	if (abs(dt) > 0) {
 		set hddot_ to (hdot_ - prev_entry_state["hdot"])/dt.
 	}
@@ -131,16 +128,17 @@ FUNCTION get_reentry_state {
 	LOCAL surfv_h IS VXCL(cur_pos,cur_surfv).
 	
 	local fpa is ARCTAN2(hdot_, surfv_h:MAG).
+	
+	local out is blank_reentry_state().
+	set out["t"] to new_t.
+	set out["tgt_range"] to tgt_range.
+	set out["delaz"] to delaz.
+	set out["hls"] to hls.	
+	set out["hdot"] to hdot_.
+	set out["hddot"] to hddot_.
+	set out["fpa"] to fpa.
 
-	RETURN LEXICON(
-		"t", TIME:SECONDS,
-		"tgt_range", tgt_range,
-		"delaz", delaz,
-		"hls", hls,	
-		"hdot", hdot_,
-		"hddot", hddot_,
-		"fpa", fpa
-	).
+	RETURN out.
 }
 
 //heuristic to check if we're in a tal abort 

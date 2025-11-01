@@ -1060,15 +1060,14 @@ FUNCTION make_taem_vsit_GUI {
 	
 	GLOBAL horiz_slider_label IS vsit_disp_horiz_sliderbox:ADDLABEL("").
 	set horiz_slider_label:style:margin:h to 55.
-	set horiz_slider_label:style:margin:v to 8.
+	set horiz_slider_label:style:margin:v to 4.
 	set horiz_slider_label:style:width to 120.
 	GLOBAL vsit_horiz_slider is vsit_disp_horiz_sliderbox:addhslider(1,0,1).
 	SET vsit_horiz_slider:STYLE:ALIGN TO "Center".
 	SET vsit_horiz_slider:style:vstretch to false.
 	SET vsit_horiz_slider:style:hstretch to false.
-	SET vsit_horiz_slider:STYLE:WIDTH TO 180.
-	set vsit_horiz_slider:style:margin:v to -3.
-	set vsit_horiz_slider:style:margin:h to 5.
+	set vsit_horiz_slider:style:margin:v to -50.
+	set vsit_horiz_slider:style:margin:h to 23.
 	
 	make_time2hac_slider().
 	
@@ -1088,48 +1087,53 @@ FUNCTION make_taem_vsit_GUI {
 	GLOBAL vsitleftdata3 IS vsit_disp_leftdatabox:ADDLABEL("Y  XXX").
 	set vsitleftdata3:style:margin:v to -4.
 	
+	vsit_disp_overlaiddata:addspacing(110).
+	
 	GLOBAL vsit_disp_rightdatabox IS vsit_disp_overlaiddata:ADDVLAYOUT().
 	SET vsit_disp_rightdatabox:STYLE:ALIGN TO "left".
-	SET vsit_disp_rightdatabox:STYLE:WIDTH TO 200.
+	SET vsit_disp_rightdatabox:STYLE:WIDTH TO 160.
     SET vsit_disp_rightdatabox:STYLE:HEIGHT TO 90.
-	set vsit_disp_rightdatabox:style:margin:h to 85.
-	set vsit_disp_rightdatabox:style:margin:v to 185 + ops3_disp_vmargin.
+	//set vsit_disp_rightdatabox:style:margin:h to 110.
+	set vsit_disp_rightdatabox:style:margin:v to 170 + ops3_disp_vmargin.
 	
 	
 	GLOBAL vsitrightdata0 IS vsit_disp_rightdatabox:ADDLABEL("OTT ST IN").
-	set vsitrightdata0:style:margin:h to 130.
-	set vsitrightdata0:style:margin:v to 20.
+	set vsitrightdata0:style:margin:h to 85.
+	set vsitrightdata0:style:margin:v to 25.
 	GLOBAL vsitrightdata1 IS vsit_disp_rightdatabox:ADDLABEL("NEP  /  MEP").
-	set vsitrightdata1:style:margin:h to 30.
+	set vsitrightdata1:style:margin:h to 20.
 	set vsitrightdata1:style:margin:v to -4.
+	
+	GLOBAL vsitrightdata4 IS vsit_disp_rightdatabox:ADDLABEL("Ḣ xxx | Ḧ xxx").
+	set vsitrightdata4:style:margin:v to -4.
+	GLOBAL vsitrightdata6 IS vsit_disp_rightdatabox:ADDLABEL("Ḣ REF xxx").
+	set vsitrightdata6:style:margin:v to -4.
+	
 	GLOBAL vsitrightdata2 IS vsit_disp_rightdatabox:ADDLABEL("ALPHA LIMS xx xx").
 	set vsitrightdata2:style:margin:v to -4.
 	GLOBAL vsitrightdata3 IS vsit_disp_rightdatabox:ADDLABEL("SPDBK CMD xxx"). 
 	set vsitrightdata3:style:margin:v to -2.
-	GLOBAL vsitrightdata4 IS vsit_disp_rightdatabox:ADDLABEL("REF HDOT xxx").
-	set vsitrightdata4:style:margin:v to -4.
 	GLOBAL vsitrightdata5 IS vsit_disp_rightdatabox:ADDLABEL("TGT NZ   xxxxx").
 	set vsitrightdata5:style:margin:v to -4.
 	
+	vsit_disp_overlaiddata:addspacing(50).
 	
+	GLOBAL vsit_vert_sliderbox IS vsit_disp_overlaiddata:ADDVLAYOUT().
+	SET vsit_vert_sliderbox:STYLe:WIDTH TO 80.
+	set vsit_vert_sliderbox:style:margin:h to 10.
+	set vsit_vert_sliderbox:style:margin:v to 100 + ops3_disp_vmargin.
+	SET vsit_vert_sliderbox:STYLE:ALIGN TO "Left".
+	GLOBAL vsit_vert_slider_label IS vsit_vert_sliderbox:ADDLABEL("XXXX").
+	set vsit_vert_slider_label:style:margin:h to 15.
+	set vsit_vert_slider_label:style:margin:v to 0.
+	GLOBAL vsit_vert_slider is vsit_vert_sliderbox:addvslider(1,0,1).
+	SET vsit_vert_slider:STYLE:ALIGN TO "Left".
+	SET vsit_vert_slider:style:vstretch to false.
+	SET vsit_vert_slider:style:hstretch to false.
+	set vsit_vert_slider:style:margin:h to -10.
+	set vsit_vert_slider:style:margin:v to 5.
 	
-	GLOBAL herror_sliderbox IS vsit_disp_overlaiddata:ADDVLAYOUT().
-	SET herror_sliderbox:STYLe:WIDTH TO 55.
-	set herror_sliderbox:style:margin:h to 0.
-	set herror_sliderbox:style:margin:v to 100 + ops3_disp_vmargin.
-	SET herror_sliderbox:STYLE:ALIGN TO "Center".
-	GLOBAL herror_slider_label IS herror_sliderbox:ADDLABEL("H ERR").
-	set herror_slider_label:style:margin:h to 1.
-	set herror_slider_label:style:margin:v to 0.
-	GLOBAL herror_slider is herror_sliderbox:addvslider(0,-1.85,1.85).
-	SET herror_slider:STYLE:ALIGN TO "Center".
-	SET herror_slider:style:vstretch to false.
-	SET herror_slider:style:hstretch to false.
-	SET herror_slider:STYLE:WIDTH TO 20.
-	SET herror_slider:STYLE:HEIGHT TO 180.
-	set herror_slider:style:margin:h to 0.
-	set herror_slider:style:margin:v to 5.
-	
+	make_eow_slider().
 	
 	GLOBAL vsit_disp_orbiter_box IS vsit_disp_mainbox:ADDVLAYOUT().
 	SET vsit_disp_orbiter_box:STYLE:ALIGN TO "Center".
@@ -1145,7 +1149,8 @@ FUNCTION make_taem_vsit_GUI {
 
 function make_time2hac_slider {
 	set vsit_horiz_slider:STYLe:BG to "Shuttle_OPS3/src/gui_images/hac_entry_slider.png".
-	SET vsit_horiz_slider:STYLE:HEIGHT TO 36.
+	SET vsit_horiz_slider:STYLE:HEIGHT TO 28.
+	SET vsit_horiz_slider:STYLE:WIDTH TO 150.
 	SET vsit_horiz_slider:MIN TO 0.
 	SET vsit_horiz_slider:MAX TO 6.5.
 	set horiz_slider_label:text to "TIME TO HAC".
@@ -1153,10 +1158,30 @@ function make_time2hac_slider {
 
 function make_xtrackerr_slider {
 	set vsit_horiz_slider:STYLe:BG to "Shuttle_OPS3/src/gui_images/xtrack_err_slider.png".
-	SET vsit_horiz_slider:STYLE:HEIGHT TO 25.
+	SET vsit_horiz_slider:STYLE:HEIGHT TO 24.
+	SET vsit_horiz_slider:STYLE:WIDTH TO 150.
 	SET vsit_horiz_slider:MIN TO -18.5.
 	SET vsit_horiz_slider:MAX TO 18.5.
 	set horiz_slider_label:text to "XTRACK ERR ".
+}
+
+function make_eow_slider {
+	set vsit_vert_slider:STYLe:BG to "Shuttle_OPS3/src/gui_images/eowslider.png".
+	SET vsit_vert_slider:STYLE:HEIGHT TO 160.
+	SET vsit_vert_slider:STYLE:WIDTH TO 42.
+	SET vsit_vert_slider:MIN TO -0.9.
+	SET vsit_vert_slider:MAX TO 0.9.
+	set vsit_vert_slider_label:text to "E/W".
+}
+
+function make_herror_slider {
+	set vsit_vert_slider:STYLe:BG to "Shuttle_OPS3/src/gui_images/vspdslider2.png".
+	SET vsit_vert_slider:STYLE:HEIGHT TO 160.
+	SET vsit_vert_slider:STYLE:WIDTH TO 20.
+	SET vsit_vert_slider:MIN TO -1.85.
+	SET vsit_vert_slider:MAX TO 1.85.
+	set vsit_vert_slider_label:text to "H ERR".
+	
 }
 
 function reset_taem_vsit_disp {
@@ -1184,6 +1209,30 @@ function set_taem_vsit_disp_title {
 function set_taem_vsit_disp_bg {
 	set vsit_disp_mainbox:style:BG to "Shuttle_OPS3/src/gui_images/vsit" + taem_vsit_disp_counter + "_bg.png".
 }
+
+function set_taem_vsit_eow_slider {
+	parameter eow.
+	parameter en.
+	parameter es.
+	parameter emep.
+	
+	local en_v is 0.18.
+	local es_v is -0.47.
+	local emep_v is 0.59.
+	
+	local eow_scale is 0.
+	local val_scale is 0.
+	if (eow < en) {
+		set eow_scale to (en - emep).
+		set val_scale to (en_v - emep_v).
+	} else {
+		set eow_scale to (es - en).
+		set val_scale to (es_v - en_v).	
+	}
+	
+	return  en_v + val_scale*(eow - en)/eow_scale.
+	
+}
 function set_taem_vsit_herror_slider {
 	parameter herror.
 	
@@ -1208,9 +1257,9 @@ function update_taem_vsit_disp {
 	
 	SET ops3_main_display_clock:text TO "MET " + sectotime_simple(MISSIONTIME, true).
 	
-	local grtls_flag is (gui_data["guid_id"] <= 26) AND (gui_data["guid_id"] >= 24).
+	local grtls_flag is (gui_data["guid_id"] <= 27) AND (gui_data["guid_id"] >= 24).
 
-	if (taem_vsit_disp_counter = 1 and gui_data["rpred"] <= 64000) and (not grtls_flag) {
+	if (taem_vsit_disp_counter = 1 and gui_data["rpred"] <= 45000) and (not grtls_flag) {
 		increment_taem_vsit_disp_counter().
 	}
 	
@@ -1245,13 +1294,17 @@ function update_taem_vsit_disp {
 	if (grtls_flag) {
 		set orbiter_bug_pos to set_taem_vsit_disp_bug(v(grtls_disp_x_convert(gui_data["mach"]),grtls_disp_y_convert(gui_data["prog_pch"]), 0)).
 	} ELSE {
-		set orbiter_bug_pos to set_taem_vsit_disp_bug(v(taem_vsit_disp_x_convert(gui_data["rpred"]),taem_vsit_disp_y_convert(gui_data["eow"]), 0)).
+		set orbiter_bug_pos to set_taem_vsit_disp_bug(v(taem_vsit_disp_x_convert(gui_data["rpred"]),taem_vsit_disp_y_convert(gui_data["h"]), 0)).
 	}
 	
 	SET vsit_disp_orbiter:STYLE:margin:v to orbiter_bug_pos[1].
 	SET vsit_disp_orbiter:STYLE:margin:h to orbiter_bug_pos[0].
 	
-	set herror_slider:value to CLAMP(set_taem_vsit_herror_slider(gui_data["herror"]),herror_slider:MIN,herror_slider:MAX).
+	if (gui_data["guid_id"] >= 30 OR gui_data["guid_id"] = 23 ) {
+		set vsit_vert_slider:value to CLAMP(set_taem_vsit_herror_slider(gui_data["herror"]),vsit_vert_slider:MIN,vsit_vert_slider:MAX).
+	} else {
+		set vsit_vert_slider:value to CLAMP(set_taem_vsit_eow_slider(gui_data["eow"], gui_data["en"], gui_data["es"], gui_data["emep"]),vsit_vert_slider:MIN,vsit_vert_slider:MAX).
+	}
 	
 	if (gui_data["eowlof"]) {
 		set vsitrightdata0:text TO "<color=#" + guitextredhex + ">LO ENERGY</color>".
@@ -1267,9 +1320,12 @@ function update_taem_vsit_disp {
 		set vsitrightdata1:text TO "NEP  /".
 	}
 	
+	set vsitrightdata4:text TO "Ḣ " + padstring(ROUND(gui_data["hdot"],0), 3) + " | Ḧ " + padstring(ROUND(gui_data["hddot"],0), 3).
+	set vsitrightdata6:text TO "Ḣ REF    " + ROUND(gui_data["hdref"],0).
+	
 	set vsitrightdata2:text to "ALPHA LIMS  " + round(gui_data["alpll"], 0) + "  " +  round(gui_data["alpul"], 0).
 	set vsitrightdata3:text to "SPDBK CMD  " + round(gui_data["spdbkcmd"], 1).
-	set vsitrightdata4:text to "REF HDOT  " + round(gui_data["tgthdot"], 0).
+	
 	
 	set vsitrightdata5:text to "LOAD FAC    " + round(gui_data["xlfac"], 1) + " G".
 	
@@ -1313,9 +1369,9 @@ function taem_vsit_disp_x_convert {
 	local out is 0.
 	
 	if (taem_vsit_disp_counter=1) {
-		set out to (rpred / 93000 -  0.64235294117).
+		set out to (rpred / 135000- 0.1).
 	} else if (taem_vsit_disp_counter=2) {
-		set out to (rpred / 60000).
+		set out to (rpred / 80000 + 0.14).
 	}	
 	
 	return out * 380.
@@ -1323,14 +1379,14 @@ function taem_vsit_disp_x_convert {
 
 
 function taem_vsit_disp_y_convert {
-	parameter eow.
+	parameter h.
 	
 	local out is 0.
 	
 	if (taem_vsit_disp_counter=1) {
-		set out to (eow / 75000  - 0.33757142857).
+		set out to (h / 26000  - 0.5).
 	} else if (taem_vsit_disp_counter=2) {
-		set out to (eow / 45000 + 0.03).
+		set out to (h / 25000 +0.12).
 	}	
 	
 	return 50 + 300 * out.
@@ -1341,13 +1397,13 @@ function grtls_disp_x_convert {
 	
 	local mach_ is clamp(mach, 3.2, 6.5).
 	
-	return 60.31746 * mach_ -140.95238. 
+	return 48.83720 * mach_ -96.5116279. 
 }
 
 function grtls_disp_y_convert {
 	parameter alp.
 
-	return 3.33333 * alp + 190.
+	return 2.375 * alp + 232.375.
 }
 
 

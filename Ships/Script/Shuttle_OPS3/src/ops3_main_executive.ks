@@ -339,15 +339,18 @@ FUNCTION ops3_main_exec {
 		
 		LOCAL al_end_flag Is FALSE.
 		
+		local rwystate is blank_runway_rel_state().
+		
 		until (quit_program OR al_end_flag) {
 			clearvecdraws().
 			
 			guidance_timer:update().
 		
-			local rwystate is get_runway_rel_state(
+			set rwystate to get_runway_rel_state(
 				-SHIP:ORBIT:BODY:POSITION,
 				SHIP:VELOCITY:SURFACE,
-				tgtrwy
+				tgtrwy,
+				rwystate
 			).
 
 			if (is_guid_reset()) {
@@ -359,6 +362,7 @@ FUNCTION ops3_main_exec {
 									"wow", dap:wow,
 									"h", rwystate["h"],
 									"hdot", rwystate["hdot"],
+									"hddot", rwystate["hddot"],
 									"x", rwystate["x"], 
 									"y", rwystate["y"], 
 									"surfv", rwystate["surfv"],
@@ -447,6 +451,8 @@ FUNCTION ops3_main_exec {
 				hud_decluttering(guid_id).
 				if (guid_id = 22) {
 					make_xtrackerr_slider().
+				} else if (guid_id = 23) {
+					make_herror_slider().
 				}
 			}
 
@@ -461,12 +467,18 @@ FUNCTION ops3_main_exec {
 			local gui_data is lexicon(
 									"guid_id", guid_id,
 									"rpred",taemg_out["rpred"],
+									"h", rwystate["h"],
+									"hdot", rwystate["hdot"],
+									"hddot", rwystate["hddot"],
 									"eow",taemg_out["eow"],
+									"en",taemg_out["en"],
+									"es",taemg_out["es"],
+									"emep",taemg_out["emep"],
 									"herror", taemg_out["herror"],
 									"ottstin", taemg_out["ohalrt"],
 									"mep", taemg_out["mep"],
 									"eowlof", taemg_out["eowlof"],
-									"tgthdot", taemg_out["hdref"],
+									"hdref", taemg_out["hdref"],
 									"xlfac", taemg_in["xlfac"] / taemg_constants["g"], 
 									"spdbkcmd", taemg_out["dsbc_at"],
 									"alpll", taemg_out["alpll"],

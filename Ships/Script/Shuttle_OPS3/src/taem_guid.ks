@@ -65,6 +65,7 @@ FUNCTION taemg_wrapper {
 										"wow", taemg_input["wow"],
 										"h", taemg_input["h"] * mt2ft,		//ft height above rwy
 										"hdot", taemg_input["hdot"] * mt2ft,	//ft/s vert speed
+										"hddot", taemg_input["hddot"] * mt2ft,	//ft/s vert speed
 										"x", taemg_input["x"] * mt2ft,		//ft x component on runway coord
 										"y", taemg_input["y"] * mt2ft,		//ft y component on runway coord
 										"surfv", taemg_input["surfv"] * mt2ft, 		//ft/s earth relative velocity mag 			//was v
@@ -230,7 +231,7 @@ global taemg_constants is lexicon (
 									"edelnz", list(0, 4000, 4000),			// -/ft/ft eow delta from nominal energy line slope for s-turn  	//OTT paper			//deprecated
 									"edelnzu", 2000,			//eow delta from nominal energy line for emax
 									"edelnzl", 2000,			//eow delta from nominal energy line for emin
-									"edelnzmmg", 0.67,			//fraction of es-en, emep-en for calculation of emax,emin		//my addition
+									"edelnzmmg", 0.34,			//fraction of es-en, emep-en for calculation of emax,emin		//my addition
 									
 									//"edrs", list(0, 0.69946182, 0.69946182),		// -/ ft^2/ft / ft^2/ft slope for s-turn energy line   	//OTT paper
 									//"emep_c1", list(0, list(0,-3263, 12088), list(0, -3263, 12088)),		//all in ft mep energy line y intercept  	//OTT paper
@@ -558,14 +559,13 @@ global taemg_internal is lexicon(
 								"gdh", 0, 		// hdot gain for nzc
 								"gelrtan", 0, 		// my addition - rtan gain for eow lims
 								"hdreqg", 0, 		//gain for herror in nzc
-								"hddot", 0, 		//ft/s2 hdot derivative, my addition
-								"hdotp", 0, 		//ft/s hdot prev, my addition
 								"hderr", 0, 		//ft hdot error
 								"herror", 0, 		//ft altitude error
 								"hdref", 0,			//ft/s hdot reference
 								"hderrc", 0,			//ft/s hdot error corrected - my addition
 								"hderrcl", 0,			//ft/s hdot error corrected and limited - my addition
 								"hderrc_eowl", 0,			//ft/s hdot error corrected and limited by energy - my addition
+								"hderrc_eowqb", 0,			//ft/s hdot error corrected and limited by energy and qbar - my addition
 								"hdrefc", 0,			//ft/s hdot reference corrected - my addition
 								"href", 0,			//ft ref altitude
 								"iel", 0,			//energy reference profile selector flag
@@ -591,6 +591,8 @@ global taemg_internal is lexicon(
 								"pst", 0, 			//deg heading to hac tangency pt 
 								"qberr", 0,			//psf error on qbar
 								"qbarf", 0,		//psf filtered dynamic press 
+								"qbhdul", 0,	//ft/s 	qbar hdot upper limit - my addition
+								"qbhdll", 0,	//ft/s 	qbar hdot lower limit - my addition
 								"qbref", 0,		//psf dyn press ref 
 								"qbd", 0,			// delta of qbar
 								"rtan", 0, 		//ft distance to hac tangent point 
@@ -1045,10 +1047,6 @@ FUNCTION gtp {
 //reference params, dyn press and spiral adjust function 
 FUNCTION tgcomp {
 	PARAMETER taemg_input.
-
-	//my addition - vertical accel 
-	set taemg_internal["hddot"] to (taemg_input["hdot"] - taemg_internal["hdotp"]) / taemg_input["dtg"].
-	set taemg_internal["hdotp"] to taemg_input["hdot"].
 	
 	//range to the a/l transition point
 	set taemg_internal["drpred"] to taemg_internal["rpred"] + taemg_internal["xali"].
@@ -1440,9 +1438,11 @@ FUNCTION tgnzc {
 	//filter changes to hderrc
 	//try lag filtering 
 	set taemg_internal["hderrcl"]  to (1 - taemg_constants["hderr_lag_k"]) * taemg_internal["hderrc"] + taemg_constants["hderr_lag_k"] *  hderrcn.
+	
+	local dnz2ddh is 1 / (taemg_internal["gdh"] * taemg_constants["dnzcg"]).
 
 	//unlimited normal accel commanded to stay on profile
-	set taemg_internal["dnzc"] to taemg_constants["dnzcg"] * taemg_internal["gdh"] * taemg_internal["hderrcl"].
+	set taemg_internal["dnzc"] to taemg_internal["hderrcl"] / dnz2ddh.
 	
 	
 	//qbar profile varies within an upper and a lower profile
@@ -1474,6 +1474,10 @@ FUNCTION tgnzc {
 	//limits on qbar
 	local qbnzul is - (taemg_constants["qbg1"] * (qbmnnz - taemg_internal["qbarf"]) - taemg_internal["qbd"]) * taemg_constants["qbg2"].
 	local qbnzll is - (taemg_constants["qbg1"] * (qbmxnz - taemg_internal["qbarf"]) - taemg_internal["qbd"]) * taemg_constants["qbg2"].
+	
+	//transform the qbar nz filters into hdot filters
+	SET taemg_internal["qbhdul"] TO qbnzul / taemg_internal["gdh"].
+	SET taemg_internal["qbhdll"] TO qbnzll / taemg_internal["gdh"].
 
 	set taemg_internal["dnzcl"] to taemg_internal["dnzc"].
 
@@ -1487,8 +1491,8 @@ FUNCTION tgnzc {
 		//eow limits
 		//moved emax,emin to tgcomp
 		
-		local eownzul is (taemg_constants["geul"] * taemg_internal["gdh"] * (taemg_internal["emax"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdul"] * taemg_internal["gdh"].
-		local eownzll is (taemg_constants["gell"] * taemg_internal["gdh"] * (taemg_internal["emin"] - taemg_internal["eow"]) + taemg_internal["hderr"]) * taemg_constants["gehdll"] * taemg_internal["gdh"].
+		local eownzul is (taemg_constants["geul"] * taemg_internal["gdh"] * (taemg_internal["emax"] - taemg_internal["eow"]) + taemg_internal["hderrcl"]) * taemg_constants["gehdul"] * taemg_internal["gdh"].
+		local eownzll is (taemg_constants["gell"] * taemg_internal["gdh"] * (taemg_internal["emin"] - taemg_internal["eow"]) + taemg_internal["hderrcl"]) * taemg_constants["gehdll"] * taemg_internal["gdh"].
 		
 		//cascade of filters
 		//limit by eow
@@ -1499,14 +1503,17 @@ FUNCTION tgnzc {
 		//apply structural limits on nz cmd
 		set taemg_internal["nzc"] to midval(taemg_internal["nzc"] + dnzcd * taemg_input["dtg"], taemg_internal["dnzll"], taemg_internal["dnzul"]).
 
-		local dnz2ddh is 1 / (taemg_internal["gdh"] * taemg_constants["dnzcg"]).
-
 		SET taemg_internal["eowhdul"] TO eownzul * dnz2ddh.
 		SET taemg_internal["eowhdll"] TO eownzll * dnz2ddh.
 
 		set taemg_internal["hderrc_eowl"] to midval(taemg_internal["hderrcl"], taemg_internal["eowhdll"], taemg_internal["eowhdul"]).
+		set taemg_internal["hderrc_eowqb"] to taemg_internal["hderrc_eowl"].
+		//qbar filtering only before hdg
+		if (taemg_internal["iphase"] <= 1) {
+			set taemg_internal["hderrc_eowqb"] to midval(taemg_internal["hderrc_eowl"], taemg_internal["qbhdul"], taemg_internal["qbhdll"]).
+		}
 		
-		local dhdcd is midval((taemg_internal["hderrc_eowl"] - taemg_internal["hderrc"]) * taemg_constants["cqg"], -taemg_constants["hdherrcmax"], taemg_constants["hdherrcmax"]).
+		local dhdcd is midval((taemg_internal["hderrc_eowqb"] - taemg_internal["hderrc"]) * taemg_constants["cqg"], -taemg_constants["hdherrcmax"], taemg_constants["hdherrcmax"]).
 		set taemg_internal["hderrc"] to taemg_internal["hderrc"] + dhdcd * taemg_input["dtg"].
 	} else {
 		set taemg_internal["hderrc"] to taemg_internal["hderrcl"].
@@ -1697,13 +1704,13 @@ function grcomp {
 			set taemg_internal["igrhd"] to (taemg_input["hdot"] < taemg_constants["hdtrn"]). 
 		} else {
 			if (NOT taemg_internal["igrhdd"])  {
-				SET taemg_internal["igrhdd"] to (taemg_internal["hddot"] > taemg_constants["grhdddb"]).
+				SET taemg_internal["igrhdd"] to (taemg_input["hddot"] > taemg_constants["grhdddb"]).
 			} else {
 				local hdtrn is taemg_constants["hdtrn"].
 				if (taemg_internal["cont_flag"]) {
 					set hdtrn to taemg_constants["hdtrna"].
 				}
-				set taemg_internal["igrpo"] to (taemg_input["hdot"] > hdtrn) or (taemg_internal["hddot"] < -taemg_constants["grhdddb"]).
+				set taemg_internal["igrpo"] to (taemg_input["hdot"] > hdtrn) or (taemg_input["hddot"] < -taemg_constants["grhdddb"]).
 			}
 		}
 	}
@@ -1802,11 +1809,8 @@ function grtrn {
 			set taemg_internal["philim"] to taemg_constants["grphilm"].
 		}
 		
-		//revised transition checks with new pullout logic. only add gralpr check if grtls non-cont
-		if (
-			(taemg_input["xlfac"] <= taemg_constants["nztotallim"]) 
-			and (taemg_internal["igrpo"] and ((taemg_internal["cont_flag"]) or (taemg_input["alpha"] >= taemg_internal["gralpr"])))
-		) {
+		//revised transition checks with new pullout logic. no gralpr check anymore
+		if ((taemg_input["xlfac"] <= taemg_constants["nztotallim"]) and taemg_internal["igrpo"]) {
 			set taemg_internal["iphase"] to 4.
 			set taemg_internal["itran"] to TRUE.
 			SET taemg_internal["qbarf"] TO taemg_input["qbar"].
