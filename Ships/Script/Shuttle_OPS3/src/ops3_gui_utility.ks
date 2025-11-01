@@ -1257,7 +1257,7 @@ function update_taem_vsit_disp {
 	
 	SET ops3_main_display_clock:text TO "MET " + sectotime_simple(MISSIONTIME, true).
 	
-	local grtls_flag is (gui_data["guid_id"] <= 26) AND (gui_data["guid_id"] >= 24).
+	local grtls_flag is (gui_data["guid_id"] <= 27) AND (gui_data["guid_id"] >= 24).
 
 	if (taem_vsit_disp_counter = 1 and gui_data["rpred"] <= 45000) and (not grtls_flag) {
 		increment_taem_vsit_disp_counter().
