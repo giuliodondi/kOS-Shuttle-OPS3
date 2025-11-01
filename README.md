@@ -309,21 +309,24 @@ The phases of TAEM guidance are:
 - **Heading alignment (HDG)** which is the turn around the HAC. The AZ ERROR number on the HUD will indicate the degrees of turn left to sweep. The Shuttle will bank by an angle that depends on the crosstrack error, the target hdot instead depends only on the error from the vertical profile, with no more contibution from energy. The phase terminates when the turn angle around the HAC is less than 30° and the Shuttle is close enough to centreline
 - **Pre-final (PRFNL)** which manages pitch and bank to stabilise the Shuttle on the final descent path and course. The AZ ERROR number indicates the heading degrees off runway centreline.
  
-The TAEM displays are **VERT SIT** and show the energy situation against distance to fly, along with other data:
+The TAEM displays are **VERT SIT** and show the altitude and energy situation against distance to fly, along with other data:
 
 ![vsit_disp](https://github.com/giuliodondi/kOS-Shuttle-OPS3/blob/master/Ships/Script/Shuttle_OPS3/images/vsit_displays.png)
 
-- The central plot shows the three Energy-over-Weight against Range to go profiles:
-  - **Keep in mind that most of the energy by this stage is potential i.e. dominated by altitude**
-  - The middle profile is the Nominal, if the Orbiter bug is too far off-nominal, guidance will respond in the following ways:
+- The central plot shows Altitude vs. Distance profiles. The only important one is the middle one which is the reference descent profile thatt he program wil try to follow
+- The right slider is the **Energy-over-Weight** slider and is actually quite important.
+  - NOM is the nominal energy level
+  - if the Orbiter bug is too far off-nominal, guidance will respond in the following ways:
     - if high energy, pitch down a little to dive into thicker air and generate drag, while shedding altitude to reduce energy
     - if low energy, pitch up to conserve some altitude and thus energy until the profile is restored
-  - The lower profile is the Minimum Entry Point line, if the Shuttle crosses this line, guidance automatically moves the HAC to the NEP, this usually brings the bug within margins
-  - The higher profile is the S-turn line, crossing this line will trigger the S-turn, which is disabled once the bug returns below the line
+  - STN is the S-turn level, if energy is above this it cannot be managed by pitch alone. Initiating an S-turn increases distance to fly and dissipates energy
+  - MEP is the low-energy mark, below this the program will moves the HAC to the Minimum Entry Point, this usually brings the bug within margins 
+
 - The data displayed in the left panel are the current body attitude angles
 - In the bottom-right panel you have:
   - The indicator of nominal (NEP) or minimum (MEP) entry points currently enabled. MEP is yellow.
-  - _ALPHA LIMS_ the lower and upper limits on Angle of Attack needed to prevent dangerous commands
+  - _HDOT_ and _HDDOT_, the vertical speed and acceleration
+  - _ALPHA LIMS_ the lower and upper limits on Angle of Attack needed to prevent dangerous commands.
   - _SPDBK CMD_ the current commanded speedbrake deflection on a scale of 0 to 1
   - _REF HDOT_ the vertical speed to track the altitude profile
   - _TGT NZ_ the target vertical load factor
@@ -352,10 +355,10 @@ Remarks:
   - max open above the S-turn energy line and min open (or closed) below the MEP energy line
 - You can use manual speedbrakes to add or subtract drag if you're way off the energy profile
 - Tips for flying with DAP set to CSS:
-  -  you should make small corrections especially in pitch, as it's very easy to overshoot the HUD command
-  - In any case, you don't need super crisp vertical control during Acquisition and S-turns, it's enough to be within the +/- 1000m mark by HAC acquisition
-  - During Heading align and Prefinal, it's easier to manage altitude and acquire the altitude profile. You should keep an eye on the Altitude error slider and, if needed, deliberately over-correct your pitch inputs to track the profile. The important thing is to be reasonably close to 0 error by pre-final
-- The energy profile is calibrated intentionally to place the Shuttle above profile by HAC acquisition. If the HAC turn is less than 180°, there might not be enough time to null the altitude error by the end of TAEM, usually this is not a major issue for what follows.
+  - there are no pitch or roll limitations in CSS, you can fly more aggressively that AUTO guidance but you coud also depart stable flight
+  - Track energy as the primary variable, with alritude being secondary. The nominal energy profile will take you close anyways
+  - you should make small corrections especially in pitch, as it's very easy to overshoot the HUD command. In any case, you don't need super crisp energy control during ACQ
+  - During Heading align and Prefinal, you should keep an eye on the Altitude profile plot, if needed, deliberately over-correct your pitch inputs to track the profile. The important thing is to be reasonably close to 0 error by pre-final
 
 </details>
 
@@ -407,7 +410,7 @@ The mode is used during a 2EO or 3EO contingency entry, again as called by OPS1.
 
 Other things only pertaining to contingency:  
 - The speedbrake is set to a lower limit because at hypersonic speeds it can decrease yaw authority
-- The Orbiter will start banking gently during the pullout to a maximum of 35°
+- The Orbiter will start banking aggressively near the end of the pullout to a maximum of 70°
 - The transition from NZHOLD to ALPTRN happens when Gs are low enough and vertical speed is under control
 - Roll is limited during the APTRN phugoids to prevent the Orbiter from sinking too much when G-forces are building up
 - The transition from ALPTRN to regular TAEM guidance happens when the Orbiter is descending and moving towards the target site instead of away from it
@@ -418,7 +421,8 @@ ECAL abort guidance is the same as contignency GRTLS guidance but, instead of tr
 
 - During ALPTRN, iF the energy is high the program will pitch down to get more drag, if it's low it will bias pitch up to try to stay at low drag and extend the glide
 - S-turn logic does not work like regular TAEM but instead more like Entry guidance roll reversals, setting a maximum bank angle of 60° and turning left and right within a delaz deadband until the energy state is good
-  - once again, bank angle is modulated as a function of the G-forces to avoid sinking too much during a phugoid pullout
+- once again, bank angle is modulated as a function of the G-forces to avoid sinking too much during a phugoid pullout
+- in an ECAL abort you need to watch the Eenergy/Weight indicator extremely closely and redesignate runway, take CSS flight as needed to get to a landing
 
 
 </details>
