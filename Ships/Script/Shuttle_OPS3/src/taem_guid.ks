@@ -514,6 +514,9 @@ global taemg_constants is lexicon (
 									"en_bias1", 2.5,			//° low energy alpha bias 
 									"en_bias2", -2.5,			//° high energy alpha bias 
 									"en_bias3", -5,			//° high energy alpha bias 
+									"dnz1", 0.2,			// nz increment if itgtnz
+									"dnzmx1", 4.1,			//max dgrnzt to trigger itgtnz
+									"phiprb", 20,			//° prebank if itgtnz
 									
 									"dummy", 0			//can't be arsed to add commas all the time
 									
@@ -665,7 +668,7 @@ global taemg_internal is lexicon(
 								"igrhd", FALSE,		//my addition - grtls vertical speed latch
 								"igrhdd", FALSE,		//my addition - grtls vertical speed increasing latch
 								
-								//my addition: control flags 
+								//my addition: control flags false
 								"grtls_flag", FALSE,		//grtls flag
 								"cont_flag", FALSE,		//contingency flag
 								"ecal_flag", FALSE,		//ecal flag
@@ -676,6 +679,7 @@ global taemg_internal is lexicon(
 								"dpsaclmt", 0, 			//ECAL target DPSAC limit for high energy
 								"dpsac_init", false,		//ECAL high energy heading error init flag
 								"en_alpha_bias", 0,		//alpha bias eow-dependent
+								"itgtnz", false,		//flag to enable prebank and higher nz limit during ecal
 								
 								"dummy", 0			//can't be arsed to add commas all the time
 ).
@@ -893,7 +897,13 @@ FUNCTION tginit {
 		SET taemg_internal["ysgn"] TO SIGN(taemg_input["y"]). 
 	}
 	
+	//addition - override philm1 in ecal to preserve high bank limits when transitioning to TAEM ACQ
 	if (firstpassflag) {
+		if (taemg_internal["ecal_flag"]) {
+			set taemg_constants["philm1"] to taemg_constants["phiecal"].
+			set taemg_constants["philm0"] to taemg_constants["phistn"].
+		}
+		
 		if (taemg_internal["cont_flag"]) {
 			set taemg_internal["alpcmd"] to midval(taemg_constants["alprecs"] * taemg_input["surfv"] + taemg_constants["alpreci"], taemg_constants["alprecl"], taemg_constants["alprecu"]).
 			set taemg_internal["nzsw"] to taemg_constants["nzsw1a"].
@@ -1728,6 +1738,13 @@ function grcomp {
 
 			//skip smnz1 calculation
 			
+			//ecal prebank  logic
+			set taemg_internal["itgtnz"] to FALSE.
+			if (taemg_internal["ecal_flag"]) and (abs(taemg_internal["dpsac"]) > taemg_constants["dpsaclmt_max"]) and (taemg_internal["dgrnzt"] < taemg_constants["dnzmx1"] ) {
+				set taemg_internal["itgtnz"] to TRUE.
+				set taemg_internal["dgrnzt"] to taemg_internal["dgrnzt"] + taemg_constants["dnz1"].
+			}
+			
 			set taemg_internal["dgrnz"] to midval(taemg_internal["dgrnzt"] - taemg_constants["grnzc1a"] - 1, taemg_constants["dhdll"], taemg_constants["dhdul"]).
 			//my modification - removed the 1 addition to be consistent
 			set taemg_internal["nzsw"] to taemg_constants["grnzc1a"] - taemg_internal["smnz1"] - taemg_internal["smnz2"].
@@ -1766,7 +1783,10 @@ function grcomp {
 				} else {
 					set taemg_internal["en_alpha_bias"] to taemg_constants["enalpu"].
 				}
-				
+				//my addition: if s-turning reverse all the negative pitch biases to increase drag
+				if (taemg_internal["istp4"] = 0) {
+					set taemg_internal["en_alpha_bias"] to - taemg_internal["en_alpha_bias"].
+				}
 				set gralpra to gralpra + taemg_internal["en_alpha_bias"].
 			} 
 			
@@ -1986,11 +2006,16 @@ function grphic {
 	//my addition
 	set taemg_internal["betac_at"] to 0.
 	
+	local phimn is 0.
+	if (taemg_internal["ecal_flag"]) and (taemg_internal["itgtnz"]) {
+		set phimn to taemg_constants["phiprb"].
+	}
+	
 	//zero roll before  alpha tran and before we are on gralpr profile 
 	if ((NOT taemg_internal["cont_flag"]) and (taemg_internal["iphase"] > 4 OR taemg_internal["igra"] < 2))
 		or (taemg_internal["cont_flag"] and (taemg_internal["iphase"] > 5))
 	{
-		set taemg_internal["phic_at"] to 0.
+		set taemg_internal["phic_at"] to sign(taemg_internal["dpsac"]) * phimn.
 		return.
 	}
 	
@@ -2054,7 +2079,7 @@ function grphic {
 		//hdot-based during nzhold, g-based during alptran
 		local phic1 is 0.
 		if (taemg_internal["iphase"] > 4) {
-			set phic1 to MAX(taemg_constants["grphihdi"] + taemg_constants["grphihds"] * taemg_input["hdot"], 0).	
+			set phic1 to MAX(taemg_constants["grphihdi"] + taemg_constants["grphihds"] * taemg_input["hdot"], phimn).	
 		} else {
 			local nzrolgn is  max(taemg_constants["grnzphicgn"] * abs(taemg_input["xlfac"]/taemg_constants["nztotallim"]), 1).
 			set phic1 to abs(taemg_internal["phic"]) / nzrolgn.
