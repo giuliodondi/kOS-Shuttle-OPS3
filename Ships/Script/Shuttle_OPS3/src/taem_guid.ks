@@ -766,6 +766,7 @@ function tgexec {
 		tgphic(taemg_input).
 	}
 
+	SET taemg_internal["ireset"] TO FALSE.
 }
 
 FUNCTION taemg_reset {
@@ -924,7 +925,6 @@ FUNCTION tginit {
 	
 	SET taemg_internal["tg_end"] TO FALSE.
 	
-	SET taemg_internal["ireset"] TO FALSE.
 	SET taemg_internal["fpflag"] TO TRUE.
 
 }
@@ -1386,7 +1386,8 @@ FUNCTION tgtran {
 			//this is equation block 46
 			//suggest downmoding to MEP 
 			//moved emep calculation to tgcomp
-			if (taemg_internal["eow"] < taemg_internal["emep"]) and (NOT taemg_internal["mep"]) {
+			//modification: trigger this only if the user presses the reset button
+			if (taemg_internal["eow"] < taemg_internal["emep"]) and (NOT taemg_internal["mep"]) and (taemg_internal["ireset"]) {
 				set taemg_internal["mep"] to TRUE.
 			}
 			
