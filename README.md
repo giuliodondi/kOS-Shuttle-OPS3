@@ -300,7 +300,7 @@ To cover all possible energy conditions, there are several approaches that can b
 - **Overhead (OVHD)** is the default choice, but you have a GUI button to change to **Straight-in (ST IN)**. This will reduce the distance to fly by quite a lot in a very low energy case.
   - **The switch from Overhead to Straight-in is always manual and up to you, never done automatically**
 - The HACs can be placed at the **Nominal Entry Point (NEP)** and switched to the **Minimum Entry Point (MEP)** if low on energy. This is a less drastic change than the Overhead/Straight-in switch
-  - **The NEP to MEP switch happens automatically within TAEM guidance, you have no control over it**
+  - **The switch from NEP to MEP is also manual, you need to push the 'RESET' button when you're stable in a low energy condition**
  
 The guidance outputs sent to the DAP are bank angle to steer towards a guidance point and a target vertical speed value to achieve.
 The phases of TAEM guidance are:
