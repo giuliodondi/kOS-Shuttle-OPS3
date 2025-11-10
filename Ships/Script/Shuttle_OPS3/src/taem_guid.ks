@@ -580,6 +580,7 @@ global taemg_internal is lexicon(
 								"fpflag", FALSE,		//my addition - separate flag for first pass
 								"isr", 0,		// pre-final roll fader
 								"mep", FALSE,	//minimum entry point flag
+								"mxqbwt", 0, 		//psf/slug qbar gain for mass
 								"nzc", 0, 	//g-units normal load factor increment from equilibrium	
 								"nztotal", 0, 	//g-units my addition from the taem paper, total normal load factor
 								"ohalrt", FALSE,		//one-time flag for  automatic downmoding to straight-in hac
@@ -597,6 +598,8 @@ global taemg_internal is lexicon(
 								"qbhdul", 0,	//ft/s 	qbar hdot upper limit - my addition
 								"qbhdll", 0,	//ft/s 	qbar hdot lower limit - my addition
 								"qbref", 0,		//psf dyn press ref 
+								"qbmnnz", 0,		//psf lower limit on dyn press 
+								"qbmxnz", 0,		//psf upper lim on dyn press 
 								"qbd", 0,			// delta of qbar
 								"rtan", 0, 		//ft distance to hac tangent point 
 								"rpred", 0, 		//ft predicted total range to threshold 
@@ -1459,32 +1462,31 @@ FUNCTION tgnzc {
 	//qbar profile varies within an upper and a lower profile
 	
 	//calculate min qbar profile
-	local mxqbwt is 0.
 	if (taemg_input["mach"] < taemg_constants["qmach2"]) {
-		set mxqbwt to midval(taemg_constants["qbwt1"] + taemg_constants["qbmsl1"] * (taemg_input["mach"] - taemg_constants["qmach1"]), taemg_constants["qbwt2"], taemg_constants["qbwt1"]).
+		set taemg_internal["mxqbwt"] to midval(taemg_constants["qbwt1"] + taemg_constants["qbmsl1"] * (taemg_input["mach"] - taemg_constants["qmach1"]), taemg_constants["qbwt2"], taemg_constants["qbwt1"]).
 	} else {
-		set mxqbwt to midval(taemg_constants["qbwt2"] + taemg_constants["qbmsl2"] * (taemg_input["mach"] - taemg_constants["qmach2"]), taemg_constants["qbwt2"], taemg_constants["qbwt3"]).
+		set taemg_internal["mxqbwt"] to midval(taemg_constants["qbwt2"] + taemg_constants["qbmsl2"] * (taemg_input["mach"] - taemg_constants["qmach2"]), taemg_constants["qbwt2"], taemg_constants["qbwt3"]).
 	}
 	
-	local qbll is mxqbwt * taemg_input["weight"].
-	local qbmnnz is qbll / max( taemg_input["cosphi"], taemg_constants["cpmin"]).
+	//modification - do not gain lower qbar by the bank angle
+	set taemg_internal["qbmnnz"] to taemg_internal["mxqbwt"] * taemg_input["weight"].
 	
 	//calculate max qbar profile
-	local qbmxnz is 0.
 	if (taemg_input["mach"] > taemg_constants["qbm1"]) {
-		set qbmxnz to midval( taemg_constants["qbmx2"] + taemg_constants["qbmxs2"] * (taemg_input["mach"] - taemg_constants["qbm2"]), taemg_constants["qbmx2"], taemg_constants["qbmx3"]).
+		set taemg_internal["qbmxnz"] to midval( taemg_constants["qbmx2"] + taemg_constants["qbmxs2"] * (taemg_input["mach"] - taemg_constants["qbm2"]), taemg_constants["qbmx2"], taemg_constants["qbmx3"]).
 	} else {
-		set qbmxnz to midval( taemg_constants["qbmx2"] + taemg_constants["qbmxs1"] * (taemg_input["mach"] - taemg_constants["qbm1"]), taemg_constants["qbmx2"], taemg_constants["qbmx1"]).
+		set taemg_internal["qbmxnz"] to midval( taemg_constants["qbmx2"] + taemg_constants["qbmxs1"] * (taemg_input["mach"] - taemg_constants["qbm1"]), taemg_constants["qbmx2"], taemg_constants["qbmx1"]).
 	}
 	
 	//limit max qbar profile to enter the hac when subsonic
+	//modification - the energy term is normalized wrt. en because it was of unordinate magnitude
 	if (taemg_constants["eqlowl"] < taemg_internal["eow"]) and (taemg_internal["eow"] < taemg_constants["eqlowu"]) and (taemg_internal["psha"] > taemg_constants["psohqb"]) {
-		set qbmxnz to midval(taemg_constants["qbref2"][taemg_internal["igs"]] - taemg_constants["pqbwrr"] * (taemg_internal["rpred2"] - taemg_constants["r2max"]) + (taemg_internal["eow"] - taemg_internal["en"]) / taemg_constants["pewrr"], qbmnnz, qbmxnz).
+		set taemg_internal["qbmxnz"] to midval(taemg_constants["qbref2"][taemg_internal["igs"]] - taemg_constants["pqbwrr"] * (taemg_internal["rpred2"] - taemg_constants["r2max"]) + (taemg_internal["eow"]/taemg_internal["en"] - 1) / taemg_constants["pewrr"], taemg_internal["qbmnnz"], taemg_internal["qbmxnz"]).
 	}
 	
 	//limits on qbar
-	local qbnzul is - (taemg_constants["qbg1"] * (qbmnnz - taemg_internal["qbarf"]) - taemg_internal["qbd"]) * taemg_constants["qbg2"].
-	local qbnzll is - (taemg_constants["qbg1"] * (qbmxnz - taemg_internal["qbarf"]) - taemg_internal["qbd"]) * taemg_constants["qbg2"].
+	local qbnzul is - (taemg_constants["qbg1"] * (taemg_internal["qbmnnz"] - taemg_internal["qbarf"]) - taemg_internal["qbd"]) * taemg_constants["qbg2"].
+	local qbnzll is - (taemg_constants["qbg1"] * (taemg_internal["qbmxnz"] - taemg_internal["qbarf"]) - taemg_internal["qbd"]) * taemg_constants["qbg2"].
 	
 	//transform the qbar nz filters into hdot filters
 	SET taemg_internal["qbhdul"] TO qbnzul / taemg_internal["gdh"].
@@ -1518,11 +1520,7 @@ FUNCTION tgnzc {
 		SET taemg_internal["eowhdll"] TO eownzll * dnz2ddh.
 
 		set taemg_internal["hderrc_eowl"] to midval(taemg_internal["hderrcl"], taemg_internal["eowhdll"], taemg_internal["eowhdul"]).
-		set taemg_internal["hderrc_eowqb"] to taemg_internal["hderrc_eowl"].
-		//qbar filtering only before hdg
-		if (taemg_internal["iphase"] <= 1) {
-			set taemg_internal["hderrc_eowqb"] to midval(taemg_internal["hderrc_eowl"], taemg_internal["qbhdul"], taemg_internal["qbhdll"]).
-		}
+		set taemg_internal["hderrc_eowqb"] to midval(taemg_internal["hderrc_eowl"], taemg_internal["qbhdul"], taemg_internal["qbhdll"]).
 		
 		local dhdcd is midval((taemg_internal["hderrc_eowqb"] - taemg_internal["hderrc"]) * taemg_constants["cqg"], -taemg_constants["hdherrcmax"], taemg_constants["hdherrcmax"]).
 		set taemg_internal["hderrc"] to taemg_internal["hderrc"] + dhdcd * taemg_input["dtg"].
