@@ -247,7 +247,7 @@ global entryg_constants is lexicon (
 									//"vnoalp", 20500,	//pch mod start velocity//	//took the value from the sts-1 paper
 									"vnoalp", 22000,	//pch mod start velocity//
 									"tal_vnoalp", 19000,	//pch mod start velocity for tal//	
-									"vq", 10499,	//ft/s predicted end vel for const drag			//changed for consistency with vtran
+									"vq", 10500,	//ft/s predicted end vel for const drag			//changed for consistency with vtran
 									"vrlmc", 2750,	//ft/s rlm seg switch vel
 									"vsat", 25766.2,	//ft/s local circular orbit vel 
 									"vs1", 23283.5,		//ft/s eq glide ref vel 
@@ -258,8 +258,7 @@ global entryg_constants is lexicon (
 									"r_taem", 45,	//nm my addition: force transition below this range
 									"r_taem_high", 75,	//nm my addition: high-energy transition range
 									"vtrb0", 60000,	//ft/s initial value of vtrb
-									//"vtran", 10500,	//ft/s nominal vel at start of transition STS-1
-									"vtran", 9000,	//ft/s nominal vel at start of transition
+									"vtran", 10500,	//ft/s nominal vel at start of transition STS-1
 									"vylmax", 23000,	//ft/s min vel to limit lmn by almn4
 									"ylmin", 1.72,	//deg yl bias used in test for lmn	
 									"ylmn2", 4.01,	//deg mon yl bias 
