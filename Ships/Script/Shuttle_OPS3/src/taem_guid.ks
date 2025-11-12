@@ -2,12 +2,12 @@
 
 GLOBAL mt2ft IS 3.28084.		// ft/mt
 GLOBAL km2nmi IS 0.539957.	// nmi/km
-GLOBAL atm2pa IS 101325.		// atm/pascal
-GLOBAL newton2lb IS 0.224809.	//	N/lb
-GLOBAL kg2slug IS 14.59390.		// kg/slug
-GLOBAL kg2lb IS 0.45359237.		// kg/lb
-GLOBAL pa2psf IS newton2lb / (mt2ft^2).		//pascal/psf	
-GLOBAL mps2kt IS 1.94384.			//m/s / knots
+GLOBAL atm2pa IS 101325.		// pa/atm
+GLOBAL newton2lb IS 0.224809.	//	lb/N
+GLOBAL kg2slug IS 70.9315509275.		// slug/kg
+GLOBAL kg2lb IS 2.20462.		// lb/kg
+GLOBAL pa2psf IS newton2lb / (mt2ft^2).		//psf/pa	
+GLOBAL mps2kt IS 1.94384.			// kn/mps
 
 //input variables
 //		h		//ft height above rwy
@@ -323,7 +323,7 @@ global taemg_constants is lexicon (
 									//"qbrll", LIST(0, 180, 180),		//psf  qbref ll 	//OTT paper
 									//"qbrml", LIST(0, 220, 220),		//psf  qbref ml 	//OTT paper
 									//"qbrul", LIST(0, 285, 285),		//psf  qbref ul 	//OTT paper
-									"qbrll", LIST(0, 225, 225),		//psf  qbref ll
+									"qbrll", LIST(0, 225, 225),		//psf  qbref ll	//TAEM paper
 									"qbrml", LIST(0, 247, 247),		//psf  qbref ml
 									"qbrul", LIST(0, 305, 305),		//psf  qbref ul
 									"rerrlm", 7000,			//ft limit of rerrc 		//was 50 deg????
@@ -446,7 +446,7 @@ global taemg_constants is lexicon (
 									//"alprec", 50,		//° aoa during alpha recovery	//taem paper
 									"alprec", 46,		//° aoa during alpha recovery
 									"hdnom", -1480, 	//Nominal maximum sink rate during alpha recovery
-									"hdnmws", -0.7,		//ft/s/slug my addition - slope of equation for hdnom vs. vehicle weight
+									"hdnmws", -0.144,		//ft/s/slug my addition - slope of equation for hdnom vs. vehicle weight
 									"hdnmwi", -475.5,		//ft/s/slug my addition - intercept of equation for hdnom vs. vehicle weight
 									//"dhdnz", 0.001, 		//Gain on max sink rate difference to compute DGRNZ	//OTT
 									"dhdnz", 0.00085, 		//Gain on max sink rate difference to compute DGRNZ
