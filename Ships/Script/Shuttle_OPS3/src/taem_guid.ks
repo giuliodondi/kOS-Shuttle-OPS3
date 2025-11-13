@@ -314,18 +314,18 @@ global taemg_constants is lexicon (
 									"qbc2", LISt(0, -1.1613301e-3, -1.1613301e-3), 		//psf/ft slope of qbref dor drpred < pbrcq
 									"qbg1", 0.1,				//1/s gain for qbnzul and qbnzll
 									"qbg2", 0.125,				//s-g/psf gain for qbnzul and qbnzll
-									"qbmxs2", 0,			//psf slope of qbmxnz when mach > qbm2	//renamed from qbmx0??
+									"qbmxs2", 10,			//psf slope of qbmxnz when mach > qbm2	//renamed from qbmx0??
 									"qbmx1", 340,			//psf constant for qbmxnz
-									"qbmx2", 300,			//psf constant for qbmxnz
+									"qbmx2", 275,			//psf constant for qbmxnz
 									"qbmx3", 300,			//psf constant for qbmxnz
 									"qbm1", 1.05,				//mach breakpoint for computing qbmxnz
-									"qbm2", 1.7,				//mach breakpoint for computing qbmxnz
+									"qbm2", 1.4,				//mach breakpoint for computing qbmxnz
 									//"qbrll", LIST(0, 180, 180),		//psf  qbref ll 	//OTT paper
 									//"qbrml", LIST(0, 220, 220),		//psf  qbref ml 	//OTT paper
 									//"qbrul", LIST(0, 285, 285),		//psf  qbref ul 	//OTT paper
-									"qbrll", LIST(0, 225, 225),		//psf  qbref ll	//TAEM paper
-									"qbrml", LIST(0, 247, 247),		//psf  qbref ml
-									"qbrul", LIST(0, 305, 305),		//psf  qbref ul
+									"qbrll", LIST(0, 145, 145),		//psf  qbref ll	//TAEM paper
+									"qbrml", LIST(0, 195, 195),		//psf  qbref ml
+									"qbrul", LIST(0, 275, 275),		//psf  qbref ul
 									"rerrlm", 7000,			//ft limit of rerrc 		//was 50 deg????
 									"rftc", 5,			//s roll fader time const 
 									//"rminst", LIST(0, 180000, 180000),		//ft min range allowed to initiate sturn 	//OTT
@@ -337,8 +337,7 @@ global taemg_constants is lexicon (
 									"sbmin", 0,				//deg min sbrbk command (was 5)		//deprecated
 									"tggs", LISt(0, TAN(24), TAN(22)), 		//tan of steep gs for autoland 	// I refactored everything so they're positive
 									"vco", 1e20, 			//fps constant used in turn compensation 			//deprecated
-									//"wt_gs1", 8000, 			//slugs max orbiter weight 
-									"wt_gs1", 6837, 			//slugs max orbiter weight 
+									"wt_gs1", 8000, 			//slugs max orbiter weight 
 									"xa", LIST(0, -5000, -5000),		//steep gs intercept 				//deprecated
 									"yerrlm", 300,				//deg limit on yerrc 
 									"y_error", 1000,			//ft xrange err bound 		//deprecated
@@ -367,11 +366,12 @@ global taemg_constants is lexicon (
 									//"psstrn", 200,			//deg max psha for s-turn //OTT
 									"psstrn", 360,			//deg max psha for s-turn 
 									"qbref2", LISt(0, 185, 185),		//psf qbref at r2max 
-									"qbmsl1", -0.0288355,			//psf/slug slope of mxqbwt with mach 
-									"qbmsl2", -0.00570829,			//psf/slug slope of mxqbwt with mach 
-									"qbwt1", -0.0233521,			//psf/slug constant for computing qbll
-									"qbwt2", -0.01902763,			//psf/slug constant for computing qbll
-									"qbwt3", -0.03113613,			//psf/slug constant for computing qbll
+									"qbmsl1", -100,			//psf/slug slope of mxqbwt with mach 
+									"qbmsl2", 35.12195,			//psf/slug slope of mxqbwt with mach 
+									"qbwt1", 138,			//psf/slug constant for computing qbll
+									"qbwt2", 112,			//psf/slug constant for computing qbll
+									"qbwt3", 184,			//psf/slug constant for computing qbll
+									"qbwtref", 6905.4,			//slug ref weight for qbll / weight from TAEM paper
 									"qmach1", 0.89,				//mach breakpoint for mxqbwt 
 									"qmach2", 1.15,				//mach breakpoint for mxqbwt
 									"rfmin", 5000,				//ft min hac spiral radius on final 
@@ -391,7 +391,8 @@ global taemg_constants is lexicon (
 									"rmoh", 273500,				//ft min rpred to issue ohalrt 
 									"r1", 0, 			//ft/deg linear coeff of hac spiral 
 									"r2", 0.093, 			//ft/deg quadratic coeff of hac spiral 
-									"r2max", 115000,			//ft max range on hac to be subsonic with nominal qbar 
+									//"r2max", 115000,			//ft max range on hac to be subsonic with nominal qbar 
+									"r2max", 130000,			//ft max range on hac to be subsonic with nominal qbar
 									//"philm4", 35, 				//deg bank lim for large bank command - deprecated
 									"philmc", 100, 				//deg bank lim for large bank command 
 									"qbmxs1", -400,				//psf slope of qbmxnz with mach < qbm1 
@@ -1469,7 +1470,7 @@ FUNCTION tgnzc {
 	}
 	
 	//modification - do not gain lower qbar by the bank angle
-	set taemg_internal["qbmnnz"] to taemg_internal["mxqbwt"] * taemg_input["weight"].
+	set taemg_internal["qbmnnz"] to taemg_internal["mxqbwt"] * taemg_input["weight"] / taemg_constants["qbwtref"].
 	
 	//calculate max qbar profile
 	if (taemg_input["mach"] > taemg_constants["qbm1"]) {
