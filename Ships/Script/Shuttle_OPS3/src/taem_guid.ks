@@ -312,8 +312,10 @@ global taemg_constants is lexicon (
 									"qbardl", 5,			//psf/s limit on qbard 
 									"qbc1", LISt(0, 3.6086999e-4, 3.6086999e-4), 		//psf/ft slope of qbref dor drpred > pbrcq
 									"qbc2", LISt(0, -1.1613301e-3, -1.1613301e-3), 		//psf/ft slope of qbref dor drpred < pbrcq
-									"qbg1", 0.1,				//1/s gain for qbnzul and qbnzll
-									"qbg2", 0.125,				//s-g/psf gain for qbnzul and qbnzll
+									//"qbg1", 0.1,				//1/s gain for qbnzul and qbnzll		//OTT
+									"qbg1", 0.085,				//1/s gain for qbnzul and qbnzll
+									//"qbg2", 0.125,				//s-g/psf gain for qbnzul and qbnzll	//OTT
+									"qbg2", 0.25,				//s-g/psf gain for qbnzul and qbnzll
 									"qbmxs2", 10,			//psf slope of qbmxnz when mach > qbm2	//renamed from qbmx0??
 									"qbmx1", 340,			//psf constant for qbmxnz
 									"qbmx2", 275,			//psf constant for qbmxnz
@@ -491,7 +493,7 @@ global taemg_constants is lexicon (
 									"nzsw1a", 1,		//gs initial value of nzsw	//taem paper
 									"grphihds", 0.0551,		//°/(ft/s) 	linear term for phi as a function of hdot
 									"grphihdi", 70,		//°  	const term for phi as a function of hdot
-									"grphilma", 70,			//° roll limit for grtls
+									"grphilma", 65,			//° roll limit for grtls
 									"grphisgn", -1,			//	force roll to the left before alptran
 									"grdpsacsgn", 160,			//° threshold on dpsac to override bank sign 
 									"eowlogemoh", 1.5,		//	low energy eow error thresh w.r.t. emoh delta
@@ -502,8 +504,8 @@ global taemg_constants is lexicon (
 									"grhdddb", 5,		//ft/s deadband on hddot tests	- my addition
 								
 									//ecal stuff
-									"phistn", 60,		//° ecal sturn roll lim
-									"phiecal", 70,		//° ecal normal roll lim
+									"phistn", 65,		//° ecal sturn roll lim
+									"phiecal", 65,		//° ecal normal roll lim
 									"dphislp", 3.125,		//° slope of dpsaclmt vs mach
 									"dphiint", 5,		//° intercept of dpsaclmt vs mach
 									"dpsaclmt_max", 30, 	//° max val of dpsaclmt
