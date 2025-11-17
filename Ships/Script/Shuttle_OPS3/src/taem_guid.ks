@@ -489,7 +489,7 @@ global taemg_constants is lexicon (
 									"smnz2la", -0.05,
 									"grnzc1a", 3.3,		//gs desired normal accel for nz hold 
 									"nzsw1a", 1,		//gs initial value of nzsw	//taem paper
-									"grphihds", 0.0651,		//°/(ft/s) 	linear term for phi as a function of hdot
+									"grphihds", 0.0551,		//°/(ft/s) 	linear term for phi as a function of hdot
 									"grphihdi", 70,		//°  	const term for phi as a function of hdot
 									"grphilma", 70,			//° roll limit for grtls
 									"grphisgn", -1,			//	force roll to the left before alptran
