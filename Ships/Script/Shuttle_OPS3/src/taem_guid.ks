@@ -509,14 +509,15 @@ global taemg_constants is lexicon (
 									"dphislp", 3.125,		//° slope of dpsaclmt vs mach
 									"dphiint", 5,		//° intercept of dpsaclmt vs mach
 									"dpsaclmt_max", 30, 	//° max val of dpsaclmt
-									"enlimhifac", 0.75,		// factor for calculating enlimhi					
-									"enlimlofac", 0.75,		// factor for calculating enlimlo	
+									"enlimhifac", 0.17,		// factor for calculating enlimhi					
+									"enlimlofac", 0.3,		// factor for calculating enlimlo	
 									"dpsac2", 25,			//° delaz limit for alpha bias 
-									"enalpl", 6,			//° lower alpha bias 
-									"enalpu", -5,			//° max alpha bias 
-									"en_bias1", 2.5,			//° low energy alpha bias 
-									"en_bias2", -2.5,			//° high energy alpha bias 
-									"en_bias3", -5,			//° high energy alpha bias 
+									"enalpl", -2,			//° lower alpha bias 
+									"enalpu", 1.25,			//° max alpha bias 
+									"en_bias1", -1,			//° low energy alpha bias 
+									"en_bias2", -1,			//° high energy alpha bias 
+									"en_bias3", 1,			//° high energy alpha bias 
+									"en_bias4", 2.5,			//° high energy alpha bias 	
 									"dnz1", 0.2,			// nz increment if itgtnz
 									"dnzmx1", 4.1,			//max dgrnzt to trigger itgtnz
 									"phiprb", 20,			//° prebank if itgtnz
@@ -1769,6 +1770,17 @@ function grcomp {
 				
 				//skip alpha mach limits 
 				
+				//energy alpha corridor logic
+				//if low energy
+				//	if above enlimlo, bias1
+				//  if below and within delaz lims, bias lo
+				//if high energy 
+				//  if below enlimhi
+				//    if increasing, bias3
+				//    if decreasing, bias2
+				// if above enlimhi
+				//    if load fac below 2.5, bias upper 
+				//    if loadfac above, bias4
 				if (taemg_internal["eowerror"] < 0) {
 					if (taemg_internal["eowerror"] < enlimlo) and (abs(taemg_internal["dpsac"]) < taemg_constants["dpsac2"]) {
 						set taemg_internal["en_alpha_bias"] to taemg_constants["enalpl"].
@@ -1783,11 +1795,11 @@ function grcomp {
 						set taemg_internal["en_alpha_bias"] to taemg_constants["en_bias3"].
 					}
 				} else {
-					set taemg_internal["en_alpha_bias"] to taemg_constants["enalpu"].
-				}
-				//my addition: if s-turning reverse all the negative pitch biases to increase drag
-				if (taemg_internal["istp4"] = 0) {
-					set taemg_internal["en_alpha_bias"] to - taemg_internal["en_alpha_bias"].
+					if (taemg_input["xlfac"] > taemg_constants["nztotallim"]) {
+						set taemg_internal["en_alpha_bias"] to taemg_constants["en_bias4"].
+					} else {
+						set taemg_internal["en_alpha_bias"] to taemg_constants["enalpu"].
+					}
 				}
 				set gralpra to gralpra + taemg_internal["en_alpha_bias"].
 			} 
